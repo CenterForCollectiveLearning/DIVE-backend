@@ -3,6 +3,8 @@ Home to our lovely utility functions
 '''
 
 import re
+import pandas as pd
+from collections import OrderedDict  # Get unique elements of list while preserving order
 
 # Utility function to detect extension and return delimiter
 def get_delimiter(path):
@@ -34,10 +36,23 @@ def get_variable_type(v):
 
 
 # TODO Strip new lines and quotes
-def get_columns(lines, delim):
-    row_matrix = [line.split(delim) for line in lines]
-    column_matrix = zip(*row_matrix)
-    return column_matrix
+def read_file(path, delim):
+    df = pd.read_table(path, sep=delim)
+    columns = []
+
+    # TODO Is this the right thing to do?
+    for col in df:
+        columns.append(df[col])
+
+    header = list(df.columns.values)
+    return header, columns
+    # lens = []
+    # for line in lines:
+    #     lens.append(len(line.split(delim)))
+    # print min(lens)
+    # row_matrix = [line.split(delim) for line in lines]
+    # column_matrix = zip(*row_matrix)
+    # return column_matrix
 
 
 # Find the distance between two lists
@@ -46,6 +61,7 @@ def get_distance(l1, l2):
     s1, s2 = set(l1), set(l2)
     d = float(len(s1.intersection(s2))) / len(s1.union(s2))
     # d = float(len(s1 ^ s2)) / len(s1 | s2)
+
     return d
 
 
