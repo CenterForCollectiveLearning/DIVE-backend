@@ -65,6 +65,18 @@ def get_distance(l1, l2):
     return d
 
 
+# Find if a relationship is one-to-one or one-to-many
+# Currently naively compares length of lists
+def get_hierarchy(l1, l2):
+    if len(l1) > len(l2):
+        res = "N1"
+    elif len(l1) == len(l2):
+        res = "11"
+    else:
+        res = "1N"
+    return res
+
+
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def get_unique(li):
