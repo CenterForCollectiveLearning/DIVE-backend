@@ -6,6 +6,7 @@ import re
 import pandas as pd
 from collections import OrderedDict  # Get unique elements of list while preserving order
 
+
 # Utility function to detect extension and return delimiter
 def get_delimiter(path):
     f = open(path)
@@ -24,6 +25,20 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
+# Return list of dataset and column unique IDs
+# Currently datasets and attributes are just numbers (UUIDs are overkill)
+def get_canonical_form(path):
+    # TODO Abstract this file reading
+    f = open(path)
+    filename = path.rsplit('/')[-1]
+    extension = filename.rsplit('.', 1)[1]
+    delim = get_delimiter(path)
+    l = f.readline().split(delim)
+    cols = [i for i in range(0,len(l))]
+
+    return cols
+
+
 INT_REGEX = "^-?[0-9]+$"
 FLOAT_REGEX = "[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
 # Utility function to get the type of a variable
@@ -33,6 +48,11 @@ def get_variable_type(v):
     elif re.match(FLOAT_REGEX, v): r = "float"
     else: r = "str"
     return r
+
+
+# Detect if a list is comprised of unique elements
+def detect_unique_list(l):
+    return (len(set(l)) == len(l))
 
 
 # TODO Strip new lines and quotes
@@ -91,10 +111,7 @@ def get_column_types(path):
     header = f.readline()
     sample_line = f.readline()
     extension = path.rsplit('.', 1)[1]
-    if extension == 'csv':
-      delim = ','
-    elif extension == 'tsv':
-      delim = '\t'
+    delim = get_delimiter(path)
 
     types = [get_variable_type(v) for v in sample_line.split(delim)]
     return types
