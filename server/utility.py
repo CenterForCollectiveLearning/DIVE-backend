@@ -133,7 +133,7 @@ def get_sample_data(path):
             break
         else:
             delim = get_delimiter(path)
-            sample[i] = [item.strip() for item in line.split(delim)]
+            sample[i] = [item.strip() for item in line.strip().split(delim)]
             cols = max(cols, len(sample[i]))
 
     with open(path) as f:
@@ -142,6 +142,6 @@ def get_sample_data(path):
     rows += 1
 
     # Parse header
-    header = header.split(delim)
+    header = header.strip().split(delim)
 
     return sample, rows, cols, extension, header
