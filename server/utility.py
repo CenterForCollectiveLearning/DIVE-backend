@@ -66,13 +66,6 @@ def read_file(path, delim):
 
     header = list(df.columns.values)
     return header, columns
-    # lens = []
-    # for line in lines:
-    #     lens.append(len(line.split(delim)))
-    # print min(lens)
-    # row_matrix = [line.split(delim) for line in lines]
-    # column_matrix = zip(*row_matrix)
-    # return column_matrix
 
 
 # Find the distance between two lists
