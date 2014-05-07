@@ -25,20 +25,6 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
-# Return list of dataset and column unique IDs
-# Currently datasets and attributes are just numbers (UUIDs are overkill)
-def get_canonical_form(path):
-    # TODO Abstract this file reading
-    f = open(path)
-    filename = path.rsplit('/')[-1]
-    extension = filename.rsplit('.', 1)[1]
-    delim = get_delimiter(path)
-    l = f.readline().split(delim)
-    cols = [i for i in range(0,len(l))]
-
-    return cols
-
-
 INT_REGEX = "^-?[0-9]+$"
 FLOAT_REGEX = "[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
 # Utility function to get the type of a variable
@@ -56,7 +42,8 @@ def detect_unique_list(l):
 
 
 # TODO Strip new lines and quotes
-def read_file(path, delim):
+def read_file(path):
+    delim = get_delimiter(path)
     df = pd.read_table(path, sep=delim)
     columns = []
 
