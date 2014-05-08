@@ -18,6 +18,18 @@ class DAL(object):
             self.num_datasets += 1
         return
 
+    def get_path_from_id(self, passed_id):
+        for path, stored_id in self.dataset_ids.iteritems():
+            if stored_id == passed_id:
+                return path
+        return
+
+    def get_column_name_from_id(self, passed_dataset_id, passed_column_id):
+        for path, stored_id in self.column_ids.iteritems():
+            if stored_id == passed_id:
+                return path
+        return
+
     def get_dataset_id(self, path):
         return self.dataset_ids[path]
 
