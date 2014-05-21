@@ -107,7 +107,7 @@ def get_sample_data(path):
     cols = 0
 
     sample = {}
-    for i in range(5):
+    for i in range(20):
         line = f.readline()
         if not line:
             break
