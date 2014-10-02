@@ -38,7 +38,10 @@ def get_variable_type(v):
 
 # Detect if a list is comprised of unique elements
 def detect_unique_list(l):
-    return (len(set(l)) == len(l))
+    THRESHOLD = 0.95
+    if (len(set(l)) / len(l)) >= THRESHOLD:
+        return True
+    return False
 
 
 # TODO Strip new lines and quotes
