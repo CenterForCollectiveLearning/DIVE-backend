@@ -30,25 +30,25 @@ def requiredParams(type, spec):
 
 
 # Check parameters and route to correct vizdata function
-def getVisualizationData(type, spec, pID):
+def getVisualizationData(type, spec, conditional, pID):
     if requiredParams(type, spec):
         if type == 'treemap':
-            return getTreemapData(spec, pID)
+            return getTreemapData(spec, conditional, pID)
         elif type == 'piechart':
-            return getPiechartData(spec, pID)
+            return getPiechartData(spec, conditional, pID)
         elif type == 'geo':
-            return getGeoData(spec, pID)
+            return getGeoData(spec, conditional, pID)
         elif type == 'barchart':
-            return getScatterplotData(spec, pID)
+            return getScatterplotData(spec, conditional, pID)
         elif type == 'linechart':
-            return getScatterplotData(spec, pID)
+            return getScatterplotData(spec, conditional, pID)
         elif type == 'scatterplot':
-            return getScatterplotData(spec, pID)
+            return getScatterplotData(spec, conditional, pID)
     else:
         return "Did not pass required parameters", 400
 
 
-def getTreemapData(spec, pID):
+def getTreemapData(spec, conditional, pID):
     # Parse specification
     condition = spec['condition']['title']
     groupby = spec['groupBy']['title']
@@ -61,7 +61,15 @@ def getTreemapData(spec, pID):
     delim = get_delimiter(path)
     df = pd.read_table(path, sep=delim)
 
-    cond_df = df
+    if conditional[dID]:
+        # Convert from {title: val} to {title: [val]}
+        # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
+        for k, v in conditional[dID].iteritems():
+            if v != 'All':
+                df = df[df[k] == v]
+        cond_df = df
+    else:
+        cond_df = df
     group_obj = cond_df.groupby(groupby)
     finalSeries = group_obj.size()
 
@@ -73,22 +81,14 @@ def getTreemapData(spec, pID):
         })
     return {'result': result}
 
-    # Compute
-    #         if query[0] == '*':
-    #             cond_df = df
-    #         else:
-    #             # Uses column indexing for now
-    #             cond_df = df[df[condition].isin(query)]
+def getPiechartData(spec, conditional, pID):
+    return getTreemapData(spec, conditional, pID)
 
 
-def getPiechartData(spec, pID):
-    return getTreemapData(spec, pID)
+def getBarchartData(spec, conditional, pID):
+    return getScatterplotData(spec, conditional, pID)
 
-
-def getBarchartData(spec, pID):
-    return getScatterplotData(spec, pID)
-
-def getScatterplotData(spec, pID):
+def getScatterplotData(spec, conditional, pID):
     agg = spec['aggregation']
     x = spec['x']['title']    
     dID = spec['object']['dID']
@@ -97,6 +97,18 @@ def getScatterplotData(spec, pID):
     path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
     delim = get_delimiter(path)
     df = pd.read_table(path, sep=delim)
+
+    if conditional[dID]:
+        # Convert from {title: val} to {title: [val]}
+        # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
+        for k, v in conditional[dID].iteritems():
+            print k, v
+            if v != 'All':
+                df = df[df[k] == v]
+        cond_df = df
+        print cond_df
+    else:
+        cond_df = df
 
     result = []
     if agg:
@@ -125,22 +137,17 @@ def getScatterplotData(spec, pID):
     return {'result': result}
 
 
-def getLinechartData(spec, pID):
-    return getScatterplotData(spec, pID)
+def getLinechartData(spec, conditional, pID):
+    return getScatterplotData(spec, conditional, pID)
 
 
-def getConditionalData(spec, pID):
-    # Parse specification
-    condition = spec['condition']['title']
-    dID = spec['aggregate']['dID']
-
+def getConditionalData(spec, dID, pID):
     # Load dataset (GENERALIZE THIS)
     filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
     path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
     delim = get_delimiter(path)
     df = pd.read_table(path, sep=delim)
 
-    unique_elements = [{condition: e} for e in pd.Series(df[condition]).unique()]
+    unique_elements = sorted([e for e in pd.Series(df[spec['name']]).dropna().unique()])
 
-    # return {'result': unique_elements}
-    return {'result': []}
+    return unique_elements

@@ -111,6 +111,4 @@ def getScatterplotSpecs(datasets, properties, ontologies):
                     'aggregation': True,
                     'chosen': False
                 })
-
-    print "SCATTERPLOT SPECS", specs
     return specs
