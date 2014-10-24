@@ -38,10 +38,14 @@ class mongoInstance(object):
         print len([str(sID_obj) for sID_obj in resp])
         return [str(sID_obj) for sID_obj in resp]
 
-    def chooseSpec(self, pID, sID):
+    def chooseSpec(self, pID, sID, conditional):
+        # MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(sID)})
         info = MongoInstance.client[pID].specifications.find_and_modify({'sID': sID}, {'$set': {'chosen': True}}, upsert=True, new=True)
-        sID = str(info['_id'])
-        return sID
+        return str(MongoInstance.client[pID].exported.insert({'pID': pID, 'sID': sID, 'conditional': conditional}))
+
+    # Exported visualizations
+    def getExported(self, find_doc, pID):
+        return formatObjectIDs('exported', [ d for d in MongoInstance.client[pID].exported.find(find_doc) ])
 
     def rejectSpec(self, pID, sID):
         info = MongoInstance.client[pID].specifications.find_and_modify({'sID': sID}, {'$set': {'chosen': False}}, upsert=True, new=True)
@@ -116,6 +120,7 @@ class mongoInstance(object):
             db.create_collection('visualizations')
             db.create_collection('properties')
             db.create_collection('ontologies')
+            db.create_collection('exported')
             print "Creating new project"
             return {'formatted_title': formatted_title, 'pID': pID}, 200
 

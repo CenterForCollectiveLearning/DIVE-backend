@@ -27,7 +27,7 @@ def requiredParams(type, spec):
     #     if requiredParam not in spec:
     #         return False
     return True
-
+ 
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, pID):
@@ -36,7 +36,7 @@ def getVisualizationData(type, spec, conditional, pID):
             return getTreemapData(spec, conditional, pID)
         elif type == 'piechart':
             return getPiechartData(spec, conditional, pID)
-        elif type == 'geo':
+        elif type == 'geomap':
             return getGeoData(spec, conditional, pID)
         elif type == 'barchart':
             return getScatterplotData(spec, conditional, pID)
@@ -80,6 +80,9 @@ def getTreemapData(spec, conditional, pID):
             'count': np.asscalar(np.int16(row[1]))
         })
     return {'result': result}
+
+def getGeoData(spec, conditional, pID):
+    return getTreemapData(spec, conditional, pID)
 
 def getPiechartData(spec, conditional, pID):
     return getTreemapData(spec, conditional, pID)
