@@ -219,7 +219,6 @@ projectPostParser.add_argument('user_name', type=str, required=True)
 projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
 
-# TODO Return all projects
 # Get information for one project
 class Project(Resource):
     def get(self):
@@ -430,6 +429,7 @@ class Chosen_Specs(Resource):
         pID = args.get('pID').strip().strip('"')
         return
 
+
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
 # INPUT: sID, pID, uID
@@ -461,6 +461,7 @@ class Reject_Spec(Resource):
         MI.rejectSpec(pID, sID)
         return
 
+
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
 # INPUT: sID, pID, uID
@@ -480,18 +481,28 @@ class Conditional_Data(Resource):
 
 
 #####################################################################
-# Endpoint returning exported visualizations
+# Endpoint returning exported viz specs
 #####################################################################
-exportedVisualizationGetParser = reqparse.RequestParser()
-exportedVisualizationGetParser.add_argument('pID', type=str, required=True)
-exportedVisualizationGetParser.add_argument('eID', type=str, required=True)
-class Exported_Visualization(Resource):
+exportedVisualizationSpecGetParser = reqparse.RequestParser()
+exportedVisualizationSpecGetParser.add_argument('pID', type=str, required=True)
+class Exported_Visualization_Spec(Resource):
     def get(self):
-        args = conditionalDataGetParser.parse_args()
+        args = exportedVisualizationSpecGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        dID = args.get('dID').strip().strip('"')
-        spec = json.loads(args.get('spec'))
-        return json.jsonify({'result': getConditionalData(spec, dID, pID)})
+        print MI.getExportedSpecs({}, pID)
+        return json.jsonify({'result': MI.getExportedSpecs({}, pID)})
+
+
+exportedVisualizationDataGetParser = reqparse.RequestParser()
+exportedVisualizationDataGetParser.add_argument('pID', type=str, required=True)
+exportedVisualizationDataGetParser.add_argument('eID', type=str, required=True)
+class Exported_Visualization_Data(Resource):
+    def get(self):
+        args = exportedVisualizationDataGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        eID = args.get('eID').strip().strip('"')
+        print MI.getExportedSpecs({}, pID)
+        return json.jsonify({'result': MI.getExportedSpecs({}, pID)})
 
 
 api.add_resource(UploadFile, '/api/upload')
@@ -503,6 +514,7 @@ api.add_resource(Specification, '/api/specification')
 api.add_resource(Choose_Spec, '/api/choose_spec')
 api.add_resource(Reject_Spec, '/api/reject_spec')
 api.add_resource(Visualization_Data, '/api/visualization_data')
+api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
 api.add_resource(Conditional_Data, '/api/conditional_data')
 
 

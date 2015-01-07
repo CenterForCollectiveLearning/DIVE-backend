@@ -44,8 +44,12 @@ class mongoInstance(object):
         return str(MongoInstance.client[pID].exported.insert({'pID': pID, 'sID': sID, 'conditional': conditional}))
 
     # Exported visualizations
-    def getExported(self, find_doc, pID):
-        return formatObjectIDs('exported', [ d for d in MongoInstance.client[pID].exported.find(find_doc) ])
+    def getExportedSpecs(self, find_doc, pID):
+        exported_specs = MongoInstance.client[pID].exported.find(find_doc)
+        for e in exported_specs:
+            e['spec'] = MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(e['sID'])})
+        print [ e for e in exported_specs ]
+        return formatObjectIDs('exported', [ e for e in exported_specs ])
 
     def rejectSpec(self, pID, sID):
         info = MongoInstance.client[pID].specifications.find_and_modify({'sID': sID}, {'$set': {'chosen': False}}, upsert=True, new=True)
