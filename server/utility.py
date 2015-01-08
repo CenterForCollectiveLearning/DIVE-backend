@@ -3,6 +3,7 @@ Home to our lovely utility functions
 '''
 
 import re
+import xlrd
 import codecs
 import pandas as pd
 import dateutil.parser as dparser
@@ -22,7 +23,6 @@ types = {
         'continent',
     ]
 }
-
 
 # Utility function to detect extension and return delimiter
 def get_delimiter(path):
@@ -81,7 +81,6 @@ def get_variable_type(v):
             r = "string"
     return r
 
-
 # Detect if a list is comprised of unique elements
 def detect_unique_list(l):
     THRESHOLD = 0.90
@@ -89,19 +88,46 @@ def detect_unique_list(l):
         return True
     return False
 
-
 # TODO Strip new lines and quotes
 def read_file(path):
-    delim = get_delimiter(path)
-    df = pd.read_table(path, sep=delim)
-    columns = []
+    extension = path.rsplit('.', 1)[1]
 
-    # TODO Is this the right thing to do?
-    for col in df:
-        columns.append(df[col])
+    if extension in ['csv', 'tsv', 'txt'] :
+        delim = get_delimiter(path)
+        df = pd.read_table(path, sep=delim)
+        columns = []
 
-    header = list(df.columns.values)
+        # TODO Is this the right thing to do?
+        # df[cols]'s are Pandas series? would making it into a list be easier?
+        for col in df :
+            columns.append(df[col])
+
+        header = list(df.columns.values)
+
+    elif extension.startswith('xls') :
+        columns = []
+        book = xlrd.open_workbook(path)
+        sheet = book.sheet_by_index(0)
+
+        ## take care of date values ? idk
+        for i in range(sheet.ncols) :
+            col = sheet.col_values(i)
+            columns.append(pd.Series(col))
+
+        header = sheet.row_values(0)
+    
     return header, columns
+# def read_file(path):
+#     delim = get_delimiter(path)
+#     df = pd.read_table(path, sep=delim)
+#     columns = []
+
+#     # TODO Is this the right thing to do?
+#     for col in df:
+#         columns.append(df[col])
+
+#     header = list(df.columns.values)
+#     return header, columns
 
 
 # Find the distance between two lists
@@ -130,47 +156,127 @@ def get_hierarchy(l1, l2):
 def get_unique(li):
     return list(OrderedDict.fromkeys(li))
 
-
-# Utility function to get a list of column types in a dataset given a file path
-# TODO Check if header
-# TODO Use some scheme of parsing such that they aren't all strings
 def get_column_types(path):
     f = open(path, 'rU')
-    header = f.readline()
-    sample_line = f.readline()
     extension = path.rsplit('.', 1)[1]
-    delim = get_delimiter(path)
 
-    types = [get_variable_type(v) for v in sample_line.split(delim)]
+    # flat files
+    if extension in ['csv', 'tsv', 'txt'] :
+        header = f.readline()
+        sample_line = f.readline()
+        delim = get_delimiter(path)
+        types = [get_variable_type(v) for v in sample_line.split(delim)]
+    
+    # excel files
+    elif extension.startswith('xls') :
+        book = xlrd.open_workbook(path)
+        sheet = book.sheet_by_index(0)
+        sample_cells = sheet.row(1)
+
+        types = []        
+        for cell in sample_cells :
+
+            value_string = str(cell.value)
+
+            if cell.ctype == xlrd.XL_CELL_DATE :
+                year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
+                value_string = '/'.join([str(x) for x in [month, day, year]])
+
+            types.append(get_variable_type(value_string))
+
     return types
+# # Utility function to get a list of column types in a dataset given a file path
+# # TODO Check if header
+# # TODO Use some scheme of parsing such that they aren't all strings
+# def get_column_types(path):
+#     f = open(path, 'rU')
+#     header = f.readline()
+#     sample_line = f.readline()
+#     extension = path.rsplit('.', 1)[1]
+#     delim = get_delimiter(path)
 
+#     types = [get_variable_type(v) for v in sample_line.split(delim)]
+#     return types
 
-# function to get sample from data file
 def get_sample_data(path):
     f = open(path, 'rU')
     filename = path.rsplit('/')[-1]
     extension = filename.rsplit('.', 1)[1]
-    delim = get_delimiter(path)
-    header = f.readline()
-    rows = 0
-    cols = 0
+    print extension
 
-    sample = {}
-    for i in range(20):
-        line = f.readline()
-        if not line:
-            break
-        else:
-            delim = get_delimiter(path)
-            sample[i] = [item.strip().strip('"') for item in line.strip().split(delim)]
-            cols = max(cols, len(sample[i]))
+    ## flat files
+    if extension in ['csv', 'tsv', 'txt'] :
+        delim = get_delimiter(path)
+        header = f.readline()
+        rows = 0
+        cols = 0
+        sample = {}
+        for i in range(20) :
+            line = f.readline()
+            if not line :
+                break
+            else :
+                sample[i] = [item.strip().strip('"') for item in line.strip().split(delim)]
+                cols = max(cols, len(sample[i]))
 
-    with open(path, 'rU') as f:
-        for rows, l in enumerate(f):
-            pass
-    rows += 1
+        with open(path, 'rU') as f:
+            for rows, l in enumerate(f) :
+                pass
+        rows += 1
 
-    # Parse header
-    header = header.strip().split(delim)
+        header = header.strip().split(delim)
 
+    ## excel files
+    elif extension.startswith('xls') :
+        book = xlrd.open_workbook(path)
+        ## TODO: multiple sheets? right now only take first sheet
+
+        sheet = book.sheet_by_index(0)
+        # header = [str(x) for x in sheet.row_values(0)]
+        header = sheet.row_values(0)
+        rows = sheet.nrows
+        cols = sheet.ncols
+
+        sample = {}
+        for i in range(min(20, sheet.nrows)) :
+
+            sample[i] = []
+            row = sheet.row(i+1)
+            for cell in row :
+                if cell.ctype == xlrd.XL_CELL_DATE :
+                    year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
+                    date_string = '/'.join([str(x) for x in [month, day, year]])
+                    sample[i].append(date_string)
+                else :
+                    sample[i].append(cell.value)
+            
     return sample, rows, cols, extension, header
+# # function to get sample from data file
+# def get_sample_data(path):
+#     f = open(path, 'rU')
+#     filename = path.rsplit('/')[-1]
+#     extension = filename.rsplit('.', 1)[1]
+#     delim = get_delimiter(path)
+#     header = f.readline()
+#     rows = 0
+#     cols = 0
+
+#     sample = {}
+#     for i in range(20):
+#         line = f.readline()
+#         if not line:
+#             break
+#         else:
+#             delim = get_delimiter(path)
+#             sample[i] = [item.strip().strip('"') for item in line.strip().split(delim)]
+#             cols = max(cols, len(sample[i]))
+
+#     with open(path, 'rU') as f:
+#         for rows, l in enumerate(f):
+#             pass
+#     rows += 1
+
+#     # Parse header
+#     header = header.strip().split(delim)
+
+#     return sample, rows, cols, extension, header

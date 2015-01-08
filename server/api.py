@@ -28,7 +28,7 @@ app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv'])
+ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx'])
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -47,8 +47,8 @@ def option_autoreply():
 
         h = resp.headers
 
+        print "HELLO"
         # Allow the origin which made the XHR
-        print request.headers
         h['Access-Control-Allow-Origin'] = request.headers['Origin']
         # Allow the actual method
         h['Access-Control-Allow-Methods'] = request.headers['Access-Control-Request-Method']
@@ -86,9 +86,11 @@ class UploadFile(Resource):
         # TODO Require these parameters
         pID = request.form.get('pID').strip().strip('"')
         file = request.files.get('file')
+
         if file and allowed_file(file.filename):
             # Save file
             filename = secure_filename(file.filename)
+            print "Filename: ", filename
             path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
             file.save(path)
 
@@ -96,10 +98,10 @@ class UploadFile(Resource):
             dID = MI.insertDataset(pID, file)
 
             # Get sample data
-            sample, rows, cols, extension, header = get_sample_data(path)
-            types = get_column_types(path)
+            sample, rows, cols, extension, header = get_sample_data(path) ## ******, added xls
+            types = get_column_types(path) ## ******
 
-            header, columns = read_file(path)
+            header, columns = read_file(path) # *****
 
             # Make response
             column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
@@ -219,6 +221,7 @@ projectPostParser.add_argument('user_name', type=str, required=True)
 projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
 
+# TODO Return all projects
 # Get information for one project
 class Project(Resource):
     def get(self):
@@ -429,7 +432,6 @@ class Chosen_Specs(Resource):
         pID = args.get('pID').strip().strip('"')
         return
 
-
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
 # INPUT: sID, pID, uID
@@ -461,7 +463,6 @@ class Reject_Spec(Resource):
         MI.rejectSpec(pID, sID)
         return
 
-
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
 # INPUT: sID, pID, uID
@@ -481,28 +482,18 @@ class Conditional_Data(Resource):
 
 
 #####################################################################
-# Endpoint returning exported viz specs
+# Endpoint returning exported visualizations
 #####################################################################
-exportedVisualizationSpecGetParser = reqparse.RequestParser()
-exportedVisualizationSpecGetParser.add_argument('pID', type=str, required=True)
-class Exported_Visualization_Spec(Resource):
+exportedVisualizationGetParser = reqparse.RequestParser()
+exportedVisualizationGetParser.add_argument('pID', type=str, required=True)
+exportedVisualizationGetParser.add_argument('eID', type=str, required=True)
+class Exported_Visualization(Resource):
     def get(self):
-        args = exportedVisualizationSpecGetParser.parse_args()
+        args = conditionalDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        print MI.getExportedSpecs({}, pID)
-        return json.jsonify({'result': MI.getExportedSpecs({}, pID)})
-
-
-exportedVisualizationDataGetParser = reqparse.RequestParser()
-exportedVisualizationDataGetParser.add_argument('pID', type=str, required=True)
-exportedVisualizationDataGetParser.add_argument('eID', type=str, required=True)
-class Exported_Visualization_Data(Resource):
-    def get(self):
-        args = exportedVisualizationDataGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        eID = args.get('eID').strip().strip('"')
-        print MI.getExportedSpecs({}, pID)
-        return json.jsonify({'result': MI.getExportedSpecs({}, pID)})
+        dID = args.get('dID').strip().strip('"')
+        spec = json.loads(args.get('spec'))
+        return json.jsonify({'result': getConditionalData(spec, dID, pID)})
 
 
 api.add_resource(UploadFile, '/api/upload')
@@ -514,7 +505,6 @@ api.add_resource(Specification, '/api/specification')
 api.add_resource(Choose_Spec, '/api/choose_spec')
 api.add_resource(Reject_Spec, '/api/reject_spec')
 api.add_resource(Visualization_Data, '/api/visualization_data')
-api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
 api.add_resource(Conditional_Data, '/api/conditional_data')
 
 
