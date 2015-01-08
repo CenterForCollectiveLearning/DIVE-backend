@@ -28,7 +28,7 @@ app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx'])
+ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls'])
 
 def allowed_file(filename):
     return '.' in filename and \
