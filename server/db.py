@@ -45,10 +45,11 @@ class mongoInstance(object):
 
     # Exported visualizations
     def getExportedSpecs(self, find_doc, pID):
-        exported_specs = MongoInstance.client[pID].exported.find(find_doc)
+        print 'find_doc:', find_doc
+        exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
+        print exported_specs
         for e in exported_specs:
-            e['spec'] = MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(e['sID'])})
-        print [ e for e in exported_specs ]
+            e['spec'] = formatObjectIDs('spec', [MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(e['sID'])})])[0]
         return formatObjectIDs('exported', [ e for e in exported_specs ])
 
     def rejectSpec(self, pID, sID):
