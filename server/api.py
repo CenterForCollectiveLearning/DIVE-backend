@@ -1,6 +1,5 @@
 import os
 import re
-import json
 import shutil
 from random import sample
 from os import listdir
@@ -28,7 +27,7 @@ app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls'])
+ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
 def allowed_file(filename):
     return '.' in filename and \
