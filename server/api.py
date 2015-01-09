@@ -1,21 +1,21 @@
 import os
+from os import listdir
+from os.path import isfile, join
 import re
 import json
 import shutil
 from random import sample
-from os import listdir
-from os.path import isfile, join
-
-from werkzeug.utils import secure_filename
-from bson.objectid import ObjectId
 
 from flask import Flask, render_template, redirect, url_for, request, make_response, json
 from flask.ext.restful import Resource, Api, reqparse
+from bson.objectid import ObjectId
+from werkzeug.utils import secure_filename
 
 from db import MongoInstance as MI
 from specifications import *
 from visualization_data import getVisualizationData, getConditionalData
 from utility import *
+
 
 PORT = 8888
 
@@ -30,8 +30,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls'])
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
 
 @app.before_request
 def option_autoreply():
@@ -46,7 +48,6 @@ def option_autoreply():
 
         h = resp.headers
 
-        print "HELLO"
         # Allow the origin which made the XHR
         h['Access-Control-Allow-Origin'] = request.headers['Origin']
         # Allow the actual method
@@ -59,6 +60,7 @@ def option_autoreply():
             h['Access-Control-Allow-Headers'] = headers
 
         return resp
+
 
 @app.after_request
 def set_allow_origin(resp):
@@ -178,6 +180,7 @@ class Data(Resource):
                 }
                 data_list.append(json_data)
             return json.jsonify({'status': 'success', 'datasets': data_list})
+
     def delete(self):
         args = dataDeleteParser.parse_args()
         pIDs = args.get('pID')
@@ -189,6 +192,7 @@ class Data(Resource):
         params = zip(dIDs, pIDs)
         deleted_dIDs = [ MI.deleteData(dID, pID) for (dID, pID) in params ]
         return deleted_dIDs
+
 
 ############################
 # Get Project ID from Title
@@ -219,9 +223,6 @@ projectPostParser.add_argument('user_name', type=str, required=True)
 
 projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
-
-# TODO Return all projects
-# Get information for one project
 class Project(Resource):
     def get(self):
         args = projectGetParser.parse_args()
@@ -365,6 +366,7 @@ class Property(Resource):
 
         return json.jsonify(all_properties)
 
+
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
 # INPUT: pID, uID
@@ -422,14 +424,6 @@ class Visualization_Data(Resource):
 
         return json.jsonify(getVisualizationData(type, spec, conditional, pID))
 
-# chosenSpecsParser = reqparse.RequestParser()
-# chosenSpecsParser.add_argument('pID', type=str, required=True)
-# class Chosen_Specs(Resource):
-#     def get(self):
-#         args = chooseSpecParser.parse_args()
-#         pID = args.get('pID').strip().strip('"')
-#         print MI.chosenSpecs(pID)
-#         return MI.chosenSpecs(pID)
 
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
@@ -461,6 +455,7 @@ class Reject_Spec(Resource):
         sID = args.get('sID')
         MI.rejectSpec(pID, sID)
         return
+
 
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
@@ -496,7 +491,6 @@ class Exported_Visualization_Spec(Resource):
             eID = args.get('eID').strip().strip('"')
             find_doc = {'_id': ObjectId(eID)}
         return json.jsonify({'result': MI.getExportedSpecs(find_doc, pID)})
-
 
 
 api.add_resource(UploadFile, '/api/upload')
