@@ -1,8 +1,13 @@
+'''
+Functions for returning the data corresponding to a given visualization type and specification
+'''
 import os
 from flask import Flask  # Don't do this
 from utility import *
 from db import MongoInstance as MI
 from bson.objectid import ObjectId
+
+from data import get_delimiter, read_file
 
 import numpy as np
 import pandas as pd
@@ -56,10 +61,22 @@ def getTreemapData(spec, conditional, pID):
     aggFn = 'sum'  # TODO: get this from an argument
 
     # Load dataset (GENERALIZE THIS)
-    filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
+    dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
+    filename = dataset['filename']
+    sheet_name = dataset['sheet']
+
     path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
-    delim = get_delimiter(path)
-    df = pd.read_table(path, sep=delim)
+
+    header, columns = read_file(path, sheet_name)
+
+    data = {}
+    for i in range(len(header)) :
+        field = header[i]
+        data[field] = columns[i]
+    df = pd.DataFrame(data)
+
+    # delim = get_delimiter(path)
+    # df = pd.read_table(path, sep=delim)
 
     if conditional[dID]:
         # Convert from {title: val} to {title: [val]}
@@ -87,7 +104,6 @@ def getGeoData(spec, conditional, pID):
 def getPiechartData(spec, conditional, pID):
     return getTreemapData(spec, conditional, pID)
 
-
 def getBarchartData(spec, conditional, pID):
     return getScatterplotData(spec, conditional, pID)
 
@@ -96,10 +112,17 @@ def getScatterplotData(spec, conditional, pID):
     x = spec['x']['title']    
     dID = spec['object']['dID']
 
-    filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
+    dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
+    filename = dataset['filename']
+    sheet_name = dataset['sheet']
     path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
-    delim = get_delimiter(path)
-    df = pd.read_table(path, sep=delim)
+    header, columns = read_file(path, sheet_name)
+
+    data = {}
+    for i in range(len(header)) :
+        field = header[i]
+        data[field] = columns[i]
+    df = pd.DataFrame(data)
 
     if conditional[dID]:
         # Convert from {title: val} to {title: [val]}
@@ -130,10 +153,10 @@ def getScatterplotData(spec, conditional, pID):
         y = spec['y']['title']
 
         # Load dataset (GENERALIZE THIS)
-        filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
-        path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
-        delim = get_delimiter(path)
-        df = pd.read_table(path, sep=delim)
+        # filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
+        # path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
+        # delim = get_delimiter(path)
+        # df = pd.read_table(path, sep=delim)
 
         result = [{x: x_val, y: y_val} for (x_val, y_val) in zip(df[x], df[y])]
 
@@ -146,10 +169,16 @@ def getLinechartData(spec, conditional, pID):
 
 def getConditionalData(spec, dID, pID):
     # Load dataset (GENERALIZE THIS)
-    filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
+    dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
+    filename = dataset['filename']
+    sheet = dataset['sheet']
     path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
-    delim = get_delimiter(path)
-    df = pd.read_table(path, sep=delim)
+    header, columns = read_file(path, sheet)
+    data = {}
+    for i in range(len(header)) :
+        field = header[i]
+        data[field] = columns[i]
+    df = pd.DataFrame(data)
 
     unique_elements = sorted([e for e in pd.Series(df[spec['name']]).dropna().unique()])
 

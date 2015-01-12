@@ -4,6 +4,8 @@ from os.path import isfile, join
 import re
 import shutil
 from random import sample
+import pandas as pd
+import xlrd
 
 from flask import Flask, render_template, redirect, url_for, request, make_response, json
 from flask.ext.restful import Resource, Api, reqparse
@@ -11,6 +13,8 @@ from bson.objectid import ObjectId
 from werkzeug.utils import secure_filename
 
 from db import MongoInstance as MI
+from data import get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
+from analysis import detect_unique_list, compute_properties, compute_ontologies
 from specifications import *
 from visualization_data import getVisualizationData, getConditionalData
 from utility import *
@@ -28,11 +32,6 @@ UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
 
 @app.before_request
 def option_autoreply():
@@ -73,7 +72,17 @@ def set_allow_origin(resp):
     return resp
 
 
-# TODO Look into Flask WTForms
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+def upload_file(path, sheet_name=None) :
+    sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
+    types = get_column_types(path, sheet_name)
+    header, columns = read_file(path, sheet_name)
+    column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
+
+    return column_attrs, header, sample, rows, cols, extension
+
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('pID', type=str, required=True)
@@ -83,46 +92,89 @@ class UploadFile(Resource):
     # 2. Save file location in project data collection
     # 3. Return sample
     def post(self):
-        # TODO Require these parameters
         pID = request.form.get('pID').strip().strip('"')
         file = request.files.get('file')
 
         if file and allowed_file(file.filename):
             # Save file
             filename = secure_filename(file.filename)
-            print "Filename: ", filename
+            print "Saving file: ", filename
             path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
             file.save(path)
 
-            # Insert into project's datasets collection
-            dID = MI.insertDataset(pID, file)
+            file_type = file.filename.split('.')[1]
+            print file_type
 
-            # Get sample data
-            sample, rows, cols, extension, header = get_sample_data(path) ## ******, added xls
-            print rows, cols
-            types = get_column_types(path) ## ******
+            datasets = []
 
-            header, columns = read_file(path) # *****
+            ## Excel files 
+            if file_type.startswith('xls') :
+                book = xlrd.open_workbook(path, on_demand=True)
+                sheet_names = book.sheet_names()
 
+                for name in sheet_names :
+
+                    column_attrs, header, sample, rows, cols, extension = upload_file(path, name)
+                    
+                    if rows > 0 :
+                        dID = MI.insertDataset(pID, path, file, name)
+                        dataset = {
+                            'title' : filename.split('.')[0] + "#" + name,
+                            'filename' : filename,
+                            'dID' : dID,
+                            'column_attrs' : column_attrs,
+                            'header' : header,
+                            'sample' : sample,
+                            'rows' : rows,
+                            'cols' : cols,
+                            'filetype' : extension
+                        }
+
+                        datasets.append(dataset)
+            else :                
+                # Insert into project's datasets collection
+
+                dID = MI.insertDataset(pID, path, file)
+
+                column_attrs, header, sample, rows, cols, extension = upload_file(path)
+
+                dataset = {
+                    'title' : filename.split('.')[0],
+                    'filename' : filename,
+                    'dID' : dID,
+                    'column_attrs' : column_attrs,
+                    'header' : header,
+                    'sample' : sample,
+                    'rows' : rows,
+                    'cols' : cols,
+                    'filetype' : extension
+                }
+
+                datasets.append(dataset)
+
+           
             # Make response
-            column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
+            # json_data = json.jsonify({
+            #     'status': 'success',
+            #     'title': filename.split('.')[0],
+            #     'filename': filename,
+            #     'dID': dID,
+            #     'column_attrs': column_attrs,
+            #     'filename': filename,
+            #     'header': header,
+            #     'sample': sample,
+            #     'rows': rows,
+            #     'cols': cols,
+            #     'filetype': extension,
+            # })
             json_data = json.jsonify({
-                                    'status': "success",
-                                    'title': filename.split('.')[0],
-                                    'filename': filename,
-                                    'dID': dID,
-                                    'column_attrs': column_attrs,
-                                    'filename': filename,
-                                    'header': header,
-                                    'sample': sample,
-                                    'rows': rows,
-                                    'cols': cols,
-                                    'filetype': extension,
-                                    })
+                    'status' : 'success',
+                    'datasets' : datasets
+                })
             response = make_response(json_data)
             response.set_cookie('file', filename)
             return response
-        return json.jsonify({'status': "Upload failed"})
+        return json.jsonify({'status': 'Upload failed'})
 
 
 # Dataset retrieval, editing, deletion
@@ -134,7 +186,6 @@ dataGetParser.add_argument('sample', type=str, required=True, default='true')
 dataDeleteParser = reqparse.RequestParser()
 dataDeleteParser.add_argument('dID', type=str, action='append', required=True)
 dataDeleteParser.add_argument('pID', type=str, action='append', required=True)
-# TODO Eventually give capability to sample more of a dataset
 class Data(Resource):
     # Get dataset descriptions or samples
     def get(self):
@@ -156,19 +207,20 @@ class Data(Resource):
             for d in datasets:
                 path = os.path.join(app.config['UPLOAD_FOLDER'], pID, d['filename'])
 
-                types = get_column_types(path)
+                sheet_name = d['sheet']
 
-                header, columns = read_file(path)
+                header, columns = read_file(path, sheet_name)
                 unique_cols = [detect_unique_list(col) for col in columns]
     
                 # make response
-                sample, rows, cols, extension, header = get_sample_data(path)
-                types = get_column_types(path)
+                sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
+                types = get_column_types(path, sheet_name)
+
                 column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
 
                 # Make response
                 json_data = {
-                    'title': d['filename'].split('.')[0],
+                    'title': d['title'],
                     'filename': d['filename'],
                     'dID': d['dID'],
                     'column_attrs': column_attrs,
@@ -274,98 +326,23 @@ class Property(Resource):
         print "[GET] Properties"
         args = propertyGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        datasets = MI.getData(None, pID)
-        dIDs = [d['dID'] for d in datasets]
+        datasets = MI.getData({}, pID)
+        
+        # Compute properties of all datasets
+        stats, types, headers, is_unique = compute_properties(pID, datasets)
 
-        types_dict = {}
-        headers_dict = {}
-        raw_columns_dict = {}
-        is_unique_dict = {}
-        uniqued_columns_dict = {}
-        stats_dict = {}
-        # TODO Don't reanalyze every single time...make properties persistent and only recalculate if dependent on uploaded datasets
-        # Single-column functions
-        # Create a pipeline of functions
-        for dataset in datasets:
-            dID = dataset['dID']
-            filename = dataset['filename']
-            path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
-            header, columns = read_file(path)
-            delim = get_delimiter(path)
-            is_unique_dict[dID] = [detect_unique_list(col) for col in columns]
-
-            headers_dict[dID] = header
-            raw_columns_dict[dID] = [list(col) for col in columns]
-            uniqued_columns_dict[dID] = [get_unique(col) for col in columns]
-
-            # Statistical properties
-            df = pd.read_table(path, sep=delim)
-            df_stats = df.describe()
-            df_stats_dict = json.loads(df_stats.to_json())
-            stats_dict[dID] = df_stats_dict
-
-            # Replace nan
-            # entropy 
-            # gini
-
-            # List of booleans -- is a column composed of unique elements?
-            is_unique = [detect_unique_list(col) for col in columns]
-            is_unique_dict[dID] = is_unique
-
-            types = get_column_types(path)
-            types_dict[dID] = types
-
-            # Save properties into collection
-            dataset_properties = {
-                'types': types,
-                'uniques': is_unique,
-                'headers': header,
-                'stats': df_stats_dict
-            }
-            tID = MI.upsertProperty(dID, pID, dataset_properties)
-
-        overlaps = {}
-        hierarchies = {}
-        # Compute cross-dataset overlaps
-        # TODO Create a tighter loop to avoid double computes
-        # TODO Make agnostic to ordering of pair
-        for dID_a, dID_b in combinations(dIDs, 2):
-            raw_cols_a = raw_columns_dict[dID_a]
-            raw_cols_b = raw_columns_dict[dID_b]
-            uniqued_cols_a = uniqued_columns_dict[dID_a]
-            uniqued_cols_b = uniqued_columns_dict[dID_b]
-            overlaps['%s\t%s' % (dID_a, dID_b)] = {}
-            hierarchies['%s\t%s' % (dID_a, dID_b)] = {}
-
-            for index_a, col_a in enumerate(raw_cols_a):
-                for index_b, col_b in enumerate(raw_cols_b):
-                    h = get_hierarchy(col_a, col_b)
-                    d = get_distance(col_a, col_b)
-                    if d:
-                        overlaps['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = d
-                        hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
-
-                        # TODO How do you store this?
-                        ontology = {
-                            'source_dID': dID_a,
-                            'target_dID': dID_b,
-                            'source_index': index_a,
-                            'target_index': index_b,
-                            'distance': d,
-                            'hierarchy': h
-                        }
-                        oID = MI.upsertOntology(pID, ontology)
+        # Compute cross-dataset overlaps        
+        overlaps, hierarchies = compute_ontologies(pID, datasets)
 
         all_properties = {
-            'types': types_dict, 
-            'uniques': is_unique_dict, 
+            'types': types, 
+            'uniques': is_unique,
+            'stats': stats,
             'overlaps': overlaps, 
             'hierarchies': hierarchies,
-            'stats': stats_dict
         }
 
         return json.jsonify(all_properties)
-
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
