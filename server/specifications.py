@@ -1,6 +1,7 @@
 from data import is_numeric
 from utility import *
 from itertools import combinations
+from db import MongoInstance as MI
 
 #####################################################################
 # 1. GROUP every entity by a non-unique attribute (for factors, group by factors but score by number of distinct. For continuous, discretize the range) 
@@ -10,8 +11,28 @@ from itertools import combinations
 #####################################################################
 
 
-# def getVisualizationSpecs('treemap'):
-#     return
+def getVisualizationSpecs(pID):
+    d = MI.getData(None, pID)
+    p = MI.getProperty(None, pID)
+    o = MI.getOntology(None, pID)
+
+    specs_by_viz_type = {
+        "treemap": getTreemapSpecs(d, p, o),
+        "piechart": getPiechartSpecs(d, p, o),
+        "geomap": getGeomapSpecs(d, p, o),
+        "scatterplot": getScatterplotSpecs(d, p, o),
+        "linechart": getLinechartSpecs(d, p, o),
+        # "barchart": getBarchartSpecs(d, p, o),
+        # "network": getNetworkSpecs(d, p, o)
+    }
+
+    for viz_type, specs in specs_by_viz_type.iteritems():
+        if specs:
+            sIDs = MI.postSpecs(pID, specs) 
+            for i, spec in enumerate(specs):
+                spec['sID'] = sIDs[i]
+                del spec['_id']
+    return specs_by_viz_type
 
 # TODO Incorporate ontologies
 def getTreemapSpecs(datasets, properties, ontologies):
