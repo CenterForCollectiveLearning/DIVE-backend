@@ -31,37 +31,75 @@ types = {
     ]
 }
 
-def upload_file(pID, file):
 
-    filename = secure_filename(file.filename)
-    print "Saving file: ", filename
-    path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
-    file.save(path)
-
-    # Insert into project's datasets collection
-    dID = MI.insertDataset(pID, path, file)
-
-    # Get sample data
-    sample, rows, cols, extension, header = get_sample_data(path)
-    types = get_column_types(path)
-    header, columns = read_file(path)
+def get_uploaded_file_data(path, sheet_name=None) :
+    sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
+    types = get_column_types(path, sheet_name)
+    header, columns = read_file(path, sheet_name)
     column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
+    return column_attrs, header, sample, rows, cols, extension
 
-    # Make response
-    json_data = json.jsonify({
-        'status': 'success',
-        'title': filename.split('.')[0],
-        'filename': filename,
-        'dID': dID,
-        'column_attrs': column_attrs,
-        'filename': filename,
-        'header': header,
-        'sample': sample,
-        'rows': rows,
-        'cols': cols,
-        'filetype': extension,
-    })
-    return json_data
+
+# Dataflow: 
+# 1. Save file in uploads/pID directory
+# 2. Save file location in project data collection
+# 3. Return sample
+def upload_file(pID, file):
+    # Save file
+    filename = secure_filename(file.filename)
+    file_type = filename.split('.')[1]
+    path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
+    print "Saving file: ", filename
+    file.save(path)
+    print "Saved file: ", filename
+
+    datasets = []
+    ## Excel files 
+    if file_type.startswith('xls'):
+        print "Opening workbook"
+        book = xlrd.open_workbook(path, on_demand=True)
+        sheet_names = book.sheet_names()
+
+        for name in sheet_names :
+            print "Getting file sample"
+            column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path, name)
+            print "Got file sample, adding to data list"
+
+            if rows > 0 :
+                dID = MI.insertDataset(pID, path, file, name)
+                dataset = {
+                    'title' : filename.split('.')[0] + "#" + name,
+                    'filename' : filename,
+                    'dID' : dID,
+                    'column_attrs' : column_attrs,
+                    'header' : header,
+                    'sample' : sample,
+                    'rows' : rows,
+                    'cols' : cols,
+                    'filetype' : extension
+                }
+
+                datasets.append(dataset)
+    else:                
+        # Insert into project's datasets collection
+        dID = MI.insertDataset(pID, path, file)
+
+        column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path)
+
+        dataset = {
+            'title' : filename.split('.')[0],
+            'filename' : filename,
+            'dID' : dID,
+            'column_attrs' : column_attrs,
+            'header' : header,
+            'sample' : sample,
+            'rows' : rows,
+            'cols' : cols,
+            'filetype' : extension
+        }
+        datasets.append(dataset)
+
+    return datasets
 
 # TODO Strip new lines and quotes
 def read_file(path, sheet_name=None):
@@ -116,7 +154,6 @@ def get_sample_data(path, sheet_name=None):
     f = open(path, 'rU')
     filename = path.rsplit('/')[-1]
     extension = filename.rsplit('.', 1)[1]
-    print extension
 
     ## flat files
     if extension in ['csv', 'tsv', 'txt'] :

@@ -5,14 +5,25 @@ from db import MongoInstance as MI
 import numpy as np
 from visualization_data import getVisualizationData
 
+
+# Calculate some statistical properties of the data that goes into a visualization
+def getVisualizationStats(pID, spec, viz_type):
+    stats = {}
+    viz_data = getVisualizationData(viz_type, spec, {}, pID)
+    num_elements = len(viz_data)
+    counts = [e['count'] for e in viz_data]
+    std = np.std(counts)
+    stats['num_elements'] = num_elements
+    stats['std'] = std
+    return stats
+
+
 #####################################################################
 # 1. GROUP every entity by a non-unique attribute (for factors, group by factors but score by number of distinct. For continuous, discretize the range) 
 #   1b. If attribute represents another object, also add aggregation by that object's attributes
 # 2. AGGREGATE by some function (could be count)
 # 3. QUERY by another non-unique attribute
 #####################################################################
-
-
 def getVisualizationSpecs(pID):
     d = MI.getData(None, pID)
     p = MI.getProperty(None, pID)
@@ -30,7 +41,6 @@ def getVisualizationSpecs(pID):
 
     if existing_specs:
         for spec in existing_specs:
-            print spec
             viz_type = spec['viz_type']
             specs_by_viz_type[viz_type].append(spec)
     else:
@@ -53,6 +63,7 @@ def getVisualizationSpecs(pID):
                     spec['sID'] = sIDs[i]
                     del spec['_id']
     return specs_by_viz_type
+
 
 # TODO Incorporate ontologies
 def getTreemapSpecs(pID, datasets, properties, ontologies):
@@ -77,17 +88,9 @@ def getTreemapSpecs(pID, datasets, properties, ontologies):
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
-                    'stats': {}
+                    
                 }
-
-                # Get stats about visualization
-                viz_data = getVisualizationData('treemap', spec, {}, pID)
-                num_elements = len(viz_data)
-                counts = [e['count'] for e in viz_data]
-                std = np.std(counts)
-                spec['stats']['num_elements'] = num_elements
-                spec['stats']['std'] = std
-
+                spec['stats'] = getVisualizationStats(pID, spec, 'treemap')
                 specs.append(spec)
     return specs
 
@@ -112,12 +115,14 @@ def getGeomapSpecs(pID, datasets, properties, ontologies):
         for index in non_uniques:
             type = types[index]
             if not is_numeric(type) and (type == 'country'):
-                specs.append({
+                spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
-                    'chosen': False
-                })
+                    'chosen': False,
+                }
+                spec['stats'] = getVisualizationStats(pID, spec, 'geomap')
+                specs.append(spec)
     return specs
 
 
@@ -159,10 +164,12 @@ def getScatterplotSpecs(pID, datasets, properties, ontologies):
             title = headers[index]
 
             if is_numeric(type):
-                specs.append({
+                spec = {
                     'x': {'index': index, 'title': headers[index]},
                     'object': {'dID': dID, 'title': dataset_titles[dID]},
                     'aggregation': True,
-                    'chosen': False
-                })
+                    'chosen': False,
+                }
+                spec['stats'] = getVisualizationStats(pID, spec, 'scatterplot')
+                specs.append(spec)                
     return specs

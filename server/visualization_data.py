@@ -61,8 +61,7 @@ def getTreemapData(spec, conditional, pID):
     dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
     filename = dataset['filename']
     sheet_name = dataset['sheet']
-
-    path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
+    path = dataset['path']
 
     header, columns = read_file(path, sheet_name)
 
@@ -112,7 +111,7 @@ def getScatterplotData(spec, conditional, pID):
     dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
     filename = dataset['filename']
     sheet_name = dataset['sheet']
-    path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
+    path = dataset['path']
     header, columns = read_file(path, sheet_name)
 
     data = {}
@@ -121,7 +120,7 @@ def getScatterplotData(spec, conditional, pID):
         data[field] = columns[i]
     df = pd.DataFrame(data)
 
-    if conditional[dID]:
+    if conditional.get(dID):
         # Convert from {title: val} to {title: [val]}
         # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
         for k, v in conditional[dID].iteritems():
@@ -169,7 +168,7 @@ def getConditionalData(spec, dID, pID):
     dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
     filename = dataset['filename']
     sheet = dataset['sheet']
-    path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
+    path = dataset['path']
     header, columns = read_file(path, sheet)
     data = {}
     for i in range(len(header)) :

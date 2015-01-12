@@ -74,104 +74,24 @@ def set_allow_origin(resp):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-def upload_file_data(path, sheet_name=None) :
-    sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
-    types = get_column_types(path, sheet_name)
-    header, columns = read_file(path, sheet_name)
-    column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
 
-    return column_attrs, header, sample, rows, cols, extension
 
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('pID', type=str, required=True)
 class UploadFile(Resource):
-    # Dataflow: 
-    # 1. Save file in uploads/pID directory
-    # 2. Save file location in project data collection
-    # 3. Return sample
     def post(self):
         pID = request.form.get('pID').strip().strip('"')
         file = request.files.get('file')
 
         if file and allowed_file(file.filename):
-            # Save file
-            filename = secure_filename(file.filename)
-            print "Saving file: ", filename
-            path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
-            file.save(path)
-
-            file_type = file.filename.split('.')[1]
-            print file_type
-
-            datasets = []
-
-            ## Excel files 
-            if file_type.startswith('xls') :
-                book = xlrd.open_workbook(path, on_demand=True)
-                sheet_names = book.sheet_names()
-
-                for name in sheet_names :
-
-                    column_attrs, header, sample, rows, cols, extension = upload_file_data(path, name)
-                    
-                    if rows > 0 :
-                        dID = MI.insertDataset(pID, path, file, name)
-                        dataset = {
-                            'title' : filename.split('.')[0] + "#" + name,
-                            'filename' : filename,
-                            'dID' : dID,
-                            'column_attrs' : column_attrs,
-                            'header' : header,
-                            'sample' : sample,
-                            'rows' : rows,
-                            'cols' : cols,
-                            'filetype' : extension
-                        }
-
-                        datasets.append(dataset)
-            else :                
-                # Insert into project's datasets collection
-
-                dID = MI.insertDataset(pID, path, file)
-
-                column_attrs, header, sample, rows, cols, extension = upload_file(path)
-
-                dataset = {
-                    'title' : filename.split('.')[0],
-                    'filename' : filename,
-                    'dID' : dID,
-                    'column_attrs' : column_attrs,
-                    'header' : header,
-                    'sample' : sample,
-                    'rows' : rows,
-                    'cols' : cols,
-                    'filetype' : extension
-                }
-
-                datasets.append(dataset)
-
-           
-            # Make response
-            # json_data = json.jsonify({
-            #     'status': 'success',
-            #     'title': filename.split('.')[0],
-            #     'filename': filename,
-            #     'dID': dID,
-            #     'column_attrs': column_attrs,
-            #     'filename': filename,
-            #     'header': header,
-            #     'sample': sample,
-            #     'rows': rows,
-            #     'cols': cols,
-            #     'filetype': extension,
-            # })
+            # Get document with metadata and some samples
+            datasets = upload_file(pID, file)
             json_data = json.jsonify({
-                    'status' : 'success',
-                    'datasets' : datasets
-                })
+                'status': 'success',
+                'datasets': datasets
+            })
             response = make_response(json_data)
-            response = response.set_cookie('file', file.filename)
             return response
         return json.jsonify({'status': 'Upload failed'})
 
