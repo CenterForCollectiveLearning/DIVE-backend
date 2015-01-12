@@ -74,10 +74,6 @@ def compute_properties(pID, datasets):
 
         # delim = get_delimiter(path)
 
-        # is_unique_dict[dID] = [detect_unique_list(col) for col in columns]    
-        # headers_dict[dID] = header
-        # raw_columns_dict[dID] = [list(col) for col in columns]
-
         # Statistical properties
         # df = pd.read_table(path, sep=delim)
         df_stats = df.describe()
@@ -103,7 +99,6 @@ def compute_properties(pID, datasets):
         headers_dict[dID] = dataset_properties['headers']
         is_unique_dict[dID] = dataset_properties['uniques']
         stats_dict[dID] = dataset_properties['stats']
-
         tID = MI.upsertProperty(dID, pID, dataset_properties)
 
     return stats_dict, types_dict, headers_dict, is_unique_dict

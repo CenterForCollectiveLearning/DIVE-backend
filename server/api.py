@@ -10,25 +10,24 @@ import xlrd
 from flask import Flask, render_template, redirect, url_for, request, make_response, json
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
-from werkzeug.utils import secure_filename
 
 from db import MongoInstance as MI
-from data import get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
+from data import upload_file, get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
 from analysis import detect_unique_list, compute_properties, compute_ontologies
-from specifications import *
+from specifications import getVisualizationSpecs
 from visualization_data import getVisualizationData, getConditionalData
+from config import config
 from utility import *
-
 
 PORT = 8888
 
 app = Flask(__name__, static_path='/static')
 api = Api(app)
 
-TEST_DATA_FOLDER = os.path.join(os.curdir, 'test_data')
+TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
 app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 
-UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
+UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
@@ -75,7 +74,7 @@ def set_allow_origin(resp):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-def upload_file(path, sheet_name=None) :
+def upload_file_data(path, sheet_name=None) :
     sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
     types = get_column_types(path, sheet_name)
     header, columns = read_file(path, sheet_name)
@@ -114,7 +113,7 @@ class UploadFile(Resource):
 
                 for name in sheet_names :
 
-                    column_attrs, header, sample, rows, cols, extension = upload_file(path, name)
+                    column_attrs, header, sample, rows, cols, extension = upload_file_data(path, name)
                     
                     if rows > 0 :
                         dID = MI.insertDataset(pID, path, file, name)
@@ -172,7 +171,7 @@ class UploadFile(Resource):
                     'datasets' : datasets
                 })
             response = make_response(json_data)
-            response.set_cookie('file', filename)
+            response = response.set_cookie('file', file.filename)
             return response
         return json.jsonify({'status': 'Upload failed'})
 
@@ -357,27 +356,8 @@ class Specification(Resource):
         args = specificationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
 
-        d = MI.getData(None, pID)
-        p = MI.getProperty(None, pID)
-        o = MI.getOntology(None, pID)
-
-        viz_types = {
-            "treemap": getTreemapSpecs(d, p, o),
-            "piechart": getPiechartSpecs(d, p, o),
-            "geomap": getGeomapSpecs(d, p, o),
-            # "barchart": getBarchartSpecs(d, p, o),
-            "scatterplot": getScatterplotSpecs(d, p, o),
-            "linechart": getLinechartSpecs(d, p, o),
-            # "network": getNetworkSpecs(d, p, o)
-        }
-
-        for viz_type, specs in viz_types.iteritems():
-            if specs:
-                sIDs = MI.postSpecs(pID, specs) 
-                for i, spec in enumerate(specs):
-                    spec['sID'] = sIDs[i]
-                    del spec['_id']
-        return viz_types
+        specs_by_viz_type = getVisualizationSpecs(pID)
+        return specs_by_viz_type
 
 
 #####################################################################
@@ -399,7 +379,7 @@ class Visualization_Data(Resource):
         spec = json.loads(args.get('spec'))
         conditional = json.loads(args.get('conditional'))
 
-        return json.jsonify(getVisualizationData(type, spec, conditional, pID))
+        return json.jsonify({'result': getVisualizationData(type, spec, conditional, pID)})
 
 
 #####################################################################

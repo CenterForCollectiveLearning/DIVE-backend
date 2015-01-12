@@ -4,12 +4,17 @@ Functions for reading, sampling, and detecting types of datasets
 No manipulation or calculation, only description
 '''
 
+import os
 import re
 import xlrd
 import codecs
 import pandas as pd
 import dateutil.parser as dparser
 from flask import json
+
+from config import config
+from werkzeug.utils import secure_filename
+from db import MongoInstance as MI
 
 types = {
     'numeric': [
@@ -25,6 +30,38 @@ types = {
         'continent',
     ]
 }
+
+def upload_file(pID, file):
+
+    filename = secure_filename(file.filename)
+    print "Saving file: ", filename
+    path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
+    file.save(path)
+
+    # Insert into project's datasets collection
+    dID = MI.insertDataset(pID, path, file)
+
+    # Get sample data
+    sample, rows, cols, extension, header = get_sample_data(path)
+    types = get_column_types(path)
+    header, columns = read_file(path)
+    column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
+
+    # Make response
+    json_data = json.jsonify({
+        'status': 'success',
+        'title': filename.split('.')[0],
+        'filename': filename,
+        'dID': dID,
+        'column_attrs': column_attrs,
+        'filename': filename,
+        'header': header,
+        'sample': sample,
+        'rows': rows,
+        'cols': cols,
+        'filetype': extension,
+    })
+    return json_data
 
 # TODO Strip new lines and quotes
 def read_file(path, sheet_name=None):
