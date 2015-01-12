@@ -8,6 +8,7 @@ import codecs
 import pandas as pd
 import dateutil.parser as dparser
 from collections import OrderedDict  # Get unique elements of list while preserving order
+from flask import json
 
 types = {
     'numeric': [
@@ -109,13 +110,30 @@ def read_file(path):
         book = xlrd.open_workbook(path)
         sheet = book.sheet_by_index(0)
 
-        ## take care of date values ? idk
         for i in range(sheet.ncols) :
             col = sheet.col_values(i)
-            columns.append(pd.Series(col))
+            columns.append(pd.Series(col[1:]))
 
-        header = sheet.row_values(0)
+        header = [str(x) for x in sheet.row_values(0)]
     
+    elif extension == 'json' :
+        f = open(path, 'rU')
+        json_data = json.load(f)
+
+        header = json_data[0].keys()
+
+        columns = {}
+
+        for field in header :
+            columns[field] = []
+
+        for i in range(len(json_data)) :
+            for field in header :
+                columns[field].append(json_data[i][field])
+
+        for field in header :
+            columns[field] = pd.Series(columns[field])
+
     return header, columns
 # def read_file(path):
 #     delim = get_delimiter(path)
@@ -172,7 +190,7 @@ def get_column_types(path):
         book = xlrd.open_workbook(path)
         sheet = book.sheet_by_index(0)
         sample_cells = sheet.row(1)
-
+        
         types = []        
         for cell in sample_cells :
 
@@ -181,8 +199,16 @@ def get_column_types(path):
             if cell.ctype == xlrd.XL_CELL_DATE :
                 year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
                 value_string = '/'.join([str(x) for x in [month, day, year]])
-
             types.append(get_variable_type(value_string))
+
+    # json files
+
+    elif extension == 'json' :
+        json_data = json.load(f)
+        sample_value = json_data[1].values()
+        types = [get_variable_type(str(v)) for v in sample_value]
+
+    f.close()
 
     return types
 # # Utility function to get a list of column types in a dataset given a file path
@@ -202,7 +228,6 @@ def get_sample_data(path):
     f = open(path, 'rU')
     filename = path.rsplit('/')[-1]
     extension = filename.rsplit('.', 1)[1]
-    print extension
 
     ## flat files
     if extension in ['csv', 'tsv', 'txt'] :
@@ -249,7 +274,23 @@ def get_sample_data(path):
                     sample[i].append(date_string)
                 else :
                     sample[i].append(cell.value)
-            
+    
+    ## json files
+    elif extension == 'json' :
+        json_data = json.load(f)
+
+        header = json_data[0].keys()
+        rows = len(json_data) + 1 ## number of observations, or actual number of rows??
+        cols = len(header)
+
+        sample = {}
+        for i in range(min(20, len(json_data))) :
+            row = json_data[i]
+            sample[i] = [row[field] for field in header]
+
+
+    f.close()
+    print filename
     return sample, rows, cols, extension, header
 # # function to get sample from data file
 # def get_sample_data(path):

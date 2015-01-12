@@ -2,7 +2,6 @@ import os
 from os import listdir
 from os.path import isfile, join
 import re
-import json
 import shutil
 from random import sample
 
@@ -28,7 +27,7 @@ app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls'])
+ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
 
 def allowed_file(filename):
@@ -100,6 +99,7 @@ class UploadFile(Resource):
 
             # Get sample data
             sample, rows, cols, extension, header = get_sample_data(path) ## ******, added xls
+            print rows, cols
             types = get_column_types(path) ## ******
 
             header, columns = read_file(path) # *****
