@@ -1,3 +1,4 @@
+from data import is_numeric
 from utility import *
 from itertools import combinations
 
@@ -7,6 +8,10 @@ from itertools import combinations
 # 2. AGGREGATE by some function (could be count)
 # 3. QUERY by another non-unique attribute
 #####################################################################
+
+
+# def getVisualizationSpecs('treemap'):
+#     return
 
 # TODO Incorporate ontologies
 def getTreemapSpecs(datasets, properties, ontologies):

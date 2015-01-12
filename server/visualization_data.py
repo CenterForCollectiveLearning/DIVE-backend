@@ -1,8 +1,13 @@
+'''
+Functions for returning the data corresponding to a given visualization type and specification
+'''
 import os
 from flask import Flask  # Don't do this
 from utility import *
 from db import MongoInstance as MI
 from bson.objectid import ObjectId
+
+from data import get_delimiter
 
 import numpy as np
 import pandas as pd
@@ -86,7 +91,6 @@ def getGeoData(spec, conditional, pID):
 
 def getPiechartData(spec, conditional, pID):
     return getTreemapData(spec, conditional, pID)
-
 
 def getBarchartData(spec, conditional, pID):
     return getScatterplotData(spec, conditional, pID)

@@ -8,10 +8,12 @@ import random
 import time
 import json
 
+
 def formatObjectIDs(collectionName, results):
     for result in results: # For each result is passed, convert the _id to the proper mID, cID, etc.
         result[collectionName[0]+'ID'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
     return results
+
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
@@ -19,8 +21,14 @@ class mongoInstance(object):
         return str(MongoInstance.client['dive'].projects.find_one({'formattedTitle': formatted_title})['_id'])
 
     # Dataset Insertion
-    def insertDataset(self, pID, fileStorage):
-        return str(MongoInstance.client[pID].datasets.insert({'filename': fileStorage.filename, 'title': fileStorage.filename.split('.')[0]}))
+    def insertDataset(self, pID, path, fileStorage):
+        dataset_doc = {
+            'path': path,
+            'filename': fileStorage.filename, 
+            'title': fileStorage.filename.split('.')[0],
+            'type': fileStorage.filename.split('.')[1]
+        }
+        return str(MongoInstance.client[pID].datasets.insert(dataset_doc))
 
     # Dataset Retrieval
     def getData(self, find_doc, pID):
