@@ -18,22 +18,40 @@ def getVisualizationSpecs(pID):
     p = MI.getProperty(None, pID)
     o = MI.getOntology(None, pID)
 
+    existing_specs = MI.getSpecs(pID, {})
+
     specs_by_viz_type = {
-        "treemap": getTreemapSpecs(pID, d, p, o),
-        "piechart": getPiechartSpecs(pID, d, p, o),
-        "geomap": getGeomapSpecs(pID, d, p, o),
-        "scatterplot": getScatterplotSpecs(pID, d, p, o),
-        "linechart": getLinechartSpecs(pID, d, p, o),
-        # "barchart": getBarchartSpecs(d, p, o),
-        # "network": getNetworkSpecs(d, p, o)
+        "treemap": [],
+        "piechart": [],
+        "geomap": [],
+        "scatterplot": [],
+        "linechart": []
     }
 
-    for viz_type, specs in specs_by_viz_type.iteritems():
-        if specs:
-            sIDs = MI.postSpecs(pID, specs) 
-            for i, spec in enumerate(specs):
-                spec['sID'] = sIDs[i]
-                del spec['_id']
+    if existing_specs:
+        for spec in existing_specs:
+            print spec
+            viz_type = spec['viz_type']
+            specs_by_viz_type[viz_type].append(spec)
+    else:
+        specs_by_viz_type = {
+            "treemap": getTreemapSpecs(pID, d, p, o),
+            "piechart": getPiechartSpecs(pID, d, p, o),
+            "geomap": getGeomapSpecs(pID, d, p, o),
+            "scatterplot": getScatterplotSpecs(pID, d, p, o),
+            "linechart": getLinechartSpecs(pID, d, p, o),
+            # "barchart": getBarchartSpecs(d, p, o),
+            # "network": getNetworkSpecs(d, p, o)
+        }
+
+        for viz_type, specs in specs_by_viz_type.iteritems():
+            if specs:
+                for spec in specs:
+                    spec['viz_type'] = viz_type
+                sIDs = MI.postSpecs(pID, specs) 
+                for i, spec in enumerate(specs):
+                    spec['sID'] = sIDs[i]
+                    del spec['_id']
     return specs_by_viz_type
 
 # TODO Incorporate ontologies
@@ -55,11 +73,10 @@ def getTreemapSpecs(pID, datasets, properties, ontologies):
             type = types[index]
             if not is_numeric(type):
                 spec = {
-                    'viz_type': 'treemap',
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
-                    'chosen': False,
+                    'chosen': None,
                     'stats': {}
                 }
 
@@ -96,7 +113,6 @@ def getGeomapSpecs(pID, datasets, properties, ontologies):
             type = types[index]
             if not is_numeric(type) and (type == 'country'):
                 specs.append({
-                    'viz_type': 'treemap',
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
@@ -144,7 +160,6 @@ def getScatterplotSpecs(pID, datasets, properties, ontologies):
 
             if is_numeric(type):
                 specs.append({
-                    'viz_type': 'scatterplot',
                     'x': {'index': index, 'title': headers[index]},
                     'object': {'dID': dID, 'title': dataset_titles[dID]},
                     'aggregation': True,
