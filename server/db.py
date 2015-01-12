@@ -50,23 +50,27 @@ class mongoInstance(object):
         print len([str(sID_obj) for sID_obj in resp])
         return [str(sID_obj) for sID_obj in resp]
 
-    def chooseSpec(self, pID, sID, conditional):
-        # MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(sID)})
-        info = MongoInstance.client[pID].specifications.find_and_modify({'sID': sID}, {'$set': {'chosen': True}}, upsert=True, new=True)
-        return str(MongoInstance.client[pID].exported.insert({'pID': pID, 'sID': sID, 'conditional': conditional}))
+
+    def getSpecs(self, pID, find_doc):
+        return formatObjectIDs('specification', [s for s in MongoInstance.client[pID].specifications.find(find_doc) ])
 
     # Exported visualizations
     def getExportedSpecs(self, find_doc, pID):
-        print 'find_doc:', find_doc
-        exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
-        print exported_specs
-        for e in exported_specs:
-            e['spec'] = formatObjectIDs('spec', [MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(e['sID'])})])[0]
-        return formatObjectIDs('exported', [ e for e in exported_specs ])
+        find_doc['chosen'] = True
+        exported_specs = [ e for e in MongoInstance.client[pID].specifications.find(find_doc)]
+        return formatObjectIDs('specifications', exported_specs)
+
+        # exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
+        # for e in exported_specs:
+        #     e['spec'] = formatObjectIDs('spec', [ MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(e['sID'])}) ])[0]
+        # return formatObjectIDs('exported', [ e for e in exported_specs ])
+
+    def chooseSpec(self, pID, sID, conditional):
+        MongoInstance.client[pID].specifications.find_and_modify({'_id': ObjectId(sID)}, {'$set': {'chosen': True, 'conditional': conditional}}, upsert=True, new=True)
+        return sID
 
     def rejectSpec(self, pID, sID):
-        info = MongoInstance.client[pID].specifications.find_and_modify({'sID': sID}, {'$set': {'chosen': False}}, upsert=True, new=True)
-        sID = str(info['_id'])
+        MongoInstance.client[pID].specifications.find_and_modify({'_id': ObjectId(sID)}, {'$set': {'chosen': False}}, upsert=True, new=True)
         return sID
 
     # Project Editing
@@ -79,13 +83,11 @@ class mongoInstance(object):
         return formatObjectIDs('project', [ p for p in projects_collection.find(doc)])
 
     def deleteProject(self, pID):
-        print "In deleteProject", pID
         # Drop top-level DB
         MongoInstance.client.drop_database(pID)
 
         # Drop DB document in DIVE DB
         MongoInstance.client['dive'].projects.remove({'_id': ObjectId(pID)})
-
         return
 
     def upsertProperty(self, dID, pID, properties):

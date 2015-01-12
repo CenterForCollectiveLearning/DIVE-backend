@@ -355,7 +355,6 @@ class Specification(Resource):
     def get(self):
         args = specificationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-
         specs_by_viz_type = getVisualizationSpecs(pID)
         return specs_by_viz_type
 
