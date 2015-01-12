@@ -6,15 +6,12 @@ from flask import Flask  # Don't do this
 from utility import *
 from db import MongoInstance as MI
 from bson.objectid import ObjectId
+from config import config
 
 from data import get_delimiter
 
 import numpy as np
 import pandas as pd
-
-app = Flask(__name__, static_path='/static')
-UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 vizToRequiredParams = {
@@ -62,11 +59,11 @@ def getTreemapData(spec, conditional, pID):
 
     # Load dataset (GENERALIZE THIS)
     filename = MI.getData({'_id': ObjectId(dID)}, pID)[0]['filename']
-    path = os.path.join(app.config['UPLOAD_FOLDER'], pID, filename)
+    path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
     delim = get_delimiter(path)
     df = pd.read_table(path, sep=delim)
 
-    if conditional[dID]:
+    if conditional.get(dID):
         # Convert from {title: val} to {title: [val]}
         # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
         for k, v in conditional[dID].iteritems():
@@ -84,7 +81,7 @@ def getTreemapData(spec, conditional, pID):
             groupby: row[0],
             'count': np.asscalar(np.int16(row[1]))
         })
-    return {'result': result}
+    return result
 
 def getGeoData(spec, conditional, pID):
     return getTreemapData(spec, conditional, pID)
@@ -141,7 +138,7 @@ def getScatterplotData(spec, conditional, pID):
 
         result = [{x: x_val, y: y_val} for (x_val, y_val) in zip(df[x], df[y])]
 
-    return {'result': result}
+    return result
 
 
 def getLinechartData(spec, conditional, pID):
