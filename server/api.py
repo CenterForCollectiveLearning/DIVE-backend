@@ -126,14 +126,12 @@ class Data(Resource):
             for d in datasets:
                 path = os.path.join(app.config['UPLOAD_FOLDER'], pID, d['filename'])
 
-                sheet_name = d['sheet']
-
-                header, columns = read_file(path, sheet_name)
+                header, columns = read_file(path)
                 unique_cols = [detect_unique_list(col) for col in columns]
     
                 # make response
-                sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
-                types = get_column_types(path, sheet_name)
+                sample, rows, cols, extension, header = get_sample_data(path)
+                types = get_column_types(path)
 
                 column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
 

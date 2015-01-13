@@ -11,6 +11,7 @@ import codecs
 import pandas as pd
 import dateutil.parser as dparser
 from flask import json
+import csv
 
 from config import config
 from werkzeug.utils import secure_filename
@@ -31,11 +32,10 @@ types = {
     ]
 }
 
-
-def get_uploaded_file_data(path, sheet_name=None) :
-    sample, rows, cols, extension, header = get_sample_data(path, sheet_name)
-    types = get_column_types(path, sheet_name)
-    header, columns = read_file(path, sheet_name)
+def get_uploaded_file_data(path) :
+    sample, rows, cols, extension, header = get_sample_data(path)
+    types = get_column_types(path)
+    header, columns = read_file(path)
     column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
     return column_attrs, header, sample, rows, cols, extension
 
@@ -45,50 +45,28 @@ def get_uploaded_file_data(path, sheet_name=None) :
 # 2. Save file location in project data collection
 # 3. Return sample
 def upload_file(pID, file):
-    # Save file
+    # Save file as csv
+
     filename = secure_filename(file.filename)
-    file_type = filename.split('.')[1]
+    file_type = filename.rsplit('.', 1)[1]
     path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
-    print "Saving file: ", filename
-    file.save(path)
-    print "Saved file: ", filename
 
     datasets = []
-    ## Excel files 
-    if file_type.startswith('xls'):
-        print "Opening workbook"
-        book = xlrd.open_workbook(path, on_demand=True)
-        sheet_names = book.sheet_names()
 
-        for name in sheet_names :
-            print "Getting file sample"
-            column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path, name)
-            print "Got file sample, adding to data list"
+    if file_type in ['csv', 'tsv', 'txt'] :
+        path2 = path + ".csv"
+        filename2 = filename + ".csv"
 
-            if rows > 0 :
-                dID = MI.insertDataset(pID, path, file, name)
-                dataset = {
-                    'title' : filename.split('.')[0] + "#" + name,
-                    'filename' : filename,
-                    'dID' : dID,
-                    'column_attrs' : column_attrs,
-                    'header' : header,
-                    'sample' : sample,
-                    'rows' : rows,
-                    'cols' : cols,
-                    'filetype' : extension
-                }
+        print "Saving file: ", filename
+        file.save(path2)
+        print "Saved file: ", filename
 
-                datasets.append(dataset)
-    else:                
-        # Insert into project's datasets collection
-        dID = MI.insertDataset(pID, path, file)
-
-        column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path)
+        dID = MI.insertDataset(pID, path2, filename2)
+        column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
 
         dataset = {
-            'title' : filename.split('.')[0],
-            'filename' : filename,
+            'title' : filename2.rsplit('.', 1)[0],
+            'filename' : filename2,
             'dID' : dID,
             'column_attrs' : column_attrs,
             'header' : header,
@@ -99,6 +77,85 @@ def upload_file(pID, file):
         }
         datasets.append(dataset)
 
+
+    elif file_type.startswith('xls') :
+
+        print "Saving file: ", filename
+        file.save(path)
+        print "Saved file: ", filename
+
+        book = xlrd.open_workbook(path)
+        sheet_names = book.sheet_names()
+
+        for name in sheet_names :
+            sheet = book.sheet_by_name(name)
+            path2 = path + "_" + name + ".csv"
+            filename2 = filename + "_" + name + ".csv"
+
+            csv_file = open(path2, 'wb')
+            wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+            for rn in xrange(sheet.nrows) :
+                wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
+            csv_file.close()
+
+            column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
+
+            dID = MI.insertDataset(pID, path2, filename2)
+            dataset = {
+                'title' : filename2.rsplit('.', 1)[0],
+                'filename' : filename2,
+                'dID' : dID,
+                'column_attrs' : column_attrs,
+                'header' : header,
+                'sample' : sample,
+                'rows' : rows,
+                'cols' : cols,
+                'filetype' : extension
+            }
+            datasets.append(dataset)
+
+    elif file_type == 'json' :
+
+        print "Saving file: ", filename
+        file.save(path)
+        print "Saved file: ", filename
+
+        f = open(path, 'rU')
+        json_data = json.load(f)
+
+        path2 = path + ".csv"
+        filename2 = filename + ".csv"
+
+        csv_file = open(path2, 'wb')
+        wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+
+        header = json_data[0].keys()
+
+        wr.writerow([v.encode('utf-8') for v in header])
+
+        for i in range(len(json_data)) :
+            row = []
+            for field in header :
+                row.append(json_data[i][field])
+            wr.writerow([unicode(v).encode('utf-8') for v in row])
+        csv_file.close()
+
+        dID = MI.insertDataset(pID, path + ".csv", filename2)
+        column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
+
+        dataset = {
+            'title' : filename2.rsplit('.', 1)[0],
+            'filename' : filename2,
+            'dID' : dID,
+            'column_attrs' : column_attrs,
+            'header' : header,
+            'sample' : sample,
+            'rows' : rows,
+            'cols' : cols,
+            'filetype' : extension
+        }
+
+        datasets.append(dataset)
     return datasets
 
 # TODO Strip new lines and quotes

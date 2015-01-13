@@ -21,17 +21,18 @@ class mongoInstance(object):
         return str(MongoInstance.client['dive'].projects.find_one({'formattedTitle': formatted_title})['_id'])
 
     # Dataset Insertion
-    def insertDataset(self, pID, path, fileStorage, sheet_name=None):
-        title = fileStorage.filename.split('.')[0]
-        if sheet_name is not None :
-            title += "#" + sheet_name
+    def insertDataset(self, pID, path, filename):
+
+        title = filename.rsplit('.', 1)[0]
+        file_type = filename.rsplit('.', 1)[1]
+
         dataset_doc = {
             'path': path,
-            'filename': fileStorage.filename, 
+            'filename': filename, 
             'title': title,
-            'type': fileStorage.filename.split('.')[1],
-            'sheet' : sheet_name
+            'type': file_type
         }
+
         return str(MongoInstance.client[pID].datasets.insert(dataset_doc))
 
     # Dataset Retrieval
