@@ -159,7 +159,7 @@ def upload_file(pID, file):
     return datasets
 
 # TODO Strip new lines and quotes
-def read_file(path, sheet_name=None):
+def read_file(path):
     extension = path.rsplit('.', 1)[1]
 
     if extension in ['csv', 'tsv', 'txt'] :
@@ -174,40 +174,40 @@ def read_file(path, sheet_name=None):
 
         header = list(df.columns.values)
 
-    elif extension.startswith('xls'):
-        columns = []
-        book = xlrd.open_workbook(path, on_demand=True)
-        sheet = book.sheet_by_name(sheet_name)
+    # elif extension.startswith('xls'):
+    #     columns = []
+    #     book = xlrd.open_workbook(path, on_demand=True)
+    #     sheet = book.sheet_by_name(sheet_name)
 
-        ## take care of date values ? idk
-        for i in range(sheet.ncols) :
-            col = sheet.col_values(i)
-            columns.append(pd.Series(col))
-        header = sheet.row_values(0)
+    #     ## take care of date values ? idk
+    #     for i in range(sheet.ncols) :
+    #         col = sheet.col_values(i)
+    #         columns.append(pd.Series(col))
+    #     header = sheet.row_values(0)
 
-    elif extension == 'json':
-        f = open(path, 'rU')
-        json_data = json.load(f)
+    # elif extension == 'json':
+    #     f = open(path, 'rU')
+    #     json_data = json.load(f)
 
-        header = json_data[0].keys()
+    #     header = json_data[0].keys()
 
-        cols = {}
+    #     cols = {}
 
-        for field in header :
-            cols[field] = []
+    #     for field in header :
+    #         cols[field] = []
 
-        for i in range(len(json_data)) :
-            for field in header :
-                cols[field].append(json_data[i][field])
+    #     for i in range(len(json_data)) :
+    #         for field in header :
+    #             cols[field].append(json_data[i][field])
 
-        columns = []
-        for field in header :
-            columns.append(pd.Series(cols[field]))
+    #     columns = []
+    #     for field in header :
+    #         columns.append(pd.Series(cols[field]))
 
     return header, columns
 
 
-def get_sample_data(path, sheet_name=None):
+def get_sample_data(path):
     f = open(path, 'rU')
     filename = path.rsplit('/')[-1]
     extension = filename.rsplit('.', 1)[1]
@@ -234,40 +234,40 @@ def get_sample_data(path, sheet_name=None):
 
         header = header.strip().split(delim)
 
-    ## excel files
-    elif extension.startswith('xls') :
-        book = xlrd.open_workbook(path, on_demand=True)
-        ## TODO: multiple sheets? right now only take first sheet
+    # ## excel files
+    # elif extension.startswith('xls') :
+    #     book = xlrd.open_workbook(path, on_demand=True)
+    #     ## TODO: multiple sheets? right now only take first sheet
 
-        sheet = book.sheet_by_name(sheet_name)
-        header = sheet.row_values(0)
-        rows = sheet.nrows
-        cols = sheet.ncols
+    #     sheet = book.sheet_by_name(sheet_name)
+    #     header = sheet.row_values(0)
+    #     rows = sheet.nrows
+    #     cols = sheet.ncols
 
-        sample = {}
-        for i in range(min(20, sheet.nrows)) :
+    #     sample = {}
+    #     for i in range(min(20, sheet.nrows)) :
 
-            sample[i] = []
-            row = sheet.row(i+1)
-            for cell in row :
-                if cell.ctype == xlrd.XL_CELL_DATE :
-                    year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
-                    date_string = '/'.join([str(x) for x in [month, day, year]])
-                    sample[i].append(date_string)
-                else :
-                    sample[i].append(cell.value)
+    #         sample[i] = []
+    #         row = sheet.row(i+1)
+    #         for cell in row :
+    #             if cell.ctype == xlrd.XL_CELL_DATE :
+    #                 year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
+    #                 date_string = '/'.join([str(x) for x in [month, day, year]])
+    #                 sample[i].append(date_string)
+    #             else :
+    #                 sample[i].append(cell.value)
     
-    elif extension == 'json':
-        json_data = json.load(f)
+    # elif extension == 'json':
+    #     json_data = json.load(f)
 
-        header = json_data[0].keys()
-        rows = len(json_data) + 1 ## number of observations, or actual number of rows??
-        cols = len(header)
+    #     header = json_data[0].keys()
+    #     rows = len(json_data) + 1 ## number of observations, or actual number of rows??
+    #     cols = len(header)
 
-        sample = {}
-        for i in range(min(20, len(json_data))) :
-            row = json_data[i]
-            sample[i] = [row[field] for field in header]
+    #     sample = {}
+    #     for i in range(min(20, len(json_data))) :
+    #         row = json_data[i]
+    #         sample[i] = [row[field] for field in header]
 
     f.close()     
     return sample, rows, cols, extension, header
@@ -336,26 +336,29 @@ def get_column_types(path, sheet_name=None):
         delim = get_delimiter(path)
         types = [get_variable_type(v) for v in sample_line.split(delim)]
     
-    # excel files
-    elif extension.startswith('xls') :
-        book = xlrd.open_workbook(path, on_demand=True)
-        sheet = book.sheet_by_name(sheet_name)
-        sample_cells = sheet.row(1)
+    # # excel files
+    # elif extension.startswith('xls') :
+    #     book = xlrd.open_workbook(path, on_demand=True)
+    #     sheet = book.sheet_by_name(sheet_name)
+    #     sample_cells = sheet.row(1)
 
-        types = []        
-        for cell in sample_cells :
+    #     types = []        
+    #     for cell in sample_cells :
 
-            value_string = str(cell.value)
+    #         value_string = str(cell.value)
 
-            if cell.ctype == xlrd.XL_CELL_DATE :
-                year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
-                value_string = '/'.join([str(x) for x in [month, day, year]])
+    #         if cell.ctype == xlrd.XL_CELL_DATE :
+    #             year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
+    #             value_string = '/'.join([str(x) for x in [month, day, year]])
 
-            types.append(get_variable_type(value_string))
+    #         types.append(get_variable_type(value_string))
 
-    elif extension == 'json' :
-        json_data = json.load(f)
-        sample_value = json_data[1].values()
-        types = [get_variable_type(str(v)) for v in sample_value]
+    # elif extension == 'json' :
+    #     json_data = json.load(f)
+    #     sample_value = json_data[1].values()
+    #     types = [get_variable_type(str(v)) for v in sample_value]
 
+    f.close()
     return types
+
+
