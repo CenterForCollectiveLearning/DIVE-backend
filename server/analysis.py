@@ -60,8 +60,8 @@ def compute_properties(pID, datasets):
     for dataset in datasets:
         dID = dataset['dID']
         path = dataset['path']
-        sheet = dataset['sheet']
-        header, columns = read_file(path, sheet)
+        # sheet = dataset['sheet']
+        header, columns = read_file(path)
         print type(columns)
         data = {}
         for i in range(len(header)) :
@@ -86,7 +86,7 @@ def compute_properties(pID, datasets):
     
         # List of booleans -- is a column composed of unique elements?
         is_unique = [ detect_unique_list(col) for col in columns ]
-        types = get_column_types(path, sheet)
+        types = get_column_types(path)
 
         # Save properties into collection
         dataset_properties = {
@@ -114,8 +114,8 @@ def compute_ontologies(pID, datasets):
     for d in datasets:
         dID = d['dID']
         path = d['path']
-        sheet = d['sheet']
-        header, columns = read_file(path, sheet)
+        # sheet = d['sheet']
+        header, columns = read_file(path)
         raw_columns_dict[dID] = [list(col) for col in columns]
         uniqued_columns_dict[dID] = [get_unique(col) for col in columns]
 

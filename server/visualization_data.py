@@ -60,10 +60,10 @@ def getTreemapData(spec, conditional, pID):
     # Load dataset (GENERALIZE THIS)
     dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
     filename = dataset['filename']
-    sheet_name = dataset['sheet']
+    # sheet_name = dataset['sheet']
     path = dataset['path']
 
-    header, columns = read_file(path, sheet_name)
+    header, columns = read_file(path)
 
     data = {}
     for i in range(len(header)) :
@@ -110,9 +110,9 @@ def getScatterplotData(spec, conditional, pID):
 
     dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
     filename = dataset['filename']
-    sheet_name = dataset['sheet']
+    # sheet_name = dataset['sheet']
     path = dataset['path']
-    header, columns = read_file(path, sheet_name)
+    header, columns = read_file(path)
 
     data = {}
     for i in range(len(header)) :
@@ -167,9 +167,9 @@ def getConditionalData(spec, dID, pID):
     # Load dataset (GENERALIZE THIS)
     dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
     filename = dataset['filename']
-    sheet = dataset['sheet']
+    # sheet = dataset['sheet']
     path = dataset['path']
-    header, columns = read_file(path, sheet)
+    header, columns = read_file(path)
     data = {}
     for i in range(len(header)) :
         field = header[i]
