@@ -75,7 +75,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
-
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('pID', type=str, required=True)
@@ -124,30 +123,15 @@ class Data(Resource):
             datasets = MI.getData({}, pID)
             data_list = []
             for d in datasets:
-                path = os.path.join(app.config['UPLOAD_FOLDER'], pID, d['filename'])
+                path = os.path.join(config['UPLOAD_FOLDER'], pID, d['filename'])
 
-                header, columns = read_file(path)
-                unique_cols = [detect_unique_list(col) for col in columns]
-    
-                # make response
-                sample, rows, cols, extension, header = get_sample_data(path)
-                types = get_column_types(path)
-                
-                column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
-
-                # Make response
-                json_data = {
+                result = get_sample_data(path)
+                result.update({
                     'title': d['title'],
                     'filename': d['filename'],
-                    'dID': d['dID'],
-                    'column_attrs': column_attrs,
-                    'header': header,
-                    'sample': sample,
-                    'rows': rows,
-                    'cols': cols,
-                    'filetype': extension,
-                }
-                data_list.append(json_data)
+                    'dID': d['dID']
+                })
+                data_list.append(result)
             return json.jsonify({'status': 'success', 'datasets': data_list})
 
     def delete(self):
@@ -245,9 +229,11 @@ class Property(Resource):
         pID = args.get('pID').strip().strip('"')
         datasets = MI.getData({}, pID)
         
+        print "Computing properties"
         # Compute properties of all datasets
         stats, types, headers, is_unique = compute_properties(pID, datasets)
 
+        print "Computing ontologies"
         # Compute cross-dataset overlaps        
         overlaps, hierarchies = compute_ontologies(pID, datasets)
 

@@ -17,6 +17,7 @@ from config import config
 from werkzeug.utils import secure_filename
 from db import MongoInstance as MI
 
+
 types = {
     'numeric': [
         'integer',
@@ -32,12 +33,28 @@ types = {
     ]
 }
 
-def get_uploaded_file_data(path) :
-    sample, rows, cols, extension, header = get_sample_data(path)
-    types = get_column_types(path)
-    header, columns = read_file(path)
-    column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, len(columns) - 1)]
-    return column_attrs, header, sample, rows, cols, extension
+
+# Return sample of dataset
+def get_sample_data(path, start=0, inc=20) :
+    end = start + inc  # Upper bound excluded
+    header, df = read_file(path)
+    df = df.fillna('')
+    sample = map(list, df.iloc[start:end].values)
+
+    n_rows, n_cols = df.shape
+    types = get_column_types(df)
+    extension = path.rsplit('.', 1)[1]
+    column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, n_cols)]
+
+    result = {
+        'column_attrs': column_attrs,
+        'header': list(header),
+        'sample': sample,  # json.loads(sample.to_json()),
+        'rows': n_rows,
+        'cols': n_cols,
+        'filetype': extension
+    }
+    return result
 
 
 # Dataflow: 
@@ -62,20 +79,14 @@ def upload_file(pID, file):
         print "Saved file: ", filename
 
         dID = MI.insertDataset(pID, path2, filename2)
-        column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
 
-        dataset = {
+        result = get_sample_data(path2)
+        result.update({
             'title' : filename2.rsplit('.', 1)[0],
             'filename' : filename2,
             'dID' : dID,
-            'column_attrs' : column_attrs,
-            'header' : header,
-            'sample' : sample,
-            'rows' : rows,
-            'cols' : cols,
-            'filetype' : extension
-        }
-        datasets.append(dataset)
+        })
+        datasets.append(result)
 
 
     elif file_type.startswith('xls') :
@@ -158,81 +169,57 @@ def upload_file(pID, file):
         datasets.append(dataset)
     return datasets
 
-# TODO Strip new lines and quotes
-def read_file(path):
+# Given a path, reads file and returns headers and a df
+def read_file(path, nrows=None):
     extension = path.rsplit('.', 1)[1]
 
-    if extension in ['csv', 'tsv', 'txt'] :
+    if extension in ['csv', 'tsv', 'txt']:
         delim = get_delimiter(path)
-        df = pd.read_table(path, sep=delim)
-        columns = []
+        df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
+        return df.columns.values, df
 
-        # TODO Is this the right thing to do?
-        # df[cols]'s are Pandas series? would making it into a list be easier?
-        for col in df :
-            columns.append(df[col])
+        # columns = []
 
-        header = list(df.columns.values)
+        # # TODO Is this the right thing to do?
+        # # df[cols]'s are Pandas series? would making it into a list be easier?
+        # for col in df :
+        #     columns.append(df[col])
 
-    # elif extension.startswith('xls'):
-    #     columns = []
-    #     book = xlrd.open_workbook(path, on_demand=True)
-    #     sheet = book.sheet_by_name(sheet_name)
+        # header = list(df.columns.values)
 
-    #     ## take care of date values ? idk
-    #     for i in range(sheet.ncols) :
-    #         col = sheet.col_values(i)
-    #         columns.append(pd.Series(col))
-    #     header = sheet.row_values(0)
-
-    # elif extension == 'json':
-    #     f = open(path, 'rU')
-    #     json_data = json.load(f)
-
-    #     header = json_data[0].keys()
-
-    #     cols = {}
-
-    #     for field in header :
-    #         cols[field] = []
-
-    #     for i in range(len(json_data)) :
-    #         for field in header :
-    #             cols[field].append(json_data[i][field])
-
-    #     columns = []
-    #     for field in header :
-    #         columns.append(pd.Series(cols[field]))
-
-    return header, columns
+# Wrapper around read_file to return
+# def get_sample_data(path, rows=20):
+#     header, df = read_file(path)
 
 
-def get_sample_data(path):
-    f = open(path, 'rU')
-    filename = path.rsplit('/')[-1]
-    extension = filename.rsplit('.', 1)[1]
 
-    ## flat files
-    if extension in ['csv', 'tsv', 'txt'] :
-        delim = get_delimiter(path)
-        header = f.readline()
-        rows = 0
-        cols = 0
-        sample = {}
-        for i in range(20) :
-            line = f.readline()
-            if not line :
-                break
-            else :
-                sample[i] = [item.strip().strip('"') for item in line.strip().split(delim)]
-                cols = max(cols, len(sample[i]))
 
-        with open(path, 'rU') as f:
-            for rows, l in enumerate(f) :
-                pass
-        rows += 1
+# def get_sample_data(path):
+#     f = open(path, 'rU')
+#     filename = path.rsplit('/')[-1]
+#     extension = filename.rsplit('.', 1)[1]
 
-        header = header.strip().split(delim)
+#     ## flat files
+#     if extension in ['csv', 'tsv', 'txt'] :
+#         delim = get_delimiter(path)
+#         header = f.readline()
+#         rows = 0
+#         cols = 0
+#         sample = {}
+#         for i in range(20) :
+#             line = f.readline()
+#             if not line :
+#                 break
+#             else :
+#                 sample[i] = [item.strip().strip('"') for item in line.strip().split(delim)]
+#                 cols = max(cols, len(sample[i]))
+
+#         with open(path, 'rU') as f:
+#             for rows, l in enumerate(f) :
+#                 pass
+#         rows += 1
+
+#         header = header.strip().split(delim)
 
     # ## excel files
     # elif extension.startswith('xls') :
@@ -285,6 +272,7 @@ CONTINENT_NAMES = ['Asia', 'Europe', 'North America', 'South America', 'Australi
 # TODO: Parse dates
 # TODO: Write algorithm to get best estimate given a sample, not a single variable
 def get_variable_type(v):
+    v = str(v)
     # Numeric
     if re.match(INT_REGEX, v): 
         return "integer"
@@ -298,7 +286,8 @@ def get_variable_type(v):
                 return "datetime"
         except:
             pass
-        if (v in COUNTRY_CODE_2) or (v in COUNTRY_CODE_3) or (v in COUNTRY_NAMES): r = 'country'
+        # if (v in COUNTRY_CODE_2) or (v in COUNTRY_CODE_3) or (v in COUNTRY_NAMES): r = 'country'
+        if (v in COUNTRY_CODE_3): r = 'country'
         elif v in CONTINENT_NAMES: r = 'continent'
         else:
             r = "string"
@@ -325,40 +314,10 @@ def is_numeric(x):
     else: return False
 
 
-def get_column_types(path, sheet_name=None):
-    f = open(path, 'rU')
-    extension = path.rsplit('.', 1)[1]
-
-    # flat files
-    if extension in ['csv', 'tsv', 'txt'] :
-        header = f.readline()
-        sample_line = f.readline()
-        delim = get_delimiter(path)
-        types = [get_variable_type(v) for v in sample_line.split(delim)]
-    
-    # # excel files
-    # elif extension.startswith('xls') :
-    #     book = xlrd.open_workbook(path, on_demand=True)
-    #     sheet = book.sheet_by_name(sheet_name)
-    #     sample_cells = sheet.row(1)
-
-    #     types = []        
-    #     for cell in sample_cells :
-
-    #         value_string = str(cell.value)
-
-    #         if cell.ctype == xlrd.XL_CELL_DATE :
-    #             year, month, day, hour, minute, second = xlrd.xldate_as_tuple(cell.value, book.datemode)
-    #             value_string = '/'.join([str(x) for x in [month, day, year]])
-
-    #         types.append(get_variable_type(value_string))
-
-    # elif extension == 'json' :
-    #     json_data = json.load(f)
-    #     sample_value = json_data[1].values()
-    #     types = [get_variable_type(str(v)) for v in sample_value]
-
-    f.close()
+# Get column types given a data frame (super naive)
+def get_column_types(df):    
+    sample_line = [x for x in df.iloc[0]]
+    types = [get_variable_type(v) for v in sample_line]
     return types
 
 
