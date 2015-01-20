@@ -11,7 +11,10 @@ from db import MongoInstance as MI
 
 # Detect if a list is comprised of unique elements
 def detect_unique_list(l):
-    THRESHOLD = 0.90
+    # TODO Vary threshold by number of elements (be smarter about it)
+    THRESHOLD = 0.95
+
+    # Comparing length of uniqued elements with original list
     if (len(set(l)) / float(len(l))) >= THRESHOLD:
         return True
     return False
@@ -52,7 +55,7 @@ def compute_properties(pID, datasets):
         # gini
     
         # List of booleans -- is a column composed of unique elements?
-        is_unique = [ detect_unique_list(col) for col in df ]
+        is_unique = [ detect_unique_list(df[col]) for col in df ]
         types = get_column_types(df)
 
         # Save properties into collection
@@ -62,6 +65,7 @@ def compute_properties(pID, datasets):
             'headers': list(header),
             'stats': df_stats_dict
         }
+
         types_dict[dID] = dataset_properties['types']
         headers_dict[dID] = dataset_properties['headers']
         is_unique_dict[dID] = dataset_properties['uniques']
@@ -73,7 +77,8 @@ def compute_properties(pID, datasets):
 
 # Find the distance between two sets
 # Currently naively uses Jaccard distance between two sets
-def get_distance(set_a, set_b):
+def get_distance(list_a, list_b):
+    set_a, set_b = set(list_a), set(list_b)
     return float(len(set_a.intersection(set_b))) / len(set_a.union(set_b))
 
 
@@ -106,7 +111,7 @@ def compute_ontologies(pID, datasets):
         raw_columns_dict[dID] = [list(df[col]) for col in df]
 
         print "\t\tGetting unique cols"
-        uniqued_dict[dID] = [set(df[col]) for col in df]
+        uniqued_dict[dID] = [get_unique(df[col]) for col in df]
 
         print "\t\tGetting col lengths"
         lengths_dict[dID] = [len(df[col]) for col in df]
@@ -115,7 +120,7 @@ def compute_ontologies(pID, datasets):
     overlaps = {}
     hierarchies = {}
     for dID_a, dID_b in combinations(dIDs, 2):
-        print dID_a, dID_b
+        # print dID_a, dID_b
         raw_cols_a = raw_columns_dict[dID_a]
         raw_cols_b = raw_columns_dict[dID_b]
         overlaps['%s\t%s' % (dID_a, dID_b)] = {}
@@ -123,7 +128,7 @@ def compute_ontologies(pID, datasets):
 
         for index_a, col_a in enumerate(raw_cols_a):
             for index_b, col_b in enumerate(raw_cols_b):
-                print '\t', index_a, index_b
+                # print '\t', index_a, index_b
 
                 unique_a, unique_b = uniqued_dict[dID_a][index_a], uniqued_dict[dID_b][index_b]
                 d = get_distance(unique_a, unique_b)

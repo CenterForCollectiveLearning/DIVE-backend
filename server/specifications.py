@@ -14,7 +14,12 @@ def getVisualizationStats(pID, spec, viz_type):
     counts = [e['count'] for e in viz_data]
     std = np.std(counts)
     stats['num_elements'] = num_elements
-    stats['std'] = std
+    if np.isnan(std):
+        stats['std'] = None
+    else:
+        stats['std'] = std
+
+
     return stats
 
 
@@ -29,7 +34,7 @@ def getVisualizationSpecs(pID):
     p = MI.getProperty(None, pID)
     o = MI.getOntology(None, pID)
 
-    existing_specs = MI.getSpecs(pID, {})
+    existing_specs = None  # MI.getSpecs(pID, {})
 
     specs_by_viz_type = {
         "treemap": [],
@@ -50,8 +55,6 @@ def getVisualizationSpecs(pID):
             "geomap": getGeomapSpecs(pID, d, p, o),
             "scatterplot": getScatterplotSpecs(pID, d, p, o),
             "linechart": getLinechartSpecs(pID, d, p, o),
-            # "barchart": getBarchartSpecs(d, p, o),
-            # "network": getNetworkSpecs(d, p, o)
         }
 
         for viz_type, specs in specs_by_viz_type.iteritems():
@@ -62,6 +65,7 @@ def getVisualizationSpecs(pID):
                 for i, spec in enumerate(specs):
                     spec['sID'] = sIDs[i]
                     del spec['_id']
+    print specs_by_viz_type
     return specs_by_viz_type
 
 
@@ -80,24 +84,31 @@ def getTreemapSpecs(pID, datasets, properties, ontologies):
         headers = p['headers']
         non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
 
+        # For all non-unique attributes
+        # TODO filter out columns in which all have the same attribute
         for index in non_uniques:
             type = types[index]
+
+            # Aggregate on each factor attribute
+            # TODO: Group numeric attributes with smart binning
             if not is_numeric(type):
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
-                    
                 }
                 spec['stats'] = getVisualizationStats(pID, spec, 'treemap')
-                specs.append(spec)
+
+                # Don't aggregate on uniformly distributed columns
+                if spec['stats']['num_elements'] > 1:
+                    specs.append(spec)
     return specs
 
 def getPiechartSpecs(pID, datasets, properties, ontologies):
     return getTreemapSpecs(pID, datasets, properties, ontologies)
 
-# TODO Reduce redunancy with treemap specs
+# TODO Reduce redundancy with treemap specs
 def getGeomapSpecs(pID, datasets, properties, ontologies):
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
@@ -114,12 +125,12 @@ def getGeomapSpecs(pID, datasets, properties, ontologies):
 
         for index in non_uniques:
             type = types[index]
-            if not is_numeric(type) and (type == 'country'):
+            if type in ['countryCode2', 'countryCode3', 'countryName']:
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
-                    'chosen': False,
+                    'chosen': None,
                 }
                 spec['stats'] = getVisualizationStats(pID, spec, 'geomap')
                 specs.append(spec)
@@ -168,7 +179,8 @@ def getScatterplotSpecs(pID, datasets, properties, ontologies):
                     'x': {'index': index, 'title': headers[index]},
                     'object': {'dID': dID, 'title': dataset_titles[dID]},
                     'aggregation': True,
-                    'chosen': False,
+                    'condition': {'index': None, 'title': None},
+                    'chosen': None,
                 }
                 spec['stats'] = getVisualizationStats(pID, spec, 'scatterplot')
                 specs.append(spec)                
