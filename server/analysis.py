@@ -11,30 +11,13 @@ from db import MongoInstance as MI
 
 # Detect if a list is comprised of unique elements
 def detect_unique_list(l):
-    THRESHOLD = 0.90
+    # TODO Vary threshold by number of elements (be smarter about it)
+    THRESHOLD = 0.95
+
+    # Comparing length of uniqued elements with original list
     if (len(set(l)) / float(len(l))) >= THRESHOLD:
         return True
     return False
-
-
-# Find the distance between two lists
-# Currently naively uses intersection over union of unique lists
-def get_distance(l1, l2):
-    s1, s2 = set(l1), set(l2)
-    d = float(len(s1.intersection(s2))) / len(s1.union(s2))
-    return d
-
-
-# Find if a relationship is one-to-one or one-to-many
-# Currently naively compares length of lists
-def get_hierarchy(l1, l2):
-    if len(l1) > len(l2):
-        res = "N1"
-    elif len(l1) == len(l2):
-        res = "11"
-    else:
-        res = "1N"
-    return res
 
 
 # Return unique elements from list while maintaining order in O(N)
@@ -60,22 +43,9 @@ def compute_properties(pID, datasets):
     for dataset in datasets:
         dID = dataset['dID']
         path = dataset['path']
-        # sheet = dataset['sheet']
-        header, columns = read_file(path)
-        print type(columns)
-        data = {}
-        for i in range(len(header)) :
-            field = header[i]
-            # print field
-            # print data.keys()
-            # print columns[i]
-            data[field] = columns[i]
-        df = pd.DataFrame(data)
-
-        # delim = get_delimiter(path)
+        header, df = read_file(path)
 
         # Statistical properties
-        # df = pd.read_table(path, sep=delim)
         df_stats = df.describe()
         df_stats_dict = json.loads(df_stats.to_json())
         stats_dict[dID] = df_stats_dict
@@ -85,16 +55,17 @@ def compute_properties(pID, datasets):
         # gini
     
         # List of booleans -- is a column composed of unique elements?
-        is_unique = [ detect_unique_list(col) for col in columns ]
-        types = get_column_types(path)
+        is_unique = [ detect_unique_list(df[col]) for col in df ]
+        types = get_column_types(df)
 
         # Save properties into collection
         dataset_properties = {
             'types': types,
             'uniques': is_unique,
-            'headers': header,
+            'headers': list(header),
             'stats': df_stats_dict
         }
+
         types_dict[dID] = dataset_properties['types']
         headers_dict[dID] = dataset_properties['headers']
         is_unique_dict[dID] = dataset_properties['uniques']
@@ -104,42 +75,71 @@ def compute_properties(pID, datasets):
     return stats_dict, types_dict, headers_dict, is_unique_dict
 
 
+# Find the distance between two sets
+# Currently naively uses Jaccard distance between two sets
+def get_distance(list_a, list_b):
+    set_a, set_b = set(list_a), set(list_b)
+    return float(len(set_a.intersection(set_b))) / len(set_a.union(set_b))
+
+
+def get_hierarchy(l1, l2):
+    if (l1 > l2):
+        res = "N1"
+    elif (l1 == l2):
+        res = "11"
+    else:
+        res = "1N"
+    return res
+
+
 # Argument: pID + list of dIDs
 def compute_ontologies(pID, datasets):
     dIDs = [d['dID'] for d in datasets]
 
+    print "\tPopulating dictionaries"
     # Get data (TODO: abstract this)
+    lengths_dict = {}
     raw_columns_dict = {}
-    uniqued_columns_dict = {}
+    uniqued_dict = {}
     for d in datasets:
         dID = d['dID']
         path = d['path']
-        # sheet = d['sheet']
-        header, columns = read_file(path)
-        raw_columns_dict[dID] = [list(col) for col in columns]
-        uniqued_columns_dict[dID] = [get_unique(col) for col in columns]
+        print "\t\tReading file"
+        header, df = read_file(path)
 
+        print "\t\tGetting raw cols"
+        raw_columns_dict[dID] = [list(df[col]) for col in df]
+
+        print "\t\tGetting unique cols"
+        uniqued_dict[dID] = [get_unique(df[col]) for col in df]
+
+        print "\t\tGetting col lengths"
+        lengths_dict[dID] = [len(df[col]) for col in df]
+
+    print "\tIterating through columns"
     overlaps = {}
     hierarchies = {}
-    # TODO Create a tighter loop to avoid double computes
-    # TODO Make agnostic to ordering of pair
     for dID_a, dID_b in combinations(dIDs, 2):
-        print dID_a, dID_b
+        # print dID_a, dID_b
         raw_cols_a = raw_columns_dict[dID_a]
         raw_cols_b = raw_columns_dict[dID_b]
-        uniqued_cols_a = uniqued_columns_dict[dID_a]
-        uniqued_cols_b = uniqued_columns_dict[dID_b]
         overlaps['%s\t%s' % (dID_a, dID_b)] = {}
         hierarchies['%s\t%s' % (dID_a, dID_b)] = {}
 
         for index_a, col_a in enumerate(raw_cols_a):
             for index_b, col_b in enumerate(raw_cols_b):
-                h = get_hierarchy(col_a, col_b)
-                d = get_distance(col_a, col_b)
+                # print '\t', index_a, index_b
+
+                unique_a, unique_b = uniqued_dict[dID_a][index_a], uniqued_dict[dID_b][index_b]
+                d = get_distance(unique_a, unique_b)
+
                 if d:
+                    length_a, length_b = lengths_dict[dID_a][index_a], lengths_dict[dID_b][index_b]
+                    h = get_hierarchy(length_a, length_b)
+
                     overlaps['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = d
                     hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
-                    # TODO How do you store this?
+
                     ontology = {
                         'source_dID': dID_a,
                         'target_dID': dID_b,
