@@ -7,6 +7,8 @@ from data import *
 from itertools import combinations
 from collections import OrderedDict  # Get unique elements of list while preserving order
 from db import MongoInstance as MI
+from time import time
+import numpy as np
 
 
 # Detect if a list is comprised of unique elements
@@ -15,7 +17,7 @@ def detect_unique_list(l):
     THRESHOLD = 0.95
 
     # Comparing length of uniqued elements with original list
-    if (len(set(l)) / float(len(l))) >= THRESHOLD:
+    if (len(np.unique(l)) / float(len(l))) >= THRESHOLD:
         return True
     return False
 
@@ -23,7 +25,7 @@ def detect_unique_list(l):
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def get_unique(li):
-    return list(OrderedDict.fromkeys(li)) 
+    return list(np.unique(li))
 
 
 types_dict = {}
@@ -46,6 +48,7 @@ def compute_properties(pID, datasets):
         header, df = read_file(path)
 
         # Statistical properties
+        print "\tDescribing datasets"
         df_stats = df.describe()
         df_stats_dict = json.loads(df_stats.to_json())
         stats_dict[dID] = df_stats_dict
@@ -54,8 +57,12 @@ def compute_properties(pID, datasets):
         # entropy 
         # gini
     
+        print "\tDetecting uniques"
+        start_time = time()
         # List of booleans -- is a column composed of unique elements?
         is_unique = [ detect_unique_list(df[col]) for col in df ]
+        print "\t", time() - start_time
+        print "\tGetting types"
         types = get_column_types(df)
 
         # Save properties into collection

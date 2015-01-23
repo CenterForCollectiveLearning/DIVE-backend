@@ -141,10 +141,17 @@ def getScatterplotData(spec, conditional, pID):
 
         result = []
         for row in finalSeries.iteritems():
-            result.append({
-                x: row[0],
-                'count': np.asscalar(np.int16(row[1]))
-            })
+            # TODO General sanitation method
+            try:
+                cleaned_x = float(str(row[0]).translate(None, '?s.'))
+
+                result.append({
+                    x: cleaned_x,
+                    'count': np.asscalar(np.int16(row[1])),
+                    'id': agg
+                })
+            except:
+                pass
     else:
         y = spec['y']['title']
         result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(df[x], df[y]) ]

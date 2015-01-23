@@ -34,7 +34,7 @@ def getVisualizationSpecs(pID):
     p = MI.getProperty(None, pID)
     o = MI.getOntology(None, pID)
 
-    existing_specs = None  # MI.getSpecs(pID, {})
+    existing_specs = MI.getSpecs(pID, {})
 
     specs_by_viz_type = {
         "treemap": [],
@@ -65,7 +65,6 @@ def getVisualizationSpecs(pID):
                 for i, spec in enumerate(specs):
                     spec['sID'] = sIDs[i]
                     del spec['_id']
-    print specs_by_viz_type
     return specs_by_viz_type
 
 
