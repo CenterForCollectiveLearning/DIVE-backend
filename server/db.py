@@ -117,6 +117,10 @@ class mongoInstance(object):
         else:
             print o
 
+    def resetOntology(self, pID, ontologies) :
+        return MongoInstance.client[pID].ontologies.remove({})
+
+
     # Project Creation
     def postProject(self, title, description, user):
         formatted_title = title.replace(" ", "-").lower()

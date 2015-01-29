@@ -42,6 +42,7 @@ def compute_properties(pID, datasets):
     types_dict = {}
     headers_dict = {}
     is_unique_dict = {}
+
     for dataset in datasets:
         dID = dataset['dID']
         path = dataset['path']
@@ -81,6 +82,23 @@ def compute_properties(pID, datasets):
 
     return stats_dict, types_dict, headers_dict, is_unique_dict
 
+def get_properties(pID, datasets) :
+    stats_dict = {}
+    types_dict = {}
+    headers_dict = {}
+    is_unique_dict = {}
+
+    find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
+    data = MI.getProperty(find_doc, pID)
+    print data
+    for d in data :
+        dID = d['dID']
+        stats_dict[dID] = d['stats']
+        types_dict[dID] = d['types']
+        headers_dict[dID] = d['headers']
+        is_unique_dict[dID] = d['uniques']
+
+    return stats_dict, types_dict, headers_dict, is_unique_dict
 
 # Find the distance between two sets
 # Currently naively uses Jaccard distance between two sets
@@ -98,19 +116,21 @@ def get_hierarchy(l1, l2):
         res = "1N"
     return res
 
+def compute_ontologies(pID, datasets) :
+    new_dIDs = [d['dID'] for d in datasets]
+    # print [d['dID'] for d in MI.getData({}, pID)]
+    all_datasets = MI.getData({}, pID)
+    all_dIDs = [d['dID'] for d in all_datasets]
+    print "NEW: ", new_dIDs
+    print "ALL: ", all_dIDs
 
-# Argument: pID + list of dIDs
-def compute_ontologies(pID, datasets):
-    dIDs = [d['dID'] for d in datasets]
-
-    print "\tPopulating dictionaries"
-    # Get data (TODO: abstract this)
     lengths_dict = {}
     raw_columns_dict = {}
     uniqued_dict = {}
-    for d in datasets:
+    for d in all_datasets:
         dID = d['dID']
         path = d['path']
+
         print "\t\tReading file"
         header, df = read_file(path)
 
@@ -124,10 +144,15 @@ def compute_ontologies(pID, datasets):
         lengths_dict[dID] = [len(df[col]) for col in df]
 
     print "\tIterating through columns"
+    
     overlaps = {}
     hierarchies = {}
-    for dID_a, dID_b in combinations(dIDs, 2):
-        # print dID_a, dID_b
+    for dID_a, dID_b in combinations(all_dIDs, 2):
+
+        if (dID_a not in new_dIDs) and (dID_b not in new_dIDs) :
+            continue
+        
+        print dID_a, dID_b
         raw_cols_a = raw_columns_dict[dID_a]
         raw_cols_b = raw_columns_dict[dID_b]
         overlaps['%s\t%s' % (dID_a, dID_b)] = {}
@@ -136,7 +161,6 @@ def compute_ontologies(pID, datasets):
         for index_a, col_a in enumerate(raw_cols_a):
             for index_b, col_b in enumerate(raw_cols_b):
                 # print '\t', index_a, index_b
-
                 unique_a, unique_b = uniqued_dict[dID_a][index_a], uniqued_dict[dID_b][index_b]
                 d = get_distance(unique_a, unique_b)
 
@@ -147,13 +171,38 @@ def compute_ontologies(pID, datasets):
                     overlaps['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = d
                     hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
 
-                    ontology = {
-                        'source_dID': dID_a,
-                        'target_dID': dID_b,
-                        'source_index': index_a,
-                        'target_index': index_b,
-                        'distance': d,
-                        'hierarchy': h
-                    }
-                    oID = MI.upsertOntology(pID, ontology)
+                    if d > 0.25 :
+                        ontology = {
+                            'source_dID': dID_a,
+                            'target_dID': dID_b,
+                            'source_index': index_a,
+                            'target_index': index_b,
+                            'distance': d,
+                            'hierarchy': h
+                        }
+                        oID = MI.upsertOntology(pID, ontology)
+    return overlaps, hierarchies
+
+def get_ontologies(pID, datasets) :
+    overlaps = {}
+    hierarchies = {}
+
+    ontologies = MI.getOntology({}, pID)
+    for ontology in ontologies:
+        dID_a = ontology['source_dID']
+        dID_b = ontology['target_dID']
+
+        key = '%s\t%s' % (dID_a, dID_b)
+        if key not in overlaps :
+            overlaps[key] = {}
+        if key not in hierarchies :
+            hierarchies[key] = {}
+
+        index_a = ontology['source_index']
+        index_b = ontology['target_index']
+        d = ontology['distance']
+        h = ontology['hierarchy']
+        overlaps['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = d
+        hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
+
     return overlaps, hierarchies

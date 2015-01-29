@@ -13,7 +13,7 @@ from bson.objectid import ObjectId
 
 from db import MongoInstance as MI
 from data import upload_file, get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
-from analysis import detect_unique_list, compute_properties, compute_ontologies
+from analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from specifications import getVisualizationSpecs
 from visualization_data import getVisualizationData, getConditionalData
 from config import config
@@ -90,6 +90,14 @@ class UploadFile(Resource):
                 'status': 'success',
                 'datasets': datasets
             })
+
+            data = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, datasets)}, pID)
+            compute_properties(pID, data)
+            print "Done initializing properties"
+
+            compute_ontologies(pID, data)
+            print "Done initializing ontologies"
+
             response = make_response(json_data)
             return response
         return json.jsonify({'status': 'Upload failed'})
@@ -222,6 +230,8 @@ class Project(Resource):
 ############################
 propertyGetParser = reqparse.RequestParser()
 propertyGetParser.add_argument('pID', type=str, required=True)
+# propertyPutParser = reqparse.RequestParser()
+# propertyPutParser.add_argument('ontologies', type=)
 class Property(Resource):
     def get(self):
         print "[GET] Properties"
@@ -229,13 +239,15 @@ class Property(Resource):
         pID = args.get('pID').strip().strip('"')
         datasets = MI.getData({}, pID)
         
-        print "Computing properties"
+        print "Getting properties"
+        stats, types, headers, is_unique = get_properties(pID, datasets)
         # Compute properties of all datasets
-        stats, types, headers, is_unique = compute_properties(pID, datasets)
+        # stats, types, headers, is_unique = compute_properties(pID, datasets)
 
-        print "Computing ontologies"
+        print "Getting ontologies"
+        overlaps, hierarchies = get_ontologies(pID, datasets)
         # Compute cross-dataset overlaps        
-        overlaps, hierarchies = compute_ontologies(pID, datasets)
+        # overlaps, hierarchies = compute_ontologies(pID, datasets)
 
         all_properties = {
             'types': types, 
@@ -246,6 +258,32 @@ class Property(Resource):
         }
 
         return json.jsonify(all_properties)
+
+## approach:
+## each data upload -> add in new ontologies
+    def put(self) :
+        print "[PUT] Properties"
+        pID = request.json['params']['pID']
+        ontologies = request.json['params']['ontologies']
+        print ontologies, pID
+
+        MI.resetOntology(pID, ontologies)
+
+        for link in ontologies.keys() :
+            [dID, dID2, col, col2] = link.split(",")
+            d, h = ontologies[link]
+            print dID, dID2, col, col2
+
+            o = {
+                'source_dID' : dID,
+                'target_dID' : dID2,
+                'source_index' : col,
+                'target_index' : col2,
+                'distance' : d,
+                'hierarchy' : h
+            }
+            MI.upsertOntology(pID, o)
+        return json.jsonify({})
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project

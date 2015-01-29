@@ -109,21 +109,18 @@ def upload_file(pID, file):
                 wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
             csv_file.close()
 
-            column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
+            # column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
 
             dID = MI.insertDataset(pID, path2, filename2)
-            dataset = {
+
+            result = get_sample_data(path2)
+            result.update({
                 'title' : filename2.rsplit('.', 1)[0],
                 'filename' : filename2,
-                'dID' : dID,
-                'column_attrs' : column_attrs,
-                'header' : header,
-                'sample' : sample,
-                'rows' : rows,
-                'cols' : cols,
-                'filetype' : extension
-            }
-            datasets.append(dataset)
+                'dID' : dID
+            })
+
+            datasets.append(result)
 
     elif file_type == 'json' :
 
@@ -151,22 +148,16 @@ def upload_file(pID, file):
             wr.writerow([unicode(v).encode('utf-8') for v in row])
         csv_file.close()
 
-        dID = MI.insertDataset(pID, path + ".csv", filename2)
-        column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
+        dID = MI.insertDataset(pID, path2, filename2)
+        # column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
 
-        dataset = {
+        result = get_sample_data(path2)
+        result.update({
             'title' : filename2.rsplit('.', 1)[0],
             'filename' : filename2,
             'dID' : dID,
-            'column_attrs' : column_attrs,
-            'header' : header,
-            'sample' : sample,
-            'rows' : rows,
-            'cols' : cols,
-            'filetype' : extension
-        }
-
-        datasets.append(dataset)
+        })
+        datasets.append(result)
     return datasets
 
 # Given a path, reads file and returns headers and a df
