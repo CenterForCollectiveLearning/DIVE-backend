@@ -13,7 +13,11 @@ from bson.objectid import ObjectId
 
 from db import MongoInstance as MI
 from data import upload_file, get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
+<<<<<<< HEAD
 from analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
+=======
+from analysis import detect_unique_list, get_properties, get_ontologies
+>>>>>>> b8b37074e3a9cd3de2ff9ef2dfbb735172fc181c
 from specifications import getVisualizationSpecs
 from visualization_data import getVisualizationData, getConditionalData
 from config import config
@@ -241,13 +245,9 @@ class Property(Resource):
         
         print "Getting properties"
         stats, types, headers, is_unique = get_properties(pID, datasets)
-        # Compute properties of all datasets
-        # stats, types, headers, is_unique = compute_properties(pID, datasets)
 
         print "Getting ontologies"
         overlaps, hierarchies = get_ontologies(pID, datasets)
-        # Compute cross-dataset overlaps        
-        # overlaps, hierarchies = compute_ontologies(pID, datasets)
 
         all_properties = {
             'types': types, 
