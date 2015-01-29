@@ -13,11 +13,7 @@ from bson.objectid import ObjectId
 
 from db import MongoInstance as MI
 from data import upload_file, get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
-<<<<<<< HEAD
 from analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
-=======
-from analysis import detect_unique_list, get_properties, get_ontologies
->>>>>>> b8b37074e3a9cd3de2ff9ef2dfbb735172fc181c
 from specifications import getVisualizationSpecs
 from visualization_data import getVisualizationData, getConditionalData
 from config import config
