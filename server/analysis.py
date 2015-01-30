@@ -27,60 +27,6 @@ def detect_unique_list(l):
 def get_unique(li):
     return list(np.unique(li))
 
-
-# Either pull computed properties from the DB, or compute from scratch
-def get_properties(pID, datasets):
-    dIDs = [d['dID'] for d in datasets]
-    properties = MI.getProperty({'dID': {'$in': dIDs}}, pID)
-
-    if properties:
-        print "\tUsing computed properties"
-        types_dict = {}
-        headers_dict = {}
-        is_unique_dict = {}
-        stats_dict = {}
-        for p in properties:
-            dID = p['dID']
-            types_dict[dID] = p['types']
-            headers_dict[dID] = p['headers']
-            is_unique_dict[dID] = p['uniques']
-            stats_dict[dID] = p['stats']
-        return stats_dict, types_dict, headers_dict, is_unique_dict
-    else:
-        print "\tComputing properties"
-        return compute_properties(pID, datasets)
-
-
-# Either pull computed ontologies from the DB, or compute from scratch
-def get_ontologies(pID, datasets):
-    dIDs = [d['dID'] for d in datasets]
-    ontologies = MI.getOntology({'$or': [{'source_dID': {'$in': dIDs}}, {'target_dID': {'$in': dIDs}}]}, pID)
-
-    if ontologies:
-        print "\tUsing computed ontologies"
-        overlaps = {}
-        hierarchies = {}
-        for source_dID, target_dID in combinations(dIDs, 2):
-            overlaps['%s\t%s' % (source_dID, target_dID)] = {}
-            hierarchies['%s\t%s' % (source_dID, target_dID)] = {}
-
-        for o in ontologies:
-            source_dID, target_dID, source_index, target_index, d, h = \
-                o['source_dID'], o['target_dID'], o['source_index'], o['target_index'], o['distance'], o['hierarchy']
-            overlaps['%s\t%s' % (source_dID, target_dID)]['%s\t%s' % (source_index, target_index)] = d
-            hierarchies['%s\t%s' % (source_dID, target_dID)]['%s\t%s' % (source_index, target_index)] = h
-        return overlaps, hierarchies
-    else:
-        print "\tComputing ontologies"
-        return compute_ontologies(pID, datasets)
-
-
-types_dict = {}
-headers_dict = {}
-raw_columns_dict = {}
-is_unique_dict = {}
-uniqued_columns_dict = {}
-stats_dict = {}
 # Compute properties of all passed datasets
 # Arguments: pID + list of dIDs
 # Returns a mapping from dIDs to properties
@@ -137,7 +83,6 @@ def get_properties(pID, datasets) :
 
     find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
     data = MI.getProperty(find_doc, pID)
-    print data
     for d in data :
         dID = d['dID']
         stats_dict[dID] = d['stats']

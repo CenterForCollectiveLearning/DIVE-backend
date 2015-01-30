@@ -261,14 +261,13 @@ class Property(Resource):
         print "[PUT] Properties"
         pID = request.json['params']['pID']
         ontologies = request.json['params']['ontologies']
-        print ontologies, pID
+        # print "Updating to ", len(ontologies.keys()), " links"
 
-        MI.resetOntology(pID, ontologies)
+        MI.resetOntology(pID)
 
         for link in ontologies.keys() :
             [dID, dID2, col, col2] = link.split(",")
             d, h = ontologies[link]
-            print dID, dID2, col, col2
 
             o = {
                 'source_dID' : dID,

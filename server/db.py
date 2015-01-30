@@ -117,7 +117,7 @@ class mongoInstance(object):
         else:
             print o
 
-    def resetOntology(self, pID, ontologies) :
+    def resetOntology(self, pID) :
         return MongoInstance.client[pID].ontologies.remove({})
 
 
