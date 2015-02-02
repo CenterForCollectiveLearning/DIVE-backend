@@ -7,7 +7,11 @@ from random import sample
 import pandas as pd
 import xlrd
 
-from flask import Flask, render_template, redirect, url_for, request, make_response, json
+import cairocffi as cairo
+import cairosvg
+from StringIO import StringIO
+
+from flask import Flask, render_template, redirect, url_for, request, make_response, json, send_file
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
@@ -31,6 +35,7 @@ UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
+
 
 @app.before_request
 def option_autoreply():
@@ -386,6 +391,53 @@ class Exported_Visualization_Spec(Resource):
         return json.jsonify({'result': MI.getExportedSpecs(find_doc, pID)})
 
 
+#####################################################################
+# Endpoint returning exported image
+#####################################################################
+renderedSVGPostParser = reqparse.RequestParser()
+renderedSVGPostParser.add_argument('data')
+class Render_SVG(Resource):
+    def post(self):
+        args = renderedSVGPostParser.parse_args()
+        data = json.loads(args.get('data'))
+        format = data['format']
+        svg = data['svg']
+
+        filename = 'test.%s' % format
+        fout = open(filename, 'wb')
+        print "Writing file"
+
+        mimetypes = {
+            'svg': 'image/svg',
+            'pdf': 'application/pdf',
+            'png': 'image/png'
+        }
+
+        img_io = StringIO()
+        bytestring = bytes(svg)
+        if format == "png":
+            print "Rendering PNG"
+            cairosvg.svg2png(bytestring=bytestring, write_to=fout)
+            cairosvg.svg2png(bytestring=bytestring, write_to=img_io)
+        elif format == "pdf":
+            print "Rendering PDF"
+            cairosvg.svg2pdf(bytestring=bytestring, write_to=fout)
+            cairosvg.svg2pdf(bytestring=bytestring, write_to=img_io)  
+        elif format == "svg":
+            print "Rendering SVG"
+            cairosvg.svg2svg(bytestring=bytestring, write_to=fout)
+            cairosvg.svg2svg(bytestring=bytestring, write_to=img_io)         
+        else:
+            cairosvg.svg2png(bytestring=bytestring, write_to=fout)
+            cairosvg.svg2png(bytestring=bytestring, write_to=img_io)
+        fout.close()
+
+        img_io.seek(0)
+        print img_io, img_io.getvalue().encode('utf-8')
+        return send_file(img_io, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
+
+
+api.add_resource(Render_SVG, '/api/render_svg')
 api.add_resource(UploadFile, '/api/upload')
 api.add_resource(Data, '/api/data')
 api.add_resource(GetProjectID, '/api/getProjectID')
