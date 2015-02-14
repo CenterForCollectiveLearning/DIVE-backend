@@ -18,6 +18,7 @@ def formatObjectIDs(collectionName, results):
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
     def getProjectID(self, formatted_title):
+        print "TITLE: ", formatted_title
         return str(MongoInstance.client['dive'].projects.find_one({'formattedTitle': formatted_title})['_id'])
 
     # Dataset Insertion
@@ -80,7 +81,7 @@ class mongoInstance(object):
         doc = {
             'user': user
         }
-        if pID: doc['_id'] = ObjectId(pID)
+        # if pID: doc['_id'] = ObjectId(pID)
         return formatObjectIDs('project', [ p for p in projects_collection.find(doc)])
 
     def deleteProject(self, pID):
@@ -136,7 +137,7 @@ class mongoInstance(object):
 
             # Create user
             # TODO Tie into projects
-            MongoInstance.client['dive'].users.insert({'userName': user})
+            # MongoInstance.client['dive'].users.insert({'userName': user})
 
             # Create project DB
             db = MongoInstance.client[pID]
@@ -147,6 +148,20 @@ class mongoInstance(object):
             db.create_collection('exported')
             print "Creating new project"
             return {'formatted_title': formatted_title, 'pID': pID}, 200
+
+    # User Creation
+    def postNewUser(self, userName, displayName, password) :
+        user = {
+            'userName' : userName,
+            'displayName' : displayName,
+            'password' : password
+        }
+        # str(MongoInstance.client[pID].datasets.insert(dataset_doc))
+        return str(MongoInstance.client['dive'].users.insert(user))
+
+    def getUser(self, find_doc) :
+        return formatObjectIDs('users', [u for u in MongoInstance.client['dive'].users.find(find_doc).limit(1) ])
+                # return formatObjectIDs('ontology', [ o for o in MongoInstance.client[pID].ontologies.find(find_doc) ])
 
     # Client corresponding to a single connection
     @property

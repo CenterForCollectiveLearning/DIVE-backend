@@ -11,7 +11,7 @@ import cairocffi as cairo
 import cairosvg
 from StringIO import StringIO
 
-from flask import Flask, render_template, redirect, url_for, request, make_response, json, send_file
+from flask import Flask, render_template, redirect, url_for, request, make_response, json, send_file, session
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
@@ -26,23 +26,29 @@ from utility import *
 PORT = 8888
 
 app = Flask(__name__, static_path='/static')
+app.config['SERVER_NAME'] = "localhost:8888"
+
 api = Api(app)
 
 TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
 app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 
+
 UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
 
 @app.before_request
 def option_autoreply():
-    """ Always reply 200 on OPTIONS request """
 
+    """ Always reply 200 on OPTIONS request """
     if request.method == 'OPTIONS':
         resp = app.make_default_options_response()
+
+        print "Here comes an OPTIONS request"
 
         headers = None
         if 'ACCESS_CONTROL_REQUEST_HEADERS' in request.headers:
@@ -191,7 +197,9 @@ projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
 class Project(Resource):
     def get(self):
+        print "hello!"
         args = projectGetParser.parse_args()
+        print args
         pID = args.get('pID').strip().strip('"')
         user_name = args.get('user_name')
         print "GET", pID, user_name
@@ -436,7 +444,6 @@ class Render_SVG(Resource):
         print img_io, img_io.getvalue().encode('utf-8')
         return send_file(img_io, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
-
 api.add_resource(Render_SVG, '/api/render_svg')
 api.add_resource(UploadFile, '/api/upload')
 api.add_resource(Data, '/api/data')
@@ -450,7 +457,11 @@ api.add_resource(Visualization_Data, '/api/visualization_data')
 api.add_resource(Conditional_Data, '/api/conditional_data')
 api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
 
+from session import *
+
+# print app.config
+
 
 if __name__ == '__main__':
     app.debug = True
-    app.run(host='0.0.0.0', port=PORT)
+    app.run(port=PORT)
