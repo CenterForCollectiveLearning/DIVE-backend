@@ -19,6 +19,9 @@ def getVisualizationStats(pID, spec, viz_type):
     else:
         stats['std'] = std
 
+    if viz_type in ["scatterplot", "linechart"]:
+        print "Numeric"
+
 
     return stats
 
@@ -44,7 +47,9 @@ def getVisualizationSpecs(pID):
         "linechart": []
     }
 
-    if existing_specs:
+    RECOMPUTE = False
+
+    if existing_specs and not RECOMPUTE:
         for spec in existing_specs:
             viz_type = spec['viz_type']
             specs_by_viz_type[viz_type].append(spec)

@@ -440,9 +440,8 @@ class Render_SVG(Resource):
             cairosvg.svg2png(bytestring=bytestring, write_to=img_io)
         fout.close()
 
-        img_io.seek(0)
-        print img_io, img_io.getvalue().encode('utf-8')
-        return send_file(img_io, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
+        img_io.seek(10)
+        return send_file(img_io)  #, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
 api.add_resource(Render_SVG, '/api/render_svg')
 api.add_resource(UploadFile, '/api/upload')

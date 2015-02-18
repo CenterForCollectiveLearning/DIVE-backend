@@ -52,7 +52,8 @@ def get_sample_data(path, start=0, inc=20) :
         'sample': sample,  # json.loads(sample.to_json()),
         'rows': n_rows,
         'cols': n_cols,
-        'filetype': extension
+        'filetype': extension,
+        'structure': 'long'
     }
     return result
 
