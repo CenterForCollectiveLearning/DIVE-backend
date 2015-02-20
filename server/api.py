@@ -171,12 +171,14 @@ class Data(Resource):
 ############################
 projectIDGetParser = reqparse.RequestParser()
 projectIDGetParser.add_argument('formattedProjectTitle', type=str, required=True)
+projectIDGetParser.add_argument('user_name', type=str, required=True)
 class GetProjectID(Resource):
     def get(self):
         args = projectIDGetParser.parse_args()
         formattedProjectTitle = args.get('formattedProjectTitle')
+        userName = args.get('user_name')
         print "GET projectID", formattedProjectTitle
-        res = MI.getProjectID(formattedProjectTitle)
+        res = MI.getProjectID(formattedProjectTitle, userName)
         print "projectID result", res
         return res
 

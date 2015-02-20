@@ -18,9 +18,13 @@ def formatObjectIDs(collectionName, results):
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
-    def getProjectID(self, formatted_title):
+    def getProjectID(self, formatted_title, userName):
         print "TITLE: ", formatted_title
-        return str(MongoInstance.client['dive'].projects.find_one({'formattedTitle': formatted_title})['_id'])
+        find_doc = {
+            "formattedTitle" : formatted_title,
+            "user" : userName
+        }
+        return str(MongoInstance.client['dive'].projects.find_one(find_doc)['_id'])
 
     # Dataset Insertion
     def insertDataset(self, pID, path, filename):
