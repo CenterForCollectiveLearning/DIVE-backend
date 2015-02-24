@@ -19,8 +19,7 @@ def getVisualizationStats(pID, spec, viz_type):
     else:
         stats['std'] = std
 
-    if viz_type in ["scatterplot", "linechart"]:
-        print "Numeric"
+    # if viz_type in ["scatterplot", "linechart"]:
 
 
     return stats

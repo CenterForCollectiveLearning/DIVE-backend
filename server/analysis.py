@@ -37,7 +37,6 @@ def compute_properties(pID, datasets):
     is_unique_dict = {}
 
     for dataset in datasets:
-        print dataset
         dID = dataset['dID']
         path = dataset['path']
         header, df = read_file(path)
@@ -145,7 +144,6 @@ def compute_ontologies(pID, datasets) :
         if (dID_a not in new_dIDs) and (dID_b not in new_dIDs) :
             continue
         
-        print dID_a, dID_b
         raw_cols_a = raw_columns_dict[dID_a]
         raw_cols_b = raw_columns_dict[dID_b]
         overlaps['%s\t%s' % (dID_a, dID_b)] = {}
@@ -153,7 +151,6 @@ def compute_ontologies(pID, datasets) :
 
         for index_a, col_a in enumerate(raw_cols_a):
             for index_b, col_b in enumerate(raw_cols_b):
-                # print '\t', index_a, index_b
                 unique_a, unique_b = uniqued_dict[dID_a][index_a], uniqued_dict[dID_b][index_b]
                 d = get_distance(unique_a, unique_b)
 
