@@ -37,6 +37,7 @@ def compute_properties(pID, datasets):
     is_unique_dict = {}
 
     for dataset in datasets:
+        print dataset
         dID = dataset['dID']
         path = dataset['path']
         header, df = read_file(path)

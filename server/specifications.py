@@ -47,7 +47,7 @@ def getVisualizationSpecs(pID):
         "linechart": []
     }
 
-    RECOMPUTE = False
+    RECOMPUTE = True
 
     if existing_specs and not RECOMPUTE:
         for spec in existing_specs:

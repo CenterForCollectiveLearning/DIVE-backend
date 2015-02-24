@@ -61,16 +61,22 @@ class mongoInstance(object):
     def getSpecs(self, pID, find_doc):
         return formatObjectIDs('specification', [s for s in MongoInstance.client[pID].specifications.find(find_doc) ])
 
+    # Using preloaded datasets
+    def usePublicDataset(self, find_doc, pID):
+        publicDatasets = MongoInstance.client['dive'].datasets.find(find_doc)
+        new_dIDs = []
+        for d in publicDatasets:
+            d['original_dID'] = str(d['_id'])
+            del d['_id']
+            new_dID = MongoInstance.client[pID].datasets.insert(d)
+            new_dIDs.append(new_dID)
+        return new_dIDs
+
     # Exported visualizations
     def getExportedSpecs(self, find_doc, pID):
         find_doc['chosen'] = True
         exported_specs = [ e for e in MongoInstance.client[pID].specifications.find(find_doc)]
         return formatObjectIDs('specifications', exported_specs)
-
-        # exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
-        # for e in exported_specs:
-        #     e['spec'] = formatObjectIDs('spec', [ MongoInstance.client[pID].specifications.find_one({'_id': ObjectId(e['sID'])}) ])[0]
-        # return formatObjectIDs('exported', [ e for e in exported_specs ])
 
     def chooseSpec(self, pID, sID, conditional):
         MongoInstance.client[pID].specifications.find_and_modify({'_id': ObjectId(sID)}, {'$set': {'chosen': True, 'conditional': conditional}}, upsert=True, new=True)
