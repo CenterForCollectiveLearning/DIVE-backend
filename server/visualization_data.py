@@ -14,6 +14,7 @@ from data import get_delimiter, read_file
 
 import numpy as np
 import pandas as pd
+from scipy.stats import norm, mstats, skew, linregress
 
 
 vizToRequiredParams = {
@@ -35,6 +36,10 @@ def requiredParams(type, spec):
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, pID):
+    print "Type: ", type
+    print "Spec: ", spec
+    print "Conditional: ", conditional
+    print "pID: ", pID
     if requiredParams(type, spec):
         if type == 'treemap':
             return getTreemapData(spec, conditional, pID)
@@ -129,22 +134,54 @@ def getScatterplotData(spec, conditional, pID):
             if v != 'All':
                 df = df[df[k] == v]
         cond_df = df
-        print cond_df
+        # print cond_df
     else:
         cond_df = df
 
     result = []
+    stats = {}
     if agg:
         cond_df = df
         group_obj = cond_df.groupby(x)
         finalSeries = group_obj.size()
 
+        # print "COND DF", cond_df, cond_df.columns
+        # print "GROUP OBJ", group_obj
+        # print "FINAL SERIES", finalSeries
+        x_vals = cond_df[x].values
+        x_vals = x_vals[~np.isnan(x_vals)]
+
+        ### descriptive
+        stats['describe'] = cond_df[x].describe().to_dict()
+
+        ### gaussian test
+        norm_fit = norm.fit(x_vals)
+        gaussian_test = mstats.normaltest(x_vals)
+        skewness = skew(x_vals) 
+        stats['gaussian'] = {
+            'mean' : norm_fit[0],
+            'std' : norm_fit[1],
+            'p' : gaussian_test[1],
+            'skewness' : skewness
+        }
+
+        ### linear regression test
+        lin_test = linregress(finalSeries.index, finalSeries.values)
+        stats['linregress'] = {
+            'slope' : lin_test[0],
+            'intercept': lin_test[1],
+            'r' : lin_test[2],
+            'p' : lin_test[3],
+            'std_err' : lin_test[4]
+        }
+
         result = []
         for row in finalSeries.iteritems():
             # TODO General sanitation method
             try:
-                cleaned_x = float(str(row[0]).translate(None, '?s.'))
-
+                # print "row[0]", row[0], str(row[0]), float(str(row[0]))
+                # print "float(str(row[0])).translate", float(str(row[0]).translate(None, '?s.'))
+                cleaned_x = float(str(row[0]).translate(None, '?s'))
                 result.append({
                     x: cleaned_x,
                     'count': np.asscalar(np.int16(row[1])),
@@ -155,7 +192,7 @@ def getScatterplotData(spec, conditional, pID):
     else:
         y = spec['y']['title']
         result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(df[x], df[y]) ]
-    return result
+    return result, stats
 
 
 def getLinechartData(spec, conditional, pID):

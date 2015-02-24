@@ -22,7 +22,6 @@ def getVisualizationStats(pID, spec, viz_type):
     if viz_type in ["scatterplot", "linechart"]:
         print "Numeric"
 
-
     return stats
 
 

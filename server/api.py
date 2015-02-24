@@ -330,7 +330,9 @@ class Visualization_Data(Resource):
         spec = json.loads(args.get('spec'))
         conditional = json.loads(args.get('conditional'))
 
-        return json.jsonify({'result': getVisualizationData(type, spec, conditional, pID)})
+        resp = getVisualizationData(type, spec, conditional, pID)
+
+        return json.jsonify({'result': resp[0], 'stats' : resp[1]})
 
 
 #####################################################################
