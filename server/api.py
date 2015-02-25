@@ -33,6 +33,8 @@ api = Api(app)
 TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
 app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
 
+PUBLIC_DATA_FOLDER = os.path.join(os.curdir, config['PUBLIC_DATA_FOLDER'])
+app.config['PUBLIC_DATA_FOLDER'] = PUBLIC_DATA_FOLDER
 
 UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -114,6 +116,77 @@ class UploadFile(Resource):
         return json.jsonify({'status': 'Upload failed'})
 
 
+# Public Dataset retrieval
+publicDataGetParser = reqparse.RequestParser()
+publicDataGetParser.add_argument('dID', type=str, action='append')
+publicDataGetParser.add_argument('sample', type=str, required=True, default='true')
+
+# Use public dataset in project
+publicDataPostParser = reqparse.RequestParser()
+publicDataPostParser.add_argument('dID', type=str, action='append')
+publicDataPostParser.add_argument('pID', type=str, required=True, default='true')
+class Public_Data(Resource):
+    # Get dataset descriptions or samples
+    def get(self):
+        args = publicDataGetParser.parse_args()
+        dIDs = args.get('dID')
+        pID = 'dive'
+        print "[GET] PUBLIC Data", pID, dIDs
+
+        # Specific dIDs
+        if dIDs:
+            print "Requested specific dIDs:", dIDs
+            dataLocations = [ MI.getData({'_id': ObjectId(dID)}, pID) for dID in dIDs ] 
+
+        # All datasets
+        else:
+            print "Did not request specific dID. Returning all datasets"
+            datasets = MI.getData({}, pID)
+            data_list = []
+            for d in datasets:
+                path = d['path']
+
+                result = get_sample_data(path)
+                result.update({
+                    'title': d['title'],
+                    'filename': d['filename'],
+                    'dID': d['dID']
+                })
+                data_list.append(result)
+            return json.jsonify({'status': 'success', 'datasets': data_list})
+
+    def post(self):
+        args = publicDataPostParser.parse_args()
+        dIDs = args.get('dID')
+        pID = args.get('pID')
+
+        # Get data for selected datasets
+        formatted_dIDs = [ObjectId(dID) for dID in dIDs]
+        new_dIDs = MI.usePublicDataset({'_id': {'$in': formatted_dIDs}}, pID)
+        datasets = MI.getData({'_id': {'$in': new_dIDs}}, pID)
+
+        # Compute properties and ontologies
+        compute_properties(pID, datasets)
+        print "Done initializing properties"
+
+        compute_ontologies(pID, datasets)
+        print "Done initializing ontologies"
+
+        data_list = []
+        for d in datasets:
+            # New dID
+            result = get_sample_data(d['path'])
+            result.update({
+                'title': d['title'],
+                'filename': d['filename'],
+                'path': d['path'],
+                'dID': d['dID']
+                })
+            data_list.append(result)
+
+        return json.jsonify({'status': 'success', 'datasets': data_list})
+
+
 # Dataset retrieval, editing, deletion
 dataGetParser = reqparse.RequestParser()
 dataGetParser.add_argument('dID', type=str, action='append')
@@ -142,7 +215,7 @@ class Data(Resource):
             datasets = MI.getData({}, pID)
             data_list = []
             for d in datasets:
-                path = os.path.join(config['UPLOAD_FOLDER'], pID, d['filename'])
+                path = d['path']
 
                 result = get_sample_data(path)
                 result.update({
@@ -447,6 +520,7 @@ class Render_SVG(Resource):
         img_io.seek(10)
         return send_file(img_io)  #, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
+api.add_resource(Public_Data, '/api/public_data')
 api.add_resource(Render_SVG, '/api/render_svg')
 api.add_resource(UploadFile, '/api/upload')
 api.add_resource(Data, '/api/data')

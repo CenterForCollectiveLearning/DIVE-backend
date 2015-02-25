@@ -5,30 +5,45 @@ import os
 import shutil
 from bson.objectid import ObjectId
 from db import MongoInstance
-
+from config import config
 
 
 def remove_uploads():
-    print "1) Removing data directories in upload folder"
-    UPLOAD_FOLDER = os.path.join(os.curdir, 'uploads')
+    print "Removing data directories in upload folder"
+    UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
     shutil.rmtree(UPLOAD_FOLDER)
+
+
+def create_directories():
+    print "Creating upload and public data folder"
+    UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
+    PUBLIC_DATA_FOLDER = os.path.join(os.curdir, config['PUBLIC_DATA_FOLDER'])
     os.mkdir(UPLOAD_FOLDER)
+    if not os.path.exists(PUBLIC_DATA_FOLDER):
+        os.mkdir(PUBLIC_DATA_FOLDER)
 
 
 def clean_database():
     pIDs = [str(e['_id']) for e in MongoInstance.client['dive'].projects.find()]
 
-    print "2) Removing project dbs"
+    print "Removing project dbs"
     for pID in pIDs:
         MongoInstance.client.drop_database(pID)
 
-    print "3) Cleaning DIVE db"
+    print "Cleaning projects from DIVE db"
     for pID in pIDs:
         MongoInstance.client['dive'].projects.remove({'_id': ObjectId(pID)})
+
+    print "Cleaning users from DIVE db"
+    MongoInstance.client['dive'].users.remove()
+
+    print "Cleaning preloaded datasets from DIVE db"
+    MongoInstance.client['dive'].datasets.remove()
     return
 
 
 if __name__ == '__main__':
     print "Resetting production environment"
     remove_uploads()
+    create_directories()
     clean_database()
