@@ -129,7 +129,6 @@ def getScatterplotData(spec, conditional, pID):
             if v != 'All':
                 df = df[df[k] == v]
         cond_df = df
-        print cond_df
     else:
         cond_df = df
 
@@ -153,7 +152,6 @@ def getScatterplotData(spec, conditional, pID):
 
             except:
                 pass
-        print result
     else:
         y = spec['y']['title']
         result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(df[x], df[y]) ]
