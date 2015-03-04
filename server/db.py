@@ -9,7 +9,6 @@ import random
 import time
 import json
 
-
 def formatObjectIDs(collectionName, results):
     for result in results: # For each result is passed, convert the _id to the proper mID, cID, etc.
         result[collectionName[0]+'ID'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
@@ -78,8 +77,10 @@ class mongoInstance(object):
         exported_specs = [ e for e in MongoInstance.client[pID].specifications.find(find_doc)]
         return formatObjectIDs('specifications', exported_specs)
 
-    def chooseSpec(self, pID, sID, conditional):
-        MongoInstance.client[pID].specifications.find_and_modify({'_id': ObjectId(sID)}, {'$set': {'chosen': True, 'conditional': conditional}}, upsert=True, new=True)
+    def chooseSpec(self, pID, sID, conditional, stats):
+        MongoInstance.client[pID].specifications.find_and_modify(
+            {'_id': ObjectId(sID)}, 
+            {'$set': {'chosen': True, 'conditional': conditional, 'stats' : stats }}, upsert=True, new=True)
         return sID
 
     def rejectSpec(self, pID, sID):
