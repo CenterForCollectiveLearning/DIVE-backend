@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, mstats, skew, linregress
+from scipy.stats import norm, mstats, skew, linregress, chisquare
 from visualization_data import getVisualizationData, getRawData
 
 def getVisualizationStats(viz_type, spec, conditional, pID):
@@ -35,6 +35,19 @@ def getTreemapStats(pID, spec, raw_data) :
 
     group_obj = cond_df.groupby(groupby)
     finalSeries = group_obj.size()
+
+    print "TREEMAP STATS"
+    print finalSeries.values
+    print finalSeries.describe().to_dict()
+    print cond_df[groupby].describe().to_dict()
+
+    chisq = chisquare(finalSeries.values)
+    stats['chisq'] = {
+        'chisq' : chisq[0],
+        'p' : chisq[1]
+    }
+
+    stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
 
     # print finalSeries.shape
     stats['count'] = finalSeries.shape[0]
