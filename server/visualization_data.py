@@ -15,7 +15,6 @@ from data import get_delimiter, read_file
 import numpy as np
 import pandas as pd
 
-
 vizToRequiredParams = {
     'treemap': ['aggregate', 'groupBy'],
     'piechart': ['aggregate', 'groupBy'],
@@ -35,6 +34,10 @@ def requiredParams(type, spec):
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, pID):
+    print "Type: ", type
+    print "Spec: ", spec
+    print "Conditional: ", conditional
+    print "pID: ", pID
     if requiredParams(type, spec):
         if type == 'treemap':
             return getTreemapData(spec, conditional, pID)
@@ -51,27 +54,34 @@ def getVisualizationData(type, spec, conditional, pID):
     else:
         return "Did not pass required parameters", 400
 
+def getRawData(spec, conditional, pID, viz_type) :
 
-def getTreemapData(spec, conditional, pID):
-    # Parse specification
-    condition = spec['condition']['title']
-    groupby = spec['groupBy']['title']
-    dID = spec['aggregate']['dID']
-    aggFn = 'sum'  # TODO: get this from an argument
+    if viz_type in ['treemap', 'geomap', 'piechart'] :
+        dID = spec['aggregate']['dID']
 
-    dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
+    elif viz_type in ['scatterplot', 'barchart', 'linechart'] :
+        dID = spec['object']['dID']
+
+    dataset = MI.getData({'_id' : ObjectId(dID)}, pID)[0]
     path = dataset['path']
     header, df = read_file(path)
 
-    if conditional.get(dID):
-        # Convert from {title: val} to {title: [val]}
-        # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
-        for k, v in conditional[dID].iteritems():
-            if v != 'All':
+    if conditional.get(dID) :
+        for k, v in conditional[dID].iteritems() :
+            if v != 'All' :
                 df = df[df[k] == v]
         cond_df = df
-    else:
+    else :
         cond_df = df
+    return cond_df
+
+def getTreemapData(spec, conditional, pID):
+    # Parse specification
+    # condition = spec['condition']['title']
+    groupby = spec['groupBy']['title']
+    
+    cond_df = getRawData(spec, conditional, pID, 'treemap')
+
     group_obj = cond_df.groupby(groupby)
     finalSeries = group_obj.size()
 
@@ -116,25 +126,15 @@ def getBarchartData(spec, conditional, pID):
 def getScatterplotData(spec, conditional, pID):
     agg = spec['aggregation']
     x = spec['x']['title']    
-    dID = spec['object']['dID']
 
-    dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
-    path = dataset['path']
-    header, df = read_file(path)
+    cond_df = getRawData(spec, conditional, pID, 'scatterplot')
 
-    if conditional.get(dID):
-        # Convert from {title: val} to {title: [val]}
-        # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
-        for k, v in conditional[dID].iteritems():
-            if v != 'All':
-                df = df[df[k] == v]
-        cond_df = df
-    else:
-        cond_df = df
+    print "COND_DF", cond_df
 
     result = []
+    # stats = {}
     if agg:
-        cond_df = df
+        # cond_df = df
         group_obj = cond_df.groupby(x)
         finalSeries = group_obj.size()
 
@@ -142,8 +142,9 @@ def getScatterplotData(spec, conditional, pID):
         for row in finalSeries.iteritems():
             # TODO General sanitation method
             try:
-                cleaned_x = float(str(row[0]))  #.translate(None, '?s.'))
-
+                cleaned_x = str(row[0])  #.translate(None, '?s.'))
+                if (spec['x']['type'] != "datetime") :
+                    cleaned_x = float(cleaned_x)
                 result.append({
                     x: cleaned_x,
                     'count': np.asscalar(np.int16(row[1])),
@@ -154,7 +155,9 @@ def getScatterplotData(spec, conditional, pID):
                 pass
     else:
         y = spec['y']['title']
-        result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(df[x], df[y]) ]
+        result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(cond_df[x], cond_df[y]) ]
+
+    print "result", result
     return result
 
 

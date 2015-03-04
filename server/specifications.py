@@ -2,28 +2,7 @@ from data import is_numeric
 from utility import *
 from itertools import combinations
 from db import MongoInstance as MI
-import numpy as np
-from visualization_data import getVisualizationData
-
-
-# Calculate some statistical properties of the data that goes into a visualization
-def getVisualizationStats(pID, spec, viz_type):
-    stats = {}
-    viz_data = getVisualizationData(viz_type, spec, {}, pID)
-    num_elements = len(viz_data)
-    counts = [e['count'] for e in viz_data]
-    std = np.std(counts)
-    stats['num_elements'] = num_elements
-    if np.isnan(std):
-        stats['std'] = None
-    else:
-        stats['std'] = std
-
-    # if viz_type in ["scatterplot", "linechart"]:
-
-
-    return stats
-
+from visualization_stats import getVisualizationStats
 
 #####################################################################
 # 1. GROUP every entity by a non-unique attribute (for factors, group by factors but score by number of distinct. For continuous, discretize the range) 
@@ -101,10 +80,10 @@ def getTreemapSpecs(pID, datasets, properties, ontologies):
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = getVisualizationStats(pID, spec, 'treemap')
+                spec['stats'] = getVisualizationStats('treemap', spec, {}, pID)
 
                 # Don't aggregate on uniformly distributed columns
-                if spec['stats']['num_elements'] > 1:
+                if spec['stats']['count'] > 1:
                     specs.append(spec)
     return specs
 
@@ -135,7 +114,7 @@ def getGeomapSpecs(pID, datasets, properties, ontologies):
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = getVisualizationStats(pID, spec, 'geomap')
+                spec['stats'] = getVisualizationStats('geomap', spec, {}, pID)
                 specs.append(spec)
     return specs
 
@@ -179,12 +158,12 @@ def getScatterplotSpecs(pID, datasets, properties, ontologies):
 
             if is_numeric(type):
                 spec = {
-                    'x': {'index': index, 'title': headers[index]},
+                    'x': {'index': index, 'title': headers[index], 'type' : type},
                     'object': {'dID': dID, 'title': dataset_titles[dID]},
                     'aggregation': True,
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = getVisualizationStats(pID, spec, 'scatterplot')
+                spec['stats'] = getVisualizationStats('scatterplot', spec, {}, pID)
                 specs.append(spec)                
     return specs

@@ -20,6 +20,7 @@ from data import upload_file, get_sample_data, read_file, get_column_types, get_
 from analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from specifications import getVisualizationSpecs
 from visualization_data import getVisualizationData, getConditionalData
+from visualization_stats import getVisualizationStats
 from config import config
 from utility import *
 
@@ -399,11 +400,18 @@ class Visualization_Data(Resource):
         print "Getting viz data"
         args = visualizationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        type = args.get('type')
+        viz_type = args.get('type')
         spec = json.loads(args.get('spec'))
         conditional = json.loads(args.get('conditional'))
 
-        return json.jsonify({'result': getVisualizationData(type, spec, conditional, pID)})
+        resp = getVisualizationData(viz_type, spec, conditional, pID)
+        print "DATA" , resp
+
+        stats = {}
+        if (len(resp) > 0) :
+            stats = getVisualizationStats(viz_type, spec, conditional, pID)
+
+        return json.jsonify({'result': resp, 'stats' : stats})
 
 
 #####################################################################
@@ -422,8 +430,11 @@ class Choose_Spec(Resource):
         sID = args.get('sID')
         conditional = json.loads(args.get('conditional'))
 
-        print "Choose spec", pID, sID, conditional
-        MI.chooseSpec(pID, sID, conditional)
+        spec = MI.getSpecs(pID, {"_id" : ObjectId(sID)})[0]
+        stats = getVisualizationStats(spec['viz_type'], spec, conditional, pID)
+
+        print "Choose spec", pID, sID, conditional, stats
+        MI.chooseSpec(pID, sID, conditional, stats)
         return
 
 rejectSpecParser = reqparse.RequestParser()
