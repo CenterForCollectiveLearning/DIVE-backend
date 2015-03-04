@@ -129,7 +129,19 @@ def getScatterplotData(spec, conditional, pID):
 
     cond_df = getRawData(spec, conditional, pID, 'scatterplot')
 
+# <<<<<<< HEAD
     print "COND_DF", cond_df
+# =======
+#     if conditional.get(dID):
+#         # Convert from {title: val} to {title: [val]}
+#         # formattedConditional = dict([(k, [v]) for k, v in conditional[dID].items() if (v != 'All')])
+#         for k, v in conditional[dID].iteritems():
+#             if v != 'All':
+#                 df = df[df[k] == v]
+#         cond_df = df
+#     else:
+#         cond_df = df
+# >>>>>>> master
 
     result = []
     # stats = {}
