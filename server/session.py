@@ -5,7 +5,7 @@ from flask import request, make_response, json
 from flask.ext.restful import Resource
 from passlib.hash import sha256_crypt
 
-@app.route("/register", methods=["POST"])
+@app.route("/api/register", methods=["POST"])
 def register() :
     params = request.json['params']
 
@@ -26,7 +26,7 @@ def register() :
 
     return make_response(json.jsonify(resp))
 
-@app.route("/login", methods=["GET"])
+@app.route("/api/login", methods=["GET"])
 def login() :
     params = request.args
 
