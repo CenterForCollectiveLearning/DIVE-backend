@@ -110,7 +110,6 @@ def get_hierarchy(l1, l2):
 
 def compute_ontologies(pID, datasets) :
     new_dIDs = [d['dID'] for d in datasets]
-    # print [d['dID'] for d in MI.getData({}, pID)]
     all_datasets = MI.getData({}, pID)
     all_dIDs = [d['dID'] for d in all_datasets]
     print "NEW: ", new_dIDs

@@ -38,9 +38,9 @@ def getTreemapStats(pID, spec, raw_data) :
     finalSeries = group_obj.size()
 
     print "TREEMAP STATS"
-    print finalSeries.values
-    print finalSeries.describe().to_dict()
-    print cond_df[groupby].describe().to_dict()
+    # print finalSeries.values
+    # print finalSeries.describe().to_dict()
+    # print cond_df[groupby].describe().to_dict()
 
     chisq = chisquare(finalSeries.values)
     stats['chisq'] = {

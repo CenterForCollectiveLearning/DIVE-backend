@@ -151,7 +151,7 @@ class Public_Data(Resource):
                 result.update({
                     'title': d['title'],
                     'filename': d['filename'],
-                    'dID': d['dID']
+                    'dID': d['dID'],
                 })
                 data_list.append(result)
             return json.jsonify({'status': 'success', 'datasets': data_list})

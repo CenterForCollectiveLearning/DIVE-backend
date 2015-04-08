@@ -34,10 +34,6 @@ def requiredParams(type, spec):
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, pID):
-    print "Type: ", type
-    print "Spec: ", spec
-    print "Conditional: ", conditional
-    print "pID: ", pID
     if requiredParams(type, spec):
         if type == 'treemap':
             return getTreemapData(spec, conditional, pID)
@@ -129,8 +125,6 @@ def getScatterplotData(spec, conditional, pID):
 
     cond_df = getRawData(spec, conditional, pID, 'scatterplot')
 
-    print "COND_DF", cond_df
-
     result = []
     # stats = {}
     if agg:
@@ -157,7 +151,6 @@ def getScatterplotData(spec, conditional, pID):
         y = spec['y']['title']
         result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(cond_df[x], cond_df[y]) ]
 
-    print "result", result
     return result
 
 
