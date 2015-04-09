@@ -392,7 +392,6 @@ class Specification(Resource):
 #####################################################################
 visualizationDataGetParser = reqparse.RequestParser()
 visualizationDataGetParser.add_argument('pID', type=str, required=True)
-visualizationDataGetParser.add_argument('type', type=str, required=True)
 visualizationDataGetParser.add_argument('spec', type=str, required=True)
 visualizationDataGetParser.add_argument('conditional', type=str, required=True)
 class Visualization_Data(Resource):
@@ -400,8 +399,8 @@ class Visualization_Data(Resource):
         print "Getting viz data"
         args = visualizationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        viz_type = args.get('type')
         spec = json.loads(args.get('spec'))
+        viz_type = spec['viz_type']
         conditional = json.loads(args.get('conditional'))
 
         resp = getVisualizationData(viz_type, spec, conditional, pID)

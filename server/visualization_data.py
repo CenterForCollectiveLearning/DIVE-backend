@@ -37,6 +37,8 @@ def getVisualizationData(type, spec, conditional, pID):
     if requiredParams(type, spec):
         if type == 'treemap':
             return getTreemapData(spec, conditional, pID)
+        elif type == 'temporal':
+            return getTemporalData(spec, conditional, pID)
         elif type == 'piechart':
             return getPiechartData(spec, conditional, pID)
         elif type == 'geomap':
@@ -52,7 +54,7 @@ def getVisualizationData(type, spec, conditional, pID):
 
 def getRawData(spec, conditional, pID, viz_type) :
 
-    if viz_type in ['treemap', 'geomap', 'piechart'] :
+    if viz_type in ['treemap', 'geomap', 'piechart', 'temporal'] :
         dID = spec['aggregate']['dID']
 
     elif viz_type in ['scatterplot', 'barchart', 'linechart'] :
@@ -70,6 +72,23 @@ def getRawData(spec, conditional, pID, viz_type) :
     else :
         cond_df = df
     return cond_df
+
+def getTemporalData(spec, conditional, pID):
+
+    groupby = spec['groupBy']['title']
+    print "Getting temporal data", groupby
+    
+    cond_df = getRawData(spec, conditional, pID, 'treemap')
+    print cond_df.dtypes
+
+    aggregated_series = cond_df.groupby(groupby).sum().transpose().to_dict()
+    result = {}
+    for k, series in aggregated_series.iteritems():
+        formatted_series = []
+        for date, val in series.iteritems():
+            formatted_series.append({'date': date, 'value': val})
+        result[k] = formatted_series
+    return result
 
 def getTreemapData(spec, conditional, pID):
     # Parse specification
