@@ -37,7 +37,7 @@ def getTreemapStats(pID, spec, raw_data) :
     group_obj = cond_df.groupby(groupby)
     finalSeries = group_obj.size()
 
-    print "TREEMAP STATS"
+    # print "TREEMAP STATS"
     # print finalSeries.values
     # print finalSeries.describe().to_dict()
     # print cond_df[groupby].describe().to_dict()

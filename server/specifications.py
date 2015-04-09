@@ -33,11 +33,12 @@ def getVisualizationSpecs(pID):
             specs_by_viz_type[viz_type].append(spec)
     else:
         specs_by_viz_type = {
-            "treemap": getTreemapSpecs(pID, d, p, o),
-            "piechart": getPiechartSpecs(pID, d, p, o),
-            "geomap": getGeomapSpecs(pID, d, p, o),
-            "scatterplot": getScatterplotSpecs(pID, d, p, o),
-            "linechart": getLinechartSpecs(pID, d, p, o),
+            "shares": getTreemapSpecs(pID, d, p, o),
+            "temporal": getScatterplotSpecs(pID, d, p, o),
+            # "distribution": getScatterplotSpecs(pID, d, p, o),
+            # "comparison": getScatterplotSpecs(pID, d, p, o),
+            # "connection": getScatterplotSpecs(pID, d, p, o),
+            # "linechart": getLinechartSpecs(pID, d, p, o),
         }
 
         for viz_type, specs in specs_by_viz_type.iteritems():
