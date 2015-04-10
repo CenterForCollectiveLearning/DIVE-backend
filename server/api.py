@@ -11,7 +11,7 @@ import cairocffi as cairo
 import cairosvg
 from StringIO import StringIO
 
-from flask import Flask, render_template, redirect, url_for, request, make_response, json, send_file, session
+from flask import Flask, jsonify, request, make_response, json, send_file, session
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
@@ -72,6 +72,11 @@ def option_autoreply():
 
         return resp
 
+@app.after_request
+def replace_nan(resp):
+    cleaned_data = resp.get_data().replace('nan', 'null').replace('NaN', 'null')
+    resp.set_data(cleaned_data)
+    return resp
 
 @app.after_request
 def set_allow_origin(resp):
@@ -100,10 +105,10 @@ class UploadFile(Resource):
         if file and allowed_file(file.filename):
             # Get document with metadata and some samples
             datasets = upload_file(pID, file)
-            json_data = json.jsonify({
+            json_data = {
                 'status': 'success',
                 'datasets': datasets
-            })
+            }
 
             data = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, datasets)}, pID)
             compute_properties(pID, data)
@@ -112,9 +117,9 @@ class UploadFile(Resource):
             compute_ontologies(pID, data)
             print "Done initializing ontologies"
 
-            response = make_response(json_data)
+            response = make_response(jsonify(json_data))
             return response
-        return json.jsonify({'status': 'Upload failed'})
+        return make_response(jsonify({'status': 'Upload failed'}))
 
 
 # Public Dataset retrieval
@@ -154,7 +159,7 @@ class Public_Data(Resource):
                     'dID': d['dID'],
                 })
                 data_list.append(result)
-            return json.jsonify({'status': 'success', 'datasets': data_list})
+            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
     def post(self):
         args = publicDataPostParser.parse_args()
@@ -185,7 +190,7 @@ class Public_Data(Resource):
                 })
             data_list.append(result)
 
-        return json.jsonify({'status': 'success', 'datasets': data_list})
+        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
 
 # Dataset retrieval, editing, deletion
@@ -225,7 +230,7 @@ class Data(Resource):
                     'dID': d['dID']
                 })
                 data_list.append(result)
-            return json.jsonify({'status': 'success', 'datasets': data_list})
+            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
     def delete(self):
         args = dataDeleteParser.parse_args()
@@ -342,7 +347,7 @@ class Property(Resource):
             'hierarchies': hierarchies,
         }
 
-        return json.jsonify(all_properties)
+        return make_response(jsonify(all_properties))
 
 ## approach:
 ## each data upload -> add in new ontologies
@@ -367,22 +372,22 @@ class Property(Resource):
                 'hierarchy' : h
             }
             MI.upsertOntology(pID, o)
-        return json.jsonify({})
+        return make_response(jsonify({}))
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
 # INPUT: pID, uID
 # OUTPUT: {visualizationType: [visualizationSpecification]}
 #####################################################################
-specificationDataGetParser = reqparse.RequestParser()
-specificationDataGetParser.add_argument('pID', type=str, required=True)
-specificationDataGetParser.add_argument('sID', type=str, action='append')
+specificationGetParser = reqparse.RequestParser()
+specificationGetParser.add_argument('pID', type=str, required=True)
+specificationGetParser.add_argument('sID', type=str, action='append')
 class Specification(Resource):
     def get(self):
-        args = specificationDataGetParser.parse_args()
+        args = specificationGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         specs_by_viz_type = getVisualizationSpecs(pID)
-        return specs_by_viz_type
+        return make_response(jsonify(specs_by_viz_type))
 
 
 #####################################################################
@@ -400,6 +405,7 @@ class Visualization_Data(Resource):
         args = visualizationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         spec = json.loads(args.get('spec'))
+        print spec
         viz_type = spec['viz_type']
         conditional = json.loads(args.get('conditional'))
 
@@ -409,7 +415,7 @@ class Visualization_Data(Resource):
         if (len(resp) > 0) :
             stats = getVisualizationStats(viz_type, spec, conditional, pID)
 
-        return json.jsonify({'result': resp, 'stats' : stats})
+        return make_response(jsonify({'result': resp, 'stats' : stats}))
 
 
 #####################################################################
@@ -464,7 +470,7 @@ class Conditional_Data(Resource):
         dID = args.get('dID').strip().strip('"')
         spec = json.loads(args.get('spec'))
         
-        return json.jsonify({'result': getConditionalData(spec, dID, pID)})
+        return make_response(jsonify({'result': getConditionalData(spec, dID, pID)}))
 
 
 #####################################################################
@@ -482,7 +488,7 @@ class Exported_Visualization_Spec(Resource):
         if args.get('eID'):
             eID = args.get('eID').strip().strip('"')
             find_doc = {'_id': ObjectId(eID)}
-        return json.jsonify({'result': MI.getExportedSpecs(find_doc, pID)})
+        return make_response(jsonify({'result': MI.getExportedSpecs(find_doc, pID)}))
 
 
 #####################################################################

@@ -9,24 +9,43 @@ def getVisualizationStats(viz_type, spec, conditional, pID):
 
     raw_data = getRawData(spec, conditional, pID, viz_type)
 
-    if viz_type == "treemap" :
-        return getTreemapStats(pID, spec, raw_data)
-    elif viz_type == "piechart" :
-        return getPiechartStats(pID, spec, raw_data)
-    elif viz_type == "geomap" :
-        return getGeomapStats(pID, spec, raw_data)
-    elif viz_type == "barchart" :
-        return getScatterplotStats(pID, spec, raw_data)
-    elif viz_type == "linechart" :
-        return getScatterplotStats(pID, spec, raw_data)
-    elif viz_type == "scatterplot" :
-        return getScatterplotStats(pID, spec, raw_data)
+    stat_functions = {
+        'time series': getTimeSeriesStats,
+        'distributions': getDistributionsStats,
+        'shares': getSharesStats,
+    }
+
+    stats = stat_functions[viz_type](pID, spec, raw_data)
+    return stats
 
 def getPiechartStats(pID, spec, raw_data) :
     return getTreemapStats(pID, spec, raw_data)
 
 def getGeomapStats(pID, spec, raw_data) :
     return getTreemapStats(pID, spec, raw_data)
+
+def getDistributionsStats(pID, spec, raw_data) :
+    return {}
+
+def getSharesStats(pID, spec, raw_data) :
+    return {}
+
+def getTimeSeriesStats(pID, spec, raw_data):
+    cond_df = raw_data.dropna()
+    groupby = spec['groupBy']['title']
+    group_obj = cond_df.groupby(groupby)
+    finalSeries = group_obj.size()
+
+    stats = {}
+    chisq = chisquare(finalSeries.values)
+    stats['chisq'] = {
+        'chisq' : chisq[0],
+        'p' : chisq[1]
+    }
+
+    stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
+    stats['count'] = finalSeries.shape[0]
+    return stats
 
 def getTreemapStats(pID, spec, raw_data) :
     cond_df = raw_data.dropna()

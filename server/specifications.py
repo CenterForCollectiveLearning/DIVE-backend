@@ -18,41 +18,53 @@ def getVisualizationSpecs(pID):
     existing_specs = MI.getSpecs(pID, {})
 
     specs_by_viz_type = {
-        "treemap": [],
-        "piechart": [],
-        "geomap": [],
-        "scatterplot": [],
-        "linechart": []
+        "shares": [],
+        "time series": [],
+        "distributions": []
+    }
+
+    spec_functions = {
+        "shares": getSharesSpecs,
+        "time series": getTimeSeriesSpecs,
+        "distributions": getDistributionsSpecs
     }
 
     RECOMPUTE = True
 
-    if existing_specs and not RECOMPUTE:
-        for spec in existing_specs:
-            viz_type = spec['viz_type']
-            specs_by_viz_type[viz_type].append(spec)
-    else:
-        specs_by_viz_type = {
-            # "shares": getTreemapSpecs(pID, d, p, o),
-            "temporal": getTemporalSpecs(pID, d, p, o),
-            # "distribution": getScatterplotSpecs(pID, d, p, o),
-            # "comparison": getScatterplotSpecs(pID, d, p, o),
-            # "connection": getScatterplotSpecs(pID, d, p, o),
-            # "linechart": getLinechartSpecs(pID, d, p, o),
-        }
+    # if existing_specs and not RECOMPUTE:
+    #     for spec in existing_specs:
+    #         viz_type = spec['viz_type']
+    #         specs_by_viz_type[viz_type].append(spec)
+    # else:
+    if RECOMPUTE:
+        specs_by_viz_type = {}
+        for viz_type, spec_function in spec_functions.iteritems():
+            specs = spec_function(pID, d, p, o)
+            for spec in specs:
+                spec['viz_type'] = viz_type
 
-        for viz_type, specs in specs_by_viz_type.iteritems():
+            # Persistence
             if specs:
-                for spec in specs:
-                    spec['viz_type'] = viz_type
-                sIDs = MI.postSpecs(pID, specs) 
+                sIDs = MI.postSpecs(pID, specs)
                 for i, spec in enumerate(specs):
                     spec['sID'] = sIDs[i]
                     del spec['_id']
-    return specs_by_viz_type
 
+            specs_by_viz_type[viz_type] = specs
 
-def getTemporalSpecs(pID, datasets, properties, ontologies):
+        return specs_by_viz_type
+
+def getSharesSpecs(pID, datasets, properties, ontologies):
+    specs = []
+    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
+    return specs
+
+def getDistributionsSpecs(pID, datasets, properties, ontologies):
+    specs = []
+    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
+    return specs
+
+def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
 
@@ -81,11 +93,10 @@ def getTemporalSpecs(pID, datasets, properties, ontologies):
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = {}
+                spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
 
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:
-                #     specs.append(spec)
                 specs.append(spec)
     return specs   
 
