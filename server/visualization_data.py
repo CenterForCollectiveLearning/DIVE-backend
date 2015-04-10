@@ -74,12 +74,9 @@ def getRawData(spec, conditional, pID, viz_type) :
     return cond_df
 
 def getTemporalData(spec, conditional, pID):
-
     groupby = spec['groupBy']['title']
-    print "Getting temporal data", groupby
     
-    cond_df = getRawData(spec, conditional, pID, 'treemap')
-    print cond_df.dtypes
+    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
 
     aggregated_series = cond_df.groupby(groupby).sum().transpose().to_dict()
     result = {}
@@ -88,6 +85,8 @@ def getTemporalData(spec, conditional, pID):
         for date, val in series.iteritems():
             formatted_series.append({'date': date, 'value': val})
         result[k] = formatted_series
+
+    print len(result), result.keys()
     return result
 
 def getTreemapData(spec, conditional, pID):
@@ -170,6 +169,7 @@ def getScatterplotData(spec, conditional, pID):
         y = spec['y']['title']
         result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(cond_df[x], cond_df[y]) ]
 
+
     return result
 
 
@@ -185,5 +185,6 @@ def getConditionalData(spec, dID, pID):
     header, df = read_file(path)
 
     unique_elements = sorted([e for e in pd.Series(df[spec['name']]).dropna().unique()])
+    print "in getConditionalData", unique_elements
 
     return unique_elements

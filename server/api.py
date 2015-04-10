@@ -404,7 +404,6 @@ class Visualization_Data(Resource):
         conditional = json.loads(args.get('conditional'))
 
         resp = getVisualizationData(viz_type, spec, conditional, pID)
-        print "DATA" , resp
 
         stats = {}
         if (len(resp) > 0) :
@@ -460,9 +459,11 @@ conditionalDataGetParser.add_argument('spec', type=str, required=True)
 class Conditional_Data(Resource):
     def get(self):
         args = conditionalDataGetParser.parse_args()
+        print "GET COND DATA", args
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID').strip().strip('"')
         spec = json.loads(args.get('spec'))
+        
         return json.jsonify({'result': getConditionalData(spec, dID, pID)})
 
 
