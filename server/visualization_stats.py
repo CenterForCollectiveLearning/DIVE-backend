@@ -4,10 +4,16 @@ import scipy
 from scipy.stats import norm, mstats, skew, linregress, chisquare
 from visualization_data import getVisualizationData, getRawData
 
+from time import time
+
 def getVisualizationStats(viz_type, spec, conditional, pID):
     stats = {}
 
+    s = time()
+
+    # TODO Don't retrieve data every time
     raw_data = getRawData(spec, conditional, pID, viz_type)
+    print "Data retrieval time", time() - s
 
     stat_functions = {
         'time series': getTimeSeriesStats,
@@ -31,20 +37,14 @@ def getSharesStats(pID, spec, raw_data) :
     return {}
 
 def getTimeSeriesStats(pID, spec, raw_data):
-    cond_df = raw_data.dropna()
     groupby = spec['groupBy']['title']
-    group_obj = cond_df.groupby(groupby)
-    finalSeries = group_obj.size()
+    # group_obj = cond_df.groupby(groupby)
+    # finalSeries = group_obj.size()
+    unique_elements = np.unique(raw_data[groupby])
 
     stats = {}
-    chisq = chisquare(finalSeries.values)
-    stats['chisq'] = {
-        'chisq' : chisq[0],
-        'p' : chisq[1]
-    }
-
-    stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
-    stats['count'] = finalSeries.shape[0]
+    # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
+    stats['count'] = len(unique_elements)
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :
