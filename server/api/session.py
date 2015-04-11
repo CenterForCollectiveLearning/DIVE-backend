@@ -1,5 +1,5 @@
 from api import app, api
-from db import MongoInstance as MI
+from data.db import MongoInstance as MI
 
 from flask import request, make_response, json
 from flask.ext.restful import Resource

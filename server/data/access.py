@@ -167,9 +167,12 @@ def upload_file(pID, file):
 
 
 def get_data(pID=None, dID=None, path=None, nrows=None):
+    print "IN GET_DATA", pID, dID, path, nrows
     if IMD.hasData(dID):
+        print "IN IMD"
         return IMD.getData(dID)
     else:
+        print "NOT IN IMD"
         if not path:
             dataset = MI.getData({'_id' : ObjectId(dID)}, pID)[0]
             path = dataset['path']

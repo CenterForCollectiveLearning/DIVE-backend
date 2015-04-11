@@ -3,10 +3,10 @@ Utility analysis functions (e.g. distance between columns, overlap)
 '''
 import os
 import json
-from data import *
 from itertools import combinations
 from collections import OrderedDict  # Get unique elements of list while preserving order
-from db import MongoInstance as MI
+from data.db import MongoInstance as MI
+from data.access import get_data, upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
 from time import time
 import numpy as np
 

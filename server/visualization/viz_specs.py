@@ -1,8 +1,7 @@
-from data import is_numeric
-from utility import *
+from data.access import is_numeric
 from itertools import combinations
-from db import MongoInstance as MI
-from visualization_stats import getVisualizationStats
+from data.db import MongoInstance as MI
+from viz_stats import getVisualizationStats
 
 from time import time
 

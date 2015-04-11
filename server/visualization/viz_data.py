@@ -3,19 +3,17 @@
 '''
 Functions for returning the data corresponding to a given visualization type and specification
 '''
-import os
 from flask import Flask  # Don't do this
-from utility import *
-from db import MongoInstance as MI
 from bson.objectid import ObjectId
-from config import config
 
-from data import get_delimiter, get_data
+from data.access import get_delimiter, get_data
+from data.db import MongoInstance as MI
+from data.in_memory_data import InMemoryData as IMD
+
+from config import config
 
 import numpy as np
 import pandas as pd
-
-from in_memory_data import InMemoryData as IMD
 
 vizToRequiredParams = {
     'treemap': ['aggregate', 'groupBy'],
@@ -24,7 +22,6 @@ vizToRequiredParams = {
     'barchart': ['aggregate', 'groupBy'],
     'scatterplot': ['x', 'object']
 }
-
 
 # Utility function to make sure all fields needed to create visualization type are passed
 def requiredParams(type, spec):
@@ -76,15 +73,15 @@ def getTimeSeriesData(spec, conditional, pID):
     groupby = spec['groupBy']['title']
     
     cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
-
-    aggregated_series = cond_df.groupby(groupby).sum().transpose().to_dict()
+    
+    aggregated_series = cond_df.groupby(groupby).sum().transpose()
+    aggregated_series_dict = aggregated_series.to_dict()
     result = {}
-    for k, series in aggregated_series.iteritems():
+    for k, series in aggregated_series_dict.iteritems():
         formatted_series = []
         for date, val in series.iteritems():
             formatted_series.append({'date': date, 'value': val})
         result[k] = formatted_series
-
     return result
 
 def getTreemapData(spec, conditional, pID):

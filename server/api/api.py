@@ -15,16 +15,13 @@ from flask import Flask, jsonify, request, make_response, json, send_file, sessi
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
-from db import MongoInstance as MI
-from data import upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
-from analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
-from specifications import getVisualizationSpecs
-from visualization_data import getVisualizationData, getConditionalData
-from visualization_stats import getVisualizationStats
+from data.db import MongoInstance as MI
+from data.access import upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
+from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
+from visualization.viz_specs import getVisualizationSpecs
+from visualization.viz_data import getVisualizationData, getConditionalData
+from visualization.viz_stats import getVisualizationStats
 from config import config
-from utility import *
-
-PORT = 8888
 
 app = Flask(__name__, static_path='/static')
 app.config['SERVER_NAME'] = "localhost:8888"
@@ -547,7 +544,3 @@ api.add_resource(Conditional_Data, '/api/conditional_data')
 api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
 
 from session import *
-
-if __name__ == '__main__':
-    app.debug = True
-    app.run(port=PORT)

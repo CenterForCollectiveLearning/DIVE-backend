@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import scipy
 from scipy.stats import norm, mstats, skew, linregress, chisquare
-from visualization_data import getVisualizationData, getRawData
+from viz_data import getVisualizationData, getRawData
 
 from time import time
 
@@ -11,24 +11,15 @@ def getVisualizationStats(viz_type, spec, conditional, pID):
 
     s = time()
 
-    # TODO Don't retrieve data every time
-    raw_data = getRawData(spec, conditional, pID, viz_type)
-    print "Data retrieval time", time() - s
-
     stat_functions = {
         'time series': getTimeSeriesStats,
         'distributions': getDistributionsStats,
         'shares': getSharesStats,
     }
 
-    stats = stat_functions[viz_type](pID, spec, raw_data)
+    stats = stat_functions[viz_type](pID, spec, conditional)
     return stats
 
-def getPiechartStats(pID, spec, raw_data) :
-    return getTreemapStats(pID, spec, raw_data)
-
-def getGeomapStats(pID, spec, raw_data) :
-    return getTreemapStats(pID, spec, raw_data)
 
 def getDistributionsStats(pID, spec, raw_data) :
     return {}
@@ -36,15 +27,17 @@ def getDistributionsStats(pID, spec, raw_data) :
 def getSharesStats(pID, spec, raw_data) :
     return {}
 
-def getTimeSeriesStats(pID, spec, raw_data):
+def getTimeSeriesStats(pID, spec, conditional):
     groupby = spec['groupBy']['title']
-    # group_obj = cond_df.groupby(groupby)
-    # finalSeries = group_obj.size()
-    unique_elements = np.unique(raw_data[groupby])
+    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+    aggregated_series = cond_df.groupby(groupby).sum().transpose()
+    means = aggregated_series.mean().to_dict()
 
+    print means
     stats = {}
     # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
-    stats['count'] = len(unique_elements)
+    # stats['count'] = len(unique_elements)
+    stats['means'] = {}
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :
