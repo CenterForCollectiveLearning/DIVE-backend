@@ -41,55 +41,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
 
-@app.before_request
-def option_autoreply():
-
-    """ Always reply 200 on OPTIONS request """
-    if request.method == 'OPTIONS':
-        resp = app.make_default_options_response()
-
-        print "Here comes an OPTIONS request"
-
-        headers = None
-        if 'ACCESS_CONTROL_REQUEST_HEADERS' in request.headers:
-            headers = request.headers['ACCESS_CONTROL_REQUEST_HEADERS']
-
-        h = resp.headers
-
-        # Allow the origin which made the XHR
-        h['Access-Control-Allow-Origin'] = request.headers['Origin']
-        # Allow the actual method
-        h['Access-Control-Allow-Methods'] = request.headers['Access-Control-Request-Method']
-        # Allow for 10 seconds
-        h['Access-Control-Max-Age'] = "10"
-
-        # We also keep current headers
-        if headers is not None:
-            h['Access-Control-Allow-Headers'] = headers
-
-        return resp
-
-@app.after_request
-def replace_nan(resp):
-    cleaned_data = resp.get_data().replace('nan', 'null').replace('NaN', 'null')
-    resp.set_data(cleaned_data)
-    return resp
-
-@app.after_request
-def set_allow_origin(resp):
-    """ Set origin for GET, POST, PUT, DELETE requests """
-
-    h = resp.headers
-
-    # Allow crossdomain for other HTTP Verbs
-    if request.method != 'OPTIONS' and 'Origin' in request.headers:
-        h['Access-Control-Allow-Origin'] = request.headers['Origin']
-    return resp
-
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
 
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
@@ -274,9 +227,7 @@ projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
 class Project(Resource):
     def get(self):
-        print "hello!"
         args = projectGetParser.parse_args()
-        print args
         pID = args.get('pID').strip().strip('"')
         user_name = args.get('user_name')
         print "GET", pID, user_name

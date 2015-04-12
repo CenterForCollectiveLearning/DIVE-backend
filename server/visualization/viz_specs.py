@@ -28,6 +28,7 @@ def getVisualizationSpecs(pID):
     spec_functions = {
         "shares": getSharesSpecs,
         "time series": getTimeSeriesSpecs,
+        "comparison": getComparisonSpecs,
         # "distributions": getDistributionsSpecs
     }
 
@@ -96,6 +97,11 @@ def getSharesSpecs(pID, datasets, properties, ontologies):
                 specs.append(spec)
     print "Got time series specs, time:", time() - start_time
     return specs   
+
+def getComparisonSpecs(pID, datasets, properties, ontologies):
+    specs = []
+    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
+    return specs
 
 def getDistributionsSpecs(pID, datasets, properties, ontologies):
     specs = []

@@ -40,6 +40,7 @@ def getVisualizationData(type, spec, conditional, pID):
             'time series': getTimeSeriesData,
             'shares': getSharesData,
             'distributions': getDistributionsData,
+            'comparisons': getComparisonsData,
         }
         return viz_data_functions[type](spec, conditional, pID)
     else:
@@ -62,6 +63,18 @@ def getRawData(spec, conditional, pID, viz_type) :
     cond_df = df
 
     return cond_df
+
+def getComparisonsData(spec, conditional, pID):
+    print "Getting comparisons data"
+    groupby = spec['groupBy']['title']
+    
+    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+    
+    aggregated = cond_df.groupby(groupby).sum().transpose().sum().to_dict()
+    result = []
+    for k, v in aggregated.iteritems():
+        result.append({groupby: k, 'value': v})
+    return result
 
 def getSharesData(spec, conditional, pID):
     print "Getting shares data"

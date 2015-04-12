@@ -31,11 +31,15 @@ def getTimeSeriesStats(spec, conditional, pID):
     means = aggregated_series.mean().to_dict()
     stds = aggregated_series.std().to_dict()
 
+    normalized_stds = {}
+    for k, std in stds.iteritems():
+        normalized_stds[k] = std / means[k]
+
     stats = {}
     # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
     # stats['count'] = len(unique_elements)
     stats['means'] = means
-    stats['stds'] = stds
+    stats['stds'] = normalized_stds
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :
