@@ -10,6 +10,8 @@ from data.access import get_delimiter, get_data
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
 
+import viz_stats
+
 from config import config
 
 import numpy as np
@@ -39,8 +41,7 @@ def getVisualizationData(type, spec, conditional, pID):
             'shares': getSharesData,
             'distributions': getDistributionsData,
         }
-        viz_data = viz_data_functions[type](spec, conditional, pID)
-        return viz_data
+        return viz_data_functions[type](spec, conditional, pID)
     else:
         return "Did not pass required parameters", 400
 
@@ -63,7 +64,16 @@ def getRawData(spec, conditional, pID, viz_type) :
     return cond_df
 
 def getSharesData(spec, conditional, pID):
-    return {}
+    print "Getting shares data"
+    groupby = spec['groupBy']['title']
+    
+    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+    
+    aggregated = cond_df.groupby(groupby).sum().transpose().sum().to_dict()
+    result = []
+    for k, v in aggregated.iteritems():
+        result.append({groupby: k, 'value': v})
+    return result
 
 def getDistributionsData(spec, conditional, pID):
     return {}
@@ -76,12 +86,14 @@ def getTimeSeriesData(spec, conditional, pID):
     
     aggregated_series = cond_df.groupby(groupby).sum().transpose()
     aggregated_series_dict = aggregated_series.to_dict()
+
     result = {}
     for k, series in aggregated_series_dict.iteritems():
         formatted_series = []
         for date, val in series.iteritems():
             formatted_series.append({'date': date, 'value': val})
         result[k] = formatted_series
+
     return result
 
 def getTreemapData(spec, conditional, pID):
@@ -135,7 +147,6 @@ def getScatterplotData(spec, conditional, pID):
     result = []
     # stats = {}
     if agg:
-        # cond_df = df
         group_obj = cond_df.groupby(x)
         finalSeries = group_obj.size()
 

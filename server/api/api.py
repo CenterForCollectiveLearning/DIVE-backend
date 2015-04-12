@@ -404,10 +404,7 @@ class Visualization_Data(Resource):
         conditional = json.loads(args.get('conditional'))
 
         resp = getVisualizationData(viz_type, spec, conditional, pID)
-
-        stats = {}
-        if (len(resp) > 0) :
-            stats = getVisualizationStats(viz_type, spec, conditional, pID)
+        stats = getVisualizationStats(viz_type, spec, conditional, pID)
 
         return make_response(jsonify({'result': resp, 'stats' : stats}))
 

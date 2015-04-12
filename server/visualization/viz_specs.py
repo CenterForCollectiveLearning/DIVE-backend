@@ -1,7 +1,8 @@
 from data.access import is_numeric
 from itertools import combinations
 from data.db import MongoInstance as MI
-from viz_stats import getVisualizationStats
+from viz_stats import *
+
 
 from time import time
 
@@ -27,7 +28,7 @@ def getVisualizationSpecs(pID):
     spec_functions = {
         "shares": getSharesSpecs,
         "time series": getTimeSeriesSpecs,
-        "distributions": getDistributionsSpecs
+        # "distributions": getDistributionsSpecs
     }
 
     RECOMPUTE = True
@@ -45,20 +46,56 @@ def getVisualizationSpecs(pID):
                 spec['viz_type'] = viz_type
 
             # Persistence
-            if specs:
-                sIDs = MI.postSpecs(pID, specs)
-                for i, spec in enumerate(specs):
-                    spec['sID'] = sIDs[i]
-                    del spec['_id']
+            # if specs:
+            #     sIDs = MI.postSpecs(pID, specs)
+            #     for i, spec in enumerate(specs):
+            #         spec['sID'] = sIDs[i]
+            #         del spec['_id']
 
             specs_by_viz_type[viz_type] = specs
 
         return specs_by_viz_type
 
 def getSharesSpecs(pID, datasets, properties, ontologies):
+    start_time = time()
+    print "Getting time series specs"
+
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-    return specs
+
+    for p in properties:
+        dID = p['dID']
+        # TODO Perform this as a database query with a specific document?
+        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
+
+        types = p['types']
+        uniques = p['uniques']
+        headers = p['headers']
+        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
+
+        # For all non-unique attributes
+        # TODO filter out columns in which all have the same attribute
+        for index in non_uniques:
+            type = types[index]
+
+            # Aggregate on each factor attribute
+            # TODO: Group numeric attributes with smart binning
+            if not is_numeric(type):
+                spec = {
+                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
+                    'groupBy': {'index': index, 'title': headers[index]},
+                    'condition': {'index': None, 'title': None},
+                    'chosen': None,
+                }
+                stat_time = time()
+                # spec['stats'] = {}
+                spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
+
+                # Don't aggregate on uniformly distributed columns
+                # if spec['stats']['count'] > 1:
+                specs.append(spec)
+    print "Got time series specs, time:", time() - start_time
+    return specs   
 
 def getDistributionsSpecs(pID, datasets, properties, ontologies):
     specs = []

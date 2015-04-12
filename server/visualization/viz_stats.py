@@ -2,14 +2,12 @@ import numpy as np
 import pandas as pd
 import scipy
 from scipy.stats import norm, mstats, skew, linregress, chisquare
-from viz_data import getVisualizationData, getRawData
+from viz_data import *
 
 from time import time
 
 def getVisualizationStats(viz_type, spec, conditional, pID):
     stats = {}
-
-    s = time()
 
     stat_functions = {
         'time series': getTimeSeriesStats,
@@ -17,9 +15,8 @@ def getVisualizationStats(viz_type, spec, conditional, pID):
         'shares': getSharesStats,
     }
 
-    stats = stat_functions[viz_type](pID, spec, conditional)
+    stats = stat_functions[viz_type](spec, conditional, pID)
     return stats
-
 
 def getDistributionsStats(pID, spec, raw_data) :
     return {}
@@ -27,17 +24,18 @@ def getDistributionsStats(pID, spec, raw_data) :
 def getSharesStats(pID, spec, raw_data) :
     return {}
 
-def getTimeSeriesStats(pID, spec, conditional):
+def getTimeSeriesStats(spec, conditional, pID):
     groupby = spec['groupBy']['title']
     cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
     aggregated_series = cond_df.groupby(groupby).sum().transpose()
     means = aggregated_series.mean().to_dict()
+    stds = aggregated_series.std().to_dict()
 
-    print means
     stats = {}
     # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
     # stats['count'] = len(unique_elements)
-    stats['means'] = {}
+    stats['means'] = means
+    stats['stds'] = stds
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :
