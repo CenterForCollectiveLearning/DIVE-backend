@@ -477,6 +477,16 @@ class Render_SVG(Resource):
         img_io.seek(10)
         return send_file(img_io)  #, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
+
+#####################################################################
+# TEST Endpoint
+#####################################################################
+class Test(Resource):
+    def get(self):
+        return make_response(jsonify({'result': 'test'}))
+
+
+api.add_resource(Test, '/api/test')
 api.add_resource(Public_Data, '/api/public_data')
 api.add_resource(Render_SVG, '/api/render_svg')
 api.add_resource(UploadFile, '/api/upload')
