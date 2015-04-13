@@ -3,7 +3,6 @@ from itertools import combinations
 from data.db import MongoInstance as MI
 from viz_stats import *
 
-
 from time import time
 
 #####################################################################
@@ -28,7 +27,7 @@ def getVisualizationSpecs(pID):
     spec_functions = {
         "shares": getSharesSpecs,
         "time series": getTimeSeriesSpecs,
-        "comparison": getComparisonSpecs,
+        # "comparison": getComparisonSpecs,
         # "distributions": getDistributionsSpecs
     }
 
@@ -47,11 +46,12 @@ def getVisualizationSpecs(pID):
                 spec['viz_type'] = viz_type
 
             # Persistence
-            # if specs:
-            #     sIDs = MI.postSpecs(pID, specs)
-            #     for i, spec in enumerate(specs):
-            #         spec['sID'] = sIDs[i]
-            #         del spec['_id']
+
+            if specs:
+                sIDs = MI.postSpecs(pID, specs)
+                for i, spec in enumerate(specs):
+                    spec['sID'] = sIDs[i]
+                    del spec['_id']
 
             specs_by_viz_type[viz_type] = specs
 
@@ -86,6 +86,7 @@ def getSharesSpecs(pID, datasets, properties, ontologies):
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
+                    'viz_type': 'shares',
                     'chosen': None,
                 }
                 stat_time = time()
@@ -99,9 +100,44 @@ def getSharesSpecs(pID, datasets, properties, ontologies):
     return specs   
 
 def getComparisonSpecs(pID, datasets, properties, ontologies):
+    start_time = time()
+
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-    return specs
+
+    for p in properties:
+        dID = p['dID']
+        # TODO Perform this as a database query with a specific document?
+        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
+
+        types = p['types']
+        uniques = p['uniques']
+        headers = p['headers']
+        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
+
+        # For all non-unique attributes
+        # TODO filter out columns in which all have the same attribute
+        for index in non_uniques:
+            type = types[index]
+
+            # Aggregate on each factor attribute
+            # TODO: Group numeric attributes with smart binning
+            if not is_numeric(type):
+                spec = {
+                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
+                    'groupBy': {'index': index, 'title': headers[index]},
+                    'condition': {'index': None, 'title': None},
+                    'viz_type': 'comparison',
+                    'chosen': None,
+                }
+                stat_time = time()
+                spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
+
+                # Don't aggregate on uniformly distributed columns
+                # if spec['stats']['count'] > 1:
+                specs.append(spec)
+    return specs   
+
 
 def getDistributionsSpecs(pID, datasets, properties, ontologies):
     specs = []
@@ -137,11 +173,11 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
                     'condition': {'index': None, 'title': None},
+                    'viz_type': 'time series',
                     'chosen': None,
                 }
                 stat_time = time()
                 spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
-                print "Stat time", time() - stat_time
 
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:

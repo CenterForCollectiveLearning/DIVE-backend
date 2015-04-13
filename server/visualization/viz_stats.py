@@ -27,17 +27,18 @@ def getSharesStats(pID, spec, raw_data) :
 def getTimeSeriesStats(spec, conditional, pID):
     groupby = spec['groupBy']['title']
     cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
-    aggregated_series = cond_df.groupby(groupby).sum().transpose()
+
+    grouped_df = cond_df.groupby(groupby)
+    aggregated_series = grouped_df.sum().transpose()
     means = aggregated_series.mean().to_dict()
     stds = aggregated_series.std().to_dict()
-
     normalized_stds = {}
     for k, std in stds.iteritems():
         normalized_stds[k] = std / means[k]
 
     stats = {}
     # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
-    # stats['count'] = len(unique_elements)
+    stats['count'] = len(np.unique(cond_df[groupby]))
     stats['means'] = means
     stats['stds'] = normalized_stds
     return stats
