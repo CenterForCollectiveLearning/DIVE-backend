@@ -40,7 +40,9 @@ def compute_properties(pID, datasets):
         dID = dataset['dID']
         path = dataset['path']
         df = get_data(pID=pID, dID=dID)
+
         header = df.columns.values
+        df = df.fillna('')
 
         # Statistical properties
         print "\tDescribing datasets"
@@ -59,6 +61,7 @@ def compute_properties(pID, datasets):
         print "\t\t", time() - start_time, "seconds"
         print "\tGetting types"
         types = get_column_types(df)
+        print types
 
         # Save properties into collection
         dataset_properties = {

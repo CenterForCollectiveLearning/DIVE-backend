@@ -11,11 +11,11 @@ import json
 
 # TODO: Use a SON manipulator?
 def remove_dots(data):
-    for key in data.keys():
-        if type(data[key]) is dict: data[key] = remove_dots(data[key])
-        if '.' in key:
-            data[key.replace('.', '\uff0E')] = data[key]
-            del data[key]
+    for k, d in data.iteritems():
+        if type(d) is dict: d = remove_dots(d)
+        if '.' in k and isinstance(k, basestring):
+            data[k.replace('.', '\uff0E')] = data[k]
+            del data[k]
     return data
 
 def formatObjectIDs(collectionName, results):

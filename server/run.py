@@ -29,11 +29,17 @@ def option_autoreply():
 
         return resp
 
+
 @app.after_request
 def replace_nan(resp):
-    cleaned_data = resp.get_data().replace('nan', 'null').replace('NaN', 'null')
-    resp.set_data(cleaned_data)
-    return resp
+    print resp
+    try:
+        cleaned_data = resp.get_data().replace('nan', 'null').replace('NaN', 'null')
+        resp.set_data(cleaned_data)
+        return resp
+    except:
+        return resp
+
 
 @app.after_request
 def set_allow_origin(resp):

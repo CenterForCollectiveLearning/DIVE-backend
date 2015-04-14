@@ -445,7 +445,7 @@ class Render_SVG(Resource):
         format = data['format']
         svg = data['svg']
 
-        filename = 'test.%s' % format
+        filename = 'visualization.%s' % format
         fout = open(filename, 'wb')
         print "Writing file"
 
@@ -474,7 +474,7 @@ class Render_SVG(Resource):
             cairosvg.svg2png(bytestring=bytestring, write_to=img_io)
         fout.close()
 
-        img_io.seek(10)
+        img_io.seek(0)
         return send_file(img_io)  #, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
 

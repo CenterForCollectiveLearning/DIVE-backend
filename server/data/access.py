@@ -40,13 +40,17 @@ types = {
 def get_sample_data(path, start=0, inc=20) :
     end = start + inc  # Upper bound excluded
     df = get_data(path=path)
-
     header = df.columns.values
     df = df.fillna('')
     sample = map(list, df.iloc[start:end].values)
 
     n_rows, n_cols = df.shape
     types = get_column_types(df)
+
+    print n_rows, n_cols, len(header), len(types)
+    for i in range(0, n_cols):
+        print i, header[i], types[i]
+
     extension = path.rsplit('.', 1)[1]
     column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, n_cols)]
 
@@ -167,21 +171,18 @@ def upload_file(pID, file):
 
 
 def get_data(pID=None, dID=None, path=None, nrows=None):
-    print "IN GET_DATA", pID, dID, path, nrows
     if IMD.hasData(dID):
-        print "IN IMD"
         return IMD.getData(dID)
-    else:
-        print "NOT IN IMD"
-        if not path:
-            dataset = MI.getData({'_id' : ObjectId(dID)}, pID)[0]
-            path = dataset['path']
-        extension = path.rsplit('.', 1)[1]
-        if extension in ['csv', 'tsv', 'txt']:
-            delim = get_delimiter(path)
-            df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
-            IMD.insertData(dID, df)
-            return df
+    if path:
+        delim = get_delimiter(path)
+        df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
+    if dID:
+        dataset = MI.getData({'_id' : ObjectId(dID)}, pID)[0]
+        path = dataset['path']
+        delim = get_delimiter(path)
+        df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
+        IMD.insertData(dID, df)
+    return df
 
 
 # Given a path, reads file and returns headers and a df
@@ -199,7 +200,9 @@ def get_data(pID=None, dID=None, path=None, nrows=None):
 
 INT_REGEX = "^-?[0-9]+$"
 # FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?"
-FLOAT_REGEX = "(\d+(?:[.,]\d*)?)"
+#"(\d+(?:[.,]\d*)?)"
+FLOAT_REGEX = "^\d+([\,]\d+)*([\.]\d+)?$" 
+
 
 COUNTRY_CODES_2 = ['AD', 'AE', 'AF', 'AG', 'AL', 'AM', 'AO', 'AR', 'AT', 'AU', 'AW', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BM', 'BN', 'BO', 'BR', 'BT', 'BW', 'BY', 'CA', 'CD', 'CF', 'CG', 'CH', 'CI', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DO', 'DZ', 'EC', 'EE', 'EG', 'ER', 'ES', 'ET', 'FI', 'FM', 'FO', 'FR', 'GA', 'GB', 'GE', 'GH', 'GI', 'GL', 'GM', 'GN', 'GQ', 'GR', 'GT', 'GW', 'GY', 'HK', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KN', 'KP', 'KR', 'KW', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MG', 'MK', 'ML', 'MM', 'MN', 'MR', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA', 'NE', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NZ', 'OM', 'PA', 'PE', 'PH', 'PK', 'PL', 'PR', 'PS', 'PT', 'PY', 'QA', 'RO', 'RS', 'RU', 'RW', 'SA', 'SC', 'SD', 'SE', 'SG', 'SI', 'SK', 'SL', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SY', 'SZ', 'TD', 'TG', 'TH', 'TJ', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TW', 'TZ', 'UA', 'UG', 'UNK', 'US', 'UY', 'UZ', 'VE', 'VI', 'VN', 'VU', 'WS', 'XK', 'YE', 'ZA', 'ZM', 'ZW']
 COUNTRY_CODES_3 = ['AND', 'ARE', 'AFG', 'ATG', 'ALB', 'ARM', 'AGO', 'ARG', 'AUT', 'AUS', 'ABW', 'AZE', 'BIH', 'BRB', 'BGD', 'BEL', 'BFA', 'BGR', 'BHR', 'BDI', 'BEN', 'BMU', 'BRN', 'BOL', 'BRA', 'BTN', 'BWA', 'BLR', 'CAN', 'COD', 'CAF', 'COG', 'CHE', 'CIV', 'CHL', 'CMR', 'CHN', 'COL', 'CRI', 'CUB', 'CPV', 'CYP', 'CZE', 'DEU', 'DJI', 'DNK', 'DOM', 'DZA', 'ECU', 'EST', 'EGY', 'ERI', 'ESP', 'ETH', 'FIN', 'FSM', 'FRO', 'FRA', 'GAB', 'GBR', 'GEO', 'GHA', 'GIB', 'GRL', 'GMB', 'GIN', 'GNQ', 'GRC', 'GTM', 'GNB', 'GUY', 'HKG', 'HND', 'HRV', 'HTI', 'HUN', 'IDN', 'IRL', 'ISR', 'IMN', 'IND', 'IRQ', 'IRN', 'ISL', 'ITA', 'JEY', 'JAM', 'JOR', 'JPN', 'KEN', 'KGZ', 'KHM', 'KIR', 'KNA', 'PRK', 'KOR', 'KWT', 'KAZ', 'LAO', 'LBN', 'LCA', 'LIE', 'LKA', 'LBR', 'LSO', 'LTU', 'LUX', 'LVA', 'LBY', 'MAR', 'MCO', 'MDA', 'MNE', 'MDG', 'MKD', 'MLI', 'MMR', 'MNG', 'MRT', 'MLT', 'MUS', 'MDV', 'MWI', 'MEX', 'MYS', 'MOZ', 'NAM', 'NER', 'NGA', 'NIC', 'NLD', 'NOR', 'NPL', 'NRU', 'NZL', 'OMN', 'PAN', 'PER', 'PHL', 'PAK', 'POL', 'PRI', 'PSE', 'PRT', 'PRY', 'QAT', 'ROU', 'SRB', 'RUS', 'RWA', 'SAU', 'SYC', 'SDN', 'SWE', 'SGP', 'SVN', 'SVK', 'SLE', 'SEN', 'SOM', 'SUR', 'SSD', 'STP', 'SLV', 'SYR', 'SWZ', 'TCD', 'TGO', 'THA', 'TJK', 'TLS', 'TKM', 'TUN', 'TON', 'TUR', 'TTO', 'TWN', 'TZA', 'UKR', 'UGA', 'UNK', 'USA', 'URY', 'UZB', 'VEN', 'VIR', 'VNM', 'VUT', 'WSM', 'SCG', 'YEM', 'ZAF', 'ZMB', 'ZWE']
@@ -211,6 +214,7 @@ CONTINENT_NAMES = ['Asia', 'Europe', 'North America', 'South America', 'Australi
 # TODO: Write algorithm to get best estimate given a sample, not a single variable
 def get_variable_type(v):
     v = str(v)
+
     # Numeric
     if re.match(INT_REGEX, v): 
         return "integer"
@@ -249,13 +253,27 @@ def get_delimiter(path):
 
 
 def is_numeric(x):
+    # if x in ['integer', 'float', 'datetime']: return True
     if x in ['integer', 'float', 'datetime']: return True
     else: return False
 
+def get_first_nonempty_values(df):
+    result = []
+    for col in df.columns:
+        for v in df[col]:
+            if (v != '' and not pd.isnull(v)):
+                result.append(v)
+                break
+            else:
+                continue
+    print [x for x in df.iloc[0]], [x for x in df.iloc[1]], len ([x for x in df.iloc[0]])
+    print result, len(result)
+    return result
+
 
 # Get column types given a data frame (super naive)
-def get_column_types(df):    
-    sample_line = [x for x in df.iloc[0]]
+def get_column_types(df): 
+    sample_line = get_first_nonempty_values(df)  #[x for x in df.iloc[0]]
     types = [get_variable_type(v) for v in sample_line]
     return types
 

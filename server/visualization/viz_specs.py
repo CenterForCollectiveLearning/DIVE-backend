@@ -46,12 +46,11 @@ def getVisualizationSpecs(pID):
                 spec['viz_type'] = viz_type
 
             # Persistence
-
-            if specs:
-                sIDs = MI.postSpecs(pID, specs)
-                for i, spec in enumerate(specs):
-                    spec['sID'] = sIDs[i]
-                    del spec['_id']
+            # if specs:
+            #     sIDs = MI.postSpecs(pID, specs)
+            #     for i, spec in enumerate(specs):
+            #         spec['sID'] = sIDs[i]
+            #         del spec['_id']
 
             specs_by_viz_type[viz_type] = specs
 
@@ -96,7 +95,7 @@ def getSharesSpecs(pID, datasets, properties, ontologies):
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:
                 specs.append(spec)
-    print "Got time series specs, time:", time() - start_time
+    print "Got shares specs, time:", time() - start_time
     return specs   
 
 def getComparisonSpecs(pID, datasets, properties, ontologies):
@@ -119,6 +118,7 @@ def getComparisonSpecs(pID, datasets, properties, ontologies):
         # TODO filter out columns in which all have the same attribute
         for index in non_uniques:
             type = types[index]
+            print type
 
             # Aggregate on each factor attribute
             # TODO: Group numeric attributes with smart binning

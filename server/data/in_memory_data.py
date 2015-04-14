@@ -4,9 +4,11 @@ class inMemoryData(object):
         self.data = {}
 
     def insertData(self, dID, df):
+        print "insertData", dID, df.columns.values
         self.data[dID] = df
 
     def hasData(self, dID):
+        print "hasData", dID
         if dID in self.data:
             return True
         else:
