@@ -1,4 +1,6 @@
 from api.api import app
+from gevent.wsgi import WSGIServer
+import werkzeug.serving
 from flask import request
 
 @app.before_request
@@ -58,6 +60,15 @@ def index():
 
 PORT = 8888
 
+
+@werkzeug.serving.run_with_reloader
+def run_server():
+    http_server = WSGIServer(('', PORT), app)
+    http_server.serve_forever()
+    print "Serving application on port: %s" % PORT
+
+# http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
 if __name__ == '__main__':
-    app.debug = True
-    app.run(port=PORT)
+    run_server()
+    # app.debug = True
+    # app.run(port=PORT, threaded=True)
