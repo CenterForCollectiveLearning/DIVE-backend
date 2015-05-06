@@ -109,23 +109,45 @@ def getDistributionsData(spec, conditional, pID):
     return {}
 
 def getTimeSeriesData(spec, conditional, pID):
-    print "Getting time series data with conditional:", conditional
-    groupby = spec['groupBy']['title']
-
-    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
-
-    print 'CONDITIONED DF:', cond_df
-    
-    aggregated_series = cond_df.groupby(groupby).sum().transpose()
-    aggregated_series_dict = aggregated_series.to_dict()
-
     result = {}
-    for k, series in aggregated_series_dict.iteritems():
-        formatted_series = []
-        for date, val in series.iteritems():
-            formatted_series.append({'date': date, 'value': val})
-        result[k] = formatted_series
+    # Grouping by specific attribute
+    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+    if spec['groupBy']:
+        groupby = spec['groupBy']['title']
+        aggregated_series = cond_df.groupby(groupby).sum().transpose()
+        aggregated_series_dict = aggregated_series.to_dict()
 
+
+        print "Normalizing"
+        total_vals_by_date = {}
+        # Normalization
+        for k, series in aggregated_series_dict.iteritems():
+            formatted_series = []
+            for date, val in series.iteritems():
+                if date not in total_vals_by_date:
+                    total_vals_by_date[date] = val
+                else:
+                    total_vals_by_date[date] += val
+        print total_vals_by_date
+
+        for k, series in aggregated_series_dict.iteritems():
+            formatted_series = []
+            for date, val in series.iteritems():
+                val = val / total_vals_by_date[date]
+                formatted_series.append({'date': date, 'value': val})
+            result[k] = formatted_series
+
+    # Top-level visualization
+    else:
+        aggregated_series = cond_df.sum(numeric_only=True).transpose()
+        aggregated_series_dict = aggregated_series.to_dict()
+
+        formatted_series = []
+        for date, val in aggregated_series_dict.iteritems():
+            formatted_series.append({'date': date, 'value': val})
+        result['All'] = formatted_series
+
+    print "viz_data result", result
     return result
 
 def getTreemapData(spec, conditional, pID):

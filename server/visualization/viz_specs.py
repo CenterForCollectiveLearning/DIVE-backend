@@ -151,6 +151,9 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
 
+    # No grouping
+
+
     for p in properties:
         dID = p['dID']
         # TODO Perform this as a database query with a specific document?
@@ -163,6 +166,11 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
 
         # For all non-unique attributes
         # TODO filter out columns in which all have the same attribute
+        specs.append({
+            'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
+            'groupBy': None,
+            'viz_type': 'time series'
+        })
         for index in non_uniques:
             type = types[index]
 
@@ -172,7 +180,6 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
                     'groupBy': {'index': index, 'title': headers[index]},
-                    'condition': {'index': None, 'title': None},
                     'viz_type': 'time series',
                     'chosen': None,
                 }

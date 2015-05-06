@@ -25,22 +25,38 @@ def getSharesStats(pID, spec, raw_data) :
     return {}
 
 def getTimeSeriesStats(spec, conditional, pID):
-    groupby = spec['groupBy']['title']
-    cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
-
-    grouped_df = cond_df.groupby(groupby)
-    aggregated_series = grouped_df.sum().transpose()
-    means = aggregated_series.mean().to_dict()
-    stds = aggregated_series.std().to_dict()
-    normalized_stds = {}
-    for k, std in stds.iteritems():
-        normalized_stds[k] = std / means[k]
-
+    print "Calculating stats"
     stats = {}
-    # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
-    stats['count'] = len(np.unique(cond_df[groupby]))
-    stats['means'] = means
-    stats['stds'] = normalized_stds
+    if spec['groupBy']:
+        groupby = spec['groupBy']['title']
+        cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+    
+        grouped_df = cond_df.groupby(groupby)
+        aggregated_series = grouped_df.sum().transpose()
+        means = aggregated_series.mean().to_dict()
+        stds = aggregated_series.std().to_dict()
+        normalized_stds = {}
+        for k, std in stds.iteritems():
+            normalized_stds[k] = std / means[k]
+    
+
+        # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
+        stats['count'] = len(np.unique(cond_df[groupby]))
+        stats['means'] = means
+        stats['stds'] = normalized_stds
+    else:
+        print "No groupBy"
+        cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+        aggregated_series = cond_df.sum(numeric_only=True).transpose()
+        mean = aggregated_series.mean()
+        std = aggregated_series.std()
+        normalized_std = std / mean
+    
+        stats = {}
+        stats['count'] = 1
+        stats['means'] = {'All': mean}
+        stats['stds'] = {'All': normalized_std}
+        print "Stats", stats
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :
