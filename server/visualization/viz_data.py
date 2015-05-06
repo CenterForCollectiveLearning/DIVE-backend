@@ -6,7 +6,7 @@ Functions for returning the data corresponding to a given visualization type and
 from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
-from data.access import get_delimiter, get_data
+from data.access import get_delimiter, get_data, detect_time_series
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
 
@@ -47,7 +47,6 @@ def getVisualizationData(type, spec, conditional, pID):
         return "Did not pass required parameters", 400
 
 def getRawData(spec, conditional, pID, viz_type) :
-
     if viz_type in ['treemap', 'geomap', 'piechart', 'time series'] :
         dID = spec['aggregate']['dID']
 
@@ -55,11 +54,29 @@ def getRawData(spec, conditional, pID, viz_type) :
         dID = spec['object']['dID']
 
     df = get_data(pID=pID, dID=dID)
-    
+    time_series_obj = detect_time_series(df)
+    time_series_names = time_series_obj['time_series']['names']
+
+    # Removing date fields
+    dropped_columns = []
     if conditional.get(dID) :
-        for k, v in conditional[dID].iteritems() :
-            if v != 'All' :
-                df = df[df[k] == v]
+        for k, v in conditional[dID].iteritems():
+            # For date conditionals, remove all date fields out the range            
+            if (k == 'Start Date'):
+                dropped_columns.extend(time_series_names[:time_series_names.index(v)])
+            if (k == 'End Date'):
+                dropped_columns.extend(time_series_names[time_series_names.index(v):])
+
+    df = df.drop(dropped_columns, 1)
+
+    # Subsetting rows based on conditional
+    if conditional.get(dID) :
+        for k, v in conditional[dID].iteritems():
+            if (k in ['Start Date', 'End Date']):
+                continue
+            else:
+                if (v != 'All') :
+                    df = df[df[k] == v]
     cond_df = df
 
     return cond_df
@@ -92,10 +109,12 @@ def getDistributionsData(spec, conditional, pID):
     return {}
 
 def getTimeSeriesData(spec, conditional, pID):
-    print "Getting time series data"
+    print "Getting time series data with conditional:", conditional
     groupby = spec['groupBy']['title']
-    
+
     cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+
+    print 'CONDITIONED DF:', cond_df
     
     aggregated_series = cond_df.groupby(groupby).sum().transpose()
     aggregated_series_dict = aggregated_series.to_dict()
@@ -182,14 +201,14 @@ def getScatterplotData(spec, conditional, pID):
         y = spec['y']['title']
         result = [ {x: x_val, y: y_val} for (x_val, y_val) in zip(cond_df[x], cond_df[y]) ]
 
-
     return result
 
 def getConditionalData(spec, dID, pID):
-    # Load dataset (GENERALIZE THIS)
-    # TODO Use getRawData function
     df = get_data(pID=pID, dID=dID)
 
-    unique_elements = sorted([e for e in pd.Series(df[spec['name']]).dropna().unique()])
+    if spec['name'] in ['Start Date', 'End Date']:
+        time_series_data = detect_time_series(df)
+        return time_series_data['time_series']['names']
 
+    unique_elements = sorted([e for e in pd.Series(df[spec['name']]).dropna().unique()])
     return unique_elements

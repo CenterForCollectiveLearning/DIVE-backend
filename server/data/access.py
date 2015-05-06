@@ -20,6 +20,7 @@ from db import MongoInstance as MI
 from bson.objectid import ObjectId
 from in_memory_data import InMemoryData as IMD
 
+
 types = {
     'numeric': [
         'integer',
@@ -46,10 +47,11 @@ def get_sample_data(path, start=0, inc=50) :
 
     n_rows, n_cols = df.shape
     types = get_column_types(df)
-
-    print n_rows, n_cols, len(header), len(types)
-    for i in range(0, n_cols):
-        print i, header[i], types[i]
+    time_series = detect_time_series(df)
+    if time_series:
+        structure = 'wide'
+    else:
+        structure = 'long'
 
     extension = path.rsplit('.', 1)[1]
     column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, n_cols)]
@@ -61,7 +63,8 @@ def get_sample_data(path, start=0, inc=50) :
         'rows': n_rows,
         'cols': n_cols,
         'filetype': extension,
-        'structure': 'long'
+        'structure': structure,
+        'time_series': time_series
     }
     return result
 
@@ -72,7 +75,6 @@ def get_sample_data(path, start=0, inc=50) :
 # 3. Return sample
 def upload_file(pID, file):
     # Save file as csv
-
     filename = secure_filename(file.filename)
     file_type = filename.rsplit('.', 1)[1]
     path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
@@ -253,21 +255,22 @@ def get_delimiter(path):
 
 
 def is_numeric(x):
-    # if x in ['integer', 'float', 'datetime']: return True
     if x in ['integer', 'float', 'datetime']: return True
     else: return False
 
+
+# If all empty, return empty string
 def get_first_nonempty_values(df):
     result = []
     for col in df.columns:
+        appended_value = ''
         for v in df[col]:
             if (v != '' and not pd.isnull(v)):
-                result.append(v)
+                appended_value = v
                 break
             else:
                 continue
-    print [x for x in df.iloc[0]], [x for x in df.iloc[1]], len ([x for x in df.iloc[0]])
-    print result, len(result)
+        result.append(appended_value)
     return result
 
 
@@ -278,3 +281,64 @@ def get_column_types(df):
     return types
 
 
+# TODO: Get total range, separation of each data point
+##########
+# Given a data frame, if a time series is detected then return the start and end indexes
+# Else, return False
+##########
+def detect_time_series(df):
+    # 1) Check if any headers are dates
+    date_headers = []
+    col_header_types = []
+    for col in df.columns.values:
+        try:
+            if dparser.parse(col):
+                date_headers.append(col)
+                col_header_types.append(True)
+        except ValueError:
+            col_header_types.append(False)
+
+    # 2) Find contiguous blocks of headers that are dates
+    # 2a) Require at least one field to be a date (to avoid error catching below)
+    if not any(col_header_types):
+        print "Not a time series: need at least one field to be a date"
+        return False
+
+    # 2b) Require at least two fields to be dates
+    start_index = col_header_types.index(True)
+    end_index = len(col_header_types) - 1 - col_header_types[::-1].index(True)
+    if (end_index - start_index) <= 0:
+        print "Not a time series: need at least two contiguous fields to be dates"
+        return False
+
+    # 3) Ensure that the contiguous block are all of the same type and numeric
+    col_types = get_column_types(df)
+    col_types_of_dates = [col_types[i] for (i, is_date) in enumerate(col_header_types) if is_date]
+    if not (len(set(col_types_of_dates)) == 1):
+        print "Not a time series: need contiguous fields to have the same type"
+        return False
+
+    start_name = df.columns.values[start_index]        
+    end_name = df.columns.values[end_index]
+    ts_length = dparser.parse(end_name) - dparser.parse(start_name)
+    ts_num_elements = end_index - start_index + 1
+
+    # ASSUMPTION: Uniform intervals in time series
+    ts_interval = (dparser.parse(end_name) - dparser.parse(start_name)) / ts_num_elements
+
+    result = { 
+        'start': {
+            'index': start_index,
+            'name': start_name
+        },
+        'end': {
+            'index': end_index,
+            'name': end_name
+        },
+        'time_series': {
+            'num_elements': end_index - start_index + 1,
+            'length': ts_length.total_seconds(),
+            'names': date_headers
+        }
+    }
+    return result

@@ -44,6 +44,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('pID', type=str, required=True)

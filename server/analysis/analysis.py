@@ -27,6 +27,7 @@ def detect_unique_list(l):
 def get_unique(li):
     return list(np.unique(li))
 
+
 # Compute properties of all passed datasets
 # Arguments: pID + list of dIDs
 # Returns a mapping from dIDs to properties
@@ -79,6 +80,7 @@ def compute_properties(pID, datasets):
 
     return stats_dict, types_dict, headers_dict, is_unique_dict
 
+
 def get_properties(pID, datasets) :
     stats_dict = {}
     types_dict = {}
@@ -96,6 +98,7 @@ def get_properties(pID, datasets) :
 
     return stats_dict, types_dict, headers_dict, is_unique_dict
 
+
 # Find the distance between two sets
 # Currently naively uses Jaccard distance between two sets
 def get_distance(list_a, list_b):
@@ -111,6 +114,7 @@ def get_hierarchy(l1, l2):
     else:
         res = "1N"
     return res
+
 
 def compute_ontologies(pID, datasets) :
     new_dIDs = [d['dID'] for d in datasets]
@@ -175,6 +179,7 @@ def compute_ontologies(pID, datasets) :
                         }
                         oID = MI.upsertOntology(pID, ontology)
     return overlaps, hierarchies
+
 
 def get_ontologies(pID, datasets) :
     overlaps = {}
