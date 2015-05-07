@@ -347,6 +347,7 @@ visualizationDataGetParser = reqparse.RequestParser()
 visualizationDataGetParser.add_argument('pID', type=str, required=True)
 visualizationDataGetParser.add_argument('spec', type=str, required=True)
 visualizationDataGetParser.add_argument('conditional', type=str, required=True)
+visualizationDataGetParser.add_argument('config', type=str, required=True)
 class Visualization_Data(Resource):
     def get(self):
         args = visualizationDataGetParser.parse_args()
@@ -354,9 +355,10 @@ class Visualization_Data(Resource):
         spec = json.loads(args.get('spec'))
         viz_type = spec['viz_type']
         conditional = json.loads(args.get('conditional'))
+        config = json.loads(args.get('config'))
 
-        resp = getVisualizationData(viz_type, spec, conditional, pID)
-        stats = getVisualizationStats(viz_type, spec, conditional, pID)
+        resp = getVisualizationData(viz_type, spec, conditional, config, pID)
+        stats = getVisualizationStats(viz_type, spec, conditional, config, pID)
 
         return make_response(jsonify({'result': resp, 'stats' : stats}))
 

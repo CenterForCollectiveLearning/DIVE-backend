@@ -6,7 +6,7 @@ from viz_data import *
 
 from time import time
 
-def getVisualizationStats(viz_type, spec, conditional, pID):
+def getVisualizationStats(viz_type, spec, conditional, config, pID):
     stats = {}
 
     stat_functions = {
@@ -15,7 +15,7 @@ def getVisualizationStats(viz_type, spec, conditional, pID):
         'shares': getSharesStats,
     }
 
-    stats = stat_functions[viz_type](spec, conditional, pID)
+    stats = stat_functions[viz_type](spec, conditional, config, pID)
     return stats
 
 def getDistributionsStats(pID, spec, raw_data) :
@@ -24,12 +24,12 @@ def getDistributionsStats(pID, spec, raw_data) :
 def getSharesStats(pID, spec, raw_data) :
     return {}
 
-def getTimeSeriesStats(spec, conditional, pID):
+def getTimeSeriesStats(spec, conditional, config, pID):
     print "Calculating stats"
     stats = {}
     if spec['groupBy']:
         groupby = spec['groupBy']['title']
-        cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+        cond_df = getRawData('treemap', spec, conditional, config, pID).fillna(0)
     
         grouped_df = cond_df.groupby(groupby)
         aggregated_series = grouped_df.sum().transpose()
@@ -46,7 +46,7 @@ def getTimeSeriesStats(spec, conditional, pID):
         stats['stds'] = normalized_stds
     else:
         print "No groupBy"
-        cond_df = getRawData(spec, conditional, pID, 'treemap').fillna(0)
+        cond_df = getRawData('treemap', spec, conditional, config, pID).fillna(0)
         aggregated_series = cond_df.sum(numeric_only=True).transpose()
         mean = aggregated_series.mean()
         std = aggregated_series.std()
@@ -56,7 +56,7 @@ def getTimeSeriesStats(spec, conditional, pID):
         stats['count'] = 1
         stats['means'] = {'All': mean}
         stats['stds'] = {'All': normalized_std}
-        print "Stats", stats
+    print "Stats", stats
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :

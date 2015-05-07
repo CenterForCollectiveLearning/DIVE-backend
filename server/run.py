@@ -69,6 +69,6 @@ def run_server():
 
 # http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
 if __name__ == '__main__':
-    # run_server()
-    app.debug = True
-    app.run(port=PORT)  #, threaded=True)
+    run_server()
+    # app.debug = True
+    # app.run(port=PORT)  #, threaded=True)

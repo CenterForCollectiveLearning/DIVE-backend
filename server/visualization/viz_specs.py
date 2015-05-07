@@ -90,7 +90,7 @@ def getSharesSpecs(pID, datasets, properties, ontologies):
                 }
                 stat_time = time()
                 # spec['stats'] = {}
-                spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
+                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
 
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:
@@ -131,7 +131,7 @@ def getComparisonSpecs(pID, datasets, properties, ontologies):
                     'chosen': None,
                 }
                 stat_time = time()
-                spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
+                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
 
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:
@@ -184,7 +184,7 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
                     'chosen': None,
                 }
                 stat_time = time()
-                spec['stats'] = getVisualizationStats('time series', spec, {}, pID)
+                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
 
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:
@@ -222,7 +222,7 @@ def getTreemapSpecs(pID, datasets, properties, ontologies):
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = getVisualizationStats('treemap', spec, {}, pID)
+                spec['stats'] = getVisualizationStats('treemap', spec, {}, config, pID)
 
                 # Don't aggregate on uniformly distributed columns
                 if spec['stats']['count'] > 1:
@@ -256,7 +256,7 @@ def getGeomapSpecs(pID, datasets, properties, ontologies):
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = getVisualizationStats('geomap', spec, {}, pID)
+                spec['stats'] = getVisualizationStats('geomap', spec, {}, config, pID)
                 specs.append(spec)
     return specs
 
@@ -306,6 +306,6 @@ def getScatterplotSpecs(pID, datasets, properties, ontologies):
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
-                spec['stats'] = getVisualizationStats('scatterplot', spec, {}, pID)
+                spec['stats'] = getVisualizationStats('scatterplot', spec, {}, config, pID)
                 specs.append(spec)                
     return specs
