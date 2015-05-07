@@ -104,6 +104,7 @@ def getSharesData(spec, conditional, config, pID):
     result = []
     for k, v in aggregated.iteritems():
         result.append({groupby: k, 'value': v})
+    print "SHARES DATA RESULT:", result
     return result
 
 

@@ -18,10 +18,10 @@ def getVisualizationStats(viz_type, spec, conditional, config, pID):
     stats = stat_functions[viz_type](spec, conditional, config, pID)
     return stats
 
-def getDistributionsStats(pID, spec, raw_data) :
+def getDistributionsStats(spec, conditional, config, pID):
     return {}
 
-def getSharesStats(pID, spec, raw_data) :
+def getSharesStats(spec, conditional, config, pID):
     return {}
 
 def getTimeSeriesStats(spec, conditional, config, pID):
