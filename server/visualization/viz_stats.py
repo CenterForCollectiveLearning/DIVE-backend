@@ -6,22 +6,70 @@ from viz_data import *
 
 from time import time
 
-def getVisualizationStats(viz_type, spec, conditional, config, pID):
+def getVisualizationStats(category, spec, conditional, config, pID):
     stats = {}
 
     stat_functions = {
         'time series': getTimeSeriesStats,
         'distributions': getDistributionsStats,
         'shares': getSharesStats,
+        'comparison': getComparisonStats
     }
 
-    stats = stat_functions[viz_type](spec, conditional, config, pID)
+    stats = stat_functions[category](spec, conditional, config, pID)
     return stats
+
+def getComparisonStats(spec, conditional, config, pID):
+    print "Getting comparisons stats"
+    compare_attr = spec['compare']['title']
+    cond_df = getRawData('comparison', spec, conditional, config, pID).fillna(0)
+
+    groupby = 'Brand'
+    unique_elements = sorted([e for e in pd.Series(cond_df[compare_attr]).dropna().unique()])
+
+    final_stats = {}
+    for (a, b) in combinations(unique_elements, 2):
+        df_subset_a = cond_df[cond_df[compare_attr] == a]
+        aggregated_a = df_subset_a.groupby(groupby).sum().transpose().sum().to_dict()
+
+        df_subset_b = cond_df[cond_df[compare_attr] == b]
+        aggregated_b = df_subset_b.groupby(groupby).sum().transpose().sum().to_dict()
+
+        pair_result = []
+        a_vals = []
+        b_vals = []
+        for k, val_a in aggregated_a.iteritems():
+            if k in aggregated_b:
+                val_b = aggregated_b[k]
+                a_vals.append(val_a)
+                b_vals.append(val_b)
+
+        correlation, p_value = sp.stats.pearsonr(a_vals, b_vals)
+        regression_obj = {
+            'correlation': correlation,
+            'p_value': p_value
+        }
+
+        slope, intercept, r_value, p_value, std_err = sp.stats.linregress(a_vals, b_vals)
+        correlation_obj = {
+            'slope': slope,
+            'intercept': intercept,
+            'r_value': r_value,
+            'p_value': p_value,
+            'std_err': std_err
+        }
+        final_stats['%s\t%s' % (a, b)] = {
+            'correlation': correlation_obj,
+            'regression': regression_obj
+        }
+
+    return final_stats
 
 def getDistributionsStats(spec, conditional, config, pID):
     return {}
 
 def getSharesStats(spec, conditional, config, pID):
+
     return {}
 
 def getTimeSeriesStats(spec, conditional, config, pID):
@@ -56,7 +104,6 @@ def getTimeSeriesStats(spec, conditional, config, pID):
         stats['count'] = 1
         stats['means'] = {'All': mean}
         stats['stds'] = {'All': normalized_std}
-    print "Stats", stats
     return stats
 
 def getTreemapStats(pID, spec, raw_data) :

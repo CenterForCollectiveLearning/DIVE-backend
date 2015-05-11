@@ -10,12 +10,16 @@ from data.access import get_delimiter, get_data, detect_time_series
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
 
+from itertools import combinations
+
 import viz_stats
 
 from config import config
 
 import numpy as np
 import pandas as pd
+import scipy as sp
+import math
 
 vizToRequiredParams = {
     'treemap': ['aggregate', 'groupBy'],
@@ -35,12 +39,13 @@ def requiredParams(type, spec):
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, config, pID):
+    print "Getting visualization data", type, spec, conditional, config
     if requiredParams(type, spec):
         viz_data_functions = {
             'time series': getTimeSeriesData,
             'shares': getSharesData,
             'distributions': getDistributionsData,
-            'comparisons': getComparisonsData,
+            'comparison': getComparisonsData,
         }
         return viz_data_functions[type](spec, conditional, config, pID)
     else:
@@ -50,7 +55,7 @@ def getRawData(type, spec, conditional, config, pID) :
     if type in ['treemap', 'geomap', 'piechart', 'time series'] :
         dID = spec['aggregate']['dID']
 
-    elif type in ['scatterplot', 'barchart', 'linechart'] :
+    elif type in ['comparison', 'scatterplot', 'barchart', 'linechart'] :
         dID = spec['object']['dID']
 
     df = get_data(pID=pID, dID=dID)
@@ -83,15 +88,32 @@ def getRawData(type, spec, conditional, config, pID) :
 
 def getComparisonsData(spec, conditional, config, pID):
     print "Getting comparisons data"
-    groupby = spec['groupBy']['title']
-    
-    cond_df = getRawData('treemap', spec, conditional, config, pID).fillna(0)
-    
-    aggregated = cond_df.groupby(groupby).sum().transpose().sum().to_dict()
-    result = []
-    for k, v in aggregated.iteritems():
-        result.append({groupby: k, 'value': v})
-    return result
+    compare_attr = spec['compare']['title']
+    cond_df = getRawData('comparison', spec, conditional, config, pID).fillna(0)
+
+    groupby = 'Brand'
+    unique_elements = sorted([e for e in pd.Series(cond_df[compare_attr]).dropna().unique()])
+
+    final_result = {}
+    for (a, b) in combinations(unique_elements, 2):
+        df_subset_a = cond_df[cond_df[compare_attr] == a]
+        aggregated_a = df_subset_a.groupby(groupby).sum().transpose().sum().to_dict()
+
+        df_subset_b = cond_df[cond_df[compare_attr] == b]
+        aggregated_b = df_subset_b.groupby(groupby).sum().transpose().sum().to_dict()
+
+        pair_result = []
+        a_vals = []
+        b_vals = []
+        for k, val_a in aggregated_a.iteritems():
+            if k in aggregated_b:
+                val_b = aggregated_b[k]
+                a_vals.append(math.log(val_a))
+                b_vals.append(math.log(val_b))
+                pair_result.append({a: val_a, b: val_b, 'label': k})
+        final_result['%s\t%s' % (a, b)] = pair_result
+
+    return final_result
 
 
 def getSharesData(spec, conditional, config, pID):

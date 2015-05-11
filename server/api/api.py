@@ -334,8 +334,8 @@ class Specification(Resource):
     def get(self):
         args = specificationGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        specs_by_viz_type = getVisualizationSpecs(pID)
-        return make_response(jsonify(specs_by_viz_type))
+        specs_by_category = getVisualizationSpecs(pID)
+        return make_response(jsonify(specs_by_category))
 
 
 #####################################################################
@@ -353,12 +353,12 @@ class Visualization_Data(Resource):
         args = visualizationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         spec = json.loads(args.get('spec'))
-        viz_type = spec['viz_type']
+        category = spec['category']
         conditional = json.loads(args.get('conditional'))
         config = json.loads(args.get('config'))
 
-        resp = getVisualizationData(viz_type, spec, conditional, config, pID)
-        stats = getVisualizationStats(viz_type, spec, conditional, config, pID)
+        resp = getVisualizationData(category, spec, conditional, config, pID)
+        stats = getVisualizationStats(category, spec, conditional, config, pID)
 
         return make_response(jsonify({'result': resp, 'stats' : stats}))
 
@@ -380,7 +380,7 @@ class Choose_Spec(Resource):
         conditional = json.loads(args.get('conditional'))
 
         spec = MI.getSpecs(pID, {"_id" : ObjectId(sID)})[0]
-        stats = getVisualizationStats(spec['viz_type'], spec, conditional, pID)
+        stats = getVisualizationStats(spec['category'], spec, conditional, pID)
 
         print "Choose spec", pID, sID, conditional, stats
         MI.chooseSpec(pID, sID, conditional, stats)
