@@ -21,7 +21,7 @@ def getVisualizationSpecs(pID):
     specs_by_category = {
         "shares": [],
         "time series": [],
-        "distributions": [],
+        "distribution": [],
         "comparison": []
     }
 
@@ -29,7 +29,7 @@ def getVisualizationSpecs(pID):
         "shares": getSharesSpecs,
         "time series": getTimeSeriesSpecs,
         "comparison": getComparisonSpecs,
-        # "distributions": getDistributionsSpecs
+        "distribution": getDistributionsSpecs
     }
 
     RECOMPUTE = True
@@ -126,7 +126,7 @@ def getComparisonSpecs(pID, datasets, properties, ontologies):
                     'category': 'comparison',
                 }
 
-                spec['stats'] = {}  # getVisualizationStats('time series', spec, {}, config, pID)
+                spec['stats'] = getVisualizationStats('comparison', spec, {}, config, pID)
 
                 # Don't aggregate on uniformly distributed columns
                 # if spec['stats']['count'] > 1:
@@ -135,9 +135,47 @@ def getComparisonSpecs(pID, datasets, properties, ontologies):
 
 
 def getDistributionsSpecs(pID, datasets, properties, ontologies):
+    start_time = time()
+    print "Getting time series specs"
+
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
+
+    for p in properties:
+        dID = p['dID']
+        # TODO Perform this as a database query with a specific document?
+        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
+
+        types = p['types']
+        uniques = p['uniques']
+        headers = p['headers']
+        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
+
+        # For all non-unique attributes
+        # TODO filter out columns in which all have the same attribute
+        for index in non_uniques:
+            type = types[index]
+
+            # Aggregate on each factor attribute
+            # TODO: Group numeric attributes with smart binning
+            if not is_numeric(type):
+                spec = {
+                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
+                    'groupBy': {'index': index, 'title': headers[index]},
+                    'condition': {'index': None, 'title': None},
+                    'category': 'distribution',
+                    'chosen': None,
+                }
+                stat_time = time()
+                # spec['stats'] = {}
+                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
+
+                # Don't aggregate on uniformly distributed columns
+                # if spec['stats']['count'] > 1:
+                specs.append(spec)
+    print "Got shares specs, time:", time() - start_time
     return specs
+
 
 def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
     start_time = time()

@@ -11,13 +11,17 @@ def getVisualizationStats(category, spec, conditional, config, pID):
 
     stat_functions = {
         'time series': getTimeSeriesStats,
-        'distributions': getDistributionsStats,
+        'distribution': getDistributionStats,
         'shares': getSharesStats,
         'comparison': getComparisonStats
     }
 
     stats = stat_functions[category](spec, conditional, config, pID)
     return stats
+
+def nCr(n,r):
+    f = math.factorial
+    return f(n) / f(r) / f(n-r)
 
 def getComparisonStats(spec, conditional, config, pID):
     print "Getting comparisons stats"
@@ -28,6 +32,12 @@ def getComparisonStats(spec, conditional, config, pID):
     unique_elements = sorted([e for e in pd.Series(cond_df[compare_attr]).dropna().unique()])
 
     final_stats = {}
+    num_combinations = nCr(len(unique_elements), 2)
+    final_stats['count'] = num_combinations
+
+    if num_combinations > 100:
+        return final_stats
+
     for (a, b) in combinations(unique_elements, 2):
         df_subset_a = cond_df[cond_df[compare_attr] == a]
         aggregated_a = df_subset_a.groupby(groupby).sum().transpose().sum().to_dict()
@@ -65,17 +75,16 @@ def getComparisonStats(spec, conditional, config, pID):
 
     return final_stats
 
-def getDistributionsStats(spec, conditional, config, pID):
+def getDistributionStats(spec, conditional, config, pID):
     return {}
 
 def getSharesStats(spec, conditional, config, pID):
-
     return {}
 
 def getTimeSeriesStats(spec, conditional, config, pID):
     print "Calculating stats"
     stats = {}
-    if spec['groupBy']:
+    if spec.get('groupBy'):
         groupby = spec['groupBy']['title']
         cond_df = getRawData('treemap', spec, conditional, config, pID).fillna(0)
     

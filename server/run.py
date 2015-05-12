@@ -61,14 +61,14 @@ def index():
 PORT = 8888
 
 
-@werkzeug.serving.run_with_reloader
-def run_server():
-    http_server = WSGIServer(('', PORT), app)
-    http_server.serve_forever()
-    print "Serving application on port: %s" % PORT
+# @werkzeug.serving.run_with_reloader
+# def run_server():
+#     http_server = WSGIServer(('', PORT), app)
+#     http_server.serve_forever()
+#     print "Serving application on port: %s" % PORT
 
 # http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
 if __name__ == '__main__':
-    run_server()
-    # app.debug = True
-    # app.run(port=PORT)  #, threaded=True)
+    # run_server()
+    app.debug = True
+    app.run(port=PORT)  #, threaded=True)
