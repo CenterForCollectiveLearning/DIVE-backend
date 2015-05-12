@@ -129,13 +129,13 @@ def getTreemapStats(pID, spec, raw_data) :
     # print finalSeries.describe().to_dict()
     # print cond_df[groupby].describe().to_dict()
 
-    chisq = chisquare(finalSeries.values)
-    stats['chisq'] = {
-        'chisq' : chisq[0],
-        'p' : chisq[1]
-    }
+    # chisq = chisquare(finalSeries.values)
+    # stats['chisq'] = {
+    #     'chisq' : chisq[0],
+    #     'p' : chisq[1]
+    # }
 
-    stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
+    # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
 
     # print finalSeries.shape
     stats['count'] = finalSeries.shape[0]
