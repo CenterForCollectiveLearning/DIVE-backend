@@ -62,7 +62,6 @@ def compute_properties(pID, datasets):
         print "\t\t", time() - start_time, "seconds"
         print "\tGetting types"
         types = get_column_types(df)
-        print types
 
         # Save properties into collection
         dataset_properties = {
