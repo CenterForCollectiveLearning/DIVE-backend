@@ -28,7 +28,7 @@ def getVisualizationSpecs(pID):
     spec_functions = {
         "shares": getSharesSpecs,
         "time series": getTimeSeriesSpecs,
-        "comparison": getComparisonSpecs,
+        # "comparison": getComparisonSpecs,
         "distribution": getDistributionsSpecs
     }
 
