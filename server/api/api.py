@@ -11,20 +11,17 @@ import cairocffi as cairo
 import cairosvg
 from StringIO import StringIO
 
-from flask import Flask, render_template, redirect, url_for, request, make_response, json, send_file, session
+from flask import Flask, jsonify, request, make_response, json, send_file, session
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
-from db import MongoInstance as MI
-from data import upload_file, get_sample_data, read_file, get_column_types, get_delimiter, is_numeric
-from analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
-from specifications import getVisualizationSpecs
-from visualization_data import getVisualizationData, getConditionalData
-from visualization_stats import getVisualizationStats
+from data.db import MongoInstance as MI
+from data.access import upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
+from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
+from visualization.viz_specs import getVisualizationSpecs
+from visualization.viz_data import getVisualizationData, getConditionalData
+from visualization.viz_stats import getVisualizationStats
 from config import config
-from utility import *
-
-PORT = 8888
 
 app = Flask(__name__, static_path='/static')
 app.config['SERVER_NAME'] = "localhost:8888"
@@ -44,47 +41,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
 
-@app.before_request
-def option_autoreply():
-
-    """ Always reply 200 on OPTIONS request """
-    if request.method == 'OPTIONS':
-        resp = app.make_default_options_response()
-
-        print "Here comes an OPTIONS request"
-
-        headers = None
-        if 'ACCESS_CONTROL_REQUEST_HEADERS' in request.headers:
-            headers = request.headers['ACCESS_CONTROL_REQUEST_HEADERS']
-
-        h = resp.headers
-
-        # Allow the origin which made the XHR
-        h['Access-Control-Allow-Origin'] = request.headers['Origin']
-        # Allow the actual method
-        h['Access-Control-Allow-Methods'] = request.headers['Access-Control-Request-Method']
-        # Allow for 10 seconds
-        h['Access-Control-Max-Age'] = "10"
-
-        # We also keep current headers
-        if headers is not None:
-            h['Access-Control-Allow-Headers'] = headers
-
-        return resp
-
-
-@app.after_request
-def set_allow_origin(resp):
-    """ Set origin for GET, POST, PUT, DELETE requests """
-
-    h = resp.headers
-
-    # Allow crossdomain for other HTTP Verbs
-    if request.method != 'OPTIONS' and 'Origin' in request.headers:
-        h['Access-Control-Allow-Origin'] = request.headers['Origin']
-    return resp
-
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
@@ -100,21 +56,21 @@ class UploadFile(Resource):
         if file and allowed_file(file.filename):
             # Get document with metadata and some samples
             datasets = upload_file(pID, file)
-            json_data = json.jsonify({
+            json_data = {
                 'status': 'success',
                 'datasets': datasets
-            })
+            }
 
             data = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, datasets)}, pID)
             compute_properties(pID, data)
             print "Done initializing properties"
 
-            compute_ontologies(pID, data)
-            print "Done initializing ontologies"
+            # compute_ontologies(pID, data)
+            # print "Done initializing ontologies"
 
-            response = make_response(json_data)
+            response = make_response(jsonify(json_data))
             return response
-        return json.jsonify({'status': 'Upload failed'})
+        return make_response(jsonify({'status': 'Upload failed'}))
 
 
 # Public Dataset retrieval
@@ -146,15 +102,14 @@ class Public_Data(Resource):
             data_list = []
             for d in datasets:
                 path = d['path']
-
                 result = get_sample_data(path)
                 result.update({
                     'title': d['title'],
                     'filename': d['filename'],
-                    'dID': d['dID']
+                    'dID': d['dID'],
                 })
                 data_list.append(result)
-            return json.jsonify({'status': 'success', 'datasets': data_list})
+            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
     def post(self):
         args = publicDataPostParser.parse_args()
@@ -185,7 +140,7 @@ class Public_Data(Resource):
                 })
             data_list.append(result)
 
-        return json.jsonify({'status': 'success', 'datasets': data_list})
+        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
 
 # Dataset retrieval, editing, deletion
@@ -225,7 +180,7 @@ class Data(Resource):
                     'dID': d['dID']
                 })
                 data_list.append(result)
-            return json.jsonify({'status': 'success', 'datasets': data_list})
+            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
     def delete(self):
         args = dataDeleteParser.parse_args()
@@ -273,9 +228,7 @@ projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
 class Project(Resource):
     def get(self):
-        print "hello!"
         args = projectGetParser.parse_args()
-        print args
         pID = args.get('pID').strip().strip('"')
         user_name = args.get('user_name')
         print "GET", pID, user_name
@@ -342,7 +295,7 @@ class Property(Resource):
             'hierarchies': hierarchies,
         }
 
-        return json.jsonify(all_properties)
+        return make_response(jsonify(all_properties))
 
 ## approach:
 ## each data upload -> add in new ontologies
@@ -367,22 +320,22 @@ class Property(Resource):
                 'hierarchy' : h
             }
             MI.upsertOntology(pID, o)
-        return json.jsonify({})
+        return make_response(jsonify({}))
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
 # INPUT: pID, uID
 # OUTPUT: {visualizationType: [visualizationSpecification]}
 #####################################################################
-specificationDataGetParser = reqparse.RequestParser()
-specificationDataGetParser.add_argument('pID', type=str, required=True)
-specificationDataGetParser.add_argument('sID', type=str, action='append')
+specificationGetParser = reqparse.RequestParser()
+specificationGetParser.add_argument('pID', type=str, required=True)
+specificationGetParser.add_argument('sID', type=str, action='append')
 class Specification(Resource):
     def get(self):
-        args = specificationDataGetParser.parse_args()
+        args = specificationGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        specs_by_viz_type = getVisualizationSpecs(pID)
-        return specs_by_viz_type
+        specs_by_category = getVisualizationSpecs(pID)
+        return make_response(jsonify(specs_by_category))
 
 
 #####################################################################
@@ -392,26 +345,22 @@ class Specification(Resource):
 #####################################################################
 visualizationDataGetParser = reqparse.RequestParser()
 visualizationDataGetParser.add_argument('pID', type=str, required=True)
-visualizationDataGetParser.add_argument('type', type=str, required=True)
 visualizationDataGetParser.add_argument('spec', type=str, required=True)
 visualizationDataGetParser.add_argument('conditional', type=str, required=True)
+visualizationDataGetParser.add_argument('config', type=str, required=True)
 class Visualization_Data(Resource):
     def get(self):
-        print "Getting viz data"
         args = visualizationDataGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        viz_type = args.get('type')
         spec = json.loads(args.get('spec'))
+        category = spec['category']
         conditional = json.loads(args.get('conditional'))
+        config = json.loads(args.get('config'))
 
-        resp = getVisualizationData(viz_type, spec, conditional, pID)
-        print "DATA" , resp
+        resp = getVisualizationData(category, spec, conditional, config, pID)
+        stats = getVisualizationStats(category, spec, conditional, config, pID)
 
-        stats = {}
-        if (len(resp) > 0) :
-            stats = getVisualizationStats(viz_type, spec, conditional, pID)
-
-        return json.jsonify({'result': resp, 'stats' : stats})
+        return make_response(jsonify({'result': resp, 'stats' : stats}))
 
 
 #####################################################################
@@ -431,7 +380,7 @@ class Choose_Spec(Resource):
         conditional = json.loads(args.get('conditional'))
 
         spec = MI.getSpecs(pID, {"_id" : ObjectId(sID)})[0]
-        stats = getVisualizationStats(spec['viz_type'], spec, conditional, pID)
+        stats = getVisualizationStats(spec['category'], spec, conditional, pID)
 
         print "Choose spec", pID, sID, conditional, stats
         MI.chooseSpec(pID, sID, conditional, stats)
@@ -461,10 +410,12 @@ conditionalDataGetParser.add_argument('spec', type=str, required=True)
 class Conditional_Data(Resource):
     def get(self):
         args = conditionalDataGetParser.parse_args()
+        print "GET COND DATA", args
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID').strip().strip('"')
         spec = json.loads(args.get('spec'))
-        return json.jsonify({'result': getConditionalData(spec, dID, pID)})
+        
+        return make_response(jsonify({'result': getConditionalData(spec, dID, pID)}))
 
 
 #####################################################################
@@ -482,7 +433,7 @@ class Exported_Visualization_Spec(Resource):
         if args.get('eID'):
             eID = args.get('eID').strip().strip('"')
             find_doc = {'_id': ObjectId(eID)}
-        return json.jsonify({'result': MI.getExportedSpecs(find_doc, pID)})
+        return make_response(jsonify({'result': MI.getExportedSpecs(find_doc, pID)}))
 
 
 #####################################################################
@@ -497,7 +448,7 @@ class Render_SVG(Resource):
         format = data['format']
         svg = data['svg']
 
-        filename = 'test.%s' % format
+        filename = 'visualization.%s' % format
         fout = open(filename, 'wb')
         print "Writing file"
 
@@ -526,9 +477,19 @@ class Render_SVG(Resource):
             cairosvg.svg2png(bytestring=bytestring, write_to=img_io)
         fout.close()
 
-        img_io.seek(10)
+        img_io.seek(0)
         return send_file(img_io)  #, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
+
+#####################################################################
+# TEST Endpoint
+#####################################################################
+class Test(Resource):
+    def get(self):
+        return make_response(jsonify({'result': 'test'}))
+
+
+api.add_resource(Test, '/api/test')
 api.add_resource(Public_Data, '/api/public_data')
 api.add_resource(Render_SVG, '/api/render_svg')
 api.add_resource(UploadFile, '/api/upload')
@@ -544,10 +505,3 @@ api.add_resource(Conditional_Data, '/api/conditional_data')
 api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
 
 from session import *
-
-# print app.config
-
-
-if __name__ == '__main__':
-    app.debug = True
-    app.run(port=PORT)

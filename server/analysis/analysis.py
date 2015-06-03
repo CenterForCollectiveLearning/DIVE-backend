@@ -3,10 +3,10 @@ Utility analysis functions (e.g. distance between columns, overlap)
 '''
 import os
 import json
-from data import *
 from itertools import combinations
 from collections import OrderedDict  # Get unique elements of list while preserving order
-from db import MongoInstance as MI
+from data.db import MongoInstance as MI
+from data.access import get_data, upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
 from time import time
 import numpy as np
 
@@ -27,6 +27,7 @@ def detect_unique_list(l):
 def get_unique(li):
     return list(np.unique(li))
 
+
 # Compute properties of all passed datasets
 # Arguments: pID + list of dIDs
 # Returns a mapping from dIDs to properties
@@ -39,7 +40,10 @@ def compute_properties(pID, datasets):
     for dataset in datasets:
         dID = dataset['dID']
         path = dataset['path']
-        header, df = read_file(path)
+        df = get_data(pID=pID, dID=dID)
+
+        header = df.columns.values
+        df = df.fillna('')
 
         # Statistical properties
         print "\tDescribing datasets"
@@ -75,6 +79,7 @@ def compute_properties(pID, datasets):
 
     return stats_dict, types_dict, headers_dict, is_unique_dict
 
+
 def get_properties(pID, datasets) :
     stats_dict = {}
     types_dict = {}
@@ -92,6 +97,7 @@ def get_properties(pID, datasets) :
 
     return stats_dict, types_dict, headers_dict, is_unique_dict
 
+
 # Find the distance between two sets
 # Currently naively uses Jaccard distance between two sets
 def get_distance(list_a, list_b):
@@ -108,9 +114,9 @@ def get_hierarchy(l1, l2):
         res = "1N"
     return res
 
+
 def compute_ontologies(pID, datasets) :
     new_dIDs = [d['dID'] for d in datasets]
-    # print [d['dID'] for d in MI.getData({}, pID)]
     all_datasets = MI.getData({}, pID)
     all_dIDs = [d['dID'] for d in all_datasets]
     print "NEW: ", new_dIDs
@@ -121,10 +127,10 @@ def compute_ontologies(pID, datasets) :
     uniqued_dict = {}
     for d in all_datasets:
         dID = d['dID']
-        path = d['path']
 
         print "\t\tReading file"
-        header, df = read_file(path)
+        df = get_data(pID=pID, dID=dID)
+        header = df.columns.values
 
         print "\t\tGetting raw cols"
         raw_columns_dict[dID] = [list(df[col]) for col in df]
@@ -172,6 +178,7 @@ def compute_ontologies(pID, datasets) :
                         }
                         oID = MI.upsertOntology(pID, ontology)
     return overlaps, hierarchies
+
 
 def get_ontologies(pID, datasets) :
     overlaps = {}

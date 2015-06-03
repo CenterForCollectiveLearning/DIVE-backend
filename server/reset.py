@@ -4,7 +4,7 @@ Script to reset development environment (clean database and upload paths)
 import os
 import shutil
 from bson.objectid import ObjectId
-from db import MongoInstance
+from data.db import MongoInstance as MI
 from config import config
 
 
@@ -24,21 +24,21 @@ def create_directories():
 
 
 def clean_database():
-    pIDs = [str(e['_id']) for e in MongoInstance.client['dive'].projects.find()]
+    pIDs = [str(e['_id']) for e in MI.client['dive'].projects.find()]
 
     print "Removing project dbs"
     for pID in pIDs:
-        MongoInstance.client.drop_database(pID)
+        MI.client.drop_database(pID)
 
     print "Cleaning projects from DIVE db"
     for pID in pIDs:
-        MongoInstance.client['dive'].projects.remove({'_id': ObjectId(pID)})
+        MI.client['dive'].projects.remove({'_id': ObjectId(pID)})
 
     print "Cleaning users from DIVE db"
-    MongoInstance.client['dive'].users.remove()
+    MI.client['dive'].users.remove()
 
     print "Cleaning preloaded datasets from DIVE db"
-    MongoInstance.client['dive'].datasets.remove()
+    MI.client['dive'].datasets.remove()
     return
 
 

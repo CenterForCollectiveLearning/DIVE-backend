@@ -1,5 +1,5 @@
 from api import app, api
-from db import MongoInstance as MI
+from data.db import MongoInstance as MI
 
 from flask import request, make_response, json
 from flask.ext.restful import Resource
@@ -15,14 +15,17 @@ def register() :
     if (len(existing) != 1) :
         pw_hash = sha256_crypt.encrypt(params['password'])
         uID = MI.postNewUser(params['userName'], params['displayName'], pw_hash)
-        resp['success'] = 1
+        resp['success'] = True
         resp['user'] = {
             'userName' : params['userName'],
             'displayName' : params['displayName'],
             'uID' : uID
         }
     else :
-        resp['success'] = 0
+        resp['success'] = False
+        resp['error'] = {
+            'reason': 'Username already taken.'
+        }
 
     return make_response(json.jsonify(resp))
 
@@ -38,13 +41,16 @@ def login() :
         u = user[0]
 
         if sha256_crypt.verify(params['password'], u['password']) :
-            resp['success'] = 1
+            resp['success'] = True
             resp['user'] = {
                 'userName' : u['userName'],
                 'displayName' : u['displayName'],
                 'uID' : u['uID']
             }
         else :
-            resp['success'] = 0
+            resp['success'] = False
+            resp['error'] = {
+                'reason': 'Incorrect username or password.'
+            }
 
     return make_response(json.jsonify(resp))
