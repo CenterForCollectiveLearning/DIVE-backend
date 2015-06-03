@@ -22,7 +22,7 @@ def getVisualizationSpecs(pID):
         "shares": [],
         "time series": [],
         "distribution": [],
-        "comparison": []
+        # "comparison": []
     }
 
     spec_functions = {
@@ -59,7 +59,7 @@ def getVisualizationSpecs(pID):
 
 def getSharesSpecs(pID, datasets, properties, ontologies):
     start_time = time()
-    print "Getting time series specs"
+    print "Getting shares specs"
 
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
@@ -84,8 +84,11 @@ def getSharesSpecs(pID, datasets, properties, ontologies):
             if not is_numeric(type):
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'groupBy': {'index': index, 'title': headers[index]},
-                    'condition': {'index': None, 'title': None},
+                    'group': {
+                      'by': { 'index': index, 'title': headers[index] }, 
+                      'on': None,
+                      'function': 'count',
+                    },
                     'category': 'shares',
                     'chosen': None,
                 }
@@ -136,7 +139,7 @@ def getComparisonSpecs(pID, datasets, properties, ontologies):
 
 def getDistributionsSpecs(pID, datasets, properties, ontologies):
     start_time = time()
-    print "Getting time series specs"
+    print "Getting distribution specs"
 
     specs = []
     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
@@ -161,7 +164,11 @@ def getDistributionsSpecs(pID, datasets, properties, ontologies):
             if not is_numeric(type):
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'groupBy': {'index': index, 'title': headers[index]},
+                    'group': {
+                      'by': { 'index': index, 'title': headers[index] }, 
+                      'on': None,
+                      'function': 'count',
+                    },
                     'condition': {'index': None, 'title': None},
                     'category': 'distribution',
                     'chosen': None,
@@ -201,7 +208,7 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
         # TODO filter out columns in which all have the same attribute
         specs.append({
             'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-            'groupBy': None,
+            'group': None,
             'category': 'time series'
         })
         for index in non_uniques:
@@ -212,7 +219,11 @@ def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
             if not is_numeric(type):
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'groupBy': {'index': index, 'title': headers[index]},
+                    'group': {
+                      'by': { 'index': index, 'title': headers[index] }, 
+                      'on': None,
+                      'function': 'count',
+                    },
                     'category': 'time series',
                     'chosen': None,
                 }
@@ -251,8 +262,11 @@ def getTreemapSpecs(pID, datasets, properties, ontologies):
             if not is_numeric(type):
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'groupBy': {'index': index, 'title': headers[index]},
-                    'condition': {'index': None, 'title': None},
+                    'group': {
+                      'by': { 'index': index, 'title': headers[index] }, 
+                      'on': None,
+                      'function': 'count',
+                    },
                     'chosen': None,
                 }
                 spec['stats'] = getVisualizationStats('treemap', spec, {}, config, pID)
@@ -285,7 +299,11 @@ def getGeomapSpecs(pID, datasets, properties, ontologies):
             if type in ['countryCode2', 'countryCode3', 'countryName']:
                 spec = {
                     'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'groupBy': {'index': index, 'title': headers[index]},
+                    'group': {
+                      'by': { 'index': index, 'title': headers[index] }, 
+                      'on': None,
+                      'function': 'count',
+                    },
                     'condition': {'index': None, 'title': None},
                     'chosen': None,
                 }
@@ -300,45 +318,45 @@ def getBarchartSpecs(pID, datasets, properties, ontologies):
 def getLinechartSpecs(pID, datasets, properties, ontologies):
     return getScatterplotSpecs(pID, datasets, properties, ontologies)
 
-def getScatterplotSpecs(pID, datasets, properties, ontologies):
-    specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
+# def getScatterplotSpecs(pID, datasets, properties, ontologies):
+#     specs = []
+#     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
 
-    # Single-dataset numeric vs. numeric
-    for p in properties:
-        dID = p['dID']
-        # TODO Perform this as a database query with a specific document?
-        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
+#     # Single-dataset numeric vs. numeric
+#     for p in properties:
+#         dID = p['dID']
+#         # TODO Perform this as a database query with a specific document?
+#         relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
 
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        numeric_indices = [i for (i, type) in enumerate(types) if is_numeric(type)]
+#         types = p['types']
+#         uniques = p['uniques']
+#         headers = p['headers']
+#         numeric_indices = [i for (i, type) in enumerate(types) if is_numeric(type)]
 
-        # # Two numeric rows
-        # for (index_a, index_b) in combinations(numeric_indices, 2):
-        #     specs.append({
-        #         'category': 'scatterplot',
-        #         'x': {'index': index_a, 'title': headers[index_a]},
-        #         'y': {'index': index_b, 'title': headers[index_b]},
-        #         'aggregation': False,
-        #         'object': {'dID': dID, 'title': dataset_titles[dID]},
-        #         'chosen': False
-        #     })
+#         # # Two numeric rows
+#         # for (index_a, index_b) in combinations(numeric_indices, 2):
+#         #     specs.append({
+#         #         'category': 'scatterplot',
+#         #         'x': {'index': index_a, 'title': headers[index_a]},
+#         #         'y': {'index': index_b, 'title': headers[index_b]},
+#         #         'aggregation': False,
+#         #         'object': {'dID': dID, 'title': dataset_titles[dID]},
+#         #         'chosen': False
+#         #     })
 
-        # Aggregating by a numeric row
-        for index in numeric_indices:
-            type = types[index]
-            title = headers[index]
+#         # Aggregating by a numeric row
+#         for index in numeric_indices:
+#             type = types[index]
+#             title = headers[index]
 
-            if is_numeric(type):
-                spec = {
-                    'x': {'index': index, 'title': headers[index], 'type' : type},
-                    'object': {'dID': dID, 'title': dataset_titles[dID]},
-                    'aggregation': True,
-                    'condition': {'index': None, 'title': None},
-                    'chosen': None,
-                }
-                spec['stats'] = getVisualizationStats('scatterplot', spec, {}, config, pID)
-                specs.append(spec)                
-    return specs
+#             if is_numeric(type):
+#                 spec = {
+#                     'x': {'index': index, 'title': headers[index], 'type' : type},
+#                     'object': {'dID': dID, 'title': dataset_titles[dID]},
+#                     'aggregation': True,
+#                     'condition': {'index': None, 'title': None},
+#                     'chosen': None,
+#                 }
+#                 spec['stats'] = getVisualizationStats('scatterplot', spec, {}, config, pID)
+#                 specs.append(spec)                
+#     return specs

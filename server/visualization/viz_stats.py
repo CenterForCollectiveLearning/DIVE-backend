@@ -54,13 +54,17 @@ def getComparisonStats(spec, conditional, config, pID):
                 a_vals.append(val_a)
                 b_vals.append(val_b)
 
+        start_time = time()
         correlation, p_value = sp.stats.pearsonr(a_vals, b_vals)
         regression_obj = {
             'correlation': correlation,
             'p_value': p_value
         }
+        print "Time to calculate correlation:", (time() - start_time) * 1000, "ms"
 
+        start_time = time()
         slope, intercept, r_value, p_value, std_err = sp.stats.linregress(a_vals, b_vals)
+        print "Time to calculate regressions:", (time() - start_time) * 1000, "ms"
         correlation_obj = {
             'slope': slope,
             'intercept': intercept,
@@ -84,8 +88,8 @@ def getSharesStats(spec, conditional, config, pID):
 def getTimeSeriesStats(spec, conditional, config, pID):
     print "Calculating stats"
     stats = {}
-    if spec.get('groupBy'):
-        groupby = spec['groupBy']['title']
+    if spec.get('group'):
+        groupby = spec['group']['by']['title']
         cond_df = getRawData('treemap', spec, conditional, config, pID).fillna(0)
     
         grouped_df = cond_df.groupby(groupby)
@@ -117,7 +121,8 @@ def getTimeSeriesStats(spec, conditional, config, pID):
 
 def getTreemapStats(pID, spec, raw_data) :
     cond_df = raw_data.dropna()
-    groupby = spec['groupBy']['title']
+    group_obj = spec['group']
+    groupby = group_obj['by']['title']
 
     stats = {}
 
