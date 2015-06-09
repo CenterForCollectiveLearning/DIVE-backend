@@ -21,22 +21,9 @@ from analysis.analysis import detect_unique_list, compute_properties, compute_on
 from visualization.viz_specs import getVisualizationSpecs
 from visualization.viz_data import getVisualizationData, getConditionalData
 from visualization.viz_stats import getVisualizationStats
-from config import config
-
-app = Flask(__name__, static_path='/static')
-app.config['SERVER_NAME'] = "localhost:8888"
+from app import app
 
 api = Api(app)
-
-TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
-app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
-
-PUBLIC_DATA_FOLDER = os.path.join(os.curdir, config['PUBLIC_DATA_FOLDER'])
-app.config['PUBLIC_DATA_FOLDER'] = PUBLIC_DATA_FOLDER
-
-UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
