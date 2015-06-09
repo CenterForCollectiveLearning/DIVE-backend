@@ -2,6 +2,7 @@ from api.api import app
 from gevent.wsgi import WSGIServer
 import werkzeug.serving
 from flask import request
+import os
 
 @app.before_request
 def option_autoreply():
@@ -58,10 +59,9 @@ def set_allow_origin(resp):
 def index():
     return app.send_static_file('index.html')
 
-@app.route('/<path:path>')
-def static_proxy(path):
-  # send_static_file will guess the correct MIME type
-  return app.send_static_file(path)
+@app.route('/modules/<path:path>')
+def modules_proxy(path):
+    return app.send_static_file(os.path.join('modules', path))
   
 PORT = 8888
 
