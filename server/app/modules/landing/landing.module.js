@@ -10,14 +10,14 @@ require('./authenticate.ctrl');
 angular.module('diveApp.landing').directive('landingTop', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/landing/landing_top_bar.html',
+    templateUrl: 'static/modules/landing/landing_top_bar.html',
   };
 });
 
 angular.module('diveApp.landing').directive('landingNavBar', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/landing/landing_nav_bar.html',
+    templateUrl: 'static/modules/landing/landing_nav_bar.html',
     controller: 'LandingTabsCtrl'
   };
 });

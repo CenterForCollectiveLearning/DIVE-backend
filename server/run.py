@@ -59,10 +59,6 @@ def set_allow_origin(resp):
 def index():
     return app.send_static_file('index.html')
 
-@app.route('/modules/<path:path>')
-def modules_proxy(path):
-    return app.send_static_file(os.path.join('modules', path))
-  
 PORT = 8888
 
 

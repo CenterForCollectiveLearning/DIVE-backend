@@ -10,14 +10,14 @@ require('./project_tabs.ctrl');
 angular.module('diveApp.project').directive('loader', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/project/loader.html'
+    templateUrl: 'static/modules/project/loader.html'
   };
 });
 
 angular.module('diveApp.project').directive('projectTopBar', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/project/project_top_bar.html',
+    templateUrl: 'static/modules/project/project_top_bar.html',
     controller: 'ProjectTopBarCtrl'
   };
 });
@@ -25,7 +25,7 @@ angular.module('diveApp.project').directive('projectTopBar', function() {
 angular.module('diveApp.project').directive('projectNavBar', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/project/project_nav_bar.html',
+    templateUrl: 'static/modules/project/project_nav_bar.html',
     controller: 'ProjectTabsCtrl'
   };
 });
@@ -33,7 +33,7 @@ angular.module('diveApp.project').directive('projectNavBar', function() {
 angular.module('diveApp.project').directive('paneToggle', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/project/project_pane_toggle.html',
+    templateUrl: 'static/modules/project/project_pane_toggle.html',
     controller: 'PaneToggleCtrl'
   };
 });

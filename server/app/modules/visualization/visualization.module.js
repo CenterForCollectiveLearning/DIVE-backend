@@ -5,7 +5,7 @@ angular.module('diveApp.visualization', ['diveApp.services']);
 angular.module('diveApp.visualization').directive('visualizationSideNav', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/visualization/partials/side_nav.html',
+    templateUrl: 'static/modules/visualization/partials/side_nav.html',
     controller: 'VisualizationSideNavCtrl'
   };
 });
@@ -13,7 +13,7 @@ angular.module('diveApp.visualization').directive('visualizationSideNav', functi
 angular.module('diveApp.visualization').directive('visualizationConditionals', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/visualization/partials/conditionals.html',
+    templateUrl: 'static/modules/visualization/partials/conditionals.html',
     controller: 'VisualizationConditionalsCtrl'
   };
 });
@@ -21,7 +21,7 @@ angular.module('diveApp.visualization').directive('visualizationConditionals', f
 angular.module('diveApp.visualization').directive('visualizationStats', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/visualization/partials/stats.html',
+    templateUrl: 'static/modules/visualization/partials/stats.html',
     controller: 'VisualizationStatsCtrl'
   };
 });
@@ -29,7 +29,7 @@ angular.module('diveApp.visualization').directive('visualizationStats', function
 angular.module('diveApp.visualization').directive('visualizationExport', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/visualization/partials/export.html',
+    templateUrl: 'static/modules/visualization/partials/export.html',
     controller: 'VisualizationExportCtrl'
   };
 });
@@ -37,7 +37,7 @@ angular.module('diveApp.visualization').directive('visualizationExport', functio
 angular.module('diveApp.visualization').directive('visualizationGrouping', function() {
   return {
     restrict: 'E',
-    templateUrl: 'modules/visualization/partials/grouping.html',
+    templateUrl: 'static/modules/visualization/partials/grouping.html',
     controller: 'VisualizationGroupingCtrl'
   };
 });
