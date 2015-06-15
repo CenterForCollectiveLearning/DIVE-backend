@@ -2,7 +2,7 @@ import os
 from flask import Flask
 from config import config
 
-app = Flask(__name__, static_url_path='/static')
+app = Flask(__name__)
 app.config['SERVER_NAME'] = "localhost:8888"
 
 TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
