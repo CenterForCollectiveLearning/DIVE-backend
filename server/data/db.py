@@ -86,6 +86,12 @@ class mongoInstance(object):
         exported_specs = [ e for e in MongoInstance.client[pID].specifications.find(find_doc)]
         return formatObjectIDs('specifications', exported_specs)
 
+    def addExportedSpec(self, pID, spec, conditional):
+        d = {}
+        d['spec']  = spec
+        d['conditional'] = conditional
+        return str(MongoInstance.client[pID].exported.insert(d))
+
     def chooseSpec(self, pID, sID, conditional, stats):
         MongoInstance.client[pID].specifications.find_and_modify(
             {'_id': ObjectId(sID)}, 

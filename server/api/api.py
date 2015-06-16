@@ -420,8 +420,27 @@ class Exported_Visualization_Spec(Resource):
         if args.get('eID'):
             eID = args.get('eID').strip().strip('"')
             find_doc = {'_id': ObjectId(eID)}
-        return make_response(jsonify({'result': MI.getExportedSpecs(find_doc, pID)}))
+        result = MI.getExportedSpecs(find_doc, pID)
+        print "RESULT: ", result
 
+        by_type = {}
+
+        for exported in result :
+            if exported['spec']['viz_type'] not in by_type :
+                by_type[exported['spec']['viz_type']] = []
+            by_type[exported['spec']['viz_type']].append(exported)
+
+        return make_response(jsonify({'result': by_type, 'length': len(result)}))
+
+    def post(self) :
+        args = request.json['params']
+        # print args
+        print "PARAMETERS: "
+        pID = args['pID']
+        spec = args['spec']
+        conditional = args['conditional']
+
+        return make_response(jsonify({'result': MI.addExportedSpec(pID, spec, conditional)}))
 
 #####################################################################
 # Endpoint returning exported image
