@@ -82,9 +82,8 @@ class mongoInstance(object):
 
     # Exported visualizations
     def getExportedSpecs(self, find_doc, pID):
-        find_doc['chosen'] = True
-        exported_specs = [ e for e in MongoInstance.client[pID].specifications.find(find_doc)]
-        return formatObjectIDs('specifications', exported_specs)
+        exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
+        return formatObjectIDs('exported', exported_specs)
 
     def addExportedSpec(self, pID, spec, conditional):
         d = {}

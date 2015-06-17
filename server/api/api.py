@@ -412,6 +412,7 @@ exportedVisualizationSpecGetParser = reqparse.RequestParser()
 exportedVisualizationSpecGetParser.add_argument('pID', type=str, required=True)
 exportedVisualizationSpecGetParser.add_argument('eID', type=str, required=False)
 class Exported_Visualization_Spec(Resource):
+    # Return all exported viz specs, grouped by category
     def get(self):
         args = exportedVisualizationSpecGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
@@ -420,25 +421,24 @@ class Exported_Visualization_Spec(Resource):
         if args.get('eID'):
             eID = args.get('eID').strip().strip('"')
             find_doc = {'_id': ObjectId(eID)}
-        result = MI.getExportedSpecs(find_doc, pID)
-        print "RESULT: ", result
+        exported_specs = MI.getExportedSpecs(find_doc, pID)
 
-        by_type = {}
+        specs_by_category = {}
+        for exported_doc in exported_specs:
+            spec = exported_doc['spec']
+            category = spec['category']
+            if category not in specs_by_category :
+                specs_by_category[category] = []
+            specs_by_category[category].append(exported_doc)
 
-        for exported in result :
-            if exported['spec']['viz_type'] not in by_type :
-                by_type[exported['spec']['viz_type']] = []
-            by_type[exported['spec']['viz_type']].append(exported)
+        return make_response(jsonify({'result': specs_by_category, 'length': len(exported_specs)}))
 
-        return make_response(jsonify({'result': by_type, 'length': len(result)}))
-
-    def post(self) :
+    def post(self):
         args = request.json['params']
-        # print args
-        print "PARAMETERS: "
         pID = args['pID']
         spec = args['spec']
         conditional = args['conditional']
+        print "Posting exported visualization with args", args
 
         return make_response(jsonify({'result': MI.addExportedSpec(pID, spec, conditional)}))
 
