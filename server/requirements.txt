@@ -16,6 +16,7 @@ decorator==3.4.0
 gunicorn==19.3.0
 into==0.2.2
 itsdangerous==0.24
+logging==0.4.9.6
 multipledispatch==0.4.7
 networkx==1.9.1
 numpy==1.9.1

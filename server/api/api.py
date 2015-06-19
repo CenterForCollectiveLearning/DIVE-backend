@@ -412,6 +412,7 @@ exportedVisualizationSpecGetParser = reqparse.RequestParser()
 exportedVisualizationSpecGetParser.add_argument('pID', type=str, required=True)
 exportedVisualizationSpecGetParser.add_argument('eID', type=str, required=False)
 class Exported_Visualization_Spec(Resource):
+    # Return all exported viz specs, grouped by category
     def get(self):
         args = exportedVisualizationSpecGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
@@ -420,8 +421,26 @@ class Exported_Visualization_Spec(Resource):
         if args.get('eID'):
             eID = args.get('eID').strip().strip('"')
             find_doc = {'_id': ObjectId(eID)}
-        return make_response(jsonify({'result': MI.getExportedSpecs(find_doc, pID)}))
+        exported_specs = MI.getExportedSpecs(find_doc, pID)
 
+        specs_by_category = {}
+        for exported_doc in exported_specs:
+            spec = exported_doc['spec']
+            category = spec['category']
+            if category not in specs_by_category :
+                specs_by_category[category] = []
+            specs_by_category[category].append(exported_doc)
+
+        return make_response(jsonify({'result': specs_by_category, 'length': len(exported_specs)}))
+
+    def post(self):
+        args = request.json['params']
+        pID = args['pID']
+        spec = args['spec']
+        conditional = args['conditional']
+        print "Posting exported visualization with args", args
+
+        return make_response(jsonify({'result': MI.addExportedSpec(pID, spec, conditional)}))
 
 #####################################################################
 # Endpoint returning exported image

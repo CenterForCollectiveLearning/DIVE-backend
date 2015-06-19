@@ -86,7 +86,6 @@ def getSharesStats(spec, conditional, config, pID):
     return {}
 
 def getTimeSeriesStats(spec, conditional, config, pID):
-    print "Calculating stats"
     stats = {}
     if spec.get('group'):
         groupby = spec['group']['by']['title']
