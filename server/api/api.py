@@ -21,8 +21,8 @@ from analysis.analysis import detect_unique_list, compute_properties, compute_on
 from visualization.viz_specs import getVisualizationSpecs
 from visualization.viz_data import getVisualizationData, getConditionalData
 from visualization.viz_stats import getVisualizationStats
-from app import app
 
+app = Flask(__name__)
 api = Api(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
