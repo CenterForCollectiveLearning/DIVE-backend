@@ -198,3 +198,4 @@ class mongoInstance(object):
 
 # A Singleton Object
 MongoInstance = mongoInstance()
+MongoInstance.client['dive'].projects.ensure_index([("formattedTitle", True), ("user", True)])
