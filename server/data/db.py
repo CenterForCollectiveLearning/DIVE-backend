@@ -36,7 +36,7 @@ class mongoInstance(object):
         try:
             return str(MongoInstance.client['dive'].projects.find_one(find_doc)['_id'])
         except TypeError:
-            return None        
+            return None
 
     # Dataset Insertion
     def insertDataset(self, pID, path, filename):
