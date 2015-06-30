@@ -32,7 +32,11 @@ class mongoInstance(object):
             "formattedTitle" : formatted_title,
             "user" : userName
         }
-        return str(MongoInstance.client['dive'].projects.find_one(find_doc)['_id'])
+
+        try:
+            return str(MongoInstance.client['dive'].projects.find_one(find_doc)['_id'])
+        except TypeError:
+            return None
 
     # Dataset Insertion
     def insertDataset(self, pID, path, filename):
@@ -149,7 +153,7 @@ class mongoInstance(object):
 
 
     # Project Creation
-    def postProject(self, title, description, user):
+    def postProject(self, title, description, user, anonymous):
         formatted_title = title.replace(" ", "-").lower()
 
         projects_collection = MongoInstance.client['dive'].projects
@@ -159,7 +163,13 @@ class mongoInstance(object):
             return str(existing_project['_id']), 409
         else:
             # Insert project into DIVE project collections
-            pID = str(projects_collection.insert({'formattedTitle': formatted_title, 'title': title, 'description': description, 'user': user}))
+            pID = str(projects_collection.insert({
+                'formattedTitle': formatted_title,
+                'title': title,
+                'description': description,
+                'user': user,
+                'anonymous': anonymous
+            }))
 
             # Create user
             # TODO Tie into projects

@@ -208,8 +208,9 @@ projectGetParser.add_argument('user_name', type=str, required=True)
 
 projectPostParser = reqparse.RequestParser()
 projectPostParser.add_argument('title', type=str, required=True)
-projectPostParser.add_argument('description', type=str, required=True)
-projectPostParser.add_argument('user_name', type=str, required=True)
+projectPostParser.add_argument('description', type=str, required=False)
+projectPostParser.add_argument('user_name', type=str, required=False)
+projectPostParser.add_argument('anonymous', type=bool, required=False, default=False)
 
 projectDeleteParser = reqparse.RequestParser()
 projectDeleteParser.add_argument('pID', type=str, default='')
@@ -227,8 +228,9 @@ class Project(Resource):
         title = args.get('title')
         description = args.get('description')
         user_name = args.get('user_name')
+        anonymous = args.get('anonymous')
 
-        result = MI.postProject(title, description, user_name)
+        result = MI.postProject(title, description, user_name, anonymous)
 
         # If successful project creation
         if result[1] is 200:
