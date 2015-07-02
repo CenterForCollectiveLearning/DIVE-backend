@@ -23,6 +23,7 @@ from visualization.viz_data import getVisualizationData, getConditionalData
 from visualization.viz_stats import getVisualizationStats
 
 app = Flask(__name__)
+app.debug = True
 api = Api(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
