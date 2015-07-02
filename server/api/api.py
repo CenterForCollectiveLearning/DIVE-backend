@@ -19,10 +19,11 @@ from data.db import MongoInstance as MI
 from data.access import upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from visualization.viz_specs import getVisualizationSpecs
-from visualization.viz_data import getVisualizationData, getConditionalData
+from visualization.viz_data import getVisualizationData, getConditionalData, getVisualizationDataFromFormula
 from visualization.viz_stats import getVisualizationStats
 
 app = Flask(__name__)
+app.debug = True
 api = Api(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
@@ -337,6 +338,10 @@ visualizationDataGetParser.add_argument('pID', type=str, required=True)
 visualizationDataGetParser.add_argument('spec', type=str, required=True)
 visualizationDataGetParser.add_argument('conditional', type=str, required=True)
 visualizationDataGetParser.add_argument('config', type=str, required=True)
+
+visualizationDataPostParser = reqparse.RequestParser()
+visualizationDataPostParser.add_argument('pID', type=str, required=True)
+visualizationDataPostParser.add_argument('spec', type=str, required=True)
 class Visualization_Data(Resource):
     def get(self):
         args = visualizationDataGetParser.parse_args()
@@ -350,6 +355,40 @@ class Visualization_Data(Resource):
         stats = getVisualizationStats(category, spec, conditional, config, pID)
 
         return make_response(jsonify({'result': resp, 'stats' : stats}))
+    def post(self):
+        params = request.json['params']
+        print 
+        return
+
+
+
+
+visualizationDataPostParser = reqparse.RequestParser()
+visualizationDataPostParser.add_argument('pID', type=str, required=True, location='json')
+# For inferred visualizations
+visualizationDataPostParser.add_argument('spec', type=str, location='json')
+visualizationDataPostParser.add_argument('type', type=str, location='json')
+visualizationDataPostParser.add_argument('config', type=str, location='json')
+visualizationDataPostParser.add_argument('conditional', type=str, location='json')
+
+# Formula for visualization builder
+visualizationDataPostParser.add_argument('formula', type=str, location='json')
+class Visualization_Data(Resource):
+    def post(self):
+        print "Making post request"
+        args = visualizationDataPostParser.parse_args()
+        pID = args.get('pID').strip('"')
+        # TODO Make sure proper JSON is being passed
+        # if args.get('spec'):
+        #     spec = json.loads(args.get('spec'))
+        type = args.get('type')
+        config = args.get('config')
+        conditional = args.get('conditional')
+
+        raw_formula = args.get('formula')
+        print raw_formula
+        # formula = json.loads(formula)
+        # getVisualizationDataFromFormula(formula)
 
 
 #####################################################################

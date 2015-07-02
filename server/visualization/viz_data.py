@@ -35,7 +35,31 @@ def requiredParams(type, spec):
     #     if requiredParam not in spec:
     #         return False
     return True
- 
+
+formula = {'aggregate': {}, 'condition': {'and': [{'field': 'AAA', 'operation': '==', 'criteria': 5}], 'or': []}}
+def getVisualizationDataFromFormula(formula):
+    df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
+    # 1) Apply all condition
+    condition = formula['condition']
+
+    # TODO Test for edge cases, double check logic
+    and_query_string = ' & '.join(['%s %s %s' % (x['field'], x['operation'], x['criteria']) for x in condition['and']])
+
+    condition_query_string = and_query_string
+    if condition.get('or'):
+        or_query_string = ' | '.join(['%s %s %s' % (x['field'], x['operation'], x['criteria']) for x in condition['or']])
+        condition_query_string = condition_query_string + ' | ' + or_query_string
+
+    print condition_query_string
+    conditioned_df = df.query(condition_query_string)
+
+    # 2) Aggregation
+    for aggregation in formula['aggregate']:
+        print aggregation
+
+
+def getVisualizationDataFromFormula(formula, pID):
+    print "Getting viz data from formula", formula, pID
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, config, pID):
