@@ -16,7 +16,7 @@ from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
 from data.db import MongoInstance as MI
-from data.access import upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
+from data.access import upload_file, get_dataset_data, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from visualization.viz_specs import getVisualizationSpecs
 from visualization.viz_data import getVisualizationData, getConditionalData
@@ -89,7 +89,6 @@ class Public_Data(Resource):
             data_list = []
             for d in datasets:
                 path = d['path']
-                result = get_sample_data(path)
                 result.update({
                     'title': d['title'],
                     'filename': d['filename'],
@@ -118,7 +117,7 @@ class Public_Data(Resource):
         data_list = []
         for d in datasets:
             # New dID
-            result = get_sample_data(d['path'])
+            # result = get_sample_data(d['path'])
             result.update({
                 'title': d['title'],
                 'filename': d['filename'],
@@ -131,54 +130,49 @@ class Public_Data(Resource):
 
 
 # Dataset retrieval, editing, deletion
-dataGetParser = reqparse.RequestParser()
-dataGetParser.add_argument('dID', type=str, action='append')
-dataGetParser.add_argument('pID', type=str, required=True)
-dataGetParser.add_argument('sample', type=str, required=True, default='true')
+datasetsGetParser = reqparse.RequestParser()
+datasetsGetParser.add_argument('pID', type=str, required=True)
 
-dataDeleteParser = reqparse.RequestParser()
-dataDeleteParser.add_argument('dID', type=str, action='append', required=True)
-dataDeleteParser.add_argument('pID', type=str, action='append', required=True)
-class Data(Resource):
+datasetsDeleteParser = reqparse.RequestParser()
+datasetsDeleteParser.add_argument('pID', type=str, action='append', required=True)
+class Datasets(Resource):
     # Get dataset descriptions or samples
-    def get(self):
-        args = dataGetParser.parse_args()
+    def get(self, dID):
+        args = datasetsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        dIDs = args.get('dID')
-        print "[GET] Data", pID, dIDs
+        print "[GET] Data", pID, dID
 
         # Specific dIDs
-        if dIDs:
-            print "Requested specific dIDs:", dIDs
-            dataLocations = [ MI.getData({'_id': ObjectId(dID)}, pID) for dID in dIDs ] 
+        if dID:
+            print "Requested specific dID:", dID
+
+            dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
+            print dataset
+            return make_response(jsonify(get_dataset_data(dataset['path'])))
 
         # All datasets
         else:
             print "Did not request specific dID. Returning all datasets"
             datasets = MI.getData({}, pID)
+            print datasets
             data_list = []
             for d in datasets:
-                path = d['path']
-
-                result = get_sample_data(path)
-                result.update({
+                data_list.append({
                     'title': d['title'],
                     'filename': d['filename'],
                     'dID': d['dID']
                 })
-                data_list.append(result)
             return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
-    def delete(self):
-        args = dataDeleteParser.parse_args()
+    def delete(self, dID):
+        args = datasetsDeleteParser.parse_args()
         pIDs = args.get('pID')
-        dIDs = args.get('dID')
 
         # TODO Handle this formatting on the client side (or server side for additional safety?)
         pIDs = [ pID.strip().strip('"') for pID in pIDs ]
-        dIDs = [ dID.strip().strip('"') for dID in dIDs ]
-        params = zip(dIDs, pIDs)
-        deleted_dIDs = [ MI.deleteData(dID, pID) for (dID, pID) in params ]
+        dID = dID.strip().strip('"')
+        params = zip(dID, pIDs)
+        deleted_dIDs = [ MI.deleteData(dID, pID) for (pID) in params ]
         return deleted_dIDs
 
 
@@ -497,19 +491,19 @@ class Test(Resource):
         return make_response(jsonify({'result': 'test'}))
 
 
-api.add_resource(Test, '/api/test')
-api.add_resource(Public_Data, '/api/public_data')
-api.add_resource(Render_SVG, '/api/render_svg')
-api.add_resource(UploadFile, '/api/upload')
-api.add_resource(Data, '/api/data')
-api.add_resource(GetProjectID, '/api/getProjectID')
-api.add_resource(Project, '/api/project')
-api.add_resource(Property, '/api/property')
-api.add_resource(Specification, '/api/specification')
-api.add_resource(Choose_Spec, '/api/choose_spec')
-api.add_resource(Reject_Spec, '/api/reject_spec')
-api.add_resource(Visualization_Data, '/api/visualization_data')
-api.add_resource(Conditional_Data, '/api/conditional_data')
-api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
+api.add_resource(Test,                          '/api/test')
+api.add_resource(Public_Data,                   '/api/public_data')
+api.add_resource(Render_SVG,                    '/api/render_svg')
+api.add_resource(UploadFile,                    '/api/upload')
+api.add_resource(Datasets,                      '/api/datasets/<string:dID>')
+api.add_resource(GetProjectID,                  '/api/getProjectID')
+api.add_resource(Project,                       '/api/project')
+api.add_resource(Property,                      '/api/property')
+api.add_resource(Specification,                 '/api/specification')
+api.add_resource(Choose_Spec,                   '/api/choose_spec')
+api.add_resource(Reject_Spec,                   '/api/reject_spec')
+api.add_resource(Visualization_Data,            '/api/visualization_data')
+api.add_resource(Conditional_Data,              '/api/conditional_data')
+api.add_resource(Exported_Visualization_Spec,   '/api/exported_spec')
 
 from session import *
