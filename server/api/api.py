@@ -23,6 +23,7 @@ from visualization.viz_data import getVisualizationData, getConditionalData
 from visualization.viz_stats import getVisualizationStats
 
 app = Flask(__name__)
+app.debug = True
 api = Api(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
@@ -129,43 +130,57 @@ class Public_Data(Resource):
         return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
 
-# Dataset retrieval, editing, deletion
+# Datasets list retrieval
 datasetsGetParser = reqparse.RequestParser()
 datasetsGetParser.add_argument('pID', type=str, required=True)
-
-datasetsDeleteParser = reqparse.RequestParser()
-datasetsDeleteParser.add_argument('pID', type=str, action='append', required=True)
 class Datasets(Resource):
     # Get dataset descriptions or samples
-    def get(self, dID):
+    def get(self):
         args = datasetsGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        print "[GET] Data", pID
+
+        print "Did not request specific dID. Returning all datasets"
+        datasets = MI.getData({}, pID)
+        print datasets
+        data_list = []
+        for d in datasets:
+            data_list.append({
+                'title': d['title'],
+                'filename': d['filename'],
+                'dID': d['dID']
+            })
+        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+
+
+# Dataset retrieval, editing, deletion
+datasetGetParser = reqparse.RequestParser()
+datasetGetParser.add_argument('pID', type=str, required=True)
+
+datasetDeleteParser = reqparse.RequestParser()
+datasetDeleteParser.add_argument('pID', type=str, action='append', required=True)
+class Dataset(Resource):
+    # Get dataset descriptions or samples
+    def get(self, dID):
+        args = datasetGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         print "[GET] Data", pID, dID
 
-        # Specific dIDs
-        if dID:
-            print "Requested specific dID:", dID
+        print "Requested specific dID:", dID
 
-            dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
-            print dataset
-            return make_response(jsonify(get_dataset_data(dataset['path'])))
+        dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
 
-        # All datasets
-        else:
-            print "Did not request specific dID. Returning all datasets"
-            datasets = MI.getData({}, pID)
-            print datasets
-            data_list = []
-            for d in datasets:
-                data_list.append({
-                    'title': d['title'],
-                    'filename': d['filename'],
-                    'dID': d['dID']
-                })
-            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+        response = {
+            'dID': dataset['dID'],
+            'title': dataset['title'],
+            'details': get_dataset_data(dataset['path'])
+        }
+
+        return make_response(jsonify(response))
+
 
     def delete(self, dID):
-        args = datasetsDeleteParser.parse_args()
+        args = datasetDeleteParser.parse_args()
         pIDs = args.get('pID')
 
         # TODO Handle this formatting on the client side (or server side for additional safety?)
@@ -495,7 +510,8 @@ api.add_resource(Test,                          '/api/test')
 api.add_resource(Public_Data,                   '/api/public_data')
 api.add_resource(Render_SVG,                    '/api/render_svg')
 api.add_resource(UploadFile,                    '/api/upload')
-api.add_resource(Datasets,                      '/api/datasets/<string:dID>')
+api.add_resource(Datasets,                      '/api/datasets')
+api.add_resource(Dataset,                       '/api/datasets/<string:dID>')
 api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
 api.add_resource(Property,                      '/api/property')
