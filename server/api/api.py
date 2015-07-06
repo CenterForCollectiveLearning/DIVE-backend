@@ -11,6 +11,7 @@ import cairocffi as cairo
 import cairosvg
 from StringIO import StringIO
 
+import demjson
 from flask import Flask, jsonify, request, make_response, json, send_file, session
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
@@ -19,7 +20,7 @@ from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from visualization.viz_specs import getVisualizationSpecs
-from visualization.viz_data import getVisualizationData, getConditionalData
+from visualization.viz_data import getVisualizationData, getConditionalData, getVisualizationDataFromFormula
 from visualization.viz_stats import getVisualizationStats
 
 app = Flask(__name__)
@@ -341,24 +342,64 @@ class Specification(Resource):
 # INPUT: sID, pID, uID
 # OUTPUT: {nested visualization data}
 #####################################################################
-visualizationDataGetParser = reqparse.RequestParser()
-visualizationDataGetParser.add_argument('pID', type=str, required=True)
-visualizationDataGetParser.add_argument('spec', type=str, required=True)
-visualizationDataGetParser.add_argument('conditional', type=str, required=True)
-visualizationDataGetParser.add_argument('config', type=str, required=True)
+# visualizationDataGetParser = reqparse.RequestParser()
+# visualizationDataGetParser.add_argument('pID', type=str, required=True)
+# visualizationDataGetParser.add_argument('spec', type=str, required=True)
+# visualizationDataGetParser.add_argument('conditional', type=str, required=True)
+# visualizationDataGetParser.add_argument('config', type=str, required=True)
+
+# visualizationDataPostParser = reqparse.RequestParser()
+# visualizationDataPostParser.add_argument('pID', type=str, required=True)
+# visualizationDataPostParser.add_argument('spec', type=str, required=True)
+# class Visualization_Data(Resource):
+#     def get(self):
+#         args = visualizationDataGetParser.parse_args()
+#         pID = args.get('pID').strip().strip('"')
+#         spec = json.loads(args.get('spec'))
+#         category = spec['category']
+#         conditional = json.loads(args.get('conditional'))
+#         config = json.loads(args.get('config'))
+
+#         resp = getVisualizationData(category, spec, conditional, config, pID)
+#         stats = getVisualizationStats(category, spec, conditional, config, pID)
+
+#         return make_response(jsonify({'result': resp, 'stats' : stats}))
+#     def post(self):
+#         params = request.json['params']
+#         print 
+#         return
+
+
+
+
+visualizationDataPostParser = reqparse.RequestParser()
+visualizationDataPostParser.add_argument('pID', type=str, required=True, location='json')
+# For inferred visualizations
+visualizationDataPostParser.add_argument('spec', type=str, location='json')
+visualizationDataPostParser.add_argument('type', type=str, location='json')
+visualizationDataPostParser.add_argument('config', type=str, location='json')
+visualizationDataPostParser.add_argument('conditional', type=str, location='json')
+
+# Formula for visualization builder
+visualizationDataPostParser.add_argument('formula', type=str, location='json')
+visualizationDataPostParser.add_argument('dID', type=str, location='json')
 class Visualization_Data(Resource):
-    def get(self):
-        args = visualizationDataGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        spec = json.loads(args.get('spec'))
-        category = spec['category']
-        conditional = json.loads(args.get('conditional'))
-        config = json.loads(args.get('config'))
+    def post(self):
+        args = request.json
+        pID = args.get('pID')
+        # TODO Make sure proper JSON is being passed
+        # if args.get('spec'):
+        #     spec = json.loads(args.get('spec'))
+        type = args.get('type')
+        config = args.get('config')
+        conditional = args.get('conditional')
 
-        resp = getVisualizationData(category, spec, conditional, config, pID)
-        stats = getVisualizationStats(category, spec, conditional, config, pID)
+        formula = args.get('formula')
+        dID = args.get('dID')
+        result, response = getVisualizationDataFromFormula(formula, dID, pID)
+        result = jsonify({'result': result})
+        return make_response(result, response)
 
-        return make_response(jsonify({'result': resp, 'stats' : stats}))
 
 
 #####################################################################
