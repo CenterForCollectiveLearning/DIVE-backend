@@ -11,15 +11,16 @@ import cairocffi as cairo
 import cairosvg
 from StringIO import StringIO
 
+import demjson
 from flask import Flask, jsonify, request, make_response, json, send_file, session
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
 from data.db import MongoInstance as MI
-from data.access import upload_file, get_sample_data, get_column_types, get_delimiter, is_numeric
+from data.access import upload_file, get_dataset_data, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from visualization.viz_specs import getVisualizationSpecs
-from visualization.viz_data import getVisualizationData, getConditionalData
+from visualization.viz_data import getVisualizationData, getConditionalData, getVisualizationDataFromFormula
 from visualization.viz_stats import getVisualizationStats
 
 app = Flask(__name__)
@@ -90,7 +91,6 @@ class Public_Data(Resource):
             data_list = []
             for d in datasets:
                 path = d['path']
-                result = get_sample_data(path)
                 result.update({
                     'title': d['title'],
                     'filename': d['filename'],
@@ -119,7 +119,7 @@ class Public_Data(Resource):
         data_list = []
         for d in datasets:
             # New dID
-            result = get_sample_data(d['path'])
+            # result = get_sample_data(d['path'])
             result.update({
                 'title': d['title'],
                 'filename': d['filename'],
@@ -131,55 +131,64 @@ class Public_Data(Resource):
         return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
 
-# Dataset retrieval, editing, deletion
-dataGetParser = reqparse.RequestParser()
-dataGetParser.add_argument('dID', type=str, action='append')
-dataGetParser.add_argument('pID', type=str, required=True)
-dataGetParser.add_argument('sample', type=str, required=True, default='true')
-
-dataDeleteParser = reqparse.RequestParser()
-dataDeleteParser.add_argument('dID', type=str, action='append', required=True)
-dataDeleteParser.add_argument('pID', type=str, action='append', required=True)
-class Data(Resource):
+# Datasets list retrieval
+datasetsGetParser = reqparse.RequestParser()
+datasetsGetParser.add_argument('pID', type=str, required=True)
+class Datasets(Resource):
     # Get dataset descriptions or samples
     def get(self):
-        args = dataGetParser.parse_args()
+        args = datasetsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        dIDs = args.get('dID')
-        print "[GET] Data", pID, dIDs
+        print "[GET] Data", pID
 
-        # Specific dIDs
-        if dIDs:
-            print "Requested specific dIDs:", dIDs
-            dataLocations = [ MI.getData({'_id': ObjectId(dID)}, pID) for dID in dIDs ] 
+        print "Did not request specific dID. Returning all datasets"
+        datasets = MI.getData({}, pID)
+        print datasets
+        data_list = []
+        for d in datasets:
+            data_list.append({
+                'title': d['title'],
+                'filename': d['filename'],
+                'dID': d['dID']
+            })
+        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
-        # All datasets
-        else:
-            print "Did not request specific dID. Returning all datasets"
-            datasets = MI.getData({}, pID)
-            data_list = []
-            for d in datasets:
-                path = d['path']
 
-                result = get_sample_data(path)
-                result.update({
-                    'title': d['title'],
-                    'filename': d['filename'],
-                    'dID': d['dID']
-                })
-                data_list.append(result)
-            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+# Dataset retrieval, editing, deletion
+datasetGetParser = reqparse.RequestParser()
+datasetGetParser.add_argument('pID', type=str, required=True)
 
-    def delete(self):
-        args = dataDeleteParser.parse_args()
+datasetDeleteParser = reqparse.RequestParser()
+datasetDeleteParser.add_argument('pID', type=str, action='append', required=True)
+class Dataset(Resource):
+    # Get dataset descriptions or samples
+    def get(self, dID):
+        args = datasetGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        print "[GET] Data", pID, dID
+
+        print "Requested specific dID:", dID
+
+        dataset = MI.getData({'_id': ObjectId(dID)}, pID)[0]
+
+        response = {
+            'dID': dataset['dID'],
+            'title': dataset['title'],
+            'details': get_dataset_data(dataset['path'])
+        }
+
+        return make_response(jsonify(response))
+
+
+    def delete(self, dID):
+        args = datasetDeleteParser.parse_args()
         pIDs = args.get('pID')
-        dIDs = args.get('dID')
 
         # TODO Handle this formatting on the client side (or server side for additional safety?)
         pIDs = [ pID.strip().strip('"') for pID in pIDs ]
-        dIDs = [ dID.strip().strip('"') for dID in dIDs ]
-        params = zip(dIDs, pIDs)
-        deleted_dIDs = [ MI.deleteData(dID, pID) for (dID, pID) in params ]
+        dID = dID.strip().strip('"')
+        params = zip(dID, pIDs)
+        deleted_dIDs = [ MI.deleteData(dID, pID) for (pID) in params ]
         return deleted_dIDs
 
 
@@ -333,24 +342,64 @@ class Specification(Resource):
 # INPUT: sID, pID, uID
 # OUTPUT: {nested visualization data}
 #####################################################################
-visualizationDataGetParser = reqparse.RequestParser()
-visualizationDataGetParser.add_argument('pID', type=str, required=True)
-visualizationDataGetParser.add_argument('spec', type=str, required=True)
-visualizationDataGetParser.add_argument('conditional', type=str, required=True)
-visualizationDataGetParser.add_argument('config', type=str, required=True)
+# visualizationDataGetParser = reqparse.RequestParser()
+# visualizationDataGetParser.add_argument('pID', type=str, required=True)
+# visualizationDataGetParser.add_argument('spec', type=str, required=True)
+# visualizationDataGetParser.add_argument('conditional', type=str, required=True)
+# visualizationDataGetParser.add_argument('config', type=str, required=True)
+
+# visualizationDataPostParser = reqparse.RequestParser()
+# visualizationDataPostParser.add_argument('pID', type=str, required=True)
+# visualizationDataPostParser.add_argument('spec', type=str, required=True)
+# class Visualization_Data(Resource):
+#     def get(self):
+#         args = visualizationDataGetParser.parse_args()
+#         pID = args.get('pID').strip().strip('"')
+#         spec = json.loads(args.get('spec'))
+#         category = spec['category']
+#         conditional = json.loads(args.get('conditional'))
+#         config = json.loads(args.get('config'))
+
+#         resp = getVisualizationData(category, spec, conditional, config, pID)
+#         stats = getVisualizationStats(category, spec, conditional, config, pID)
+
+#         return make_response(jsonify({'result': resp, 'stats' : stats}))
+#     def post(self):
+#         params = request.json['params']
+#         print 
+#         return
+
+
+
+
+visualizationDataPostParser = reqparse.RequestParser()
+visualizationDataPostParser.add_argument('pID', type=str, required=True, location='json')
+# For inferred visualizations
+visualizationDataPostParser.add_argument('spec', type=str, location='json')
+visualizationDataPostParser.add_argument('type', type=str, location='json')
+visualizationDataPostParser.add_argument('config', type=str, location='json')
+visualizationDataPostParser.add_argument('conditional', type=str, location='json')
+
+# Formula for visualization builder
+visualizationDataPostParser.add_argument('formula', type=str, location='json')
+visualizationDataPostParser.add_argument('dID', type=str, location='json')
 class Visualization_Data(Resource):
-    def get(self):
-        args = visualizationDataGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        spec = json.loads(args.get('spec'))
-        category = spec['category']
-        conditional = json.loads(args.get('conditional'))
-        config = json.loads(args.get('config'))
+    def post(self):
+        args = request.json
+        pID = args.get('pID')
+        # TODO Make sure proper JSON is being passed
+        # if args.get('spec'):
+        #     spec = json.loads(args.get('spec'))
+        type = args.get('type')
+        config = args.get('config')
+        conditional = args.get('conditional')
 
-        resp = getVisualizationData(category, spec, conditional, config, pID)
-        stats = getVisualizationStats(category, spec, conditional, config, pID)
+        formula = args.get('formula')
+        dID = args.get('dID')
+        result, response = getVisualizationDataFromFormula(formula, dID, pID)
+        result = jsonify({'result': result})
+        return make_response(result, response)
 
-        return make_response(jsonify({'result': resp, 'stats' : stats}))
 
 
 #####################################################################
@@ -498,19 +547,20 @@ class Test(Resource):
         return make_response(jsonify({'result': 'test'}))
 
 
-api.add_resource(Test, '/api/test')
-api.add_resource(Public_Data, '/api/public_data')
-api.add_resource(Render_SVG, '/api/render_svg')
-api.add_resource(UploadFile, '/api/upload')
-api.add_resource(Data, '/api/data')
-api.add_resource(GetProjectID, '/api/getProjectID')
-api.add_resource(Project, '/api/project')
-api.add_resource(Property, '/api/property')
-api.add_resource(Specification, '/api/specification')
-api.add_resource(Choose_Spec, '/api/choose_spec')
-api.add_resource(Reject_Spec, '/api/reject_spec')
-api.add_resource(Visualization_Data, '/api/visualization_data')
-api.add_resource(Conditional_Data, '/api/conditional_data')
-api.add_resource(Exported_Visualization_Spec, '/api/exported_spec')
+api.add_resource(Test,                          '/api/test')
+api.add_resource(Public_Data,                   '/api/public_data')
+api.add_resource(Render_SVG,                    '/api/render_svg')
+api.add_resource(UploadFile,                    '/api/upload')
+api.add_resource(Datasets,                      '/api/datasets')
+api.add_resource(Dataset,                       '/api/datasets/<string:dID>')
+api.add_resource(GetProjectID,                  '/api/getProjectID')
+api.add_resource(Project,                       '/api/project')
+api.add_resource(Property,                      '/api/property')
+api.add_resource(Specification,                 '/api/specification')
+api.add_resource(Choose_Spec,                   '/api/choose_spec')
+api.add_resource(Reject_Spec,                   '/api/reject_spec')
+api.add_resource(Visualization_Data,            '/api/visualization_data')
+api.add_resource(Conditional_Data,              '/api/conditional_data')
+api.add_resource(Exported_Visualization_Spec,   '/api/exported_spec')
 
 from session import *
