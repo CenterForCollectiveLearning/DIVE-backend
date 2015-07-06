@@ -50,12 +50,15 @@ aggregation_fn = {
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
 # For now, dealing with a single aggregation
 # formula = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
-def getVisualizationDataFromFormula(formula, df):
+def getVisualizationDataFromFormula(formula, dID, pID):
+    df = get_data(pID=pID, dID=dID)
+    print "formula", formula.keys()
+
     aggregate_arg = formula['aggregate']
     condition_arg = formula['condition']
     query_arg = formula['query']
 
-    if not (aggregate_arg and condition_arg and query_arg):
+    if not (aggregate_arg and condition_arg):
         return "Did not pass required parameters", 400
 
     ### 1) Apply all conditionals
@@ -70,14 +73,16 @@ def getVisualizationDataFromFormula(formula, df):
         query_strings['or'] = ' | '.join(['%s %s %s' % (c['field'], c['operation'], c['criteria']) for c in condition_arg['or']])
 
     # Concatenate
-    final_query_string = ''
-    if query_strings['and'] and query_strings['or']:
-        final_query_string = '%s | %s' % (query_strings['and'], query_strings['or'])
-    elif query_strings['and'] and not query_strings['or']:
-        final_query_string = query_strings['and']
-    elif query_strings['or'] and not query_strings['and']:
-        final_query_string = query_strings['or']
-    if final_query_string:
+    if not (query_strings['and'] or query_strings['or']):
+        conditioned_df = df
+    else:
+        final_query_string = ''
+        if query_strings['and'] and query_strings['or']:
+            final_query_string = '%s | %s' % (query_strings['and'], query_strings['or'])
+        elif query_strings['and'] and not query_strings['or']:
+            final_query_string = query_strings['and']
+        elif query_strings['or'] and not query_strings['and']:
+            final_query_string = query_strings['or']
         conditioned_df = df.query(final_query_string)
 
     ### 2) Aggregation / grouping
@@ -103,9 +108,6 @@ def getVisualizationDataFromFormula(formula, df):
     result = [ {aggregate_arg['field']: k, 'value': v} for k, v in aggregated_dict.iteritems() ]
     return result, 200
 
-
-def getVisualizationDataFromFormula(formula, pID):
-    print "Getting viz data from formula", formula, pID
 
 # Check parameters and route to correct vizdata function
 def getVisualizationData(type, spec, conditional, config, pID):

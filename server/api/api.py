@@ -11,6 +11,7 @@ import cairocffi as cairo
 import cairosvg
 from StringIO import StringIO
 
+import demjson
 from flask import Flask, jsonify, request, make_response, json, send_file, session
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
@@ -333,32 +334,32 @@ class Specification(Resource):
 # INPUT: sID, pID, uID
 # OUTPUT: {nested visualization data}
 #####################################################################
-visualizationDataGetParser = reqparse.RequestParser()
-visualizationDataGetParser.add_argument('pID', type=str, required=True)
-visualizationDataGetParser.add_argument('spec', type=str, required=True)
-visualizationDataGetParser.add_argument('conditional', type=str, required=True)
-visualizationDataGetParser.add_argument('config', type=str, required=True)
+# visualizationDataGetParser = reqparse.RequestParser()
+# visualizationDataGetParser.add_argument('pID', type=str, required=True)
+# visualizationDataGetParser.add_argument('spec', type=str, required=True)
+# visualizationDataGetParser.add_argument('conditional', type=str, required=True)
+# visualizationDataGetParser.add_argument('config', type=str, required=True)
 
-visualizationDataPostParser = reqparse.RequestParser()
-visualizationDataPostParser.add_argument('pID', type=str, required=True)
-visualizationDataPostParser.add_argument('spec', type=str, required=True)
-class Visualization_Data(Resource):
-    def get(self):
-        args = visualizationDataGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        spec = json.loads(args.get('spec'))
-        category = spec['category']
-        conditional = json.loads(args.get('conditional'))
-        config = json.loads(args.get('config'))
+# visualizationDataPostParser = reqparse.RequestParser()
+# visualizationDataPostParser.add_argument('pID', type=str, required=True)
+# visualizationDataPostParser.add_argument('spec', type=str, required=True)
+# class Visualization_Data(Resource):
+#     def get(self):
+#         args = visualizationDataGetParser.parse_args()
+#         pID = args.get('pID').strip().strip('"')
+#         spec = json.loads(args.get('spec'))
+#         category = spec['category']
+#         conditional = json.loads(args.get('conditional'))
+#         config = json.loads(args.get('config'))
 
-        resp = getVisualizationData(category, spec, conditional, config, pID)
-        stats = getVisualizationStats(category, spec, conditional, config, pID)
+#         resp = getVisualizationData(category, spec, conditional, config, pID)
+#         stats = getVisualizationStats(category, spec, conditional, config, pID)
 
-        return make_response(jsonify({'result': resp, 'stats' : stats}))
-    def post(self):
-        params = request.json['params']
-        print 
-        return
+#         return make_response(jsonify({'result': resp, 'stats' : stats}))
+#     def post(self):
+#         params = request.json['params']
+#         print 
+#         return
 
 
 
@@ -373,11 +374,11 @@ visualizationDataPostParser.add_argument('conditional', type=str, location='json
 
 # Formula for visualization builder
 visualizationDataPostParser.add_argument('formula', type=str, location='json')
+visualizationDataPostParser.add_argument('dID', type=str, location='json')
 class Visualization_Data(Resource):
     def post(self):
-        print "Making post request"
-        args = visualizationDataPostParser.parse_args()
-        pID = args.get('pID').strip('"')
+        args = request.json
+        pID = args.get('pID')
         # TODO Make sure proper JSON is being passed
         # if args.get('spec'):
         #     spec = json.loads(args.get('spec'))
@@ -385,10 +386,12 @@ class Visualization_Data(Resource):
         config = args.get('config')
         conditional = args.get('conditional')
 
-        raw_formula = args.get('formula')
-        print raw_formula
-        # formula = json.loads(formula)
-        # getVisualizationDataFromFormula(formula)
+        formula = args.get('formula')
+        dID = args.get('dID')
+        result, response = getVisualizationDataFromFormula(formula, dID, pID)
+        result = jsonify({'result': result})
+        return make_response(result, response)
+
 
 
 #####################################################################
