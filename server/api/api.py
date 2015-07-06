@@ -394,6 +394,7 @@ class Visualization_Data(Resource):
         config = args.get('config')
         conditional = args.get('conditional')
 
+        print "Getting Visualization Data with formula", formula
         formula = args.get('formula')
         dID = args.get('dID')
         result, response = getVisualizationDataFromFormula(formula, dID, pID)

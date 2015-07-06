@@ -91,7 +91,7 @@ def upload_file(pID, file):
 
         dID = MI.insertDataset(pID, path2, filename2)
 
-        result = get_sample_data(path2)
+        result = get_dataset_data(path2)
         result.update({
             'title' : filename2.rsplit('.', 1)[0],
             'filename' : filename2,
@@ -124,7 +124,7 @@ def upload_file(pID, file):
 
             dID = MI.insertDataset(pID, path2, filename2)
 
-            result = get_sample_data(path2)
+            result = get_dataset_data(path2)
             result.update({
                 'title' : filename2.rsplit('.', 1)[0],
                 'filename' : filename2,
@@ -162,7 +162,7 @@ def upload_file(pID, file):
         dID = MI.insertDataset(pID, path2, filename2)
         # column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
 
-        result = get_sample_data(path2)
+        result = get_dataset_data(path2)
         result.update({
             'title' : filename2.rsplit('.', 1)[0],
             'filename' : filename2,
