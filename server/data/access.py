@@ -37,8 +37,8 @@ types = {
 }
 
 
-# Return sample of dataset
-def get_sample_data(path, start=0, inc=50) :
+# Return dataset
+def get_dataset_data(path, start=0, inc=1000):
     end = start + inc  # Upper bound excluded
     df = get_data(path=path)
     header = df.columns.values
