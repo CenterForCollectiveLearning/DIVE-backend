@@ -38,13 +38,10 @@ types = {
 
 
 # Return dataset
-def get_dataset_data(path, start=0, inc=1000):
-    end = start + inc  # Upper bound excluded
+def get_dataset_structure(path):
     df = get_data(path=path)
     header = df.columns.values
     df = df.fillna('')
-    sample = map(list, df.iloc[start:end].values)
-
     n_rows, n_cols = df.shape
     types = get_column_types(df)
     time_series = detect_time_series(df)
@@ -54,18 +51,29 @@ def get_dataset_data(path, start=0, inc=1000):
         structure = 'long'
 
     extension = path.rsplit('.', 1)[1]
+
     column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, n_cols)]
 
     result = {
         'column_attrs': column_attrs,
         'header': list(header),
-        'sample': sample,  # json.loads(sample.to_json()),
         'rows': n_rows,
         'cols': n_cols,
         'filetype': extension,
         'structure': structure,
         'time_series': time_series
     }
+
+    return result
+
+def get_dataset_data(path, start=0, inc=1000):
+    end = start + inc  # Upper bound excluded
+    df = get_data(path=path)
+    df = df.fillna('')
+    sample = map(list, df.iloc[start:end].values)
+
+    result = get_dataset_structure(path)
+    result['sample'] = sample
     return result
 
 
