@@ -288,6 +288,7 @@ class Property(Resource):
 
         all_properties = {
             'types': types, 
+            'attributes': headers,
             'uniques': is_unique,
             'stats': stats,
             'overlaps': overlaps, 
