@@ -20,7 +20,7 @@ from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
 from visualization.viz_specs import getVisualizationSpecs
-from visualization.viz_data import getVisualizationData, getConditionalData, getVisualizationDataFromFormula
+from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
 
 app = Flask(__name__)
@@ -357,17 +357,7 @@ visualizationDataGetParser.add_argument('spec', type=str, required=True)
 visualizationDataGetParser.add_argument('conditional', type=str, required=True)
 visualizationDataGetParser.add_argument('config', type=str, required=True)
 
-visualizationDataPostParser = reqparse.RequestParser()
-visualizationDataPostParser.add_argument('pID', type=str, required=True, location='json')
-# For inferred visualizations
-visualizationDataPostParser.add_argument('spec', type=str, location='json')
-visualizationDataPostParser.add_argument('type', type=str, location='json')
-visualizationDataPostParser.add_argument('config', type=str, location='json')
-visualizationDataPostParser.add_argument('conditional', type=str, location='json')
 
-# Formula for visualization builder
-visualizationDataPostParser.add_argument('formula', type=str, location='json')
-visualizationDataPostParser.add_argument('dID', type=str, location='json')
 class Visualization_Data(Resource):
     def get(self):
         args = visualizationDataGetParser.parse_args()
@@ -382,24 +372,28 @@ class Visualization_Data(Resource):
 
         return make_response(jsonify({'result': resp, 'stats' : stats}))
 
+#####################################################################
+# Endpoint returning aggregated visualization data given a specification ID
+# INPUT: sID, pID, uID
+# OUTPUT: {nested visualization data}
+#####################################################################
+
+# For inferred visualizations
+dataFromSpecPostParser = reqparse.RequestParser()
+dataFromSpecPostParser.add_argument('dID', type=str, location='json')
+dataFromSpecPostParser.add_argument('spec', type=str, location='json')
+dataFromSpecPostParser.add_argument('conditional', type=str, location='json')
+
+class Data_From_Spec(Resource):
     def post(self):
         args = request.json
+        # TODO Implement required parameters
         pID = args.get('pID')
-        # TODO Make sure proper JSON is being passed
-        # if args.get('spec'):
-        #     spec = json.loads(args.get('spec'))
-        type = args.get('type')
-        config = args.get('config')
+        spec = args.get('spec')
         conditional = args.get('conditional')
 
-        print "Getting Visualization Data with formula", formula
-        formula = args.get('formula')
-        dID = args.get('dID')
-        result, response = getVisualizationDataFromFormula(formula, dID, pID)
-        result = jsonify({'result': result})
-        return make_response(result, response)
-
-
+        result, response = getVisualizationDataFromSpec(spec, conditional, pID)
+        return make_response(jsonify(result), response)
 
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
@@ -559,6 +553,7 @@ api.add_resource(Specification,                 '/api/specification')
 api.add_resource(Choose_Spec,                   '/api/choose_spec')
 api.add_resource(Reject_Spec,                   '/api/reject_spec')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
+api.add_resource(Data_From_Spec,                '/api/data_from_spec')
 api.add_resource(Conditional_Data,              '/api/conditional_data')
 api.add_resource(Exported_Visualization_Spec,   '/api/exported_spec')
 
