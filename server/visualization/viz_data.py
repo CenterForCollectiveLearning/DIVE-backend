@@ -97,14 +97,14 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
         field_b = arguments.get('field_b')
 
         gb = conditioned_df.groupby(field_a)
-        if function:
-            group_operation = group_fn_from_string[function]
-            grouped_df = gb.aggregate(group_operation)
-            grouped_df['Count'] = gb.size().tolist()
-            if field_b:
-                grouped_df = grouped_df[[field_b]]  # series
+        if field_b == 'count':
+            grouped_df = pd.DataFrame({'Count': gb.size()})  # 1 col DF
         else:
-            grouped_df = gb.size()
+            if function:
+                group_operation = group_fn_from_string[function]
+                grouped_df = gb.aggregate(group_operation)
+                # grouped_df = grouped_df[[field_b]]
+                grouped_df['Count'] = gb.size().tolist()  # Add Count as DF col
 
     # b) Vs. (raw comparison)
     elif operation == 'vs':
@@ -118,6 +118,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
             viz_result[k] = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
 
         table_result = conditioned_df.to_dict(orient='split')
+
     # c) Comparison
     elif operation == 'compare':
         # TODO Implement
