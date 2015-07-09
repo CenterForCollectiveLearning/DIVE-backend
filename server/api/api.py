@@ -356,8 +356,6 @@ visualizationDataGetParser.add_argument('pID', type=str, required=True)
 visualizationDataGetParser.add_argument('spec', type=str, required=True)
 visualizationDataGetParser.add_argument('conditional', type=str, required=True)
 visualizationDataGetParser.add_argument('config', type=str, required=True)
-
-
 class Visualization_Data(Resource):
     def get(self):
         args = visualizationDataGetParser.parse_args()

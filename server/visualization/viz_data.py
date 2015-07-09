@@ -88,18 +88,17 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     if operation == 'group':
         function = arguments.get('function')
         field_b = arguments.get('field_b')
-        flat = False
 
         gb = conditioned_df.groupby(field_a)
         if function:
             group_operation = group_fn_from_string[function]
             grouped_df = gb.aggregate(group_operation)
+            grouped_df['Count'] = gb.size().tolist()
             if field_b:
                 grouped_df = grouped_df[field_b]
-                flat = True
         else:
             grouped_df = gb.size()
-            flat = True
+
     # b) Vs. (raw comparison)
     elif operation == 'vs':
         viz_result = {}
@@ -114,7 +113,9 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
 
         table_result = conditioned_df.to_dict(orient='split')
     # c) Comparison
-    
+    elif operation == 'compare':
+        # TODO Implement
+        return
 
     ### 3) Incorporate query and format result
     # Viz Data: Dict of collections
@@ -134,4 +135,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
       'data': grouped_df_copy.values.tolist(),
     }
 
-    return { 'viz_data': viz_result, 'table_result': table_result }, 200
+    return { 
+        'viz_data': viz_result, 
+        'table_result': table_result 
+    }, 200
