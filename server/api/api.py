@@ -295,6 +295,7 @@ class Property(Resource):
 
         all_properties = {
             'types': types, 
+            'attributes': headers,
             'uniques': is_unique,
             'stats': stats,
             'overlaps': overlaps, 
@@ -391,6 +392,7 @@ class Visualization_Data(Resource):
         config = args.get('config')
         conditional = args.get('conditional')
 
+        print "Getting Visualization Data with formula", formula
         formula = args.get('formula')
         dID = args.get('dID')
         result, response = getVisualizationDataFromFormula(formula, dID, pID)

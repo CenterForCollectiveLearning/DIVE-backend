@@ -46,6 +46,11 @@ def getVisualizationSpecs(pID):
             for spec in specs:
                 spec['category'] = category
 
+                if spec['group']:
+                    spec['groupBy'] = spec['group']['by']['title']
+                else:
+                    spec['groupBy'] = None
+
             # Persistence
             # if specs:
             #     sIDs = MI.postSpecs(pID, specs)
