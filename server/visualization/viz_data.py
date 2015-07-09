@@ -30,7 +30,8 @@ group_fn_from_string = {
     'count': np.size
 }
 
-
+# Given a data frame and a conditional dict ({ and: [{field, operation, criteria}], or: [...]})
+# Return the conditioned dataset
 def getConditionedDF(df, conditional_arg):
     query_strings = {
         'and': '',
@@ -57,7 +58,6 @@ def getConditionedDF(df, conditional_arg):
 
 
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
-# For now, dealing with a single aggregation
 # spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
 def getVisualizationDataFromSpec(spec, conditional, pID):
     print "In getVisualizationDataFromSpec"
@@ -82,7 +82,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     conditioned_df = getConditionedDF(df, conditional)
 
     ### 3) Query based on operation
-    # Group
+    # a) Group
     # TODO Chain with agg?
     # TODO Deal with multiple aggregations?
     if operation == 'group':
@@ -95,17 +95,43 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
             group_operation = group_fn_from_string[function]
             grouped_df = gb.aggregate(group_operation)
             if field_b:
-                grouped_df = gb.aggregate(group_operation)[field_b]
+                grouped_df = grouped_df[field_b]
                 flat = True
         else:
             grouped_df = gb.size()
             flat = True
+    # b) Vs. (raw comparison)
+    elif operation == 'vs':
+        viz_result = {}
+        # TODO Get viz_data
+        df.index = df[group_a]
+        df = df.drop(group_a, 1)
+        final_dict = df.to_dict()
+
+        for k, obj in final_dict.iteritems():
+            collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
+            viz_result[k] = collection
+
+        table_result = conditioned_df.to_dict(orient='split')
+    # c) Comparison
+    
 
     ### 3) Incorporate query and format result
-    aggregated_dict = aggregated_df.to_dict()
-    if query_arg:
-        aggregated_dict = aggregated_dict[query_arg]
+    # Viz Data: Dict of collections
+    grouped_dict = grouped_df.to_dict()
+    viz_result = {}
+    
+    for k, obj in grouped_dict.iteritems():
+        collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
+        viz_result[k] = collection
 
-    print "aggregated_dict", aggregated_dict
-    result = [ {aggregate_arg['field']: k, 'value': v} for k, v in aggregated_dict.iteritems() ]
-    return result, 200
+    # Table Data: Dict of matrices
+    grouped_df_copy = grouped_df
+    grouped_df_copy[field_a] = grouped_df_copy.index
+
+    table_result = {
+      'columns': grouped_df_copy.columns.tolist(),
+      'data': grouped_df_copy.values.tolist(),
+    }
+
+    return { 'viz_data': viz_result, 'table_result': table_result }, 200
