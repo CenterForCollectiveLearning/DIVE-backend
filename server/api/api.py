@@ -287,22 +287,32 @@ class Property(Resource):
         pID = args.get('pID').strip().strip('"')
         datasets = MI.getData({}, pID)
         
+        print "Datasets:", datasets
         print "Getting properties"
         stats, types, headers, is_unique = get_properties(pID, datasets)
 
-        print "Getting ontologies"
-        overlaps, hierarchies = get_ontologies(pID, datasets)
+        properties_by_dID = {}
+        for d in datasets:
+            dID = d['dID']
+            properties_by_dID[dID] = []
+            d_stats = stats[dID]
+            d_types = types[dID]
+            d_headers = headers[dID]
+            d_unique = is_unique[dID]
 
-        all_properties = {
-            'types': types, 
-            'attributes': headers,
-            'uniques': is_unique,
-            'stats': stats,
-            'overlaps': overlaps, 
-            'hierarchies': hierarchies,
+            for type, header, unique in zip(d_types, d_headers, d_unique):
+                property = {
+                    'type': type,
+                    'label': header,
+                    'unique': unique
+                }
+                properties_by_dID[dID].append(property)
+
+        results = {
+            'properties': properties_by_dID
         }
 
-        return make_response(jsonify(all_properties))
+        return make_response(jsonify(results))
 
 ## approach:
 ## each data upload -> add in new ontologies
