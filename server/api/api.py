@@ -278,6 +278,7 @@ class Project(Resource):
 ############################
 propertyGetParser = reqparse.RequestParser()
 propertyGetParser.add_argument('pID', type=str, required=True)
+propertyGetParser.add_argument('dID', type=str)
 # propertyPutParser = reqparse.RequestParser()
 # propertyPutParser.add_argument('ontologies', type=)
 class Property(Resource):
@@ -285,6 +286,8 @@ class Property(Resource):
         print "[GET] Properties"
         args = propertyGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
+        dID = args.get('pID')
+
         datasets = MI.getData({}, pID)
         
         print "Datasets:", datasets
@@ -308,9 +311,15 @@ class Property(Resource):
                 }
                 properties_by_dID[dID].append(property)
 
-        results = {
-            'properties': properties_by_dID
-        }
+        # TODO Don't analyze all properties if requesting specific dataset anyways
+        if dID:
+            results = {
+                'properties': properties_by_dID[dID]
+            }
+        else:
+            results = {
+                'properties': properties_by_dID
+            }
 
         return make_response(jsonify(results))
 
