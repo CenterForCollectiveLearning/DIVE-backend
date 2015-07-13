@@ -21,6 +21,7 @@ import pandas as pd
 import scipy as sp
 import math
 
+
 # TODO just use regular strings?
 group_fn_from_string = {
     'sum': np.sum,
@@ -66,24 +67,18 @@ def getConditionedDF(df, conditional_arg):
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
 # spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
 def getVisualizationDataFromSpec(spec, conditional, pID):
-    print "In getVisualizationDataFromSpec"
-    print "Spec:", spec
-    print "Conditional:", conditional
-
     ### 0) Parse and validate arguments
     # TODO Ensure well-formed spec
     dID = spec.get('dID')
     field_a = spec.get('field_a')
     operation = spec.get('operation')
     arguments = spec.get('arguments')
-    print dID, field_a, operation, arguments
 
     if not (dID, field_a, operation):
         return "Did not pass required parameters", 400
 
     ### 1) Access dataset
     df = get_data(pID=pID, dID=dID)
-
 
     ### 2) Apply all conditionals
     conditioned_df = getConditionedDF(df, conditional)
@@ -98,13 +93,13 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
 
         gb = conditioned_df.groupby(field_a)
         if field_b == 'count':
-            grouped_df = pd.DataFrame({'Count': gb.size()})  # 1 col DF
+            grouped_df = pd.DataFrame({'count': gb.size()})  # 1 col DF
         else:
             if function:
                 group_operation = group_fn_from_string[function]
                 grouped_df = gb.aggregate(group_operation)
-                # grouped_df = grouped_df[[field_b]]
-                grouped_df['Count'] = gb.size().tolist()  # Add Count as DF col
+                # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
+                grouped_df['count'] = gb.size().tolist()  # Add Count as DF col
 
     # b) Vs. (raw comparison)
     elif operation == 'vs':
@@ -129,7 +124,6 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     grouped_dict = grouped_df.to_dict()
     viz_result = {}
     
-    print grouped_dict
     for k, obj in grouped_dict.iteritems():
         collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
         viz_result[k] = collection
