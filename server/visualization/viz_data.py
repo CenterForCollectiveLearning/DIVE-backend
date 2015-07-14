@@ -102,7 +102,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
                 grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
         
         field_a_loc = conditioned_df.columns.get_loc(field_a)  
-        grouped_df.insert(field_a_loc, field_a, grouped_df.index.tolist())
+        grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
 
     # b) Vs. (raw comparison)
     elif operation == 'vs':
