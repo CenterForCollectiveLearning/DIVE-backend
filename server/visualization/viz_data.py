@@ -99,10 +99,10 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
                 group_operation = group_fn_from_string[function]
                 grouped_df = gb.aggregate(group_operation)
                 # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
-                grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col
+                grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
         
         field_a_loc = conditioned_df.columns.get_loc(field_a)  
-        grouped_df.insert(field_a_loc, field_a, df[field_a])
+        grouped_df.insert(field_a_loc, field_a, grouped_df.index.tolist())
 
     # b) Vs. (raw comparison)
     elif operation == 'vs':
