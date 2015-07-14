@@ -90,7 +90,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     if operation == 'group':
         function = arguments.get('function')
         field_b = arguments.get('field_b')
-
+        
         gb = conditioned_df.groupby(field_a)
         if field_b == 'count':
             grouped_df = pd.DataFrame({'count': gb.size()})  # 1 col DF
@@ -99,7 +99,10 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
                 group_operation = group_fn_from_string[function]
                 grouped_df = gb.aggregate(group_operation)
                 # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
-                grouped_df['count'] = gb.size().tolist()  # Add Count as DF col
+                grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col
+        
+        field_a_loc = conditioned_df.columns.get_loc(field_a)  
+        grouped_df.insert(field_a_loc, field_a, df[field_a])
 
     # b) Vs. (raw comparison)
     elif operation == 'vs':
@@ -130,7 +133,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
 
     # Table Data: Dict of matrices
     grouped_df_copy = grouped_df
-    grouped_df_copy[field_a] = grouped_df_copy.index
+    # grouped_df_copy.insert(0, field_a, grouped_df_copy.index)
 
     table_result = {
       'columns': grouped_df_copy.columns.tolist(),
