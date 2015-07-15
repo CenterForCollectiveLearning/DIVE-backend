@@ -292,7 +292,7 @@ class Property(Resource):
         
         print "Datasets:", datasets
         print "Getting properties"
-        stats, types, headers, is_unique = get_properties(pID, datasets)
+        stats, types, headers, is_unique, unique_values = get_properties(pID, datasets)
 
         properties_by_dID = {}
         for d in datasets:
@@ -302,12 +302,15 @@ class Property(Resource):
             d_types = types[dID]
             d_headers = headers[dID]
             d_unique = is_unique[dID]
+            d_unique_vals = unique_values[dID]
+            
 
-            for type, header, unique in zip(d_types, d_headers, d_unique):
+            for type, header, unique, unique_vals in zip(d_types, d_headers, d_unique, d_unique_vals):
                 property = {
                     'type': type,
                     'label': header,
-                    'unique': unique
+                    'unique': unique,
+                    'values': unique_vals
                 }
                 properties_by_dID[dID].append(property)
 
