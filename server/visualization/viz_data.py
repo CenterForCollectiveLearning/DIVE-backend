@@ -125,16 +125,15 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     if operation == 'group':
         function = arguments.get('function')
         field_b = arguments.get('field_b')
-        
         gb = conditioned_df.groupby(field_a)
-        if field_b == 'count':
+
+        if function == 'count':
             grouped_df = pd.DataFrame({'count': gb.size()})  # 1 col DF
         else:
-            if function:
-                group_operation = group_fn_from_string[function]
-                grouped_df = gb.aggregate(group_operation)
-                # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
-                grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
+            group_operation = group_fn_from_string[function]
+            grouped_df = gb.aggregate(group_operation)
+            grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
+            # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
         
         field_a_loc = conditioned_df.columns.get_loc(field_a)  
         grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
