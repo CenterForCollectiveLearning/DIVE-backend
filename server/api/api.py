@@ -13,6 +13,7 @@ from StringIO import StringIO
 
 import demjson
 from flask import Flask, jsonify, request, make_response, json, send_file, session
+from flask.json import JSONEncoder
 from flask.ext.restful import Resource, Api, reqparse
 from bson.objectid import ObjectId
 
@@ -28,6 +29,21 @@ app.debug = True
 api = Api(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
+
+
+# TODO: Make more general method for json formatting
+class RoundedFloat(float):
+    def __repr__(self):
+        return '%.3f' % self
+
+def format_json(obj):
+    if isinstance(obj, float):
+        return RoundedFloat(obj)
+    elif isinstance(obj, dict):
+        return dict((k, format_json(v)) for k, v in obj.items())
+    elif isinstance(obj, (list, tuple)):
+        return map(format_json, obj)             
+    return obj
 
 
 def allowed_file(filename):
@@ -57,9 +73,8 @@ class UploadFile(Resource):
             # compute_ontologies(pID, data)
             # print "Done initializing ontologies"
 
-            response = make_response(jsonify(json_data))
-            return response
-        return make_response(jsonify({'status': 'Upload failed'}))
+            return make_response(jsonify(format_json(json_data)))
+        return make_response(jsonify(format_json({'status': 'Upload failed'})))
 
 
 # Public Dataset retrieval
@@ -97,7 +112,7 @@ class Public_Data(Resource):
                     'dID': d['dID'],
                 })
                 data_list.append(result)
-            return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+            return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
 
     def post(self):
         args = publicDataPostParser.parse_args()
@@ -128,7 +143,7 @@ class Public_Data(Resource):
                 })
             data_list.append(result)
 
-        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+        return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
 
 
 # Datasets list retrieval
@@ -158,7 +173,7 @@ class Datasets(Resource):
 
             data_list.append(dataset_data)
 
-        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+        return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
 
 
 # Dataset retrieval, editing, deletion
@@ -184,7 +199,7 @@ class Dataset(Resource):
             'details': get_dataset_data(dataset['path'])
         }
 
-        return make_response(jsonify(response))
+        return make_response(jsonify(format_json(response)))
 
 
     def delete(self, dID):
@@ -211,6 +226,7 @@ class GetProjectID(Resource):
         print "GET projectID", formattedProjectTitle
         res = MI.getProjectID(formattedProjectTitle, userName)
         print "projectID result", res
+        # TODO turn this into a proper response
         return res
 
 
@@ -322,7 +338,7 @@ class Property(Resource):
                 'properties': properties_by_dID
             }
 
-        return make_response(jsonify(results))
+        return make_response(jsonify(format_json(results)))
 
 ## approach:
 ## each data upload -> add in new ontologies
@@ -347,7 +363,7 @@ class Property(Resource):
                 'hierarchy' : h
             }
             MI.upsertOntology(pID, o)
-        return make_response(jsonify({}))
+        return make_response(jsonify(format_json({})))
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
@@ -362,7 +378,7 @@ class Specification(Resource):
         args = specificationGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         specs_by_category = getVisualizationSpecs(pID)
-        return make_response(jsonify(specs_by_category))
+        return make_response(jsonify(format_json(specs_by_category)))
 
 
 #####################################################################
@@ -388,7 +404,7 @@ class Visualization_Data(Resource):
         resp = getVisualizationData(category, spec, conditional, config, pID)
         stats = getVisualizationStats(category, spec, conditional, config, pID)
 
-        return make_response(jsonify({'result': resp, 'stats' : stats}))
+        return make_response(jsonify(format_json({'result': resp, 'stats' : stats})))
 
 #####################################################################
 # Endpoint returning aggregated visualization data given a specification ID
@@ -410,8 +426,8 @@ class Data_From_Spec(Resource):
         spec = args.get('spec')
         conditional = args.get('conditional')
 
-        result, response = getVisualizationDataFromSpec(spec, conditional, pID)
-        return make_response(jsonify(result), response)
+        result, status = getVisualizationDataFromSpec(spec, conditional, pID)
+        return make_response(jsonify(format_json(result)), status)
 
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
@@ -465,7 +481,7 @@ class Conditional_Data(Resource):
         dID = args.get('dID').strip().strip('"')
         spec = json.loads(args.get('spec'))
         
-        return make_response(jsonify({'result': getConditionalData(spec, dID, pID)}))
+        return make_response(jsonify(format_json({'result': getConditionalData(spec, dID, pID)})))
 
 
 #####################################################################
@@ -494,7 +510,7 @@ class Exported_Visualization_Spec(Resource):
                 specs_by_category[category] = []
             specs_by_category[category].append(exported_doc)
 
-        return make_response(jsonify({'result': specs_by_category, 'length': len(exported_specs)}))
+        return make_response(jsonify(format_json({'result': specs_by_category, 'length': len(exported_specs)})))
 
     def post(self):
         args = request.json['params']
@@ -503,7 +519,7 @@ class Exported_Visualization_Spec(Resource):
         conditional = args['conditional']
         print "Posting exported visualization with args", args
 
-        return make_response(jsonify({'result': MI.addExportedSpec(pID, spec, conditional)}))
+        return make_response(jsonify(format_json({'result': MI.addExportedSpec(pID, spec, conditional)})))
 
 #####################################################################
 # Endpoint returning exported image
@@ -555,7 +571,7 @@ class Render_SVG(Resource):
 #####################################################################
 class Test(Resource):
     def get(self):
-        return make_response(jsonify({'result': 'test'}))
+        return make_response(jsonify(format_json({'result': 'test'})))
 
 
 api.add_resource(Test,                          '/api/test')
