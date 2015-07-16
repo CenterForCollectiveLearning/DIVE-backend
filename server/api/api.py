@@ -189,14 +189,12 @@ class Dataset(Resource):
 
     def delete(self, dID):
         args = datasetDeleteParser.parse_args()
-        pIDs = args.get('pID')
+        pID = args.get('pID')[0]
 
         # TODO Handle this formatting on the client side (or server side for additional safety?)
-        pIDs = [ pID.strip().strip('"') for pID in pIDs ]
+        pID = pID.strip().strip('"')
         dID = dID.strip().strip('"')
-        params = zip(dID, pIDs)
-        deleted_dIDs = [ MI.deleteData(dID, pID) for (pID) in params ]
-        return deleted_dIDs
+        return [ MI.deleteData(dID, pID) ]
 
 
 ############################
