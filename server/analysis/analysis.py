@@ -36,6 +36,7 @@ def compute_properties(pID, datasets):
     types_dict = {}
     headers_dict = {}
     is_unique_dict = {}
+    unique_values_dict = {}
 
     for dataset in datasets:
         dID = dataset['dID']
@@ -55,6 +56,7 @@ def compute_properties(pID, datasets):
         # entropy 
         # gini
     
+        ### Detecting if a column is unique
         print "\tDetecting uniques"
         start_time = time()
         # List of booleans -- is a column composed of unique elements?
@@ -63,21 +65,37 @@ def compute_properties(pID, datasets):
         print "\tGetting types"
         types = get_column_types(df)
 
+        ### Unique values for columns
+        print "\t\tGetting unique values"
+        start_time = time()
+        unique_values = []
+        raw_uniqued_values = [ get_unique(df[col]) for col in df ]
+        for i, col in enumerate(raw_uniqued_values):
+            type = types[i]
+            if type in ["integer", "float"]:
+                unique_values.append([])
+            else:
+                unique_values.append(col)
+        print "\t\t", time() - start_time, "seconds"
+
         # Save properties into collection
         dataset_properties = {
             'types': types,
             'uniques': is_unique,
             'headers': list(header),
-            'stats': df_stats_dict
+            'stats': df_stats_dict,
+            'unique_values': unique_values
         }
 
         types_dict[dID] = dataset_properties['types']
         headers_dict[dID] = dataset_properties['headers']
         is_unique_dict[dID] = dataset_properties['uniques']
         stats_dict[dID] = dataset_properties['stats']
+        unique_values_dict[dID] = dataset_properties['unique_values']
+
         tID = MI.upsertProperty(dID, pID, dataset_properties)
 
-    return stats_dict, types_dict, headers_dict, is_unique_dict
+    return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
 
 
 def get_properties(pID, datasets) :
@@ -85,6 +103,7 @@ def get_properties(pID, datasets) :
     types_dict = {}
     headers_dict = {}
     is_unique_dict = {}
+    unique_values_dict = {}
 
     find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
     data = MI.getProperty(find_doc, pID)
@@ -94,8 +113,9 @@ def get_properties(pID, datasets) :
         types_dict[dID] = d['types']
         headers_dict[dID] = d['headers']
         is_unique_dict[dID] = d['uniques']
+        unique_values_dict[dID] = d['unique_values']
 
-    return stats_dict, types_dict, headers_dict, is_unique_dict
+    return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
 
 
 # Find the distance between two sets

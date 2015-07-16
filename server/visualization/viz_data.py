@@ -6,7 +6,7 @@ Functions for returning the data corresponding to a given visualization type and
 from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
-from data.access import get_delimiter, get_data, detect_time_series
+from data.access import get_delimiter, get_data, detect_time_series, get_variable_type
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
 
@@ -31,8 +31,15 @@ group_fn_from_string = {
     'count': np.size
 }
 
+def makeSafeString(str):
+    invalid_chars = '-_.+^$ '
+    for invalid_char in invalid_chars:
+        str = str.replace(invalid_char, '_')
+    str = 'temp_' + str
+    return str
+
 # Given a data frame and a conditional dict ({ and: [{field, operation, criteria}], or: [...]})
-# Return the conditioned dataset
+# Return the conditioned data frame in same dimensions as original
 def getConditionedDF(df, conditional_arg):
     # Replace spaces in column names with underscore
     # cols = df.columns
@@ -43,11 +50,36 @@ def getConditionedDF(df, conditional_arg):
         'and': '',
         'or': ''
     }
+    orig_cols = df.columns.tolist()
+    df.rename(columns=makeSafeString, inplace=True)
     if conditional_arg.get('and'):
-        query_strings['and'] = ' & '.join(['%s %s %s' % (c['field'], c['operation'], c['criteria']) for c in conditional_arg['and']])
+        for c in conditional_arg['and']:
+            field = makeSafeString(c['field'])
+            operation = c['operation']
+            criteria = c['criteria']
+            criteria_type = get_variable_type(criteria)
+
+            print criteria_type
+            if criteria_type in ["integer", "float"]:
+                query_string = '%s %s %s' % (field, operation, criteria)
+            else:
+                query_string = '%s %s "%s"' % (field, operation, criteria)
+            query_strings['and'] = query_strings['and'] + ' & ' + query_string
+
     if conditional_arg.get('or'):
-        field = c['field'].replace(' ', '_')
-        query_strings['or'] = ' | '.join(['%s %s %s' % (c['field'], c['operation'], c['criteria']) for c in conditional_arg['or']])
+        for c in conditional_arg['or']:
+            field = makeSafeString(c['field'])
+            operation = c['operation']
+            criteria = c['criteria']
+            criteria_type = get_variable_type(c['criteria'])
+
+            if criteria_type in ["integer", "float"]:
+                query_string = '%s %s %s' % (field, operation, criteria)
+            else:
+                query_string = '%s %s "%s"' % (field, operation, criteria)
+            query_strings['or'] = query_strings['or'] + ' | ' + query_string
+    query_strings['and'] = query_strings['and'].strip(' & ')
+    query_strings['or'] = query_strings['or'].strip(' | ')
 
     # Concatenate
     if not (query_strings['and'] or query_strings['or']):
@@ -60,7 +92,10 @@ def getConditionedDF(df, conditional_arg):
             final_query_string = query_strings['and']
         elif query_strings['or'] and not query_strings['and']:
             final_query_string = query_strings['or']
+        print "FINAL_QUERY_STRING:", final_query_string
         conditioned_df = df.query(final_query_string)
+    df.columns = orig_cols
+    conditioned_df.columns = orig_cols
     return conditioned_df
 
 
