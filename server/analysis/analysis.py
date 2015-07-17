@@ -97,7 +97,8 @@ def compute_properties(pID, datasets):
 
     return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
 
-
+# Retrieve proeprties given dataset_docs
+# TODO Accept list of dIDs
 def get_properties(pID, datasets) :
     stats_dict = {}
     types_dict = {}
@@ -107,7 +108,8 @@ def get_properties(pID, datasets) :
 
     find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
     data = MI.getProperty(find_doc, pID)
-    for d in data :
+
+    for d in data:
         dID = d['dID']
         stats_dict[dID] = d['stats']
         types_dict[dID] = d['types']
