@@ -112,6 +112,10 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     if not (dID, field_a, operation):
         return "Did not pass required parameters", 400
 
+    ### Returned data structures
+    viz_result = {}
+    table_result = {}
+
     ### 1) Access dataset
     df = get_data(pID=pID, dID=dID)
 
@@ -138,13 +142,29 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
         field_a_loc = conditioned_df.columns.get_loc(field_a)  
         grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
 
-    # b) Vs. (raw comparison)
+        # Table Data: Dict of matrices
+        grouped_df_copy = grouped_df
+        # grouped_df_copy.insert(0, field_a, grouped_df_copy.index)
+
+        table_result = {
+            'columns': grouped_df_copy.columns.tolist(),
+            'data': grouped_df_copy.values.tolist(),
+        }
+
+        grouped_dict = grouped_df.to_dict()
+    
+        for k, obj in grouped_dict.iteritems():
+            collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
+            viz_result[k] = collection
+
+    # b) Vs. (raw comparison of one unique field against another)
     elif operation == 'vs':
-        viz_result = {}
         # TODO Get viz_data
-        df.index = df[group_a]
-        df = df.drop(group_a, 1)
+        df.index = conditioned_df[field_a]
+        df = df.drop(field_a, 1)
         final_dict = df.to_dict()
+        # If taking field_b into account
+        # final_dict = final_dict[field_b]
 
         for k, obj in final_dict.iteritems():
             viz_result[k] = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
@@ -153,26 +173,14 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
 
     # c) Comparison
     elif operation == 'compare':
+        function = arguments.get('function')
+        element_x = arguments.get('element_x')
+        element_y = arguments.get('element_y')
+        field_b = arguments.get('field_b')
+        field_c = arguments.get('field_c')
+
         # TODO Implement
         return
-
-    ### 3) Incorporate query and format result
-    # Viz Data: Dict of collections
-    grouped_dict = grouped_df.to_dict()
-    viz_result = {}
-    
-    for k, obj in grouped_dict.iteritems():
-        collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
-        viz_result[k] = collection
-
-    # Table Data: Dict of matrices
-    grouped_df_copy = grouped_df
-    # grouped_df_copy.insert(0, field_a, grouped_df_copy.index)
-
-    table_result = {
-      'columns': grouped_df_copy.columns.tolist(),
-      'data': grouped_df_copy.values.tolist(),
-    }
 
     return { 
         'viz_data': viz_result, 
