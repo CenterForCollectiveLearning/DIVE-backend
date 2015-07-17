@@ -287,83 +287,45 @@ class Project(Resource):
 ############################
 # Property (begins processing on first client API call)
 # Determine: types, hierarchies, uniqueness (subset of distributions), ontology, distributions
-# INPUT: pID
-# OUTPUT: {types: types_dict, uniques: is_unique_dict, overlaps: overlaps, hierarchies: hierarchies}
+# INPUT: pID, dID
+# OUTPUT: properties corresponding to that dID
 ############################
-propertyGetParser = reqparse.RequestParser()
-propertyGetParser.add_argument('pID', type=str, required=True)
-propertyGetParser.add_argument('dID', type=str)
-# propertyPutParser = reqparse.RequestParser()
-# propertyPutParser.add_argument('ontologies', type=)
-class Property(Resource):
+propertiesGetParser = reqparse.RequestParser()
+propertiesGetParser.add_argument('pID', type=str, required=True)
+propertiesGetParser.add_argument('dID', type=str, required=True)
+class Properties(Resource):
     def get(self):
         print "[GET] Properties"
-        args = propertyGetParser.parse_args()
+        args = propertiesGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        dID = args.get('pID')
+        dID = args.get('dID')
 
-        datasets = MI.getData({}, pID)
-        
-        print "Datasets:", datasets
-        print "Getting properties"
-        stats, types, headers, is_unique, unique_values = get_properties(pID, datasets)
+        dataset_docs = MI.getData({"_id": ObjectId(dID)}, pID)
 
-        properties_by_dID = {}
-        for d in datasets:
-            dID = d['dID']
-            properties_by_dID[dID] = []
-            d_stats = stats[dID]
-            d_types = types[dID]
-            d_headers = headers[dID]
-            d_unique = is_unique[dID]
-            d_unique_vals = unique_values[dID]
+        # Parse properties into right return format (maybe don't do on this layer)
+        properties = []
+        stats, types, headers, is_unique, unique_values = get_properties(pID, dataset_docs)
+        d_stats = stats[dID]
+        d_types = types[dID]
+        d_headers = headers[dID]
+        d_unique = is_unique[dID]
+        d_unique_vals = unique_values[dID]
             
-
-            for type, header, unique, unique_vals in zip(d_types, d_headers, d_unique, d_unique_vals):
-                property = {
-                    'type': type,
-                    'label': header,
-                    'unique': unique,
-                    'values': unique_vals
-                }
-                properties_by_dID[dID].append(property)
-
-        # TODO Don't analyze all properties if requesting specific dataset anyways
-        if dID:
-            results = {
-                'properties': properties_by_dID[dID]
+        for type, header, unique, unique_vals in zip(d_types, d_headers, d_unique, d_unique_vals):
+            property = {
+                'type': type,
+                'label': header,
+                'unique': unique,
+                'values': unique_vals
             }
-        else:
-            results = {
-                'properties': properties_by_dID
-            }
+            properties.append(property)
+
+        results = {
+            'properties': properties
+        }
 
         return make_response(jsonify(format_json(results)))
 
-## approach:
-## each data upload -> add in new ontologies
-    def put(self) :
-        print "[PUT] Properties"
-        pID = request.json['params']['pID']
-        ontologies = request.json['params']['ontologies']
-        # print "Updating to ", len(ontologies.keys()), " links"
-
-        MI.resetOntology(pID)
-
-        for link in ontologies.keys() :
-            [dID, dID2, col, col2] = link.split(",")
-            d, h = ontologies[link]
-
-            o = {
-                'source_dID' : dID,
-                'target_dID' : dID2,
-                'source_index' : col,
-                'target_index' : col2,
-                'distance' : d,
-                'hierarchy' : h
-            }
-            MI.upsertOntology(pID, o)
-        return make_response(jsonify(format_json({})))
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
@@ -582,7 +544,7 @@ api.add_resource(Datasets,                      '/api/datasets')
 api.add_resource(Dataset,                       '/api/datasets/<string:dID>')
 api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
-api.add_resource(Property,                      '/api/property')
+api.add_resource(Properties,                    '/api/properties')
 api.add_resource(Specification,                 '/api/specification')
 api.add_resource(Choose_Spec,                   '/api/choose_spec')
 api.add_resource(Reject_Spec,                   '/api/reject_spec')
