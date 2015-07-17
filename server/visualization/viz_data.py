@@ -173,6 +173,12 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
 
     # c) Comparison
     elif operation == 'compare':
+        function = arguments.get('function')
+        element_x = arguments.get('element_x')
+        element_y = arguments.get('element_y')
+        field_b = arguments.get('field_b')
+        field_c = arguments.get('field_c')
+
         # TODO Implement
         return
 
