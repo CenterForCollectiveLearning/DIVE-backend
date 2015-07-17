@@ -326,30 +326,6 @@ class Properties(Resource):
 
         return make_response(jsonify(format_json(results)))
 
-## approach:
-## each data upload -> add in new ontologies
-    def put(self) :
-        print "[PUT] Properties"
-        pID = request.json['params']['pID']
-        ontologies = request.json['params']['ontologies']
-        # print "Updating to ", len(ontologies.keys()), " links"
-
-        MI.resetOntology(pID)
-
-        for link in ontologies.keys() :
-            [dID, dID2, col, col2] = link.split(",")
-            d, h = ontologies[link]
-
-            o = {
-                'source_dID' : dID,
-                'target_dID' : dID2,
-                'source_index' : col,
-                'target_index' : col2,
-                'distance' : d,
-                'hierarchy' : h
-            }
-            MI.upsertOntology(pID, o)
-        return make_response(jsonify(format_json({})))
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
