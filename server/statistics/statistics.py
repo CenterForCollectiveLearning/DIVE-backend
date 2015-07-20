@@ -11,10 +11,10 @@ from data.access import get_data
 def getStatisticsFromSpec(spec, pID):
     # 1) Parse and validate arguments
     dID = spec.get('dID')
-    test = spec.get('test')
+    model = spec.get('model')
     arguments = spec.get('arguments')
   
-    if not (dID, test):
+    if not (dID, model):
       return "Did not pass required parameters", 400
   
     # 1) Access dataset
@@ -23,17 +23,18 @@ def getStatisticsFromSpec(spec, pID):
 
     # 2) Run test based on test parameters and arguments
     # Returns regression summary (should be dict?)
-    test_result = run_test(df, arguments, test=test)
+    test_result = run_test(df, arguments, model=model)
 
     # 3) Format results
     formatted_result = result_to_dict(test_result)
     return {
-        'stats_result': formatted_result
+        'stats_data': formatted_result
     }, 200
 
 
-def run_test(df, arguments, test='OLS'):
-    if test == 'OLS':
+def run_test(df, arguments, model='lr'):
+    if model == 'lr':
+        print "ARGS", arguments
         indep_label = arguments.get('indep')
         dep_vector = df[indep_label]
 
@@ -46,9 +47,6 @@ def run_test(df, arguments, test='OLS'):
     return
 
 def result_to_dict(r):
-    print r.pvalues
-    print r.fvalue
-    print r.f_pvalue
     # Global statistics
     statistics = {
         'r2': r.rsquared,
