@@ -5,6 +5,8 @@ import statsmodels.api as sm
 from time import time
 from itertools import chain, combinations
 
+from data.access import get_data
+
 
 def getStatisticsFromSpec(spec, pID):
     # 1) Parse and validate arguments
@@ -17,6 +19,52 @@ def getStatisticsFromSpec(spec, pID):
   
     # 1) Access dataset
     df = get_data(pID=pID, dID=dID)
+    df = df.dropna()  # Remove unclean
+
+    # 2) Run test based on test parameters and arguments
+    # Returns regression summary (should be dict?)
+    test_result = run_test(df, arguments, test=test)
+
+    # 3) Format results
+    formatted_result = result_to_dict(test_result)
+    return {
+        'stats_result': formatted_result
+    }, 200
+
+
+def run_test(df, arguments, test='OLS'):
+    if test == 'OLS':
+        indep_label = arguments.get('indep')
+        dep_vector = df[indep_label]
+
+        # Don't need a user to specify
+        dep_labels = arguments.get('dep')
+        indep_vectors = df[dep_labels]
+        model = sm.OLS(dep_vector, indep_vectors)
+        fit = model.fit()
+        return fit
+    return
+
+def result_to_dict(r):
+    print r.pvalues
+    print r.fvalue
+    print r.f_pvalue
+    # Global statistics
+    statistics = {
+        'r2': r.rsquared,
+        'adj_r2': r.rsquared_adj
+    }
+
+    # Term-specific paramters
+    result_df = {
+        'params': r.params.tolist(),
+        'pvalues': r.pvalues.tolist(),
+        'std': r.bse.tolist(),
+        'statistics': statistics,
+        'f_test': r.fvalue
+    }
+
+    return result_df
 
 
 def all_subsets(ss):
@@ -25,12 +73,14 @@ def all_subsets(ss):
 
 # Multivariate linear regression function
 def reg_m(y, x):
-    ones = np.ones(len(x[0]))
-    X = sm.add_constant(np.column_stack((x[0], ones)))
-    for ele in x[1:]:
-        X = sm.add_constant(np.column_stack((ele, X)))
-    results = sm.OLS(y, X).fit()
+    results = sm.OLS(y, x).fit()
     return results
+    # ones = np.ones(len(x[0]))
+    # X = sm.add_constant(np.column_stack((x[0], ones)))
+    # for ele in x[1:]:
+    #     X = sm.add_constant(np.column_stack((ele, X)))
+    # results = sm.OLS(y, X).fit()
+    # return results
 
 
 # Automated test

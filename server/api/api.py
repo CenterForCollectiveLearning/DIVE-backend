@@ -435,6 +435,7 @@ class Statistics_From_Spec(Resource):
         spec = args.get('spec')
 
         result, status = getStatisticsFromSpec(spec, pID)
+        print result
         return make_response(jsonify(format_json(result)), status)
 
 
