@@ -3,11 +3,24 @@ import numpy as np
 import scipy as sc
 import statsmodels.api as sm
 from time import time
-
-
 from itertools import chain, combinations
+
+
+def getStatisticsFromSpec(spec, pID):
+    # 1) Parse and validate arguments
+    dID = spec.get('dID')
+    test = spec.get('test')
+    arguments = spec.get('arguments')
+  
+    if not (dID, test):
+      return "Did not pass required parameters", 400
+  
+    # 1) Access dataset
+    df = get_data(pID=pID, dID=dID)
+
+
 def all_subsets(ss):
-  return chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))
+    return chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))
 
 
 # Multivariate linear regression function
@@ -49,23 +62,21 @@ def _result2dataframe(model_result):
     """return a series containing the summary of a linear model
     All the exceding parameters will be redirected to the linear model
     """
+
     # create the linear model and perform the fit
     # keeps track of some global statistics
     statistics = pd.Series({'r2': model_result.rsquared,
                   'adj_r2': model_result.rsquared_adj})
+
     # put them togher with the result for each term
     result_df = pd.DataFrame({'params': model_result.params,
                               'pvals': model_result.pvalues,
                               'std': model_result.bse,
                               'statistics': statistics})
+
     # add the complexive results for f-value and the total p-value
     fisher_df = pd.DataFrame({'params': {'_f_test': model_result.fvalue},
                               'pvals': {'_f_test': model_result.f_pvalue}})
     # merge them and unstack to obtain a hierarchically indexed series
     res_series = pd.concat([result_df, fisher_df]).unstack()
     return res_series.dropna()
-
-
-if __name__ == '__main__':
-	df = pd.read_table('sample.csv', sep=',')
-	analyze_all(df, df.columns[len(df.columns) - 1])
