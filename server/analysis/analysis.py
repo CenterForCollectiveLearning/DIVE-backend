@@ -65,7 +65,7 @@ def compute_properties(pID, dataset_docs):
                 df_stats_list.append(df_stats_dict[l])
             else:
                 df_stats_list.append({})
-        property_dict['stats'] = df_stats_dict
+        property_dict['stats'] = df_stats_list
 
         ### Getting column types
         print "\tGetting types"
@@ -78,7 +78,6 @@ def compute_properties(pID, dataset_docs):
         normality = []
         for i, col in enumerate(df):
             type = types[i]
-            print "TYPE:", type
             if type in ["int", "float"]:
                 try:
                     ## Coerce data vector to float
@@ -125,7 +124,6 @@ def compute_properties(pID, dataset_docs):
 # Either retrieve from DB or, if not available, calculate
 # TODO Accept list of dIDs
 def get_properties(pID, datasets) :
-
     # Try to retrieve from DB, then format into dict keyed by dID
     find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
     properties_list = MI.getProperty(find_doc, pID)

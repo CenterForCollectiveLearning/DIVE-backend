@@ -305,7 +305,7 @@ class Properties(Resource):
 
         # Parse properties into right return format (maybe don't do on this layer)
         properties_by_dID = get_properties(pID, dataset_docs)
-        properties = properties_by_dID[dID]
+        properties = [ properties_by_dID[dID] ]
 
         results = {
             'properties': properties
