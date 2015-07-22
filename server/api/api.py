@@ -305,10 +305,18 @@ class Properties(Resource):
 
         # Parse properties into right return format (maybe don't do on this layer)
         properties_by_dID = get_properties(pID, dataset_docs)
-        properties = [ properties_by_dID[dID] ]
+        properties = properties_by_dID[dID]
+        properties_list = []
+        for (t, l, u, v) in zip(properties['types'], properties['label'], properties['unique'], properties['values']):
+            properties_list.append({
+                'type': t,
+                'label': l,
+                'unique': u,
+                'values': v
+            })
 
         results = {
-            'properties': properties
+            'properties': properties_list
         }
 
         return make_response(jsonify(format_json(results)))
