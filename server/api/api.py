@@ -68,7 +68,7 @@ class UploadFile(Resource):
             }
 
             data = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, datasets)}, pID)
-            compute_properties(pID, data)
+            properties_by_dID = compute_properties(pID, data)
             print "Done initializing properties"
 
             # compute_ontologies(pID, data)
@@ -304,22 +304,8 @@ class Properties(Resource):
         dataset_docs = MI.getData({"_id": ObjectId(dID)}, pID)
 
         # Parse properties into right return format (maybe don't do on this layer)
-        properties = []
-        stats, types, headers, is_unique, unique_values = get_properties(pID, dataset_docs)
-        d_stats = stats[dID]
-        d_types = types[dID]
-        d_headers = headers[dID]
-        d_unique = is_unique[dID]
-        d_unique_vals = unique_values[dID]
-            
-        for type, header, unique, unique_vals in zip(d_types, d_headers, d_unique, d_unique_vals):
-            property = {
-                'type': type,
-                'label': header,
-                'unique': unique,
-                'values': unique_vals
-            }
-            properties.append(property)
+        properties_by_dID = get_properties(pID, dataset_docs)
+        properties = properties_by_dID[dID]
 
         results = {
             'properties': properties
