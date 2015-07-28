@@ -9,6 +9,7 @@ from data.db import MongoInstance as MI
 from data.access import get_data, upload_file, get_column_types, get_delimiter, is_numeric
 from time import time
 import numpy as np
+import scipy.stats as stats
 
 
 # Detect if a list is comprised of unique elements
@@ -29,44 +30,78 @@ def get_unique(li):
 
 
 # Compute properties of all passed datasets
-# Arguments: pID + list of dIDs
+# Currently only getting properties by column
+# Arguments: pID + dataset documents
 # Returns a mapping from dIDs to properties
-def compute_properties(pID, datasets):
-    stats_dict = {}
-    types_dict = {}
-    headers_dict = {}
-    is_unique_dict = {}
-    unique_values_dict = {}
+def compute_properties(pID, dataset_docs):
+    properties_by_dID = {}
 
-    for dataset in datasets:
+    for dataset in dataset_docs:
+        property_dict = {
+            'types': [],
+            'label': [],
+            'values': [],
+            'unique': [],
+            'normality': {},
+            'stats': {},
+            'misc': {}
+        }
         dID = dataset['dID']
-        path = dataset['path']
         df = get_data(pID=pID, dID=dID)
-
-        header = df.columns.values
         df = df.fillna('')
 
+        labels = df.columns.values
+        property_dict['label'] = labels.tolist()
+
+        print "Calculating properties for dID", dID
         # Statistical properties
+        # Only conduct on certain types?
         print "\tDescribing datasets"
         df_stats = df.describe()
         df_stats_dict = json.loads(df_stats.to_json())
-        stats_dict[dID] = df_stats_dict
+        df_stats_list = []
+        for l in labels:
+            if l in df_stats_dict:
+                df_stats_list.append(df_stats_dict[l])
+            else:
+                df_stats_list.append({})
+        property_dict['stats'] = df_stats_list
+
+        ### Getting column types
+        print "\tGetting types"
+        types = get_column_types(df)
+        property_dict['types'] = types
     
-        # Replace nan
-        # entropy 
-        # gini
+        ### Determining normality
+        print "\tDetermining normality"
+        start_time = time()
+        normality = []
+        for i, col in enumerate(df):
+            type = types[i]
+            if type in ["int", "float"]:
+                try:
+                    ## Coerce data vector to float
+                    d = df[col].astype(np.float)
+                    normality_result = stats.normaltest(d)
+                except ValueError:
+                    normality_result = None                    
+            else:
+                normality_result = None
+            normality.append(normality_result)
+
+        property_dict['normality'] = normality
+        print "\t\t", time() - start_time, "seconds"
     
         ### Detecting if a column is unique
         print "\tDetecting uniques"
         start_time = time()
         # List of booleans -- is a column composed of unique elements?
-        is_unique = [ detect_unique_list(df[col]) for col in df ]
+        unique = [ detect_unique_list(df[col]) for col in df ]
+        property_dict['unique'] = unique
         print "\t\t", time() - start_time, "seconds"
-        print "\tGetting types"
-        types = get_column_types(df)
 
         ### Unique values for columns
-        print "\t\tGetting unique values"
+        print "\tGetting unique values"
         start_time = time()
         unique_values = []
         raw_uniqued_values = [ get_unique(df[col]) for col in df ]
@@ -76,48 +111,35 @@ def compute_properties(pID, datasets):
                 unique_values.append([])
             else:
                 unique_values.append(col)
+        property_dict['values'] = unique_values
         print "\t\t", time() - start_time, "seconds"
 
         # Save properties into collection
-        dataset_properties = {
-            'types': types,
-            'uniques': is_unique,
-            'headers': list(header),
-            'stats': df_stats_dict,
-            'unique_values': unique_values
-        }
+        tID = MI.upsertProperty(dID, pID, property_dict)
 
-        types_dict[dID] = dataset_properties['types']
-        headers_dict[dID] = dataset_properties['headers']
-        is_unique_dict[dID] = dataset_properties['uniques']
-        stats_dict[dID] = dataset_properties['stats']
-        unique_values_dict[dID] = dataset_properties['unique_values']
+        properties_by_dID[dID] = property_dict
+    return properties_by_dID
 
-        tID = MI.upsertProperty(dID, pID, dataset_properties)
-
-    return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
-
-# Retrieve proeprties given dataset_docs
+# Get properties given dataset_docs
+# Either retrieve from DB or, if not available, calculate
 # TODO Accept list of dIDs
 def get_properties(pID, datasets) :
-    stats_dict = {}
-    types_dict = {}
-    headers_dict = {}
-    is_unique_dict = {}
-    unique_values_dict = {}
-
+    # Try to retrieve from DB, then format into dict keyed by dID
     find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
-    data = MI.getProperty(find_doc, pID)
+    properties_list = MI.getProperty(find_doc, pID)
+    if len(properties_list):
+        properties_by_dID = {}
+        for p in properties_list:
+            dID = p['dID']
+            del p['dID']
+            del p['tID']
+            properties_by_dID[dID] = p
 
-    for d in data:
-        dID = d['dID']
-        stats_dict[dID] = d['stats']
-        types_dict[dID] = d['types']
-        headers_dict[dID] = d['headers']
-        is_unique_dict[dID] = d['uniques']
-        unique_values_dict[dID] = d['unique_values']
+    # If not in DB, compute
+    else:
+        properties_by_dID = compute_properties(pID, datasets)
 
-    return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
+    return properties_by_dID
 
 
 # Find the distance between two sets
