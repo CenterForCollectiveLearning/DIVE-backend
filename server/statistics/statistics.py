@@ -1,130 +1,257 @@
 import pandas as pd
 import numpy as np
-import scipy as sc
+from scipy import stats
 import statsmodels.api as sm
 from time import time
 from itertools import chain, combinations
 
 from data.access import get_data
 
+############
+#Functions that run all tests
+############
+
+
+############
+#Note: spec is dictionary with at most keys dID, model, arguments, estimator, weights, degree, funcArray, userInput (some may not exist)
+#Note: arguments is in this format {'ind':[list of vectors], 'dep':[vector], 'compare':{'indepedent': bool, 'data':[list of vectors]}}
+######argument has a 'compare' field only when a statistical comparison between vectors are performed.
+######argument has an 'ind' and 'dep' field only when a regression is performed
 
 def getStatisticsFromSpec(spec, pID):
     # 1) Parse and validate arguments
     dID = spec.get('dID')
+    #either a regression or comparison
     model = spec.get('model')
+    #arguments is dict, includes compare and dep and datalabals, dep, indep
     arguments = spec.get('arguments')
-  
+    estimator = spec.get('estimator')
+    weights = spec.get('weights')
+    degree = spec.get('degree')
+    funcArray = spec.get('functions')
+    userInput = spec.get('userInput')
+
     if not (dID, model):
-      return "Did not pass required parameters", 400
-  
+        return "Did not pass required parameters", 400
+
     # 1) Access dataset
     df = get_data(pID=pID, dID=dID)
     df = df.dropna()  # Remove unclean
 
     # 2) Run test based on test parameters and arguments
-    # Returns regression summary (should be dict?)
-    test_result = run_test(df, arguments, model=model)
+    test_result = run_test(df, arguments, model=model, degree=degree, funcArray=funcArray, estimator=estimator, weights=weights, userInput=userInput)
 
-    # 3) Format results
-    formatted_result = result_to_dict(test_result)
+
     return {
-        'stats_data': formatted_result
+        'stats_data': test_result
     }, 200
 
 
-def run_test(df, arguments, model='lr'):
-    if model == 'lr':
-        print "ARGS", arguments
-        indep_label = arguments.get('indep')
-        dep_vector = df[indep_label]
 
-        # Don't need a user to specify
-        dep_labels = arguments.get('dep')
-        indep_vectors = df[dep_labels]
-        model = sm.OLS(dep_vector, indep_vectors)
-        fit = model.fit()
-        return fit
-    return
+def run_test(df, arguments, model=None, degree=1, funcArray=None, estimator='OLS', weights=None, userInput=None):
 
-def result_to_dict(r):
-    # Global statistics
-    statistics = {
-        'r2': r.rsquared,
-        'adj_r2': r.rsquared_adj
-    }
+    #if no model, assumes comparison
+    if model == None:
+        return runValidTests_noregress(df, userInput, arguments)
 
-    # Term-specific paramters
-    result_df = {
-        'params': r.params.tolist(),
-        'pvalues': r.pvalues.tolist(),
-        'std': r.bse.tolist(),
-        'statistics': statistics,
-        'f_test': r.fvalue
-    }
+    #otherwise, runs a regression
+    else:
+        indep_labels = arguments.get('indep')
+        xDict = {}
+        for label in indep_labels:
+            xDict[label]=df[label]
 
-    return result_df
+        dep_label = arguments.get('dep')
+        dep_vector = df[dep_label]
+
+        #lr=liner regression, pr=polynomial regression, gr=general regression
+        if model == 'lr':
+            print "ARGS", arguments
+            return multiplePolyRegression(xDict, dep_vector,1, estimator, weights)
+        elif model == 'pr':
+            print "ARGS", arguments
+            return multiplePolyRegression(xDict, dep_vector,degree, estimator, weights)
+        elif model == 'gr':
+            print "ARGS", arguments
+            return multipleRegression(funcArray, xDict, dep_vector, estimator, weights)
+        return
+
+##########
+#Run regression tests
+##Tests how well the regression line predicts the data
+
+def runValidTests_regress(residuals, yList):
+    predictedY = np.array(residuals)+np.array(yList)
+
+    chisquare = stats.chisquare(predictedY,yList)
+    kstest = stats.ks_2samp(predictedY, yList)
+    wilcoxon = stats.wilcoxon(residuals)
+    ttest = stats.ttest_1samp(residuals,0)
+
+    validTests={'chisquare': {'testStatistic':chisquare[0], 'pValue':chisquare[1]}, 'kstest':{'testStatistic':kstest[0], 'pValue':kstest[1]}}
+    if len(set(residuals))>1:
+        validTests['wilcoxon'] = {'testStatistic':wilcoxon[0], 'pValue':wilcoxon[1]}
+    if setsNormal(0.2, residuals, yList):
+        validTests['ttest'] = {'testStatistic':ttest[0],'pValue':ttest[1]}
+    return validTests
+
+##########
+#Run non-regression tests
+##Performs comparisons between different data sets
+##If only one data set is sent, it requires user input for the null hypothesis/expected values
+
+def runValidTests_noregress(df, userInput, arguments):
+    independent = arguments.get('compare').get('independent')
+    args = []
+    for argument in arguments.get('compare').get('data'):
+        args.append(df[argument])
+    results={}
+    normal = setsNormal(.25,*args)
+    numDataSets = len(args)
+
+    if numDataSets>1:
+        equalVar = variationsEqual(.25,*args)
+    else:
+        equalVar = True
+
+    validTests = getValidTests_noregress(equalVar, independent, normal, numDataSets)
+    for test in validTests:
+        if numDataSets==1:
+            results[test]=validTests[test](args[0], userInput)
+        else:
+            results[test]=validTests[test](*args)
+    return results
 
 
-def all_subsets(ss):
-    return chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))
+##################
+#Functions to determine which tests could be run
+##################
 
+#return a boolean, if p-value less than threshold, returns false
+def variationsEqual(THRESHOLD, *args):
+    return stats.levene(*args)[1]>THRESHOLD
+
+#if normalP is less than threshold, not considered normal
+def setsNormal(THRESHOLD, *args):
+    normal = True;
+    for arg in args:
+        if stats.normaltest(arg)[1] < THRESHOLD:
+            normal = False;
+    return normal
+
+def getValidTests_noregress(equalVar, independent, normal, numDataSets):
+    if numDataSets == 1:
+        validTests = {'chisquare':stats.chisquare,'power_divergence':stats.power_divergence,'kstest':stats.kstest}
+        if normal:
+            validTests['ttest_1samp']=stats.ttest_1samp
+        return validTests
+
+    elif numDataSets == 2:
+        if independent:
+            validTests = {'mannwhitneyu':stats.mannwhitneyu,'kruskal':stats.kruskal, 'ks_2samp':stats.ks_2samp}
+            if normal:
+                validTests['ttest_ind']=stats.ttest_ind
+                if equalVar:
+                    validTests['f_oneway']=stats.f_oneway
+            return validTests
+        else:
+            validTests = {'ks_2samp':stats.ks_2samp, 'wilcoxon':stats.wilcoxon}
+            if normal:
+                validTests['ttest_rel']=stats.ttest_rel
+            return validTests
+
+    elif numDataSets >= 3:
+        if independent:
+            validTests = {'kruskal':stats.kruskal}
+            if normal and equalVar:
+                validTests['f_oneway']=stats.f_oneway
+            return validTests
+        else:
+            validTests = {'friedmanchisquare':stats.friedmanchisquare}
+            return validTests
+
+########################
+#Functions for running linear regression
+########################
+def chooseN(array, number):
+    theSolutions = []
+    if number == 1:
+        for x in array:
+            theSolutions.append(tuple([x]))
+        return theSolutions
+    for i in range(len(array)-number+1):
+        frstNumber = [[array[i]]];
+        restNumber = array[i+1:]
+        restNumbersTuple = chooseN(restNumber,number-1)
+        restNumbersList = []
+        for tupleT in restNumbersTuple:
+            restNumbersList.append(list(tupleT))
+        iterationNumbers = (map(add, frstNumber*len(restNumbersList), restNumbersList))
+        for x in iterationNumbers:
+            theSolutions.append(tuple(x))
+    return theSolutions
 
 # Multivariate linear regression function
-def reg_m(y, x):
-    results = sm.OLS(y, x).fit()
+def reg_m(y, x, typeModel, weights=None):
+    ones = np.ones(len(x[0]))
+    X = sm.add_constant(np.column_stack((x[0], ones)))
+    for ele in x[1:]:
+        X = sm.add_constant(np.column_stack((ele, X)))
+    if typeModel=='OLS':
+        results = sm.OLS(y, X).fit()
+    elif typeModel=='WLS':
+        results = sm.WLS(y, X, weights).fit()
+    elif typeModel=='GLS':
+        results = sm.GLS(y, X).fit()
     return results
-    # ones = np.ones(len(x[0]))
-    # X = sm.add_constant(np.column_stack((x[0], ones)))
-    # for ele in x[1:]:
-    #     X = sm.add_constant(np.column_stack((ele, X)))
-    # results = sm.OLS(y, X).fit()
-    # return results
 
+############################
+#Run general linear regression
+####func array contains the array of functions consdered in the regression
+####params coefficients are reversed; the first param coefficient corresponds to the last function in func array
+####notice the independent vectors are given in dictionary format, egs:{'bob':[1,2,3,4,5],'mary':[1,2,3,4,5]}
 
-# Automated test
-# Input: dataframe, independent column, test type
-def analyse_all(df, y, test='OLS'):
-	dep_vector = df[y]
-	# Long dataset
-	indep_df = df.drop(y, axis=1)
-	all_indep_vectors = [ indep_df[c] for c in indep_df ]
-	all_indep_vectors_indices = range(0, len(all_indep_vectors))
+def multipleRegression(funcArray,xDict,yList, typeModel, weights=None):
+    regressionDict = {}
+    xKeys = xDict.keys()
+    for chooseX in range(1,len(xKeys)+1):
+        chooseXKeys = chooseN(xKeys,chooseX)
+        for consideredKeys in chooseXKeys:
+            consideredData = []
+            for key in consideredKeys:
+                for func in funcArray:
+                    consideredData.append(func(np.array(xDict[key])))
+                consideredData = tuple(consideredData)
+                print consideredData
+            model = reg_m(yList,consideredData,typeModel,weights)
+            regressionDict[consideredKeys]={}
+            regressionDict[consideredKeys]['params']= model.params
+            regressionDict[consideredKeys]['rsquared']= model.rsquared
+            regressionDict[consideredKeys]['f_test']= model.fvalue
+            regressionDict[consideredKeys]['std']= model.bse
+            regressionDict[consideredKeys]['stats']= runValidTests_regress(model.resid, yList)
+    return regressionDict
 
-	# Iterate through all combinations of independent vectors
-	for subset in all_subsets(all_indep_vectors_indices):
-		if len(subset) == 0: continue
-		start_time = time()
-		indep_vectors = [ all_indep_vectors[i] for i in subset ]
-		results = reg_m(dep_vector, indep_vectors)
-		parsed_results = {
-		    'rsquared': results.rsquared,
-		    'rsquared_adj': results.rsquared_adj,
-		    'params': results.params.tolist(),
-		}
-		print _result2dataframe(results)
-		print subset, len(indep_vectors), time() - start_time
+###########################
+#Runs polynomial regression
 
-
-# Formalize structure of output
-def _result2dataframe(model_result):
-    """return a series containing the summary of a linear model
-    All the exceding parameters will be redirected to the linear model
-    """
-
-    # create the linear model and perform the fit
-    # keeps track of some global statistics
-    statistics = pd.Series({'r2': model_result.rsquared,
-                  'adj_r2': model_result.rsquared_adj})
-
-    # put them togher with the result for each term
-    result_df = pd.DataFrame({'params': model_result.params,
-                              'pvals': model_result.pvalues,
-                              'std': model_result.bse,
-                              'statistics': statistics})
-
-    # add the complexive results for f-value and the total p-value
-    fisher_df = pd.DataFrame({'params': {'_f_test': model_result.fvalue},
-                              'pvals': {'_f_test': model_result.f_pvalue}})
-    # merge them and unstack to obtain a hierarchically indexed series
-    res_series = pd.concat([result_df, fisher_df]).unstack()
-    return res_series.dropna()
+def multiplePolyRegression(xDict,yList,degree, typeModel, weights=None):
+    regressionDict = {}
+    xKeys = xDict.keys()
+    for chooseX in range(1,len(xKeys)+1):
+        chooseXKeys = chooseN(xKeys,chooseX)
+        for consideredKeys in chooseXKeys:
+            consideredData = []
+            for key in consideredKeys:
+                for deg in range(1,degree+1):
+                    consideredData.append(np.array(xDict[key])**deg)
+            model = reg_m(yList,consideredData, typeModel, weights)
+            regressionDict[consideredKeys]={}
+            regressionDict[consideredKeys]['params']= model.params
+            regressionDict[consideredKeys]['rsquared']= model.rsquared
+            regressionDict[consideredKeys]['f_test']= model.fvalue
+            regressionDict[consideredKeys]['std']= model.bse
+            regressionDict[consideredKeys]['stats']= runValidTests_regress(model.resid, yList)
+            if chooseX==1 and degree==1:
+                regressionDict[consideredKeys]['theil-sen']=stats.theilslopes(yList, consideredData)
+    return regressionDict
