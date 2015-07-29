@@ -19,11 +19,12 @@ from bson.objectid import ObjectId
 
 from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
-from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_ontologies
-from properties import get_properties, get_entities, get_attributes
+from analysis.analysis import detect_unique_list, compute_ontologies, get_ontologies
+from properties import get_properties, get_entities, get_attributes, compute_properties
 from visualization.viz_specs import getVisualizationSpecs
 from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
+from statistics.statistics import getStatisticsFromSpec
 
 app = Flask(__name__)
 app.debug = True
@@ -68,7 +69,7 @@ class UploadFile(Resource):
             }
 
             data = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, datasets)}, pID)
-            compute_properties(pID, data)
+            properties_by_dID = compute_properties(pID, data)
             print "Done initializing properties"
 
             # compute_ontologies(pID, data)
@@ -416,6 +417,53 @@ class Data_From_Spec(Resource):
         result, status = getVisualizationDataFromSpec(spec, conditional, pID)
         return make_response(jsonify(format_json(result)), status)
 
+
+#####################################################################
+# Endpoint returning aggregated visualization data given a specification
+# INPUT: pID, spec, conditionals
+# OUTPUT: {nested visualization data, table data}
+#####################################################################
+
+# For inferred visualizations
+dataFromSpecPostParser = reqparse.RequestParser()
+dataFromSpecPostParser.add_argument('dID', type=str, location='json')
+dataFromSpecPostParser.add_argument('spec', type=str, location='json')
+dataFromSpecPostParser.add_argument('conditional', type=str, location='json')
+
+class Data_From_Spec(Resource):
+    def post(self):
+        args = request.json
+        # TODO Implement required parameters
+        pID = args.get('pID')
+        spec = args.get('spec')
+        conditional = args.get('conditional')
+
+        result, status = getVisualizationDataFromSpec(spec, conditional, pID)
+        return make_response(jsonify(format_json(result)), status)
+
+
+#####################################################################
+# Endpoint returning statistical data given a specification
+# INPUT: pID, spec
+# OUTPUT: {stat data}
+#####################################################################
+
+# For inferred visualizations
+statsFromSpecPostParser = reqparse.RequestParser()
+statsFromSpecPostParser.add_argument('dID', type=str, location='json')
+statsFromSpecPostParser.add_argument('spec', type=str, location='json')
+class Statistics_From_Spec(Resource):
+    def post(self):
+        args = request.json
+        # TODO Implement required parameters
+        pID = args.get('pID')
+        spec = args.get('spec')
+
+        result, status = getStatisticsFromSpec(spec, pID)
+        print result
+        return make_response(jsonify(format_json(result)), status)
+
+
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
 # INPUT: sID, pID, uID
@@ -579,6 +627,7 @@ api.add_resource(Choose_Spec,                   '/api/choose_spec')
 api.add_resource(Reject_Spec,                   '/api/reject_spec')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
 api.add_resource(Data_From_Spec,                '/api/data_from_spec')
+api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
 api.add_resource(Conditional_Data,              '/api/conditional_data')
 api.add_resource(Exported_Visualization_Spec,   '/api/exported_spec')
 

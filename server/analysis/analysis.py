@@ -9,6 +9,7 @@ from data.db import MongoInstance as MI
 from data.access import get_data, upload_file, get_column_types, get_delimiter, is_numeric
 from time import time
 import numpy as np
+import scipy.stats as stats
 
 
 # Detect if a list is comprised of unique elements
@@ -26,76 +27,6 @@ def detect_unique_list(l):
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def get_unique(li):
     return list(np.unique(li))
-
-
-# Compute properties of all passed datasets
-# Arguments: pID + list of dIDs
-# Returns a mapping from dIDs to properties
-def compute_properties(pID, datasets):
-    stats_dict = {}
-    types_dict = {}
-    headers_dict = {}
-    is_unique_dict = {}
-    unique_values_dict = {}
-
-    for dataset in datasets:
-        dID = dataset['dID']
-        path = dataset['path']
-        df = get_data(pID=pID, dID=dID)
-
-        header = df.columns.values
-        df = df.fillna('')
-
-        # Statistical properties
-        print "\tDescribing datasets"
-        df_stats = df.describe()
-        df_stats_dict = json.loads(df_stats.to_json())
-        stats_dict[dID] = df_stats_dict
-    
-        # Replace nan
-        # entropy 
-        # gini
-    
-        ### Detecting if a column is unique
-        print "\tDetecting uniques"
-        start_time = time()
-        # List of booleans -- is a column composed of unique elements?
-        is_unique = [ detect_unique_list(df[col]) for col in df ]
-        print "\t\t", time() - start_time, "seconds"
-        print "\tGetting types"
-        types = get_column_types(df)
-
-        ### Unique values for columns
-        print "\t\tGetting unique values"
-        start_time = time()
-        unique_values = []
-        raw_uniqued_values = [ get_unique(df[col]) for col in df ]
-        for i, col in enumerate(raw_uniqued_values):
-            type = types[i]
-            if type in ["integer", "float"]:
-                unique_values.append([])
-            else:
-                unique_values.append(col)
-        print "\t\t", time() - start_time, "seconds"
-
-        # Save properties into collection
-        dataset_properties = {
-            'types': types,
-            'uniques': is_unique,
-            'headers': list(header),
-            'stats': df_stats_dict,
-            'unique_values': unique_values
-        }
-
-        types_dict[dID] = dataset_properties['types']
-        headers_dict[dID] = dataset_properties['headers']
-        is_unique_dict[dID] = dataset_properties['uniques']
-        stats_dict[dID] = dataset_properties['stats']
-        unique_values_dict[dID] = dataset_properties['unique_values']
-
-        tID = MI.upsertProperty(dID, pID, dataset_properties)
-
-    return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
 
 
 # Find the distance between two sets
