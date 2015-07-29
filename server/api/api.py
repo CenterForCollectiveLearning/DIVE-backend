@@ -19,7 +19,8 @@ from bson.objectid import ObjectId
 
 from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
-from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_properties, get_ontologies
+from analysis.analysis import detect_unique_list, compute_properties, compute_ontologies, get_ontologies
+from properties import get_properties, get_entities, get_attributes
 from visualization.viz_specs import getVisualizationSpecs
 from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
@@ -304,24 +305,48 @@ class Properties(Resource):
 
         # Parse properties into right return format (maybe don't do on this layer)
         properties = []
-        stats, types, headers, is_unique, unique_values = get_properties(pID, dataset_docs)
-        d_stats = stats[dID]
-        d_types = types[dID]
-        d_headers = headers[dID]
-        d_unique = is_unique[dID]
-        d_unique_vals = unique_values[dID]
-            
-        for type, header, unique, unique_vals in zip(d_types, d_headers, d_unique, d_unique_vals):
-            property = {
-                'type': type,
-                'label': header,
-                'unique': unique,
-                'values': unique_vals
-            }
-            properties.append(property)
 
         results = {
-            'properties': properties
+            'properties': get_properties(pID, dataset_docs)
+        }
+
+        return make_response(jsonify(format_json(results)))
+
+
+entitiesGetParser = reqparse.RequestParser()
+entitiesGetParser.add_argument('pID', type=str, required=True)
+entitiesGetParser.add_argument('dID', type=str, required=True)
+class Entities(Resource):
+    def get(self):
+        print "[GET] Entities"
+        args = entitiesGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        dID = args.get('dID')
+
+        dataset_docs = MI.getData({"_id": ObjectId(dID)}, pID)
+
+        entities = get_entities(pID, dataset_docs)
+        results = {
+            'entities': entities
+        }
+
+        return make_response(jsonify(format_json(results)))
+
+entitiesGetParser = reqparse.RequestParser()
+entitiesGetParser.add_argument('pID', type=str, required=True)
+entitiesGetParser.add_argument('dID', type=str, required=True)
+class Attributes(Resource):
+    def get(self):
+        print "[GET] Entities"
+        args = entitiesGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        dID = args.get('dID')
+
+        dataset_docs = MI.getData({"_id": ObjectId(dID)}, pID)
+
+        attributes = get_attributes(pID, dataset_docs)
+        results = {
+            'attributes': attributes
         }
 
         return make_response(jsonify(format_json(results)))
@@ -544,7 +569,11 @@ api.add_resource(Datasets,                      '/api/datasets')
 api.add_resource(Dataset,                       '/api/datasets/<string:dID>')
 api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
-api.add_resource(Properties,                    '/api/properties')
+
+api.add_resource(Properties,                    '/api/properties/v1/properties')
+api.add_resource(Entities,                      '/api/properties/v1/entities')
+api.add_resource(Attributes,                    '/api/properties/v1/attributes')
+
 api.add_resource(Specification,                 '/api/specification')
 api.add_resource(Choose_Spec,                   '/api/choose_spec')
 api.add_resource(Reject_Spec,                   '/api/reject_spec')

@@ -97,28 +97,6 @@ def compute_properties(pID, datasets):
 
     return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
 
-# Retrieve proeprties given dataset_docs
-# TODO Accept list of dIDs
-def get_properties(pID, datasets) :
-    stats_dict = {}
-    types_dict = {}
-    headers_dict = {}
-    is_unique_dict = {}
-    unique_values_dict = {}
-
-    find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
-    data = MI.getProperty(find_doc, pID)
-
-    for d in data:
-        dID = d['dID']
-        stats_dict[dID] = d['stats']
-        types_dict[dID] = d['types']
-        headers_dict[dID] = d['headers']
-        is_unique_dict[dID] = d['uniques']
-        unique_values_dict[dID] = d['unique_values']
-
-    return stats_dict, types_dict, headers_dict, is_unique_dict, unique_values_dict
-
 
 # Find the distance between two sets
 # Currently naively uses Jaccard distance between two sets
@@ -202,7 +180,7 @@ def compute_ontologies(pID, datasets) :
     return overlaps, hierarchies
 
 
-def get_ontologies(pID, datasets) :
+def get_ontologies(pID, datasets):
     overlaps = {}
     hierarchies = {}
 
@@ -225,3 +203,5 @@ def get_ontologies(pID, datasets) :
         hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
 
     return overlaps, hierarchies
+
+
