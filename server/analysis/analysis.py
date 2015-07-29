@@ -29,119 +29,6 @@ def get_unique(li):
     return list(np.unique(li))
 
 
-# Compute properties of all passed datasets
-# Currently only getting properties by column
-# Arguments: pID + dataset documents
-# Returns a mapping from dIDs to properties
-def compute_properties(pID, dataset_docs):
-    properties_by_dID = {}
-
-    for dataset in dataset_docs:
-        property_dict = {
-            'types': [],
-            'label': [],
-            'values': [],
-            'unique': [],
-            'normality': {},
-            'stats': {},
-            'misc': {}
-        }
-        dID = dataset['dID']
-        df = get_data(pID=pID, dID=dID)
-        df = df.fillna('')
-
-        labels = df.columns.values
-        property_dict['label'] = labels.tolist()
-
-        print "Calculating properties for dID", dID
-        # Statistical properties
-        # Only conduct on certain types?
-        print "\tDescribing datasets"
-        df_stats = df.describe()
-        df_stats_dict = json.loads(df_stats.to_json())
-        df_stats_list = []
-        for l in labels:
-            if l in df_stats_dict:
-                df_stats_list.append(df_stats_dict[l])
-            else:
-                df_stats_list.append({})
-        property_dict['stats'] = df_stats_list
-
-        ### Getting column types
-        print "\tGetting types"
-        types = get_column_types(df)
-        property_dict['types'] = types
-    
-        ### Determining normality
-        print "\tDetermining normality"
-        start_time = time()
-        normality = []
-        for i, col in enumerate(df):
-            type = types[i]
-            if type in ["int", "float"]:
-                try:
-                    ## Coerce data vector to float
-                    d = df[col].astype(np.float)
-                    normality_result = stats.normaltest(d)
-                except ValueError:
-                    normality_result = None                    
-            else:
-                normality_result = None
-            normality.append(normality_result)
-
-        property_dict['normality'] = normality
-        print "\t\t", time() - start_time, "seconds"
-    
-        ### Detecting if a column is unique
-        print "\tDetecting uniques"
-        start_time = time()
-        # List of booleans -- is a column composed of unique elements?
-        unique = [ detect_unique_list(df[col]) for col in df ]
-        property_dict['unique'] = unique
-        print "\t\t", time() - start_time, "seconds"
-
-        ### Unique values for columns
-        print "\tGetting unique values"
-        start_time = time()
-        unique_values = []
-        raw_uniqued_values = [ get_unique(df[col]) for col in df ]
-        for i, col in enumerate(raw_uniqued_values):
-            type = types[i]
-            if type in ["integer", "float"]:
-                unique_values.append([])
-            else:
-                unique_values.append(col)
-        property_dict['values'] = unique_values
-        print "\t\t", time() - start_time, "seconds"
-
-        # Save properties into collection
-        tID = MI.upsertProperty(dID, pID, property_dict)
-
-        properties_by_dID[dID] = property_dict
-    return properties_by_dID
-
-# Get properties given dataset_docs
-# Either retrieve from DB or, if not available, calculate
-# TODO Accept list of dIDs
-def get_properties(pID, datasets) :
-    # Try to retrieve from DB, then format into dict keyed by dID
-    find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
-    properties_list = MI.getProperty(find_doc, pID)
-    if len(properties_list):
-        properties_by_dID = {}
-        for p in properties_list:
-            dID = p['dID']
-            del p['dID']
-            del p['tID']
-            properties_by_dID[dID] = p
-
-    # If not in DB, compute
-    else:
-        properties_by_dID = compute_properties(pID, datasets)
-
-    return properties_by_dID
-
-
 # Find the distance between two sets
 # Currently naively uses Jaccard distance between two sets
 def get_distance(list_a, list_b):
@@ -224,7 +111,7 @@ def compute_ontologies(pID, datasets) :
     return overlaps, hierarchies
 
 
-def get_ontologies(pID, datasets) :
+def get_ontologies(pID, datasets):
     overlaps = {}
     hierarchies = {}
 
@@ -247,3 +134,5 @@ def get_ontologies(pID, datasets) :
         hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
 
     return overlaps, hierarchies
+
+
