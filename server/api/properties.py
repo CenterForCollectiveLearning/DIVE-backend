@@ -1,8 +1,15 @@
+import json
+import numpy as np
+
+from time import time
+
 from data.db import MongoInstance as MI
+from data.access import get_data, get_column_types
+from analysis.analysis import get_unique
 
 # Retrieve proeprties given dataset_docs
 # TODO Accept list of dIDs
-def get_properties(pID, datasets) :
+def get_properties(pID, datasets, get_stats = False) :
     properties = []
     _property_labels = []
 
@@ -22,28 +29,45 @@ def get_properties(pID, datasets) :
         _properties_by_dID = compute_properties(pID, datasets)
 
     for _dID, _properties_data in _properties_by_dID.iteritems():
-        for _label, _type, _unique, _unique_values in zip(_properties_data['headers'], _properties_data['types'], _properties_data['uniques'], _properties_data['unique_values']):
+        for _label, _type, _unique, _unique_values, _child, _is_child in zip(_properties_data['label'], _properties_data['types'], _properties_data['unique'], _properties_data['values'], _properties_data['child'], _properties_data['is_child']):
             if _label in _property_labels:
                 properties[_property_labels.index(_label)]['dIDs'].append[_dID]
             else:
                 _property_labels.append(_label)
-                properties.append({
+                _property = {
                     'label': _label,
                     'type': _type,
                     'unique': _unique,
                     'values': _unique_values,
+                    'child': _child,
+                    'is_child': _is_child,
                     'dIDs': [_dID]
-                })
+                }
+
+                # if get_stats:
+                #     _property['stats'] = _stats
+
+                properties.append(_property)
 
     return properties
 
 # Retrieve entities given datasets
 def get_entities(pID, datasets):
-    entities = []
-    _properties = get_properties(pID, datasets)
-    entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
+    _properties = get_properties(pID, datasets, get_stats = True)
+    _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
 
-    return entities
+    parent_entities = filter(lambda x: not x['is_child'], _all_entities)
+
+    for i, _entity in enumerate(parent_entities):
+        _entity = populate_child_entity(_entity, _all_entities)
+
+    return parent_entities
+
+def populate_child_entity(entity, all_entities):
+    if entity['child']:
+        _child_entity = filter(lambda x: x['label'] == entity['child'], all_entities)[0]
+        entity['child'] = populate_child_entity(_child_entity, all_entities)
+    return entity
 
 # Retrieve entities given datasets
 def get_attributes(pID, datasets):
@@ -136,6 +160,31 @@ def compute_properties(pID, dataset_docs):
             else:
                 unique_values.append(col)
         property_dict['values'] = unique_values
+
+        print "\t\t", time() - start_time, "seconds"
+
+        ### Detect parents
+        print "\tGetting entity hierarchies"
+        start_time = time()
+        property_dict['child'] = [ None ] * len(property_dict['values'])
+        property_dict['is_child'] = [ False ] * len(property_dict['values'])
+        for i, col in enumerate(df):
+            if not property_dict['unique'][i] and property_dict['types'][i] not in ['float', 'int'] and property_dict['types'][i+1] not in ['float', 'int']:
+                _all_next_col_values = []
+
+                if len(property_dict['values'][i]) > 1:
+                    for j, value in enumerate(property_dict['values'][i]):
+                        sub_df = df.loc[df[property_dict['label'][i]] == value]
+                        _next_col_values = sub_df[property_dict['label'][i+1]]
+
+                        _all_next_col_values.extend(set(_next_col_values))
+
+                    _all_next_col_values = [x for x in _all_next_col_values if x != "#"]
+
+                    if len(_all_next_col_values) == len(set(_all_next_col_values)):
+                        property_dict['child'][i] = property_dict['label'][i+1]
+                        property_dict['is_child'][i+1] = True
+
         print "\t\t", time() - start_time, "seconds"
 
         # Save properties into collection
@@ -143,3 +192,15 @@ def compute_properties(pID, dataset_docs):
 
         properties_by_dID[dID] = property_dict
     return properties_by_dID
+
+
+# Detect if a list is comprised of unique elements
+def detect_unique_list(l):
+    # TODO Vary threshold by number of elements (be smarter about it)
+    THRESHOLD = 0.95
+
+    # Comparing length of uniqued elements with original list
+    if (len(np.unique(l)) / float(len(l))) >= THRESHOLD:
+        return True
+    return False
+
