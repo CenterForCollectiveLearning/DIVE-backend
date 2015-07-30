@@ -12,17 +12,6 @@ import numpy as np
 import scipy.stats as stats
 
 
-# Detect if a list is comprised of unique elements
-def detect_unique_list(l):
-    # TODO Vary threshold by number of elements (be smarter about it)
-    THRESHOLD = 0.95
-
-    # Comparing length of uniqued elements with original list
-    if (len(np.unique(l)) / float(len(l))) >= THRESHOLD:
-        return True
-    return False
-
-
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def get_unique(li):

@@ -19,7 +19,7 @@ from bson.objectid import ObjectId
 
 from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
-from analysis.analysis import detect_unique_list, compute_ontologies, get_ontologies
+from analysis.analysis import compute_ontologies, get_ontologies
 from properties import get_properties, get_entities, get_attributes, compute_properties
 from visualization.viz_specs import getVisualizationSpecs
 from visualization.viz_data import getVisualizationDataFromSpec
