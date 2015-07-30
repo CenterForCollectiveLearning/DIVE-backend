@@ -9,7 +9,7 @@ from analysis.analysis import get_unique
 
 # Retrieve proeprties given dataset_docs
 # TODO Accept list of dIDs
-def get_properties(pID, datasets, get_stats = False) :
+def get_properties(pID, datasets, get_values = False) :
     properties = []
     _property_labels = []
 
@@ -38,14 +38,13 @@ def get_properties(pID, datasets, get_stats = False) :
                     'label': _label,
                     'type': _type,
                     'unique': _unique,
-                    'values': _unique_values,
                     'child': _child,
                     'is_child': _is_child,
                     'dIDs': [_dID]
                 }
 
-                # if get_stats:
-                #     _property['stats'] = _stats
+                if get_values:
+                    _property['values'] = _unique_values
 
                 properties.append(_property)
 
@@ -53,21 +52,23 @@ def get_properties(pID, datasets, get_stats = False) :
 
 # Retrieve entities given datasets
 def get_entities(pID, datasets):
-    _properties = get_properties(pID, datasets, get_stats = True)
+    _properties = get_properties(pID, datasets)
     _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
 
     parent_entities = filter(lambda x: not x['is_child'], _all_entities)
 
     for i, _entity in enumerate(parent_entities):
-        _entity = populate_child_entity(_entity, _all_entities)
+        if _entity['child']:
+            _entity['child'] = populate_child_entities(_entity['child'], [], _all_entities)
 
     return parent_entities
 
-def populate_child_entity(entity, all_entities):
-    if entity['child']:
-        _child_entity = filter(lambda x: x['label'] == entity['child'], all_entities)[0]
-        entity['child'] = populate_child_entity(_child_entity, all_entities)
-    return entity
+def populate_child_entities(entity_name, child_entities, all_entities):
+    _entity = filter(lambda x: x['label'] == entity_name, all_entities)[0]
+    if _entity['child']:
+        child_entities = populate_child_entities(_entity['child'], child_entities, all_entities)
+
+    return [_entity] + child_entities
 
 # Retrieve entities given datasets
 def get_attributes(pID, datasets):
