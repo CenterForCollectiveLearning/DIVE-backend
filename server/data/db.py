@@ -18,11 +18,15 @@ def remove_dots(data):
             del data[k]
     return data
 
-def formatObjectIDs(collectionName, results):
-    for result in results: # For each result is passed, convert the _id to the proper mID, cID, etc.
-        result[collectionName[0]+'ID'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
-    return results
+def formatObjectIDs(collectionName, results, fullname = False):
+    if fullname:
+        propertyName = collectionName
+    else:
+        propertyName = collectionName[0]
 
+    for result in results: # For each result is passed, convert the _id to the proper mID, cID, etc.
+        result[propertyName + 'ID'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
+    return results
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
@@ -128,7 +132,10 @@ class mongoInstance(object):
         return tID
 
     def getProperty(self, find_doc, pID):
-        return formatObjectIDs('t', [ t for t in MongoInstance.client[pID].properties.find(find_doc) ])
+        return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].properties.find(find_doc) ], True)
+
+    def setProperty(self, pID, _property):
+        return MongoInstance.client[pID].properties.insert(_property)
 
     def getOntology(self, find_doc, pID):
         return formatObjectIDs('ontology', [ o for o in MongoInstance.client[pID].ontologies.find(find_doc) ])
