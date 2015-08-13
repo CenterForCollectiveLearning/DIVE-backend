@@ -314,6 +314,21 @@ class Properties(Resource):
         return make_response(jsonify(format_json(results)))
 
 
+propertyGetParser = reqparse.RequestParser()
+propertyGetParser.add_argument('pID', type=str, required=True)
+class Property(Resource):
+    def get(self, propertyID):
+        print "[GET] Properties"
+        args = propertyGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+
+        _property = MI.getProperty({"_id": ObjectId(propertyID)}, pID)
+
+        results = _property
+
+        return make_response(json.dumps(format_json(results)))
+
+
 entitiesGetParser = reqparse.RequestParser()
 entitiesGetParser.add_argument('pID', type=str, required=True)
 entitiesGetParser.add_argument('dID', type=str, required=True)
@@ -619,6 +634,7 @@ api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
 
 api.add_resource(Properties,                    '/api/properties/v1/properties')
+api.add_resource(Property,                      '/api/properties/v1/properties/<string:propertyID>')
 api.add_resource(Entities,                      '/api/properties/v1/entities')
 api.add_resource(Attributes,                    '/api/properties/v1/attributes')
 

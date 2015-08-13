@@ -10,7 +10,7 @@ from analysis.analysis import get_unique
 # Retrieve proeprties given dataset_docs
 # TODO Accept list of dIDs
 def get_properties(pID, datasets, get_values = False) :
-    properties = []
+    aggregatedProperties = []
     _property_labels = []
 
     _find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
@@ -18,42 +18,46 @@ def get_properties(pID, datasets, get_values = False) :
 
     if len(_all_properties):
         _properties_by_dID = {}
+
         for p in _all_properties:
+
             dID = p['dID']
             del p['dID']
-            del p['tID']
-            _properties_by_dID[dID] = p
+            if not _properties_by_dID.get(dID):
+                _properties_by_dID[dID] = []
+
+            _properties_by_dID[dID].append(p)
 
     # If not in DB, compute
     else:
         _properties_by_dID = compute_properties(pID, datasets)
 
     for _dID, _properties_data in _properties_by_dID.iteritems():
-        for _label, _type, _unique, _unique_values, _child, _is_child in zip(_properties_data['label'], _properties_data['types'], _properties_data['unique'], _properties_data['values'], _properties_data['child'], _properties_data['is_child']):
-            if _label in _property_labels:
-                properties[_property_labels.index(_label)]['dIDs'].append[_dID]
+        for _property in _properties_data:
+            if _property['label'] in _property_labels:
+                _j = _property_labels.index(_property['label'])
+                aggregatedProperties[_j]['dIDs'].append(_dID)
+
             else:
-                _property_labels.append(_label)
-                _property = {
-                    'label': _label,
-                    'type': _type,
-                    'unique': _unique,
-                    'child': _child,
-                    'is_child': _is_child,
-                    'dIDs': [_dID]
-                }
+                _property_labels.append(_property['label'])
+                _property['dIDs'] = [_dID]
 
-                if get_values:
-                    _property['values'] = _unique_values
+                if not get_values:
+                    del _property['values']
 
-                properties.append(_property)
 
-    return properties
+                if _property.get('_id'):
+                    _property['propertyID'] = str(_property['_id'])
+                    del _property['_id']
+
+                aggregatedProperties.append(_property)
+
+    return aggregatedProperties
 
 # Retrieve entities given datasets
 def get_entities(pID, datasets):
     _properties = get_properties(pID, datasets)
-    _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
+    _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'] and x['unique'] is False, _properties)
 
     parent_entities = filter(lambda x: not x['is_child'], _all_entities)
 
@@ -86,21 +90,18 @@ def compute_properties(pID, dataset_docs):
     properties_by_dID = {}
 
     for dataset in dataset_docs:
-        property_dict = {
-            'types': [],
-            'label': [],
-            'values': [],
-            'unique': [],
-            'normality': {},
-            'stats': {},
-            'misc': {}
-        }
+        properties = []
+
         dID = dataset['dID']
         df = get_data(pID=pID, dID=dID)
         df = df.fillna('')
 
-        labels = df.columns.values
-        property_dict['label'] = labels.tolist()
+        _labels = df.columns.values
+        properties = [ None ] * len(_labels.tolist())
+
+        for i, label in enumerate(_labels.tolist()):
+            properties[i] = {}
+            properties[i]['label'] = label
 
         print "Calculating properties for dID", dID
         # Statistical properties
@@ -109,25 +110,26 @@ def compute_properties(pID, dataset_docs):
         df_stats = df.describe()
         df_stats_dict = json.loads(df_stats.to_json())
         df_stats_list = []
-        for l in labels:
+        for l in _labels:
             if l in df_stats_dict:
                 df_stats_list.append(df_stats_dict[l])
             else:
                 df_stats_list.append({})
-        property_dict['stats'] = df_stats_list
+        for i, stats in enumerate(df_stats_list):
+            properties[i]['stats'] = stats
 
         ### Getting column types
         print "\tGetting types"
-        types = get_column_types(df)
-        property_dict['types'] = types
+        _types = get_column_types(df)
+        for i, _type in enumerate(_types):
+            properties[i]['type'] = _type
     
         ### Determining normality
         print "\tDetermining normality"
         start_time = time()
-        normality = []
         for i, col in enumerate(df):
-            type = types[i]
-            if type in ["int", "float"]:
+            _type = _types[i]
+            if _type in ["int", "float"]:
                 try:
                     ## Coerce data vector to float
                     d = df[col].astype(np.float)
@@ -136,17 +138,18 @@ def compute_properties(pID, dataset_docs):
                     normality_result = None                    
             else:
                 normality_result = None
-            normality.append(normality_result)
 
-        property_dict['normality'] = normality
+            properties[i]['normality'] = normality_result
+
         print "\t\t", time() - start_time, "seconds"
     
         ### Detecting if a column is unique
         print "\tDetecting uniques"
         start_time = time()
         # List of booleans -- is a column composed of unique elements?
-        unique = [ detect_unique_list(df[col]) for col in df ]
-        property_dict['unique'] = unique
+        for i, col in enumerate(df):
+            properties[i]['unique'] = detect_unique_list(df[col])
+
         print "\t\t", time() - start_time, "seconds"
 
         ### Unique values for columns
@@ -155,43 +158,52 @@ def compute_properties(pID, dataset_docs):
         unique_values = []
         raw_uniqued_values = [ get_unique(df[col]) for col in df ]
         for i, col in enumerate(raw_uniqued_values):
-            type = types[i]
-            if type in ["integer", "float"]:
-                unique_values.append([])
+            _type = _types[i]
+            if _type in ["integer", "float"]:
+                properties[i]['values'] = []
             else:
-                unique_values.append(col)
-        property_dict['values'] = unique_values
+                properties[i]['values'] = col
 
         print "\t\t", time() - start_time, "seconds"
 
         ### Detect parents
         print "\tGetting entity hierarchies"
         start_time = time()
-        property_dict['child'] = [ None ] * len(property_dict['values'])
-        property_dict['is_child'] = [ False ] * len(property_dict['values'])
         for i, col in enumerate(df):
-            if not property_dict['unique'][i] and property_dict['types'][i] not in ['float', 'int'] and property_dict['types'][i+1] not in ['float', 'int']:
-                _all_next_col_values = []
+            if i < (len(df.columns) - 1):
+                if not properties[i]['unique'] and properties[i]['type'] not in ['float', 'int'] and properties[i+1]['type'] not in ['float', 'int']:
+                    _all_next_col_values = []
 
-                if len(property_dict['values'][i]) > 1:
-                    for j, value in enumerate(property_dict['values'][i]):
-                        sub_df = df.loc[df[property_dict['label'][i]] == value]
-                        _next_col_values = sub_df[property_dict['label'][i+1]]
+                    if len(properties[i]['values']) > 1:
+                        for j, value in enumerate(properties[i]['values']):
+                            sub_df = df.loc[df[properties[i]['label']] == value]
+                            _next_col_values = sub_df[properties[i+1]['label']]
 
-                        _all_next_col_values.extend(set(_next_col_values))
+                            _all_next_col_values.extend(set(_next_col_values))
 
-                    _all_next_col_values = [x for x in _all_next_col_values if x != "#"]
+                        _all_next_col_values = [x for x in _all_next_col_values if x != "#"]
 
-                    if len(_all_next_col_values) == len(set(_all_next_col_values)):
-                        property_dict['child'][i] = property_dict['label'][i+1]
-                        property_dict['is_child'][i+1] = True
+                        if len(_all_next_col_values) == len(set(_all_next_col_values)):
+                            properties[i]['child'] = properties[i+1]['label']
+                            properties[i+1]['is_child'] = True
+
+            if not properties[i].get('child'):
+                properties[i]['child'] = None
+
+            if not properties[i].get('is_child'):
+                properties[i]['is_child'] = False
 
         print "\t\t", time() - start_time, "seconds"
 
         # Save properties into collection
-        tID = MI.upsertProperty(dID, pID, property_dict)
+        for _property in properties:
+            _property['dID'] = dID
+            if MI.getProperty({'dID': dID, 'label': _property['label']}, pID):
+                tID = MI.upsertProperty(dID, pID, _property)
+            else:
+                tID = MI.setProperty(pID, _property)
 
-        properties_by_dID[dID] = property_dict
+        properties_by_dID[dID] = properties
     return properties_by_dID
 
 
