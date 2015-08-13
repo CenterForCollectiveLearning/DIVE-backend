@@ -169,6 +169,8 @@ def compute_properties(pID, dataset_docs):
         ### Detect parents
         print "\tGetting entity hierarchies"
         start_time = time()
+        MAX_ROW_THRESHOLD = 100
+
         for i, col in enumerate(df):
             if i < (len(df.columns) - 1):
                 if not properties[i]['unique'] and properties[i]['type'] not in ['float', 'int'] and properties[i+1]['type'] not in ['float', 'int']:
@@ -176,6 +178,10 @@ def compute_properties(pID, dataset_docs):
 
                     if len(properties[i]['values']) > 1:
                         for j, value in enumerate(properties[i]['values']):
+                            # TODO: be much smarter about sampling columns rather than just taking the first X rows
+                            if j > MAX_ROW_THRESHOLD:
+                                break
+
                             sub_df = df.loc[df[properties[i]['label']] == value]
                             _next_col_values = sub_df[properties[i+1]['label']]
 
