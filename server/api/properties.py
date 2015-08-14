@@ -56,7 +56,7 @@ def get_properties(pID, datasets, get_values = False) :
 
 # Retrieve entities given datasets
 def get_entities(pID, datasets):
-    _properties = get_properties(pID, datasets)
+    _properties = get_properties(pID, datasets, get_values = True)
     _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
 
     parent_entities = filter(lambda x: not x['is_child'], _all_entities)
