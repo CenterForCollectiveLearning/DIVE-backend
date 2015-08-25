@@ -38,7 +38,7 @@ aggregation_functions = {
 
 pairwise_functions = {
     'add': '',
-    'subtract': ''
+    'subtract': '',
     'multiply': '',
     'divide': ''
 }
@@ -77,8 +77,14 @@ def A(label):
 def B(labels):
     specs = []
     # Function on pairs of columns
+    for (field_a, field_b) in combinations(labels, 2):
+        for pairwise_function in pairwise_functions.keys():
+            derived_column_desc = "%s %s %s" % (field_a, pairwise_function, field_b)
+            A_specs = A(derived_column_desc)
+            specs.extend(A_specs)
     return specs
 
+# TODO Move the case classifying into dataset ingestion (doesn't need to be here!)
 # 1) Enumerated viz specs given data, properties, and ontologies
 def enumerate_viz_specs(datasets, properties, ontologies):
     dIDs = [ d['dID'] for d in datasets ]
