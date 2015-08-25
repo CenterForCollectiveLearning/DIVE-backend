@@ -21,7 +21,7 @@ from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import compute_ontologies, get_ontologies
 from properties import get_properties, get_entities, get_attributes, compute_properties
-from visualization.viz_specs import getVisualizationSpecs
+from visualization.viz_specs import get_viz_specs
 from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
 from statistics.statistics import getStatisticsFromSpec
@@ -44,7 +44,7 @@ def format_json(obj):
     elif isinstance(obj, dict):
         return dict((k, format_json(v)) for k, v in obj.items())
     elif isinstance(obj, (list, tuple)):
-        return map(format_json, obj)             
+        return map(format_json, obj)
     return obj
 
 
@@ -57,7 +57,8 @@ uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('pID', type=str, required=True)
 class UploadFile(Resource):
     def post(self):
-        pID = request.form.get('pID').strip().strip('"')
+        form_data = json.loads(request.form.get('data'))
+        pID = form_data.get('pID').strip().strip('"')
         file = request.files.get('file')
 
         if file and allowed_file(file.filename):
@@ -99,7 +100,7 @@ class Public_Data(Resource):
         # Specific dIDs
         if dIDs:
             print "Requested specific dIDs:", dIDs
-            dataLocations = [ MI.getData({'_id': ObjectId(dID)}, pID) for dID in dIDs ] 
+            dataLocations = [ MI.getData({'_id': ObjectId(dID)}, pID) for dID in dIDs ]
 
         # All datasets
         else:
@@ -272,7 +273,7 @@ class Project(Resource):
             os.mkdir(os.path.join(app.config['UPLOAD_FOLDER'], result[0]['pID']))
 
         return result
-        
+
     # Delete project and all associated data
     def delete(self):
         args = projectDeleteParser.parse_args()
@@ -373,14 +374,14 @@ class Attributes(Resource):
 # INPUT: pID, uID
 # OUTPUT: {visualizationType: [visualizationSpecification]}
 #####################################################################
-specificationGetParser = reqparse.RequestParser()
-specificationGetParser.add_argument('pID', type=str, required=True)
-specificationGetParser.add_argument('sID', type=str, action='append')
-class Specification(Resource):
+vizSpecsGetParser = reqparse.RequestParser()
+vizSpecsGetParser.add_argument('pID', type=str, required=True)
+class Viz_Specs(Resource):
     def get(self):
-        args = specificationGetParser.parse_args()
+        args = vizSpecsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        specs_by_category = getVisualizationSpecs(pID)
+        specs_by_category = get_viz_specs(pID)
+        specs_by_category = {'specs': [{ 'label': 'test_1', 'score': 0.65 }, { 'label': 'test_2', 'score': 0.45 }]}
         return make_response(jsonify(format_json(specs_by_category)))
 
 
@@ -530,7 +531,7 @@ class Conditional_Data(Resource):
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID').strip().strip('"')
         spec = json.loads(args.get('spec'))
-        
+
         return make_response(jsonify(format_json({'result': getConditionalData(spec, dID, pID)})))
 
 
@@ -602,11 +603,11 @@ class Render_SVG(Resource):
         elif format == "pdf":
             print "Rendering PDF"
             cairosvg.svg2pdf(bytestring=bytestring, write_to=fout)
-            cairosvg.svg2pdf(bytestring=bytestring, write_to=img_io)  
+            cairosvg.svg2pdf(bytestring=bytestring, write_to=img_io)
         elif format == "svg":
             print "Rendering SVG"
             cairosvg.svg2svg(bytestring=bytestring, write_to=fout)
-            cairosvg.svg2svg(bytestring=bytestring, write_to=img_io)         
+            cairosvg.svg2svg(bytestring=bytestring, write_to=img_io)
         else:
             cairosvg.svg2png(bytestring=bytestring, write_to=fout)
             cairosvg.svg2png(bytestring=bytestring, write_to=img_io)
@@ -638,9 +639,7 @@ api.add_resource(Property,                      '/api/properties/v1/properties/<
 api.add_resource(Entities,                      '/api/properties/v1/entities')
 api.add_resource(Attributes,                    '/api/properties/v1/attributes')
 
-api.add_resource(Specification,                 '/api/specification')
-api.add_resource(Choose_Spec,                   '/api/choose_spec')
-api.add_resource(Reject_Spec,                   '/api/reject_spec')
+api.add_resource(Viz_Specs,                     '/api/viz_specs')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
 api.add_resource(Data_From_Spec,                '/api/data_from_spec')
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')

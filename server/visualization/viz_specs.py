@@ -2,366 +2,183 @@ from data.access import is_numeric
 from itertools import combinations
 from data.db import MongoInstance as MI
 from viz_stats import *
+from scipy import stats as sc_stats
 
+from pprint import pprint
 from time import time
 
-#####################################################################
-# 1. GROUP every entity by a non-unique attribute (for factors, group by factors but score by number of distinct. For continuous, discretize the range) 
-#   1b. If attribute represents another object, also add aggregation by that object's attributes
-# 2. AGGREGATE by some function (could be count)
-# 3. QUERY by another non-unique attribute
-#####################################################################
-def getVisualizationSpecs(pID):
-    d = MI.getData(None, pID)
-    p = MI.getProperty(None, pID)
-    o = MI.getOntology(None, pID)
+# Wrapper function
+def get_viz_specs(pID):
+    datasets = MI.getData(None, pID)
+    properties = MI.getProperty(None, pID)
+    ontologies = MI.getOntology(None, pID)
 
     existing_specs = MI.getSpecs(pID, {})
+    enumerated_viz_specs = enumerate_viz_specs(datasets, properties, ontologies)
+    filtered_viz_specs = filter_viz_specs(enumerated_viz_specs)
+    scored_viz_specs = score_viz_specs(filtered_viz_specs)
+    return scored_viz_specs
 
-    specs_by_category = {
-        "shares": [],
-        "time series": [],
-        "distribution": [],
-        # "comparison": []
+specific_to_general_type = {
+    'float': 'q',
+    'integer': 'q',
+    'string': 'c',
+    'continent': 'c',
+    'countryName': 'c'
+}
+
+# TODO How to document defaults?
+aggregation_functions = {
+    'sum': np.sum,
+    'min': np.min,
+    'max': np.max,
+    'mean': np.mean,
+    'count': np.size
+}
+
+pairwise_functions = {
+    'add': '',
+    'subtract': '',
+    'multiply': '',
+    'divide': ''
+}
+
+def A(label):
+    specs = []
+    # { Index: value }
+    index_spec = {
+       'key': 'index',
+       'value': label,
+       'desc': 'Plot %s against its index' % label
     }
+    specs.append(index_spec)
 
-    spec_functions = {
-        "shares": getSharesSpecs,
-        "time series": getTimeSeriesSpecs,
-        # "comparison": getComparisonSpecs,
-        "distribution": getDistributionsSpecs
+    # TODO Make this depend on non-unique values
+    # { Value: count }
+    count_spec = {
+        'key': label,
+        'value': 'count',
+        'desc': 'Plot values of %s against count of occurrences' % label
     }
+    specs.append(count_spec)
 
-    RECOMPUTE = True
-
-    # if existing_specs and not RECOMPUTE:
-    #     for spec in existing_specs:
-    #         category = spec['category']
-    #         specs_by_category[category].append(spec)
-    # else:
-    if RECOMPUTE:
-        specs_by_category = {}
-        for category, spec_function in spec_functions.iteritems():
-            specs = spec_function(pID, d, p, o)
-            for spec in specs:
-                spec['category'] = category
-
-                if spec['group']:
-                    spec['groupBy'] = spec['group']['by']['title']
-                else:
-                    spec['groupBy'] = None
-
-            # Persistence
-            # if specs:
-            #     sIDs = MI.postSpecs(pID, specs)
-            #     for i, spec in enumerate(specs):
-            #         spec['sID'] = sIDs[i]
-            #         del spec['_id']
-
-            specs_by_category[category] = specs
-
-        return specs_by_category
-
-def getSharesSpecs(pID, datasets, properties, ontologies):
-    start_time = time()
-    print "Getting shares specs"
-
-    specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-
-    for p in properties:
-        dID = p['dID']
-        # TODO Perform this as a database query with a specific document?
-        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
-
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
-
-        # For all non-unique attributes
-        # TODO filter out columns in which all have the same attribute
-        for index in non_uniques:
-            type = types[index]
-
-            # Aggregate on each factor attribute
-            # TODO: Group numeric attributes with smart binning
-            if not is_numeric(type):
-                spec = {
-                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'group': {
-                      'by': { 'index': index, 'title': headers[index] }, 
-                      'on': None,
-                      'function': 'count',
-                    },
-                    'category': 'shares',
-                    'chosen': None,
-                }
-                stat_time = time()
-                # spec['stats'] = {}
-                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
-
-                # Don't aggregate on uniformly distributed columns
-                # if spec['stats']['count'] > 1:
-                specs.append(spec)
-    print "Got shares specs, time:", time() - start_time
+    # TODO Implement binning algorithm
+    # { Bins: Aggregate(binned values) }
+    for aggregation_function in aggregation_functions.keys():
+        bin_spec = {
+            'key': 'bin',
+            'aggregation': 'count',
+            'value': label,
+            'desc': 'Bin %s, then aggregate binned values by %s' % (label, aggregation_function)
+        }
+        specs.append(bin_spec)
     return specs
 
-
-def getComparisonSpecs(pID, datasets, properties, ontologies):
+def B(labels):
     specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-
-    for p in properties:
-        dID = p['dID']
-
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
-
-        # For all non-unique attributes
-        # TODO filter out columns in which all have the same attribute
-        for index in non_uniques:
-            type = types[index]
-
-            # Aggregate on each factor attribute
-            # TODO: Group numeric attributes with smart binning
-            if not is_numeric(type):
-                spec = {
-                    'compare': {'index': index, 'title': headers[index]},
-                    'object': {'dID': dID, 'title': dataset_titles[dID]},
-                    'category': 'comparison',
-                }
-
-                spec['stats'] = getVisualizationStats('comparison', spec, {}, config, pID)
-
-                # Don't aggregate on uniformly distributed columns
-                # if spec['stats']['count'] > 1:
-                specs.append(spec)
-    return specs   
-
-
-def getDistributionsSpecs(pID, datasets, properties, ontologies):
-    start_time = time()
-    print "Getting distribution specs"
-
-    specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-
-    for p in properties:
-        dID = p['dID']
-        # TODO Perform this as a database query with a specific document?
-        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
-
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
-
-        # For all non-unique attributes
-        # TODO filter out columns in which all have the same attribute
-        for index in non_uniques:
-            type = types[index]
-
-            # Aggregate on each factor attribute
-            # TODO: Group numeric attributes with smart binning
-            if not is_numeric(type):
-                spec = {
-                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'group': {
-                      'by': { 'index': index, 'title': headers[index] }, 
-                      'on': None,
-                      'function': 'count',
-                    },
-                    'condition': {'index': None, 'title': None},
-                    'category': 'distribution',
-                    'chosen': None,
-                }
-                stat_time = time()
-                # spec['stats'] = {}
-                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
-
-                # Don't aggregate on uniformly distributed columns
-                # if spec['stats']['count'] > 1:
-                specs.append(spec)
-    print "Got shares specs, time:", time() - start_time
+    # Function on pairs of columns
+    for (field_a, field_b) in combinations(labels, 2):
+        for pairwise_function in pairwise_functions.keys():
+            derived_column_desc = "%s %s %s" % (field_a, pairwise_function, field_b)
+            A_specs = A(derived_column_desc)
+            specs.extend(A_specs)
     return specs
 
+# TODO Move the case classifying into dataset ingestion (doesn't need to be here!)
+# 1) Enumerated viz specs given data, properties, and ontologies
+def enumerate_viz_specs(datasets, properties, ontologies):
+    dIDs = [ d['dID'] for d in datasets ]
+    specs_by_dID = dict([(dID, []) for dID in dIDs])
 
-def getTimeSeriesSpecs(pID, datasets, properties, ontologies):
-    start_time = time()
-    print "Getting time series specs"
-
-    specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-
-    # No grouping
-
-
+    types_by_dID = {}
+    properties_by_dID = {}
+    labels_by_dID = {}
     for p in properties:
         dID = p['dID']
-        # TODO Perform this as a database query with a specific document?
-        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
+        if dID in properties_by_dID and dID in types_by_dID:
+            # TODO Necessary to preserve the order of fields?
+            types_by_dID[dID].append(p['type'])
+            labels_by_dID[dID].append(p['label'])
+            properties_by_dID[dID].append(p)
+        else:
+            types_by_dID[dID] = [ p['type'] ]
+            labels_by_dID[dID] = [ p['label'] ]
+            properties_by_dID[dID] = [ p ]
 
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
+    # Iterate through datasets (no cross-dataset visualizations for now)
+    for dID in properties_by_dID.keys():
+        specs = []
+        specific_types = types_by_dID[dID]
+        labels = labels_by_dID[dID]
+        types = [ specific_to_general_type[t] for t in specific_types ]
+        properties = properties_by_dID[dID]
 
-        # For all non-unique attributes
-        # TODO filter out columns in which all have the same attribute
-        specs.append({
-            'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-            'group': None,
-            'category': 'time series'
-        })
-        for index in non_uniques:
-            type = types[index]
+        q_count = types.count('q')
+        c_count = types.count('c')
 
-            # Aggregate on each factor attribute
-            # TODO: Group numeric attributes with smart binning
-            if not is_numeric(type):
-                spec = {
-                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'group': {
-                      'by': { 'index': index, 'title': headers[index] }, 
-                      'on': None,
-                      'function': 'count',
-                    },
-                    'category': 'time series',
-                    'chosen': None,
-                }
-                stat_time = time()
-                spec['stats'] = getVisualizationStats('time series', spec, {}, config, pID)
+        print "\tN_q:", q_count
+        print "\tN_c:", c_count
 
-                # Don't aggregate on uniformly distributed columns
-                # if spec['stats']['count'] > 1:
-                specs.append(spec)
-    print "Got time series specs, time:", time() - start_time
-    return specs   
+        # Cases A - B
+        # Q > 0, C = 0
+        # TODO Formalization for specs
+        if q_count and not c_count:
+            # Case A) Q = 1, C = 0
+            if q_count == 1:
+                print "Case A"
+                label = labels[0]
+                A_specs = A(label)
+                specs.extend(A_specs)
+            elif q_count >= 1:
+                print "Case B"
+                for label in labels:
+                    A_specs = A(label)
+                    specs.extend(A_specs)
+                B_specs = B(labels)
+                specs.extend(B_specs)
 
+        # Cases C - E
+        # C = 1
+        if c_count == 1:
+            # Case C) C = 1, Q = 0
+            if q_count == 0:
+                print "Case C"
+                continue
+            # Case D) C = 1, Q = 1
+            elif q_count == 1:
+                print "Case D"
+                continue
+            # Case E) C = 1, Q >= 1
+            elif q_count > 1:
+                print "Case E"
+                continue
 
-# TODO Incorporate ontologies
-def getTreemapSpecs(pID, datasets, properties, ontologies):
-    specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
+        # Cases F - H
+        # C >= 1
+        if c_count >= 1:
+            # Case F) C >= 1, Q = 0
+            if q_count == 0:
+                print "Case F"
+                continue
+            # Case G) C >= 1, Q = 1
+            elif q_count == 1:
+                print "Case G"
+                continue
+            # Case H) C >= 1, Q > 1
+            elif q_count > 1:
+                print "Case H"
+                continue
+        specs_by_dID[dID] = specs
 
-    for p in properties:
-        dID = p['dID']
-        # TODO Perform this as a database query with a specific document?
-        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
+    print "Specs:", len(specs_by_dID)
+    pprint(specs_by_dID)
+    return specs_by_dID
+# 2) Filtering enumerated viz specs based on interpretability and renderability
+def filter_viz_specs(enumerated_viz_specs):
+    filtered_viz_specs = []
+    return filtered_viz_specs
 
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
-
-        # For all non-unique attributes
-        # TODO filter out columns in which all have the same attribute
-        for index in non_uniques:
-            type = types[index]
-
-            # Aggregate on each factor attribute
-            # TODO: Group numeric attributes with smart binning
-            if not is_numeric(type):
-                spec = {
-                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'group': {
-                      'by': { 'index': index, 'title': headers[index] }, 
-                      'on': None,
-                      'function': 'count',
-                    },
-                    'chosen': None,
-                }
-                spec['stats'] = getVisualizationStats('treemap', spec, {}, config, pID)
-
-                # Don't aggregate on uniformly distributed columns
-                if spec['stats']['count'] > 1:
-                    specs.append(spec)
-    return specs
-
-def getPiechartSpecs(pID, datasets, properties, ontologies):
-    return getTreemapSpecs(pID, datasets, properties, ontologies)
-
-# TODO Reduce redundancy with treemap specs
-def getGeomapSpecs(pID, datasets, properties, ontologies):
-    specs = []
-    dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-
-    for p in properties:
-        dID = p['dID']
-        # TODO Perform this as a database query with a specific document?
-        relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
-
-        types = p['types']
-        uniques = p['uniques']
-        headers = p['headers']
-        non_uniques = [i for (i, unique) in enumerate(uniques) if not unique]
-
-        for index in non_uniques:
-            type = types[index]
-            if type in ['countryCode2', 'countryCode3', 'countryName']:
-                spec = {
-                    'aggregate': {'dID': dID, 'title': dataset_titles[dID]},
-                    'group': {
-                      'by': { 'index': index, 'title': headers[index] }, 
-                      'on': None,
-                      'function': 'count',
-                    },
-                    'condition': {'index': None, 'title': None},
-                    'chosen': None,
-                }
-                spec['stats'] = getVisualizationStats('geomap', spec, {}, config, pID)
-                specs.append(spec)
-    return specs
-
-
-def getBarchartSpecs(pID, datasets, properties, ontologies):
-    return getScatterplotSpecs(pID, datasets, properties, ontologies)
-
-def getLinechartSpecs(pID, datasets, properties, ontologies):
-    return getScatterplotSpecs(pID, datasets, properties, ontologies)
-
-# def getScatterplotSpecs(pID, datasets, properties, ontologies):
-#     specs = []
-#     dataset_titles = dict([(d['dID'], d['title']) for d in datasets])
-
-#     # Single-dataset numeric vs. numeric
-#     for p in properties:
-#         dID = p['dID']
-#         # TODO Perform this as a database query with a specific document?
-#         relevant_ontologies = [ o for o in ontologies if ((o['source_dID'] == dID) or (o['target_dID'] == dID))]
-
-#         types = p['types']
-#         uniques = p['uniques']
-#         headers = p['headers']
-#         numeric_indices = [i for (i, type) in enumerate(types) if is_numeric(type)]
-
-#         # # Two numeric rows
-#         # for (index_a, index_b) in combinations(numeric_indices, 2):
-#         #     specs.append({
-#         #         'category': 'scatterplot',
-#         #         'x': {'index': index_a, 'title': headers[index_a]},
-#         #         'y': {'index': index_b, 'title': headers[index_b]},
-#         #         'aggregation': False,
-#         #         'object': {'dID': dID, 'title': dataset_titles[dID]},
-#         #         'chosen': False
-#         #     })
-
-#         # Aggregating by a numeric row
-#         for index in numeric_indices:
-#             type = types[index]
-#             title = headers[index]
-
-#             if is_numeric(type):
-#                 spec = {
-#                     'x': {'index': index, 'title': headers[index], 'type' : type},
-#                     'object': {'dID': dID, 'title': dataset_titles[dID]},
-#                     'aggregation': True,
-#                     'condition': {'index': None, 'title': None},
-#                     'chosen': None,
-#                 }
-#                 spec['stats'] = getVisualizationStats('scatterplot', spec, {}, config, pID)
-#                 specs.append(spec)                
-#     return specs
+# 3) Scoring viz specs based on effectiveness, expressiveness, and statistical properties
+def score_viz_specs(filtered_viz_specs):
+    scored_viz_specs = []
+    return scored_viz_specs

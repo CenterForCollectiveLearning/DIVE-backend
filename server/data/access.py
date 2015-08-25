@@ -1,5 +1,5 @@
 '''
-Functions for reading, sampling, and detecting types of datasets 
+Functions for reading, sampling, and detecting types of datasets
 
 No manipulation or calculation, only description
 '''
@@ -77,7 +77,7 @@ def get_dataset_data(path, start=0, inc=1000):
     return result
 
 
-# Dataflow: 
+# Dataflow:
 # 1. Save file in uploads/pID directory
 # 2. Save file location in project data collection
 # 3. Return sample
@@ -90,19 +90,19 @@ def upload_file(pID, file):
     datasets = []
 
     if file_type in ['csv', 'tsv', 'txt'] :
-        path2 = path + ".csv"
-        filename2 = filename + ".csv"
+        # path2 = path + ".csv"
+        # filename2 = filename + ".csv"
 
         print "Saving file: ", filename
-        file.save(path2)
+        file.save(path)
         print "Saved file: ", filename
 
-        dID = MI.insertDataset(pID, path2, filename2)
+        dID = MI.insertDataset(pID, path, filename)
 
-        result = get_dataset_structure(path2)
+        result = get_dataset_structure(path)
         result.update({
-            'title' : filename2.rsplit('.', 1)[0],
-            'filename' : filename2,
+            'title' : filename.rsplit('.', 1)[0],
+            'filename' : filename,
             'dID' : dID,
         })
         datasets.append(result)
@@ -204,14 +204,14 @@ def get_data(pID=None, dID=None, path=None, nrows=None):
 #         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
 #         return df.columns.values, df
 
-#     f.close()     
+#     f.close()
 #     return sample, rows, cols, extension, header
 
 
 INT_REGEX = "^-?[0-9]+$"
 # FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?"
 #"(\d+(?:[.,]\d*)?)"
-FLOAT_REGEX = "^\d+([\,]\d+)*([\.]\d+)?$" 
+FLOAT_REGEX = "^\d+([\,]\d+)*([\.]\d+)?$"
 
 
 COUNTRY_CODES_2 = ['AD', 'AE', 'AF', 'AG', 'AL', 'AM', 'AO', 'AR', 'AT', 'AU', 'AW', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BM', 'BN', 'BO', 'BR', 'BT', 'BW', 'BY', 'CA', 'CD', 'CF', 'CG', 'CH', 'CI', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DO', 'DZ', 'EC', 'EE', 'EG', 'ER', 'ES', 'ET', 'FI', 'FM', 'FO', 'FR', 'GA', 'GB', 'GE', 'GH', 'GI', 'GL', 'GM', 'GN', 'GQ', 'GR', 'GT', 'GW', 'GY', 'HK', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KN', 'KP', 'KR', 'KW', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MG', 'MK', 'ML', 'MM', 'MN', 'MR', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA', 'NE', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NZ', 'OM', 'PA', 'PE', 'PH', 'PK', 'PL', 'PR', 'PS', 'PT', 'PY', 'QA', 'RO', 'RS', 'RU', 'RW', 'SA', 'SC', 'SD', 'SE', 'SG', 'SI', 'SK', 'SL', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SY', 'SZ', 'TD', 'TG', 'TH', 'TJ', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TW', 'TZ', 'UA', 'UG', 'UNK', 'US', 'UY', 'UZ', 'VE', 'VI', 'VN', 'VU', 'WS', 'XK', 'YE', 'ZA', 'ZM', 'ZW']
@@ -226,13 +226,13 @@ def get_variable_type(v):
     v = str(v)
 
     # Numeric
-    if re.match(INT_REGEX, v): 
+    if re.match(INT_REGEX, v):
         return "integer"
     elif re.match(FLOAT_REGEX, v):
         return "float"
 
-    # Factors    
-    else: 
+    # Factors
+    else:
         if (v in COUNTRY_CODES_2): return 'countryCode2'
         elif (v in COUNTRY_CODES_3): return 'countryCode3'
         elif (v in COUNTRY_NAMES): return 'countryName'
@@ -283,7 +283,7 @@ def get_first_nonempty_values(df):
 
 
 # Get column types given a data frame (super naive)
-def get_column_types(df): 
+def get_column_types(df):
     sample_line = get_first_nonempty_values(df)  #[x for x in df.iloc[0]]
     types = [get_variable_type(v) for v in sample_line]
     return types
@@ -326,7 +326,7 @@ def detect_time_series(df):
         print "Not a time series: need contiguous fields to have the same type"
         return False
 
-    start_name = df.columns.values[start_index]        
+    start_name = df.columns.values[start_index]
     end_name = df.columns.values[end_index]
     ts_length = dparser.parse(end_name) - dparser.parse(start_name)
     ts_num_elements = end_index - start_index + 1
@@ -334,7 +334,7 @@ def detect_time_series(df):
     # ASSUMPTION: Uniform intervals in time series
     ts_interval = (dparser.parse(end_name) - dparser.parse(start_name)) / ts_num_elements
 
-    result = { 
+    result = {
         'start': {
             'index': start_index,
             'name': start_name
