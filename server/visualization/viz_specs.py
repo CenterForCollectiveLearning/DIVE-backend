@@ -24,7 +24,8 @@ specific_to_general_type = {
     'integer': 'q',
     'string': 'c',
     'continent': 'c',
-    'countryName': 'c'
+    'countryName': 'c',
+    'datetime': 'q'
 }
 
 # TODO How to document defaults?

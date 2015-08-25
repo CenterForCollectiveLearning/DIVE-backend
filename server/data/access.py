@@ -82,64 +82,52 @@ def get_dataset_data(path, start=0, inc=1000):
 # 2. Save file location in project data collection
 # 3. Return sample
 def upload_file(pID, file):
-    # Save file as csv
-    filename = secure_filename(file.filename)
-    file_type = filename.rsplit('.', 1)[1]
-    path = os.path.join(config['UPLOAD_FOLDER'], pID, filename)
+    full_file_name = secure_filename(file.filename)
+    file_name, file_type = full_file_name.rsplit('.', 1)
+    path = os.path.join(config['UPLOAD_FOLDER'], pID, full_file_name)
 
     datasets = []
-
+    # Flat files
     if file_type in ['csv', 'tsv', 'txt'] :
-        # path2 = path + ".csv"
-        # filename2 = filename + ".csv"
-
-        print "Saving file: ", filename
         file.save(path)
-        print "Saved file: ", filename
 
-        dID = MI.insertDataset(pID, path, filename)
-
-        result = get_dataset_structure(path)
-        result.update({
-            'title' : filename.rsplit('.', 1)[0],
-            'filename' : filename,
+        dID = MI.insertDataset(pID, path, full_file_name)
+        data_doc = get_dataset_structure(path)
+        data_doc.update({
+            'title' : file_name,
+            'filename' : full_file_name,
             'dID' : dID,
         })
-        datasets.append(result)
+        datasets.append(data_doc)
 
-
+    # Excel files
     elif file_type.startswith('xls') :
-
-        print "Saving file: ", filename
         file.save(path)
-        print "Saved file: ", filename
 
         book = xlrd.open_workbook(path)
         sheet_names = book.sheet_names()
 
-        for name in sheet_names :
-            sheet = book.sheet_by_name(name)
-            path2 = path + "_" + name + ".csv"
-            filename2 = filename + "_" + name + ".csv"
+        for sheet_name in sheet_names:
+            sheet = book.sheet_by_name(sheet_name)
 
-            csv_file = open(path2, 'wb')
+            csv_file_name = file_name + "_" + sheet_name + ".csv"
+            csv_path = os.path.join(config['UPLOAD_FOLDER'], pID, csv_file_name)
+
+            csv_file = open(csv_path, 'wb')
             wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
             for rn in xrange(sheet.nrows) :
                 wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
             csv_file.close()
 
-            # column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
-
-            dID = MI.insertDataset(pID, path2, filename2)
-
-            result = get_dataset_structure(path2)
-            result.update({
-                'title' : filename2.rsplit('.', 1)[0],
-                'filename' : filename2,
+            dID = MI.insertDataset(pID, csv_path, csv_file_name)
+            data_doc = get_dataset_structure(csv_path)
+            data_doc.update({
+                'title' : csv_file_name.rsplit('.', 1)[0],
+                'filename' : csv_file_name,
                 'dID' : dID
             })
 
-            datasets.append(result)
+            datasets.append(data_doc)
 
     elif file_type == 'json' :
 
