@@ -381,6 +381,7 @@ class Viz_Specs(Resource):
         args = vizSpecsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         specs_by_category = get_viz_specs(pID)
+        specs_by_category = {'specs': [{ 'label': 'test_1', 'score': 0.65 }, { 'label': 'test_2', 'score': 0.45 }]}
         return make_response(jsonify(format_json(specs_by_category)))
 
 
