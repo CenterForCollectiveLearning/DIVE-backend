@@ -75,10 +75,7 @@ def populate_child_entities(entity_name, child_entities, all_entities):
         if _entity['child']:
             child_entities = populate_child_entities(_entity['child'], child_entities, all_entities)
 
-    if child_entities:
-        return [_entity] + child_entities
-
-    return None
+    return [_entity] + child_entities
 
 # Retrieve entities given datasets
 def get_attributes(pID, datasets):
