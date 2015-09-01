@@ -16,7 +16,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.before_request
 def option_autoreply():
-
     """ Always reply 200 on OPTIONS request """
     if request.method == 'OPTIONS':
         resp = app.make_default_options_response()
@@ -69,8 +68,14 @@ def set_allow_origin(resp):
 def index():
     return app.send_static_file('index.html')
 
+def ensure_directories():
+    if not os.path.isdir(app.config['UPLOAD_FOLDER']):
+        print "Creating Upload Directory"
+        os.mkdir(app.config['UPLOAD_FOLDER'])
+
 PORT = 8888
 # http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
 if __name__ == '__main__':
+    ensure_directories()
     app.debug = True
     app.run(port=PORT)
