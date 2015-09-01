@@ -169,6 +169,12 @@ def compute_properties(pID, dataset_docs):
 
         print "\t\t", time() - start_time, "seconds"
 
+        ### Detect Timeseries Columns
+        print "\tDetecting Timeseries Columns"
+
+        for _property in properties:
+            _property['is_time_series_column'] = is_time_series_column(_property['label'])
+
         ### Detect parents
         print "\tGetting entity hierarchies"
         start_time = time()
@@ -215,6 +221,14 @@ def compute_properties(pID, dataset_docs):
         properties_by_dID[dID] = properties
     return properties_by_dID
 
+def is_time_series_column(label):
+    MONTH_CODES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+    for month_code in MONTH_CODES:
+        if month_code in label:
+            return True
+
+    return False
 
 # Detect if a list is comprised of unique elements
 def detect_unique_list(l):
