@@ -1,3 +1,6 @@
+'''
+Module for Gunicorn server
+'''
 import os
 from api.api import app
 from flask import request
@@ -63,8 +66,3 @@ def set_allow_origin(resp):
     if request.method != 'OPTIONS' and 'Origin' in request.headers:
         h['Access-Control-Allow-Origin'] = request.headers['Origin']
     return resp
-
-
-@app.route('/')
-def index():
-    return app.send_static_file('index.html')
