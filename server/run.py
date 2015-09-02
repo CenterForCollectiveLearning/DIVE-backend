@@ -73,7 +73,7 @@ def ensure_directories():
         print "Creating Upload Directory"
         os.mkdir(app.config['UPLOAD_FOLDER'])
 
-PORT = 8888
+PORT = 8081
 # http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
 if __name__ == '__main__':
     ensure_directories()
