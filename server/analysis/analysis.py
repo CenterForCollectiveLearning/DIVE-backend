@@ -10,12 +10,25 @@ from data.access import get_data, upload_file, get_column_types, get_delimiter, 
 from time import time
 import numpy as np
 import scipy.stats as stats
-
+import math
 
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def get_unique(li):
     return list(np.unique(li))
+
+
+###
+# Get bin specifier (e.g. bin edges) given a numeric vector
+###
+def get_bin_edges(v, procedure='freedman'):
+    if procedure is 'freedman':
+        IQR = np.subtract(*np.percentile(v, [75, 25]))
+        bin_width = 2 * IQR * len(v)**(-1/3)
+        num_bins = math.floor((max(data) - min(data)) / bin_width)
+        bin_edges = np.histogram(v, num_bins)[1]
+
+    return bin_edges
 
 
 # Find the distance between two sets
@@ -62,14 +75,14 @@ def compute_ontologies(pID, datasets) :
         lengths_dict[dID] = [len(df[col]) for col in df]
 
     print "\tIterating through columns"
-    
+
     overlaps = {}
     hierarchies = {}
     for dID_a, dID_b in combinations(all_dIDs, 2):
 
         if (dID_a not in new_dIDs) and (dID_b not in new_dIDs) :
             continue
-        
+
         raw_cols_a = raw_columns_dict[dID_a]
         raw_cols_b = raw_columns_dict[dID_b]
         overlaps['%s\t%s' % (dID_a, dID_b)] = {}
@@ -123,5 +136,3 @@ def get_ontologies(pID, datasets):
         hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
 
     return overlaps, hierarchies
-
-

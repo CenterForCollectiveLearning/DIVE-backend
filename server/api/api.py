@@ -380,10 +380,16 @@ class Viz_Specs(Resource):
     def get(self):
         args = vizSpecsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        specs_by_category = get_viz_specs(pID)
-        specs_by_category = {'specs': [{ 'label': 'test_1', 'score': 0.65 }, { 'label': 'test_2', 'score': 0.45 }]}
-        return make_response(jsonify(format_json(specs_by_category)))
+        specs_by_dID = get_viz_specs(pID)
 
+        formatted_specs = {}
+        for dID, specs in specs_by_dID.iteritems():
+            specs_with_count = {
+                'num_specs': len(specs),
+                'specs': specs
+            }
+            formatted_specs[dID] = specs_with_count
+        return make_response(jsonify(format_json(formatted_specs)))
 
 #####################################################################
 # Endpoint returning aggregated visualization data given a specification ID

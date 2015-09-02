@@ -5,7 +5,7 @@ from time import time
 
 from data.db import MongoInstance as MI
 from data.access import get_data, get_column_types
-from analysis.analysis import get_unique
+from analysis.analysis import get_unique, get_bin_edges
 from scipy import stats as sc_stats
 
 # Retrieve proeprties given dataset_docs
