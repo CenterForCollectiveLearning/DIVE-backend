@@ -50,7 +50,7 @@ class mongoInstance(object):
 
         dataset_doc = {
             'path': path,
-            'filename': filename, 
+            'filename': filename,
             'title': title,
             'type': file_type
         }
@@ -101,7 +101,7 @@ class mongoInstance(object):
 
     def chooseSpec(self, pID, sID, conditional, stats):
         MongoInstance.client[pID].specifications.find_and_modify(
-            {'_id': ObjectId(sID)}, 
+            {'_id': ObjectId(sID)},
             {'$set': {'chosen': True, 'conditional': conditional, 'stats' : stats }}, upsert=True, new=True)
         return sID
 

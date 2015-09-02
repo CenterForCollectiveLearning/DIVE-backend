@@ -6,7 +6,7 @@ Write-up and documentation
 ---------
 See this [Google Doc](https://docs.google.com/document/d/1J_wwbELz9l_KOoB6xRpUASH1eAzaZpHSRQvMJ_4sJgI/edit?usp=sharing).
 
-Using Virtual Env to Manage Server-Side Python Dependencies
+Using Virtual Env to Manage Server-Side Python Dependencies (Mac)
 ---------
 0. Install [Homebrew](http://brew.sh/) if you don't already have it.
 1. Installation: See [this fine tutorial](http://simononsoftware.com/virtualenv-tutorial/).
@@ -21,4 +21,9 @@ Run Server-Side Code / API
 ---------
 1. Load virtual environment.
 2. Run mongod: `mongod --dbpath server/uploads`
-3. In active virtual environment with all dependencies, in base directory, run shell script to activate Gunicorn server: `sh server/run.sh`.
+3. In active virtual environment with all dependencies, in base directory, run shell script to activate Gunicorn server: `sh server/run.sh`. Or, run Flask server with `python server/run.py`.
+
+Linux installation (with apt-get available)
+---------
+1. In base directory, run `./install-apt.sh` to install system-label dependencies
+2. Then, run `./install-python-dep.sh`. to
