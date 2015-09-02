@@ -154,6 +154,7 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
                 E_specs = E(c_field, q_fields)
                 specs.extend(E_specs)
 
+
         # Cases F - H
         # C >= 1
         elif c_count >= 1:
