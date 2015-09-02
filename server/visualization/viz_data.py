@@ -31,12 +31,12 @@ group_fn_from_string = {
     'count': np.size
 }
 
-def makeSafeString(str):
+def makeSafeString(s):
     invalid_chars = '-_.+^$ '
     for invalid_char in invalid_chars:
-        str = str.replace(invalid_char, '_')
-    str = 'temp_' + str
-    return str
+        s = s.replace(invalid_char, '_')
+    s = 'temp_' + s
+    return s
 
 # Given a data frame and a conditional dict ({ and: [{field, operation, criteria}], or: [...]})
 # Return the conditioned data frame in same dimensions as original
@@ -98,7 +98,51 @@ def getConditionedDF(df, conditional_arg):
     conditioned_df.columns = orig_cols
     return conditioned_df
 
+def _get_derived_field(df, label_descriptor):
+    label_a, op, label_b = label.split(' ')
+    return result
 
+# AUTOMATED SPEC VERSION
+def get_viz_data_from_enumerated_spec(spec, dID, pID):
+    structure = spec['structure']
+    args = spec['args']
+    meta = spec['meta']
+    final_viz_data = []
+
+    df = get_data(pID=pID, dID=dID)
+
+    if structure == 'ind:val':
+        field_a = args['field_a']
+        # If direct field
+        if isinstance(field_a, basestring):
+            data = df[field_a]
+        # If derived field
+        elif isinstance(field_a, dict):
+            return []
+            label_descriptor = field_a['label']
+            data = _get_derived_field(df, label_descriptor)
+        else:
+            # TODO Better warning mechanism
+            print "Ill-formed field_a %s" % (field_a)
+
+        data = df[args['field_a']]
+        final_viz_data = dict([(ind, d) for (ind, d) in enumerate(data)])
+    # TODO Don't aggregate across numeric columns
+    elif structure == 'val:agg':
+        grouped_df = df.groupby(args['grouped_field'])
+        agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
+    elif structure == 'val:val':
+        final_viz_data = dict(zip(df[args['field_a']], df[args['field_b']]))
+    elif structure == 'val:count':
+        final_viz_data = dict(df[args['field_a']].value_counts())
+    elif structure == 'agg:agg':
+        grouped_df = df.groupby(args['grouped_field'])
+        agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
+        final_viz_data = dict(zip(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']]))
+    return final_viz_data
+
+
+# BUILDER VERSION
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
 # spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
 def getVisualizationDataFromSpec(spec, conditional, pID):
@@ -138,8 +182,8 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
             grouped_df = gb.aggregate(group_operation)
             grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
             # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
-        
-        field_a_loc = conditioned_df.columns.get_loc(field_a)  
+
+        field_a_loc = conditioned_df.columns.get_loc(field_a)
         grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
 
         # Table Data: Dict of matrices
@@ -152,7 +196,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
         }
 
         grouped_dict = grouped_df.to_dict()
-    
+
         for k, obj in grouped_dict.iteritems():
             collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
             viz_result[k] = collection
@@ -182,7 +226,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
         # TODO Implement
         return
 
-    return { 
-        'viz_data': viz_result, 
-        'table_result': table_result 
+    return {
+        'viz_data': viz_result,
+        'table_result': table_result
     }, 200
