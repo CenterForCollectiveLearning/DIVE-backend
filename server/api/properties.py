@@ -69,11 +69,9 @@ def get_entities(pID, datasets):
     return parent_entities
 
 def populate_child_entities(entity_name, child_entities, all_entities):
-    _entity = filter(lambda x: x['label'] == entity_name, all_entities)
-    if _entity:
-        _entity = _entity[0]
-        if _entity['child']:
-            child_entities = populate_child_entities(_entity['child'], child_entities, all_entities)
+    _entity = filter(lambda x: x['label'] == entity_name, all_entities)[0]
+    if _entity['child']:
+        child_entities = populate_child_entities(_entity['child'], child_entities, all_entities)
 
     return [_entity] + child_entities
 
@@ -85,6 +83,7 @@ def get_attributes(pID, datasets):
 
     return attributes
 
+# TODO Reduce iterations over data elements
 # Compute properties of all passed datasets
 # Currently only getting properties by column
 # Arguments: pID + dataset documents
@@ -132,7 +131,7 @@ def compute_properties(pID, dataset_docs):
         start_time = time()
         for i, col in enumerate(df):
             _type = _types[i]
-            if _type in ["integer", "float"]:
+            if _type in ["int", "float"]:
                 try:
                     ## Coerce data vector to float
                     d = df[col].astype(np.float)
@@ -169,12 +168,6 @@ def compute_properties(pID, dataset_docs):
 
         print "\t\t", time() - start_time, "seconds"
 
-        ### Detect Timeseries Columns
-        print "\tDetecting Timeseries Columns"
-
-        for _property in properties:
-            _property['is_time_series_column'] = is_time_series_column(_property['label'])
-
         ### Detect parents
         print "\tGetting entity hierarchies"
         start_time = time()
@@ -182,7 +175,7 @@ def compute_properties(pID, dataset_docs):
 
         for i, col in enumerate(df):
             if i < (len(df.columns) - 1):
-                if not properties[i]['unique'] and properties[i]['type'] not in ['float', 'integer'] and properties[i+1]['type'] not in ['float', 'integer']:
+                if not properties[i]['unique'] and properties[i]['type'] not in ['float', 'int'] and properties[i+1]['type'] not in ['float', 'int']:
                     _all_next_col_values = []
 
                     if len(properties[i]['values']) > 1:
@@ -221,14 +214,6 @@ def compute_properties(pID, dataset_docs):
         properties_by_dID[dID] = properties
     return properties_by_dID
 
-def is_time_series_column(label):
-    MONTH_CODES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-
-    for month_code in MONTH_CODES:
-        if month_code in label:
-            return True
-
-    return False
 
 # Detect if a list is comprised of unique elements
 def detect_unique_list(l):
