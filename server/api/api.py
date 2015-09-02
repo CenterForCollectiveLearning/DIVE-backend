@@ -6,6 +6,8 @@ import shutil
 from random import sample
 import pandas as pd
 import xlrd
+import numpy as np
+import time
 
 import cairocffi as cairo
 import cairosvg
@@ -24,7 +26,7 @@ from properties import get_properties, get_entities, get_attributes, compute_pro
 from visualization.viz_specs import get_viz_specs
 from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
-from statistics.statistics import getStatisticsFromSpec
+from statistics.statistics import getStatisticsFromSpec, timeEstimator
 
 app = Flask(__name__)
 app.debug = True
@@ -39,12 +41,16 @@ class RoundedFloat(float):
         return '%.3f' % self
 
 def format_json(obj):
-    if isinstance(obj, float):
+    if isinstance(obj, np.float32) or isinstance(obj, np.float64):
+        return obj.item()
+    elif isinstance(obj, float):
         return RoundedFloat(obj)
     elif isinstance(obj, dict):
         return dict((k, format_json(v)) for k, v in obj.items())
-    elif isinstance(obj, (list, tuple)):
+    elif isinstance(obj, (np.ndarray, list, tuple)):
         return map(format_json, obj)
+    elif isinstance(obj,(pd.DataFrame,pd.Series)):
+        return format_json(obj.to_dict())
     return obj
 
 
@@ -58,7 +64,7 @@ uploadFileParser.add_argument('pID', type=str, required=True)
 class UploadFile(Resource):
     def post(self):
         form_data = json.loads(request.form.get('data'))
-        pID = form_data.get('pID').strip().strip('"')
+        pID = form_data.get('pID').strip().strip('""')
         file = request.files.get('file')
 
         if file and allowed_file(file.filename):
@@ -315,21 +321,6 @@ class Properties(Resource):
         return make_response(jsonify(format_json(results)))
 
 
-propertyGetParser = reqparse.RequestParser()
-propertyGetParser.add_argument('pID', type=str, required=True)
-class Property(Resource):
-    def get(self, propertyID):
-        print "[GET] Properties"
-        args = propertyGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-
-        _property = MI.getProperty({"_id": ObjectId(propertyID)}, pID)
-
-        results = _property
-
-        return make_response(json.dumps(format_json(results)))
-
-
 entitiesGetParser = reqparse.RequestParser()
 entitiesGetParser.add_argument('pID', type=str, required=True)
 entitiesGetParser.add_argument('dID', type=str, required=True)
@@ -376,7 +367,7 @@ class Attributes(Resource):
 #####################################################################
 vizSpecsGetParser = reqparse.RequestParser()
 vizSpecsGetParser.add_argument('pID', type=str, required=True)
-class Viz_Specs(Resource):
+class Viz_specs(Resource):
     def get(self):
         args = vizSpecsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
@@ -390,6 +381,7 @@ class Viz_Specs(Resource):
             }
             formatted_specs[dID] = specs_with_count
         return make_response(jsonify(format_json(formatted_specs)))
+
 
 #####################################################################
 # Endpoint returning aggregated visualization data given a specification ID
@@ -481,9 +473,34 @@ class Statistics_From_Spec(Resource):
         pID = args.get('pID')
         spec = args.get('spec')
 
+        print time.clock()
+
         result, status = getStatisticsFromSpec(spec, pID)
-        print result
+        # print format_json(result)
+        print time.clock()
         return make_response(jsonify(format_json(result)), status)
+
+#####################################################################
+# Endpoint returning estimated time for regression
+# INPUT: numInputs, sizeArray, funcArraySize
+# OUTPUT: time
+#####################################################################
+
+# For inferred visualizations
+timeFromParamsPostParser = reqparse.RequestParser()
+timeFromParamsPostParser.add_argument('numInputs', type=int, location='json')
+timeFromParamsPostParser.add_argument('sizeArray', type=int, location='json')
+timeFromParamsPostParser.add_argument('funcArraySize', type=int, location='json')
+class Regression_Estimator(Resource):
+    def post(self):
+        args = request.json
+        # TODO Implement required parameters
+        numInputs = args.get('numInputs')
+        sizeArray = args.get('sizeArray')
+        funcArraySize = args.get('funcArraySize')
+
+        result, status = timeEstimator(numInputs, sizeArray, funcArraySize)
+        return result
 
 
 #####################################################################
@@ -641,7 +658,6 @@ api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
 
 api.add_resource(Properties,                    '/api/properties/v1/properties')
-api.add_resource(Property,                      '/api/properties/v1/properties/<string:propertyID>')
 api.add_resource(Entities,                      '/api/properties/v1/entities')
 api.add_resource(Attributes,                    '/api/properties/v1/attributes')
 
@@ -649,6 +665,7 @@ api.add_resource(Viz_Specs,                     '/api/viz_specs')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
 api.add_resource(Data_From_Spec,                '/api/data_from_spec')
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
+api.add_resource(Regression_Estimator,          '/api/regression_estimator')
 api.add_resource(Conditional_Data,              '/api/conditional_data')
 api.add_resource(Exported_Visualization_Spec,   '/api/exported_spec')
 
