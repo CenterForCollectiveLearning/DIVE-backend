@@ -11,3 +11,5 @@ venv/
 
 # Logs
 *.log
+
+server/uploads/
