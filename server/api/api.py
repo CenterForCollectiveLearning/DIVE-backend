@@ -321,13 +321,13 @@ class Properties(Resource):
         return make_response(jsonify(format_json(results)))
 
 
-entitiesGetParser = reqparse.RequestParser()
-entitiesGetParser.add_argument('pID', type=str, required=True)
-entitiesGetParser.add_argument('dID', type=str, required=True)
-class Entities(Resource):
+categoricalGetParser = reqparse.RequestParser()
+categoricalGetParser.add_argument('pID', type=str, required=True)
+categoricalGetParser.add_argument('dID', type=str, required=True)
+class Categorical(Resource):
     def get(self):
-        print "[GET] Entities"
-        args = entitiesGetParser.parse_args()
+        print "[GET] Categorical Properties"
+        args = categoricalGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID')
 
@@ -335,18 +335,20 @@ class Entities(Resource):
 
         entities = get_entities(pID, dataset_docs)
         results = {
-            'entities': entities
+            'properties': {
+                'categorical': entities            
+            }
         }
 
         return make_response(jsonify(format_json(results)))
 
-entitiesGetParser = reqparse.RequestParser()
-entitiesGetParser.add_argument('pID', type=str, required=True)
-entitiesGetParser.add_argument('dID', type=str, required=True)
-class Attributes(Resource):
+quantitativeGetParser = reqparse.RequestParser()
+quantitativeGetParser.add_argument('pID', type=str, required=True)
+quantitativeGetParser.add_argument('dID', type=str, required=True)
+class Quantitative(Resource):
     def get(self):
-        print "[GET] Entities"
-        args = entitiesGetParser.parse_args()
+        print "[GET] Quantitative Properties"
+        args = quantitativeGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID')
 
@@ -354,7 +356,9 @@ class Attributes(Resource):
 
         attributes = get_attributes(pID, dataset_docs)
         results = {
-            'attributes': attributes
+            'properties': {
+                'quantitative': attributes
+            }
         }
 
         return make_response(jsonify(format_json(results)))
@@ -370,71 +374,234 @@ class Specs(Resource):
         dID = args.get('dID')
 
         results = {
-          "specs": [
-            {
-              "structure": "value:aggregation",
-              "viz_type": "treemap",
-              "title": "Sales by Division (2014)",
-              "score": {
-                "expressiveness": {
-                  "rank": 8,
-                  "score": 0.6
+            "specs": [
+                {
+                    "structure": "value:aggregation",
+                    "viz_type": "treemap",
+                    "title": "Sales by Division (2014)",
+                    "properties": {
+                        "categorical": [
+                            {
+                                "id": 367598, #mapped to Properties id
+                                "label": "Division",
+                                "source": "ORIGINAL"
+                            },
+                        ],
+                        "quantitative": [
+                            {
+                                "id": 262331, #mapped to Properties id
+                                "label": "Sales (2014)",
+                                "source": "DERIVED" # this is not a original column
+                            },
+                            {
+                                "id": 262330, #mapped to Properties id
+                                "label": "2014-JAN",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262329, #mapped to Properties id
+                                "label": "2014-FEB",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262328, #mapped to Properties id
+                                "label": "2014-MAR",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262327, #mapped to Properties id
+                                "label": "2014-APR",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262326, #mapped to Properties id
+                                "label": "2014-MAY",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262325, #mapped to Properties id
+                                "label": "2014-JUN",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262324, #mapped to Properties id
+                                "label": "2014-JUL",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262323, #mapped to Properties id
+                                "label": "2014-AUG",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262322, #mapped to Properties id
+                                "label": "2014-SEPT",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262321, #mapped to Properties id
+                                "label": "2014-OCT",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262320, #mapped to Properties id
+                                "label": "2014-NOV",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262319, #mapped to Properties id
+                                "label": "2014-DEC",
+                                "source": "ORIGINAL"
+                            }
+                        ]
+                    },
+                    "score": {
+                        "expressiveness": {
+                            "rank": 8,
+                            "score": 0.6
+                        },
+                        "effectiveness": {
+                            "rank": 4,
+                            "score": 0.82
+                        }
+                    },
+                    "stats": {
+                        "summary": {
+                            "max": 98,
+                        },
+                        "gini": 0.7
+                    }
                 },
-                "effectiveness": {
-                  "rank": 4,
-                  "score": 0.82
+                {
+                    "structure": "value:aggregation",
+                    "viz_type": "treemap",
+                    "title": "Sales by Division (2015)",
+                    "properties": {
+                        "categorical": [
+                            {
+                                "id": 367598, #mapped to Properties id
+                                "label": "Division",
+                                "source": "ORIGINAL"
+                            },
+                        ],
+                        "quantitative": [
+                            {
+                                "id": 262231, #mapped to Properties id
+                                "label": "Sales (2015)",
+                                "source": "DERIVED" # this is not a original column
+                            },
+                            {
+                                "id": 262230, #mapped to Properties id
+                                "label": "2015-JAN",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262229, #mapped to Properties id
+                                "label": "2015-FEB",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262228, #mapped to Properties id
+                                "label": "2015-MAR",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262227, #mapped to Properties id
+                                "label": "2015-APR",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262226, #mapped to Properties id
+                                "label": "2015-MAY",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262225, #mapped to Properties id
+                                "label": "2015-JUN",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262224, #mapped to Properties id
+                                "label": "2015-JUL",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262223, #mapped to Properties id
+                                "label": "2015-AUG",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262222, #mapped to Properties id
+                                "label": "2015-SEPT",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262221, #mapped to Properties id
+                                "label": "2015-OCT",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262220, #mapped to Properties id
+                                "label": "2015-NOV",
+                                "source": "ORIGINAL"
+                            },
+                            {
+                                "id": 262219, #mapped to Properties id
+                                "label": "2015-DEC",
+                                "source": "ORIGINAL"
+                            }
+                        ]
+                    },
+                    "score": {
+                        "expressiveness": {
+                            "rank": 8,
+                            "score": 0.6
+                        },
+                        "effectiveness": {
+                            "rank": 4,
+                            "score": 0.82
+                        }
+                    }, 
+                    "stats": {
+                        "summary": {
+                            "max": 98,
+                        },
+                        "gini": 0.7
+                    }
+                },
+                {
+                    "structure": "value:aggregation",
+                    "viz_type": "treemap",
+                    "title": "Channel Breakdown",
+                    "properties": {
+                        "categorical": [
+                            {
+                                "id": 367543, #mapped to Properties id
+                                "label": "Channel",
+                                "source": "ORIGINAL"
+                            },
+                        ],
+                        "quantitative": [
+                        ]
+                    },
+                    "score": {
+                        "expressiveness": {
+                            "rank": 8,
+                            "score": 0.6
+                        },
+                        "effectiveness": {
+                            "rank": 4,
+                            "score": 0.82
+                        }
+                    },
+                    "stats": {
+                        "summary": {
+                            "max": 98,
+                        },
+                        "gini": 0.7
+                    }
                 }
-              },
-              "stats": {
-                "summary": {
-                  "max": 98,
-                },
-                "gini": 0.7
-              }
-            },
-            {
-              "structure": "value:aggregation",
-              "viz_type": "treemap",
-              "title": "Sales by Division (2015)",
-              "score": {
-                "expressiveness": {
-                  "rank": 8,
-                  "score": 0.6
-                },
-                "effectiveness": {
-                  "rank": 4,
-                  "score": 0.82
-                }
-              }, 
-              "stats": {
-                "summary": {
-                  "max": 98,
-                },
-                "gini": 0.7
-              }
-            },
-            {
-              "structure": "value:aggregation",
-              "viz_type": "treemap",
-              "title": "Channel Breakdown",
-              "score": {
-                "expressiveness": {
-                  "rank": 8,
-                  "score": 0.6
-                },
-                "effectiveness": {
-                  "rank": 4,
-                  "score": 0.82
-                }
-              },
-              "stats": {
-                "summary": {
-                  "max": 98,
-                },
-                "gini": 0.7
-              }
-            },
-          ]
+            ]
         }
 
         return make_response(jsonify(format_json(results)))
@@ -737,8 +904,8 @@ api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
 
 api.add_resource(Properties,                    '/api/properties/v1/properties')
-api.add_resource(Entities,                      '/api/properties/v1/entities')
-api.add_resource(Attributes,                    '/api/properties/v1/attributes')
+api.add_resource(Categorical,                   '/api/properties/v1/categorical')
+api.add_resource(Quantitative,                  '/api/properties/v1/quantitative')
 
 api.add_resource(Specs,                         '/api/specs/v1/specs')
 
