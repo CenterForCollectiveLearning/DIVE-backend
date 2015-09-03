@@ -359,6 +359,85 @@ class Attributes(Resource):
 
         return make_response(jsonify(format_json(results)))
 
+specsGetParser = reqparse.RequestParser()
+specsGetParser.add_argument('pID', type=str, required=True)
+specsGetParser.add_argument('dID', type=str, required=True)
+class Specs(Resource):
+    def get(self):
+        print "[GET] Specs"
+        args = specsGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        dID = args.get('dID')
+
+        results = {
+          "specs": [
+            {
+              "structure": "value:aggregation",
+              "viz_type": "treemap",
+              "title": "Sales by Division (2014)",
+              "score": {
+                "expressiveness": {
+                  "rank": 8,
+                  "score": 0.6
+                },
+                "effectiveness": {
+                  "rank": 4,
+                  "score": 0.82
+                }
+              },
+              "stats": {
+                "summary": {
+                  "max": 98,
+                },
+                "gini": 0.7
+              }
+            },
+            {
+              "structure": "value:aggregation",
+              "viz_type": "treemap",
+              "title": "Sales by Division (2015)",
+              "score": {
+                "expressiveness": {
+                  "rank": 8,
+                  "score": 0.6
+                },
+                "effectiveness": {
+                  "rank": 4,
+                  "score": 0.82
+                }
+              }, 
+              "stats": {
+                "summary": {
+                  "max": 98,
+                },
+                "gini": 0.7
+              }
+            },
+            {
+              "structure": "value:aggregation",
+              "viz_type": "treemap",
+              "title": "Channel Breakdown",
+              "score": {
+                "expressiveness": {
+                  "rank": 8,
+                  "score": 0.6
+                },
+                "effectiveness": {
+                  "rank": 4,
+                  "score": 0.82
+                }
+              },
+              "stats": {
+                "summary": {
+                  "max": 98,
+                },
+                "gini": 0.7
+              }
+            },
+          ]
+        }
+
+        return make_response(jsonify(format_json(results)))
 
 #####################################################################
 # Endpoint returning all inferred visualization specifications for a specific project
@@ -661,9 +740,13 @@ api.add_resource(Properties,                    '/api/properties/v1/properties')
 api.add_resource(Entities,                      '/api/properties/v1/entities')
 api.add_resource(Attributes,                    '/api/properties/v1/attributes')
 
+api.add_resource(Specs,                         '/api/specs/v1/specs')
+
+#TODO: consolidate /viz_specs, /visualization_data, /data_from_spec under specs/v1
 api.add_resource(Viz_Specs,                     '/api/viz_specs')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
 api.add_resource(Data_From_Spec,                '/api/data_from_spec')
+
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
 api.add_resource(Regression_Estimator,          '/api/regression_estimator')
 api.add_resource(Conditional_Data,              '/api/conditional_data')
