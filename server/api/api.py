@@ -446,7 +446,7 @@ class Specs(Resource):
 #####################################################################
 vizSpecsGetParser = reqparse.RequestParser()
 vizSpecsGetParser.add_argument('pID', type=str, required=True)
-class Viz_specs(Resource):
+class Viz_Specs(Resource):
     def get(self):
         args = vizSpecsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')

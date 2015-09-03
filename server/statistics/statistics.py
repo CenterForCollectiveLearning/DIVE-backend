@@ -6,8 +6,6 @@ from time import time
 from itertools import chain, combinations
 from operator import add, mul
 import time
-from matplotlib import pyplot as plt
-import pylab
 from math import log10, floor
 
 from data.access import get_data
