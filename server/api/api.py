@@ -23,7 +23,7 @@ from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import compute_ontologies, get_ontologies
 from properties import get_properties, get_entities, get_attributes, compute_properties
-from visualization.viz_specs import get_viz_specs
+from visualization.cs import get_viz_specs
 from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
 from statistics.statistics import getStatisticsFromSpec, timeEstimator
@@ -405,7 +405,7 @@ class Specs(Resource):
                   "rank": 4,
                   "score": 0.82
                 }
-              }, 
+              },
               "stats": {
                 "summary": {
                   "max": 98,
@@ -452,14 +452,7 @@ class Viz_Specs(Resource):
         pID = args.get('pID').strip().strip('"')
         specs_by_dID = get_viz_specs(pID)
 
-        formatted_specs = {}
-        for dID, specs in specs_by_dID.iteritems():
-            specs_with_count = {
-                'num_specs': len(specs),
-                'specs': specs
-            }
-            formatted_specs[dID] = specs_with_count
-        return make_response(jsonify(format_json(formatted_specs)))
+        return make_response(jsonify(format_json(specs_by_dID)))
 
 
 #####################################################################

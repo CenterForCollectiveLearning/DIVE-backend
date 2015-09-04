@@ -51,7 +51,7 @@ def A(q_field):
         count_spec = {
             'structure': 'val:count',
             'args': {
-                'field_a': q_label
+                'field_a': q_label  # TODO How to deal with dervied fields?
             },
             'meta': {
                 'desc': 'Plot values of %s against count of occurrences' % q_label
@@ -81,6 +81,7 @@ def A(q_field):
 
 def B(q_fields):
     specs = []
+    return specs
 
     # Function on pairs of columns
     for (field_a, field_b) in combinations(q_fields, 2):

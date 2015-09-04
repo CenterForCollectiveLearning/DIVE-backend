@@ -113,12 +113,12 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
 
     if structure == 'ind:val':
         field_a = args['field_a']
+
         # If direct field
         if isinstance(field_a, basestring):
             data = df[field_a]
         # If derived field
         elif isinstance(field_a, dict):
-            return []
             label_descriptor = field_a['label']
             data = _get_derived_field(df, label_descriptor)
         else:
@@ -126,20 +126,32 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
             print "Ill-formed field_a %s" % (field_a)
 
         data = df[args['field_a']]
-        final_viz_data = dict([(ind, d) for (ind, d) in enumerate(data)])
+
+        # TODO Return all data in collection format to preserve order
+        final_viz_data = [{ind: d} for (ind, d) in enumerate(data)]
     # TODO Don't aggregate across numeric columns
     elif structure == 'val:agg':
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
     elif structure == 'val:val':
-        final_viz_data = dict(zip(df[args['field_a']], df[args['field_b']]))
+        final_viz_data = lists_to_collection(df[args['field_a']], df[args['field_b']])
     elif structure == 'val:count':
-        final_viz_data = dict(df[args['field_a']].value_counts())
+        final_viz_data = lists_to_collection(df[args['field_a']], df[args['field_a']].value_counts())
     elif structure == 'agg:agg':
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
-        final_viz_data = dict(zip(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']]))
+        final_viz_data = lists_to_collection(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']])
     return final_viz_data
+
+def lists_to_collection(li_a, li_b):
+    if len(li_a) !== len(li_b):
+        raise ValueError("Lists not equal size," len(li_a), len(li_b))
+    else:
+        result = []
+        num_elements = len(li_a)
+        for i in num_elements:
+            result.append({li_a[i]: li_b[i]})
+        return result
 
 
 # BUILDER VERSION
