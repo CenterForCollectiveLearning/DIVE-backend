@@ -382,74 +382,74 @@ class Specs(Resource):
                     "properties": {
                         "categorical": [
                             {
-                                "id": 367598, #mapped to Properties id
+                                "id": "55e77b405b49b1632fc7167c", #mapped to Properties id
                                 "label": "Division",
                                 "source": "ORIGINAL"
                             },
                         ],
                         "quantitative": [
                             {
-                                "id": 262331, #mapped to Properties id
+                                "id": "55e77b415b40b1632fc716a0", #mapped to Properties id
                                 "label": "Sales (2014)",
                                 "source": "DERIVED" # this is not a original column
                             },
                             {
-                                "id": 262330, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716ab", #mapped to Properties id
                                 "label": "2014-JAN",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262329, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716ac", #mapped to Properties id
                                 "label": "2014-FEB",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262328, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716ad", #mapped to Properties id
                                 "label": "2014-MAR",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262327, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716ae", #mapped to Properties id
                                 "label": "2014-APR",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262326, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716af", #mapped to Properties id
                                 "label": "2014-MAY",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262325, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b0", #mapped to Properties id
                                 "label": "2014-JUN",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262324, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b1", #mapped to Properties id
                                 "label": "2014-JUL",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262323, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b2", #mapped to Properties id
                                 "label": "2014-AUG",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262322, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b3", #mapped to Properties id
                                 "label": "2014-SEPT",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262321, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b4", #mapped to Properties id
                                 "label": "2014-OCT",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262320, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b5", #mapped to Properties id
                                 "label": "2014-NOV",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262319, #mapped to Properties id
+                                "id": "55e77b415b49b1632fc716b6", #mapped to Properties id
                                 "label": "2014-DEC",
                                 "source": "ORIGINAL"
                             }
@@ -475,79 +475,79 @@ class Specs(Resource):
                 {
                     "structure": "value:aggregation",
                     "viz_type": "treemap",
-                    "title": "Sales by Division (2015)",
+                    "title": "Sales by Division (2013)",
                     "properties": {
                         "categorical": [
                             {
-                                "id": 367598, #mapped to Properties id
+                                "id": "55e77b405b49b1632fc7167c", #mapped to Properties id
                                 "label": "Division",
                                 "source": "ORIGINAL"
                             },
                         ],
                         "quantitative": [
                             {
-                                "id": 262231, #mapped to Properties id
-                                "label": "Sales (2015)",
+                                "id": "55e77b415b40b1632fc7169e", #mapped to Properties id
+                                "label": "Sales (2013)",
                                 "source": "DERIVED" # this is not a original column
                             },
                             {
-                                "id": 262230, #mapped to Properties id
-                                "label": "2015-JAN",
+                                "id": "55e77b415b49b1632fc7169f", #mapped to Properties id
+                                "label": "2013-JAN",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262229, #mapped to Properties id
-                                "label": "2015-FEB",
+                                "id": "55e77b415b49b1632fc716a0", #mapped to Properties id
+                                "label": "2013-FEB",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262228, #mapped to Properties id
-                                "label": "2015-MAR",
+                                "id": "55e77b415b49b1632fc716a1", #mapped to Properties id
+                                "label": "2013-MAR",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262227, #mapped to Properties id
-                                "label": "2015-APR",
+                                "id": "55e77b415b49b1632fc716a2", #mapped to Properties id
+                                "label": "2013-APR",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262226, #mapped to Properties id
-                                "label": "2015-MAY",
+                                "id": "55e77b415b49b1632fc716a3", #mapped to Properties id
+                                "label": "2013-MAY",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262225, #mapped to Properties id
-                                "label": "2015-JUN",
+                                "id": "55e77b415b49b1632fc716a4", #mapped to Properties id
+                                "label": "2013-JUN",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262224, #mapped to Properties id
-                                "label": "2015-JUL",
+                                "id": "55e77b415b49b1632fc716a5", #mapped to Properties id
+                                "label": "2013-JUL",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262223, #mapped to Properties id
-                                "label": "2015-AUG",
+                                "id": "55e77b415b49b1632fc716a6", #mapped to Properties id
+                                "label": "2013-AUG",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262222, #mapped to Properties id
-                                "label": "2015-SEPT",
+                                "id": "55e77b415b49b1632fc716a7", #mapped to Properties id
+                                "label": "2013-SEPT",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262221, #mapped to Properties id
-                                "label": "2015-OCT",
+                                "id": "55e77b415b49b1632fc716a8", #mapped to Properties id
+                                "label": "2013-OCT",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262220, #mapped to Properties id
-                                "label": "2015-NOV",
+                                "id": "55e77b415b49b1632fc716a9", #mapped to Properties id
+                                "label": "2013-NOV",
                                 "source": "ORIGINAL"
                             },
                             {
-                                "id": 262219, #mapped to Properties id
-                                "label": "2015-DEC",
+                                "id": "55e77b415b49b1632fc716aa", #mapped to Properties id
+                                "label": "2013-DEC",
                                 "source": "ORIGINAL"
                             }
                         ]
@@ -576,7 +576,7 @@ class Specs(Resource):
                     "properties": {
                         "categorical": [
                             {
-                                "id": 367543, #mapped to Properties id
+                                "id": "55e77b405b49b1632fc71680", #mapped to Properties id
                                 "label": "Channel",
                                 "source": "ORIGINAL"
                             },
