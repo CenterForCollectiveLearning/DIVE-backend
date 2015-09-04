@@ -600,6 +600,38 @@ class Specs(Resource):
                         },
                         "gini": 0.7
                     }
+                },
+                {
+                    "structure": "value:aggregation",
+                    "viz_type": "treemap",
+                    "title": "Region Breakdown",
+                    "properties": {
+                        "categorical": [
+                            {
+                                "id": "55e77b405b49b1632fc7167e", #mapped to Properties id
+                                "label": "Region",
+                                "source": "ORIGINAL"
+                            },
+                        ],
+                        "quantitative": [
+                        ]
+                    },
+                    "score": {
+                        "expressiveness": {
+                            "rank": 8,
+                            "score": 0.6
+                        },
+                        "effectiveness": {
+                            "rank": 4,
+                            "score": 0.82
+                        }
+                    },
+                    "stats": {
+                        "summary": {
+                            "max": 98,
+                        },
+                        "gini": 0.7
+                    }
                 }
             ]
         }
