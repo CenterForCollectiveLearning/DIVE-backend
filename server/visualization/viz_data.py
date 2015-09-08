@@ -104,14 +104,14 @@ def _get_derived_field(df, label_descriptor):
 
 # AUTOMATED SPEC VERSION
 def get_viz_data_from_enumerated_spec(spec, dID, pID):
-    structure = spec['structure']
+    generating_procedure = spec['generating_procedure']
     args = spec['args']
     meta = spec['meta']
     final_viz_data = []
 
     df = get_data(pID=pID, dID=dID)
 
-    if structure == 'ind:val':
+    if generating_procedure == 'ind:val':
         field_a = args['field_a']
 
         # If direct field
@@ -130,14 +130,14 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
         # TODO Return all data in collection format to preserve order
         final_viz_data = [{ind: d} for (ind, d) in enumerate(data)]
     # TODO Don't aggregate across numeric columns
-    elif structure == 'val:agg':
+    elif generating_procedure == 'val:agg':
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
-    elif structure == 'val:val':
+    elif generating_procedure == 'val:val':
         final_viz_data = lists_to_collection(df[args['field_a']], df[args['field_b']])
-    elif structure == 'val:count':
+    elif generating_procedure == 'val:count':
         final_viz_data = dict_to_collection(df[args['field_a']].value_counts())
-    elif structure == 'agg:agg':
+    elif generating_procedure == 'agg:agg':
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = lists_to_collection(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']])

@@ -1,7 +1,7 @@
 viz_types = ['tree', 'bar', 'scatter', 'hist', 'pie', 'network']
 
 # TODO Come up with a better name for this...
-types_to_viz_types = {
+data_types_to_viz_types = {
     'c:q': ['tree', 'pie', 'bar'],
     '[c]:q': ['tree', 'pie', 'bar'],
     'q:q': ['scatter', 'line'],
@@ -13,5 +13,5 @@ types_to_viz_types = {
 }
 
 def get_viz_types_from_spec(spec):
-    viz_types = data_types_to_viz_types[spec['type']]
+    viz_types = data_types_to_viz_types[spec['type_structure']]
     return viz_types

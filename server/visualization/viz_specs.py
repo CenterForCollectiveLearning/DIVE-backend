@@ -4,6 +4,7 @@ from marginal_spec_functions import A, B, C, D, E, F, G, H
 from viz_stats import *
 from scipy import stats as sc_stats
 from viz_data import get_viz_data_from_enumerated_spec
+from viz_type_mapping import get_viz_types_from_spec
 from scoring import score_spec
 
 from pprint import pprint
@@ -223,11 +224,15 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
         all_specs_with_types = []
 
         # Assign viz types to specs (not 1-1)
-        for specs in specs:
-            specs_with_types = get_viz_types_from_spec(spec)
-            all_specs_with_types.extend(specs_with_types)
+        for spec in specs:
+            viz_types = get_viz_types_from_spec(spec)
+            for viz_type in viz_types:
+                spec_with_viz_type = spec
+                spec_with_viz_type['viz_type'] = viz_type
+                all_specs_with_types.append(spec_with_viz_type)
 
         specs_by_dID[dID] = all_specs_with_types
+        specs_by_dID[dID] = specs
 
         print "\tN_c:", c_count
         print "\tN_q:", q_count
@@ -246,7 +251,7 @@ def filter_viz_specs(enumerated_viz_specs, pID):
 def score_viz_specs(filtered_viz_specs, pID):
     for dID, specs in filtered_viz_specs.iteritems():
         for spec in specs:
-
+            print spec
             # TODO Optimize data reads
             data = get_viz_data_from_enumerated_spec(spec, dID, pID)
             spec['data'] = spec
