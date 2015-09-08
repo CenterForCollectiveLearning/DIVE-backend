@@ -136,16 +136,26 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
     elif structure == 'val:val':
         final_viz_data = lists_to_collection(df[args['field_a']], df[args['field_b']])
     elif structure == 'val:count':
-        final_viz_data = lists_to_collection(df[args['field_a']], df[args['field_a']].value_counts())
+        final_viz_data = dict_to_collection(df[args['field_a']].value_counts())
     elif structure == 'agg:agg':
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = lists_to_collection(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']])
+
+    if not final_viz_data:
+        print spec
     return final_viz_data
 
+
+def dict_to_collection(d):
+    result = []
+    for k, v in d.iteritems():
+        result.append({k: v})
+    return result
+
 def lists_to_collection(li_a, li_b):
-    if len(li_a) !== len(li_b):
-        raise ValueError("Lists not equal size," len(li_a), len(li_b))
+    if len(li_a) != len(li_b):
+        raise ValueError("Lists not equal size", len(li_a), len(li_b))
     else:
         result = []
         num_elements = len(li_a)

@@ -4,6 +4,7 @@ from marginal_spec_functions import A, B, C, D, E, F, G, H
 from viz_stats import *
 from scipy import stats as sc_stats
 from viz_data import get_viz_data_from_enumerated_spec
+from scoring import score_spec
 
 from pprint import pprint
 from time import time
@@ -219,7 +220,14 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
                 F_specs = F(c_fields)
                 specs.extend(F_specs)
 
-        specs_by_dID[dID] = specs
+        all_specs_with_types = []
+
+        # Assign viz types to specs (not 1-1)
+        for specs in specs:
+            specs_with_types = get_viz_types_from_spec(spec)
+            all_specs_with_types.extend(specs_with_types)
+
+        specs_by_dID[dID] = all_specs_with_types
 
         print "\tN_c:", c_count
         print "\tN_q:", q_count
@@ -227,15 +235,23 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
         # pprint(specs_by_dID)
     return specs_by_dID
 
+
 # 2) Filtering enumerated viz specs based on interpretability and renderability
 def filter_viz_specs(enumerated_viz_specs, pID):
     filtered_viz_specs = enumerated_viz_specs
     return filtered_viz_specs
 
+
 # 3) Scoring viz specs based on effectiveness, expressiveness, and statistical properties
 def score_viz_specs(filtered_viz_specs, pID):
     for dID, specs in filtered_viz_specs.iteritems():
         for spec in specs:
+
+            # TODO Optimize data reads
             data = get_viz_data_from_enumerated_spec(spec, dID, pID)
+            spec['data'] = spec
+
+            score_doc = score_spec(spec)
+            spec['score'] = score_doc
     scored_viz_specs = filtered_viz_specs
     return scored_viz_specs
