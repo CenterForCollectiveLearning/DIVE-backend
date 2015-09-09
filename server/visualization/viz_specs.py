@@ -253,16 +253,22 @@ def filter_viz_specs(enumerated_viz_specs, pID):
 
 # 3) Scoring viz specs based on effectiveness, expressiveness, and statistical properties
 def score_viz_specs(filtered_viz_specs, pID):
-    scored_viz_specs = []
+    scored_viz_specs_by_dID = {}
     for dID, specs in filtered_viz_specs.iteritems():
+        scored_viz_specs = []
         for spec in specs:
             scored_spec = spec
             # TODO Optimize data reads
+            # TODO Don't attach data to spec
             data = get_viz_data_from_enumerated_spec(spec, dID, pID)
             scored_spec['data'] = data
 
             score_doc = score_spec(spec)
             scored_spec['score'] = score_doc
 
+            del scored_spec['data']
+
             scored_viz_specs.append(spec)
-    return scored_viz_specs
+        scored_viz_specs_by_dID[dID] = scored_viz_specs
+
+    return scored_viz_specs_by_dID

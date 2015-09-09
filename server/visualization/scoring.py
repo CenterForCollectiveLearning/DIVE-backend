@@ -47,8 +47,40 @@ bivariate_tests = {
 }
 
 # Statistical
-def get_statistical_properties(spec):
+def get_statistical_properties(data, gp, ts):
     stats = {}
+    # Single quantitative field:
+    if ts in [TypeStructure.C_Q, TypeStructure.B_Q, TypeStructure.Q_Q]:
+        v = None
+        if gp == GeneratingProcedure.VAL_AGG:
+            v = data.get('agg_field')
+        if gp == GeneratingProcedure.IND_VAL:
+            v = data.get('val')
+        if gp == GeneratingProcedure.BIN_AGG:
+            v = data.get('agg')
+
+        if v:
+            for test_name, test_fn in univariate_tests.iteritems():
+                try:
+                    stats[test_name] = test_fn(v)
+                except:
+                    # TODO Need to ingest dates properly!!!
+                    print data
+                    print test_name, gp, ts
+                    pass
+    if ts in [TypeStructure.Q_Q]:
+        v = None
+        if gp == GeneratingProcedure.AGG_AGG:
+            v1 = data.get('field_a')
+            v2 = data.get('field_b')
+        if gp == GeneratingProcedure.VAL_VAL:
+            v1 = data.get('field_a')
+            v2 = data.get('field_b')
+
+        if v:
+            for test_name, test_fn in bivariate_tests.iteritems():
+                stats[test_name] = test_fn(v1, v2)
+
     return stats
 
 def score_spec(spec):
@@ -56,15 +88,9 @@ def score_spec(spec):
         'stats': {}
     }
     data = spec['data']
-
     gp = spec['generating_procedure']
     ts = spec['type_structure']
-    print "DATA", data
 
-    # Single quantitative field:
-    if ts in [TypeStructure.C_Q, TypeStructure.B_Q]:
-        return
-    elif ts in [TypeStructure.Q_Q]:
-        print "q:q"
+    score_doc['stats'] = get_statistical_properties(data, gp, ts)
 
     return score_doc

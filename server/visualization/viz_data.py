@@ -142,7 +142,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
 
         # TODO Return all data in collection format to preserve order
         final_viz_data = {
-            'ind': [i for i in range(0, len(data))],
+            'ind': [ i for i in range(0, len(data)) ],
             'val': data.tolist()
         }
 
@@ -167,15 +167,21 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
             final_viz_data = {
                 'bins': bin_num_to_edges,
                 'bin_edges': bin_edges,
-                'agg': agg_df[agg_field_a].tolist
+                'agg': agg_df[agg_field_a].tolist()
             }
         except:
-            final_viz_data = []
+            final_viz_data = {
+
+            }
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG:
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
+        final_viz_data = {
+            'grouped_field': agg_df[args['grouped_field']].tolist(),
+            'agg_field': agg_df[args['agg_field']].tolist()
+        }
 
     elif gp == GeneratingProcedure.VAL_VAL:
         final_viz_data = {

@@ -53,7 +53,7 @@ def A(q_field):
         # { Value: count }
         count_spec = {
             'generating_procedure': GeneratingProcedure.VAL_COUNT,
-            'type_structure': TypeStructure.Q_Q,
+            'type_structure': TypeStructure.C_Q,
             'args': {
                 'field_a': q_label  # TODO How to deal with dervied fields?
             },
@@ -165,7 +165,7 @@ def E(c_field, q_fields):
             q_label_a, q_label_b = q_field_a['label'], q_field_b['label']
             for agg_fn in aggregation_functions.keys():
                 spec = {
-                    'generating_procedure': GeneratingProcedure.VAL_AGG,
+                    'generating_procedure': GeneratingProcedure.AGG_AGG,
                     'type_structure': TypeStructure.Q_Q,
                     'args': {
                         'agg_fn': agg_fn,

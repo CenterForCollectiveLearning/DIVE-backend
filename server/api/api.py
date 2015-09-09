@@ -452,7 +452,6 @@ class Viz_Specs(Resource):
         pID = args.get('pID').strip().strip('"')
         specs_by_dID = get_viz_specs(pID)
 
-        return ([])
         return make_response(jsonify(format_json(specs_by_dID)))
 
 
