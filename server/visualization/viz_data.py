@@ -125,20 +125,19 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
     df = get_data(pID=pID, dID=dID)
 
     if gp == GeneratingProcedure.IND_VAL.value:
-        field_a = args['field_a']
+        field_a = args['field_a']['label']
 
         # If direct field
         if isinstance(field_a, basestring):
             data = df[field_a]
         # If derived field
         elif isinstance(field_a, dict):
-            label_descriptor = field_a['label']
-            data = _get_derived_field(df, label_descriptor)
+            data = _get_derived_field(df, field_a)
         else:
             # TODO Better warning mechanism
             print "Ill-formed field_a %s" % (field_a)
 
-        data = df[args['field_a']]
+        data = df[field_a]
 
         # TODO Return all data in collection format to preserve order
         final_viz_data = {
@@ -149,9 +148,9 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
     elif gp == GeneratingProcedure.BIN_AGG.value:
         # TODO Get rid of this
         try:
-            binning_field = args['binning_field']
+            binning_field = args['binning_field']['label']
             binning_procedure = args['binning_procedure']
-            agg_field_a = args['agg_field_a']
+            agg_field_a = args['agg_field_a']['label']
             agg_fn = group_fn_from_string[args['agg_fn']]
 
             unbinned_field = df[binning_field]
@@ -176,32 +175,32 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
-        grouped_df = df.groupby(args['grouped_field'])
+        grouped_df = df.groupby(args['grouped_field']['label'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = {
-            'grouped_field': agg_df[args['grouped_field']].tolist(),
-            'agg_field': agg_df[args['agg_field']].tolist()
+            'grouped_field': agg_df[args['grouped_field']['label']].tolist(),
+            'agg_field': agg_df[args['agg_field']['label']].tolist()
         }
 
     elif gp == GeneratingProcedure.VAL_VAL.value:
         final_viz_data = {
-            'field_a': df[args['field_a']].tolist(),
-            'field_b': df[args['field_b']].tolist()
+            'field_a': df[args['field_a']['label']].tolist(),
+            'field_b': df[args['field_b']['label']].tolist()
         }
 
     elif gp == GeneratingProcedure.VAL_COUNT.value:
-        vc = df[args['field_a']].value_counts()
+        vc = df[args['field_a']['label']].value_counts()
         final_viz_data = {
             'val': vc.index.tolist(),
             'count': vc.tolist()
         }
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
-        grouped_df = df.groupby(args['grouped_field'])
+        grouped_df = df.groupby(args['grouped_field']['label'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = {
-            'field_a': agg_df[args['agg_field_a']].tolist(),
-            'field_b': agg_df[args['agg_field_b']].tolist()
+            'field_a': agg_df[args['agg_field_a']['label']].tolist(),
+            'field_b': agg_df[args['agg_field_b']['label']].tolist()
         }
 
     return final_viz_data

@@ -14,28 +14,24 @@ import math
 
 
 # Wrapper function
-def get_viz_specs(pID):
-    datasets = MI.getData(None, pID)
+def get_viz_specs(pID, dID=None):
+    dataset_find_doc = {}
+    if dID:
+        dataset_find_doc = {'_id': ObjectId(dID)}
+    datasets = MI.getData(dataset_find_doc, pID)
     properties = MI.getProperty(None, pID)
     ontologies = MI.getOntology(None, pID)
 
-    print "Getting visualization specs for datasets:", [d['dID'] for d in datasets]
-
+    # TODO Persist the specs
     existing_specs = MI.getSpecs(pID, {})
+
     enumerated_viz_specs = enumerate_viz_specs(datasets, properties, ontologies, pID)
-    for dID, s in enumerated_viz_specs.iteritems() :
-        print "Number of enumerated specs:", dID, len(s)
-
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, pID)
-
     scored_viz_specs = score_viz_specs(filtered_viz_specs, pID)
-
-    for dID, s in scored_viz_specs.iteritems():
-        print "Number of scored specs:", dID, len(s)
-
     formatted_viz_specs = format_viz_specs(scored_viz_specs)
 
-    # pprint(scored_viz_specs)
+    if dID:
+        formatted_viz_specs = formatted_viz_specs[dID]
     return formatted_viz_specs
 
 specific_to_general_type = {
@@ -74,6 +70,7 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
     for p in properties:
         dID = p['dID']
         relevant_fields = {
+            'id': str(p['propertyID']),
             'label': p['label'],
             'unique': p['unique'],
             'type': p['type'],
@@ -294,14 +291,35 @@ def score_viz_specs(filtered_viz_specs, pID):
     return scored_viz_specs_by_dID
 
 
+
 def format_viz_specs(scored_viz_specs):
     ''' Get viz specs into a format usable by front end '''
-    return scored_viz_specs
-    # formatted_viz_specs_by_dID = {}
-    # for dID, specs in scored_viz_specs.iteritems():
-    #     formatted_viz_specs = []
-    #     for s in specs:
-    #         formatted_viz = {
-    #             'generating_procedure': s['generating_procedure'],
-    #
-    #         }
+    field_keys = ['field_a', 'field_b', 'binning_field', 'agg_field_a', 'agg_field_b']
+
+    formatted_viz_specs_by_dID = {}
+    for dID, specs in scored_viz_specs.iteritems():
+        formatted_viz_specs = []
+        for s in specs:
+            new_args = {
+                'categorical': [],  # TODO Propagate this
+                'quantitative': []
+            }
+            args = s['args']
+
+            # Extract all fields
+            for field_key in field_keys:
+                if field_key in args:
+                    field = args[field_key]
+                    field_general_type = specific_to_general_type[field['type']]
+                    if field_general_type is 'q': general_type_key = 'quantitative'
+                    else: general_type_key = 'categorical'
+
+                    new_args[general_type_key].append({
+                        'label': field['label'],
+                        'id': field['id'],
+                        'fieldType': field_key
+                    })
+            s['args'] = new_args
+            formatted_viz_specs.append(s)
+        formatted_viz_specs_by_dID[dID] = formatted_viz_specs
+    return formatted_viz_specs_by_dID
