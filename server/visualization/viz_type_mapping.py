@@ -1,3 +1,5 @@
+from . import GeneratingProcedure, TypeStructure
+
 viz_types = ['tree', 'bar', 'scatter', 'hist', 'pie', 'network']
 
 # TODO Come up with a better name for this...

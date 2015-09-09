@@ -21,12 +21,14 @@ def get_unique(li):
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
 ###
+MAX_BINS = 20
 def get_bin_edges(v, procedure='freedman'):
     if procedure is 'freedman':
         IQR = np.subtract(*np.percentile(v, [75, 25]))
         bin_width = 2 * IQR * len(v)**(-1/3)
-        num_bins = math.floor((max(data) - min(data)) / bin_width)
-        bin_edges = np.histogram(v, num_bins)[1]
+        num_bins = math.floor((max(v) - min(v)) / bin_width)
+        num_bins = max(num_bins, MAX_BINS)
+    bin_edges = np.histogram(v, num_bins)[1]
 
     return bin_edges
 

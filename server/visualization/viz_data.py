@@ -6,12 +6,11 @@ Functions for returning the data corresponding to a given visualization type and
 from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
+from . import GeneratingProcedure, TypeStructure
 from data.access import get_delimiter, get_data, detect_time_series, get_variable_type
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
-
-from itertools import combinations
-
+from analysis.analysis import get_bin_edges
 import viz_stats
 
 from config import config
@@ -20,7 +19,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import math
-
+from itertools import combinations
 
 # TODO just use regular strings?
 group_fn_from_string = {
@@ -104,14 +103,14 @@ def _get_derived_field(df, label_descriptor):
 
 # AUTOMATED SPEC VERSION
 def get_viz_data_from_enumerated_spec(spec, dID, pID):
-    generating_procedure = spec['generating_procedure']
+    gp = spec['generating_procedure']
     args = spec['args']
     meta = spec['meta']
     final_viz_data = []
 
     df = get_data(pID=pID, dID=dID)
 
-    if generating_procedure == 'ind:val':
+    if gp == GeneratingProcedure.IND_VAL:
         field_a = args['field_a']
 
         # If direct field
@@ -129,24 +128,53 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
 
         # TODO Return all data in collection format to preserve order
         final_viz_data = [{ind: d} for (ind, d) in enumerate(data)]
+
+    elif gp == GeneratingProcedure.BIN_AGG:
+        try:
+            binning_field = args['binning_field']
+            binning_procedure = args['binning_procedure']
+            agg_field_a = args['agg_field_a']
+            agg_fn = group_fn_from_string[args['agg_fn']]
+
+            unbinned_field = df[binning_field]
+            bin_edges = get_bin_edges(unbinned_field, procedure=binning_procedure)
+
+            bin_num_to_edges = {}
+            for bin_num in range(0, len(bin_edges) - 1):
+                bin_num_to_edges[bin_num] = [ bin_edges[bin_num], bin_edges[bin_num + 1] ]
+
+            grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges))
+            agg_df = grouped_df.aggregate(agg_fn)
+
+
+            final_viz_data = {
+                'bins': bin_num_to_edges,
+                'bin_edges': bin_edges,
+                'data': agg_df[agg_field_a]
+            }
+        except:
+            final_viz_data = []
+
     # TODO Don't aggregate across numeric columns
-    elif generating_procedure == 'val:agg':
+    elif gp == GeneratingProcedure.VAL_AGG:
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
-    elif generating_procedure == 'val:val':
+
+    elif gp == GeneratingProcedure.VAL_VAL:
         final_viz_data = lists_to_collection(df[args['field_a']], df[args['field_b']])
-    elif generating_procedure == 'val:count':
+
+    elif gp == GeneratingProcedure.VAL_COUNT:
         final_viz_data = dict_to_collection(df[args['field_a']].value_counts())
-    elif generating_procedure == 'agg:agg':
+
+    elif gp == GeneratingProcedure.AGG_AGG:
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = lists_to_collection(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']])
 
-    if not final_viz_data:
-        print spec
     return final_viz_data
 
 
+### TODO Move these to some utility functions location
 def dict_to_collection(d):
     result = []
     for k, v in d.iteritems():

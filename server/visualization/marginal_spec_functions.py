@@ -1,6 +1,7 @@
-from itertools import combinations
 import numpy as np
-from enum import Enum
+from itertools import combinations
+
+from . import GeneratingProcedure, TypeStructure
 
 # TODO How to document defaults?
 aggregation_functions = {
@@ -26,26 +27,6 @@ binning_procedures = {
     'shimazaki': False,
     'bayesian': False
 }
-
-
-class GeneratingProcedure(Enum):
-    IND_VAL = 'ind:val'
-    VAL_COUNT = 'val:count'
-    BIN_AGG = 'bin:agg'
-    VAL_VAL = 'val:val'
-    VAL_AGG = 'val:agg'
-    AGG_AGG = 'agg:agg'
-    VAL_VAL_Q = 'val:val:q'
-
-
-class TypeStructure(Enum):
-    C_C = 'c:c'
-    C_Q = 'c:q'
-    liC_Q = '[c]:q'
-    liQ_liQ = '[c]:[q]'
-    Q_Q = 'q:q'
-    Q_liQ = 'q:[q]'
-    B_Q = 'b:q'
 
 ###
 # Functions providing only the new specs for each case (subsumed cases are taken care of elsewhere)
@@ -88,7 +69,7 @@ def A(q_field):
         for binning_procedure, implemented in binning_procedures.iteritems():
             if implemented:
                 bin_spec = {
-                    'generating_procedure': GeneratingProcedure.VAL_COUNT,
+                    'generating_procedure': GeneratingProcedure.BIN_AGG,
                     'type_structure': TypeStructure.B_Q,
                     'args': {
                         'agg_fn': agg_fn,

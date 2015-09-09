@@ -1,3 +1,6 @@
+from . import GeneratingProcedure, TypeStructure
+
+
 # Expressiveness
 def get_expressiveness(spec):
     result = {}
@@ -52,4 +55,13 @@ def score_spec(spec):
     score_doc = {
         'score': 1.0
     }
+    data = spec['data']
+    type_structure = spec['type_structure']
+
+    # Single quantitative field:
+    if type_structure in [TypeStructure.C_Q, TypeStructure.B_Q]:
+        print "c:q, b:q"
+    elif type_structure in [TypeStructure.Q_Q]:
+        print "q:q"
+
     return score_doc

@@ -7,9 +7,11 @@ from viz_data import get_viz_data_from_enumerated_spec
 from viz_type_mapping import get_viz_types_from_spec
 from scoring import score_spec
 
+
 from pprint import pprint
 from time import time
 import math
+
 
 # Wrapper function
 def get_viz_specs(pID):
@@ -21,6 +23,8 @@ def get_viz_specs(pID):
     enumerated_viz_specs = enumerate_viz_specs(datasets, properties, ontologies, pID)
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, pID)
     scored_viz_specs = score_viz_specs(filtered_viz_specs, pID)
+
+    # pprint(scored_viz_specs)
     return scored_viz_specs
 
 specific_to_general_type = {
@@ -249,14 +253,16 @@ def filter_viz_specs(enumerated_viz_specs, pID):
 
 # 3) Scoring viz specs based on effectiveness, expressiveness, and statistical properties
 def score_viz_specs(filtered_viz_specs, pID):
+    scored_viz_specs = []
     for dID, specs in filtered_viz_specs.iteritems():
         for spec in specs:
-            print spec
+            scored_spec = spec
             # TODO Optimize data reads
             data = get_viz_data_from_enumerated_spec(spec, dID, pID)
-            spec['data'] = spec
+            scored_spec['data'] = data
 
             score_doc = score_spec(spec)
-            spec['score'] = score_doc
-    scored_viz_specs = filtered_viz_specs
+            scored_spec['score'] = score_doc
+
+            scored_viz_specs.append(spec)
     return scored_viz_specs
