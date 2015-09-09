@@ -664,7 +664,7 @@ api.add_resource(Attributes,                    '/api/properties/v1/attributes')
 api.add_resource(Specs,                         '/api/specs/v1/specs')
 
 #TODO: consolidate /viz_specs, /visualization_data, /data_from_spec under specs/v1
-api.add_resource(Generating_Procedures,         '/api/generating_procedures')
+api.add_resource(Generating_Procedures,         '/api/specs/v1/generating_procedures')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
 api.add_resource(Data_From_Spec,                '/api/data_from_spec')
 
