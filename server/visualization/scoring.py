@@ -53,15 +53,18 @@ def get_statistical_properties(spec):
 
 def score_spec(spec):
     score_doc = {
-        'score': 1.0
+        'stats': {}
     }
     data = spec['data']
-    type_structure = spec['type_structure']
+
+    gp = spec['generating_procedure']
+    ts = spec['type_structure']
+    print "DATA", data
 
     # Single quantitative field:
-    if type_structure in [TypeStructure.C_Q, TypeStructure.B_Q]:
-        print "c:q, b:q"
-    elif type_structure in [TypeStructure.Q_Q]:
+    if ts in [TypeStructure.C_Q, TypeStructure.B_Q]:
+        return
+    elif ts in [TypeStructure.Q_Q]:
         print "q:q"
 
     return score_doc
