@@ -12,4 +12,4 @@ venv/
 # Logs
 *.log
 
-server/uploads/
+uploads/

@@ -6,12 +6,11 @@ Functions for returning the data corresponding to a given visualization type and
 from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
+from . import GeneratingProcedure, TypeStructure
 from data.access import get_delimiter, get_data, detect_time_series, get_variable_type
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
-
-from itertools import combinations
-
+from analysis.analysis import get_bin_edges
 import viz_stats
 
 from config import config
@@ -20,7 +19,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import math
-
+from itertools import combinations
 
 # TODO just use regular strings?
 group_fn_from_string = {
@@ -102,44 +101,127 @@ def _get_derived_field(df, label_descriptor):
     label_a, op, label_b = label.split(' ')
     return result
 
-# AUTOMATED SPEC VERSION
 def get_viz_data_from_enumerated_spec(spec, dID, pID):
-    structure = spec['structure']
+    '''
+    Returns a dictionary containing data corresponding to spec, and all
+    necessary information to interpret data.
+
+    Data is structured as dict of lists for scoring, as opposed to list of dicts
+    for visualizing.
+
+    Args:
+    spec, dID, pID
+    Returns:
+        data specified by spec
+    Raises:
+    '''
+
+    gp = spec['generating_procedure']
     args = spec['args']
     meta = spec['meta']
     final_viz_data = []
 
+    # Retrieve dataframe
     df = get_data(pID=pID, dID=dID)
 
-    if structure == 'ind:val':
-        field_a = args['field_a']
+    if gp == GeneratingProcedure.IND_VAL.value:
+        field_a = args['field_a']['label']
+
         # If direct field
         if isinstance(field_a, basestring):
             data = df[field_a]
         # If derived field
         elif isinstance(field_a, dict):
-            return []
-            label_descriptor = field_a['label']
-            data = _get_derived_field(df, label_descriptor)
+            data = _get_derived_field(df, field_a)
         else:
             # TODO Better warning mechanism
             print "Ill-formed field_a %s" % (field_a)
 
-        data = df[args['field_a']]
-        final_viz_data = dict([(ind, d) for (ind, d) in enumerate(data)])
+        data = df[field_a]
+
+        # TODO Return all data in collection format to preserve order
+        final_viz_data = {
+            'ind': [ i for i in range(0, len(data)) ],
+            'val': data.tolist()
+        }
+
+    elif gp == GeneratingProcedure.BIN_AGG.value:
+        # TODO Get rid of this
+        try:
+            binning_field = args['binning_field']['label']
+            binning_procedure = args['binning_procedure']
+            agg_field_a = args['agg_field_a']['label']
+            agg_fn = group_fn_from_string[args['agg_fn']]
+
+            unbinned_field = df[binning_field]
+            bin_edges = get_bin_edges(unbinned_field, procedure=binning_procedure)
+
+            bin_num_to_edges = {}
+            for bin_num in range(0, len(bin_edges) - 1):
+                bin_num_to_edges[bin_num] = [ bin_edges[bin_num], bin_edges[bin_num + 1] ]
+
+            grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges))
+            agg_df = grouped_df.aggregate(agg_fn)
+
+            final_viz_data = {
+                'bins': bin_num_to_edges,
+                'bin_edges': bin_edges,
+                'agg': agg_df[agg_field_a].tolist()
+            }
+        except:
+            final_viz_data = {
+
+            }
+
     # TODO Don't aggregate across numeric columns
-    elif structure == 'val:agg':
-        grouped_df = df.groupby(args['grouped_field'])
+    elif gp == GeneratingProcedure.VAL_AGG.value:
+        grouped_df = df.groupby(args['grouped_field']['label'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
-    elif structure == 'val:val':
-        final_viz_data = dict(zip(df[args['field_a']], df[args['field_b']]))
-    elif structure == 'val:count':
-        final_viz_data = dict(df[args['field_a']].value_counts())
-    elif structure == 'agg:agg':
-        grouped_df = df.groupby(args['grouped_field'])
+        final_viz_data = {
+            'grouped_field': agg_df[args['grouped_field']['label']].tolist(),
+            'agg_field': agg_df[args['agg_field']['label']].tolist()
+        }
+
+    elif gp == GeneratingProcedure.VAL_VAL.value:
+        final_viz_data = {
+            'field_a': df[args['field_a']['label']].tolist(),
+            'field_b': df[args['field_b']['label']].tolist()
+        }
+
+    elif gp == GeneratingProcedure.VAL_COUNT.value:
+        vc = df[args['field_a']['label']].value_counts()
+        final_viz_data = {
+            'val': vc.index.tolist(),
+            'count': vc.tolist()
+        }
+
+    elif gp == GeneratingProcedure.AGG_AGG.value:
+        grouped_df = df.groupby(args['grouped_field']['label'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
-        final_viz_data = dict(zip(agg_df[args['agg_field_a']], agg_df[args['agg_field_b']]))
+        final_viz_data = {
+            'field_a': agg_df[args['agg_field_a']['label']].tolist(),
+            'field_b': agg_df[args['agg_field_b']['label']].tolist()
+        }
+
     return final_viz_data
+
+
+### TODO Move these to some utility functions location
+def dict_to_collection(d):
+    result = []
+    for k, v in d.iteritems():
+        result.append({k: v})
+    return result
+
+def lists_to_collection(li_a, li_b):
+    if len(li_a) != len(li_b):
+        raise ValueError("Lists not equal size", len(li_a), len(li_b))
+    else:
+        result = []
+        num_elements = len(li_a)
+        for i in num_elements:
+            result.append({li_a[i]: li_b[i]})
+        return result
 
 
 # BUILDER VERSION
