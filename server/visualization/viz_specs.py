@@ -33,8 +33,10 @@ def get_viz_specs(pID):
     for dID, s in scored_viz_specs.iteritems():
         print "Number of scored specs:", dID, len(s)
 
+    formatted_viz_specs = format_viz_specs(scored_viz_specs)
+
     # pprint(scored_viz_specs)
-    return scored_viz_specs
+    return formatted_viz_specs
 
 specific_to_general_type = {
     'float': 'q',
@@ -157,7 +159,7 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
                     specs.extend(A_specs)
 
                     # N_Q cases of D
-                    D_specs = (c_fields[0], q_field)
+                    D_specs = D(c_fields[0], q_field)
                     specs.extend(D_specs)
 
                 # N_C cases of C
@@ -221,6 +223,11 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
                     E_specs = E(c_field, q_fields)
                     specs.extend(E_specs)
 
+                    # N_C * N_Q cases of D
+                    for q_field in q_fields:
+                        D_specs = D(c_field, q_field)
+                        specs.extend(D_specs)
+
                 # N_Q cases of A
                 # N_Q cases of G
                 for q_field in q_fields:
@@ -242,10 +249,7 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
 
         # Assign viz types to specs (not 1-1)
         for spec in specs:
-            try:
-                viz_types = get_viz_types_from_spec(spec)
-            except:
-                print spec['generating_procedure'], spec['type_structure']
+            viz_types = get_viz_types_from_spec(spec)
             for viz_type in viz_types:
                 spec_with_viz_type = spec
                 spec_with_viz_type['viz_type'] = viz_type
@@ -288,3 +292,16 @@ def score_viz_specs(filtered_viz_specs, pID):
         scored_viz_specs_by_dID[dID] = scored_viz_specs
 
     return scored_viz_specs_by_dID
+
+
+def format_viz_specs(scored_viz_specs):
+    ''' Get viz specs into a format usable by front end '''
+    return scored_viz_specs
+    # formatted_viz_specs_by_dID = {}
+    # for dID, specs in scored_viz_specs.iteritems():
+    #     formatted_viz_specs = []
+    #     for s in specs:
+    #         formatted_viz = {
+    #             'generating_procedure': s['generating_procedure'],
+    #
+    #         }

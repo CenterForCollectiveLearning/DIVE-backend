@@ -142,7 +142,7 @@ def D(c_field, q_field):
         for agg_fn in aggregation_functions.keys():
             spec = {
                 'generating_procedure': GeneratingProcedure.VAL_AGG.value,
-                'type_structure': TypeStructure.Q_Q.value,
+                'type_structure': TypeStructure.C_Q.value,
                 'args': {
                     'agg_fn': agg_fn,
                     'grouped_field': c_label,
