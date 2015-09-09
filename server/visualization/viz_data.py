@@ -124,7 +124,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
     # Retrieve dataframe
     df = get_data(pID=pID, dID=dID)
 
-    if gp == GeneratingProcedure.IND_VAL:
+    if gp == GeneratingProcedure.IND_VAL.value:
         field_a = args['field_a']
 
         # If direct field
@@ -146,7 +146,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
             'val': data.tolist()
         }
 
-    elif gp == GeneratingProcedure.BIN_AGG:
+    elif gp == GeneratingProcedure.BIN_AGG.value:
         # TODO Get rid of this
         try:
             binning_field = args['binning_field']
@@ -175,7 +175,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
             }
 
     # TODO Don't aggregate across numeric columns
-    elif gp == GeneratingProcedure.VAL_AGG:
+    elif gp == GeneratingProcedure.VAL_AGG.value:
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = {
@@ -183,20 +183,20 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
             'agg_field': agg_df[args['agg_field']].tolist()
         }
 
-    elif gp == GeneratingProcedure.VAL_VAL:
+    elif gp == GeneratingProcedure.VAL_VAL.value:
         final_viz_data = {
             'field_a': df[args['field_a']].tolist(),
             'field_b': df[args['field_b']].tolist()
         }
 
-    elif gp == GeneratingProcedure.VAL_COUNT:
+    elif gp == GeneratingProcedure.VAL_COUNT.value:
         vc = df[args['field_a']].value_counts()
         final_viz_data = {
             'val': vc.index.tolist(),
             'count': vc.tolist()
         }
 
-    elif gp == GeneratingProcedure.AGG_AGG:
+    elif gp == GeneratingProcedure.AGG_AGG.value:
         grouped_df = df.groupby(args['grouped_field'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['agg_fn']])
         final_viz_data = {

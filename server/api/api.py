@@ -23,6 +23,8 @@ from data.db import MongoInstance as MI
 from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
 from analysis.analysis import compute_ontologies, get_ontologies
 from properties import get_properties, get_entities, get_attributes, compute_properties
+
+from visualization import GeneratingProcedure
 from visualization.viz_specs import get_viz_specs
 from visualization.viz_data import getVisualizationDataFromSpec
 from visualization.viz_stats import getVisualizationStats
@@ -455,6 +457,12 @@ class Viz_Specs(Resource):
         return make_response(jsonify(format_json(specs_by_dID)))
 
 
+class Generating_Procedures(Resource):
+    ''' Returns a dictionary containing the existing generating procedures. '''
+    def get(self):
+        result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
+        return make_response(jsonify(format_json(result)))
+
 #####################################################################
 # Endpoint returning aggregated visualization data given a specification ID
 # INPUT: sID, pID, uID
@@ -737,6 +745,7 @@ api.add_resource(Specs,                         '/api/specs/v1/specs')
 
 #TODO: consolidate /viz_specs, /visualization_data, /data_from_spec under specs/v1
 api.add_resource(Viz_Specs,                     '/api/viz_specs')
+api.add_resource(Generating_Procedures,         '/api/generating_procedures')
 api.add_resource(Visualization_Data,            '/api/visualization_data')
 api.add_resource(Data_From_Spec,                '/api/data_from_spec')
 

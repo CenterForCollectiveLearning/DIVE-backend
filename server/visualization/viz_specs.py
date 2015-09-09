@@ -19,10 +19,19 @@ def get_viz_specs(pID):
     properties = MI.getProperty(None, pID)
     ontologies = MI.getOntology(None, pID)
 
+    print "Getting visualization specs for datasets:", [d['dID'] for d in datasets]
+
     existing_specs = MI.getSpecs(pID, {})
     enumerated_viz_specs = enumerate_viz_specs(datasets, properties, ontologies, pID)
+    for dID, s in enumerated_viz_specs.iteritems() :
+        print "Number of enumerated specs:", dID, len(s)
+
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, pID)
+
     scored_viz_specs = score_viz_specs(filtered_viz_specs, pID)
+
+    for dID, s in scored_viz_specs.iteritems():
+        print "Number of scored specs:", dID, len(s)
 
     # pprint(scored_viz_specs)
     return scored_viz_specs
@@ -142,10 +151,14 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
             elif q_count > 1:
                 print "Case E"
 
-                # N_Q cases of A
                 for q_field in q_fields:
+                    # N_Q cases of A
                     A_specs = A(q_field)
                     specs.extend(A_specs)
+
+                    # N_Q cases of D
+                    D_specs = (c_fields[0], q_field)
+                    specs.extend(D_specs)
 
                 # N_C cases of C
                 for c_field in c_fields:
@@ -229,7 +242,10 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
 
         # Assign viz types to specs (not 1-1)
         for spec in specs:
-            viz_types = get_viz_types_from_spec(spec)
+            try:
+                viz_types = get_viz_types_from_spec(spec)
+            except:
+                print spec['generating_procedure'], spec['type_structure']
             for viz_type in viz_types:
                 spec_with_viz_type = spec
                 spec_with_viz_type['viz_type'] = viz_type

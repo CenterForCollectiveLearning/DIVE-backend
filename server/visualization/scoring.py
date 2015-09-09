@@ -35,7 +35,8 @@ univariate_tests = {
     'variance': np.var,
     'maximum': np.max,
     'minimum': np.min,
-    'mode': mode
+    'mode': mode,
+    'size': len,
 }
 
 
@@ -50,13 +51,13 @@ bivariate_tests = {
 def get_statistical_properties(data, gp, ts):
     stats = {}
     # Single quantitative field:
-    if ts in [TypeStructure.C_Q, TypeStructure.B_Q, TypeStructure.Q_Q]:
+    if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.Q_Q.value]:
         v = None
-        if gp == GeneratingProcedure.VAL_AGG:
+        if gp == GeneratingProcedure.VAL_AGG.value:
             v = data.get('agg_field')
-        if gp == GeneratingProcedure.IND_VAL:
+        if gp == GeneratingProcedure.IND_VAL.value:
             v = data.get('val')
-        if gp == GeneratingProcedure.BIN_AGG:
+        if gp == GeneratingProcedure.BIN_AGG.value:
             v = data.get('agg')
 
         if v:
@@ -65,18 +66,15 @@ def get_statistical_properties(data, gp, ts):
                     stats[test_name] = test_fn(v)
                 except:
                     # TODO Need to ingest dates properly!!!
-                    print data
-                    print test_name, gp, ts
-                    pass
+                    print "Failed scoring for", test_name, gp, ts
     if ts in [TypeStructure.Q_Q]:
         v = None
-        if gp == GeneratingProcedure.AGG_AGG:
+        if gp == GeneratingProcedure.AGG_AGG.value:
             v1 = data.get('field_a')
             v2 = data.get('field_b')
-        if gp == GeneratingProcedure.VAL_VAL:
+        if gp == GeneratingProcedure.VAL_VAL.value:
             v1 = data.get('field_a')
             v2 = data.get('field_b')
-
         if v:
             for test_name, test_fn in bivariate_tests.iteritems():
                 stats[test_name] = test_fn(v1, v2)
