@@ -293,7 +293,7 @@ def score_viz_specs(filtered_viz_specs, pID):
 
 def format_viz_specs(scored_viz_specs):
     ''' Get viz specs into a format usable by front end '''
-    field_keys = ['field_a', 'field_b', 'binning_field', 'agg_field_a', 'agg_field_b']
+    field_keys = ['fieldA', 'fieldB', 'binningField', 'aggFieldA', 'aggFieldB']
 
     formatted_viz_specs_by_dID = {}
     for dID, specs in scored_viz_specs.iteritems():

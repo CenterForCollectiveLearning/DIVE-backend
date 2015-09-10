@@ -38,10 +38,10 @@ def A(q_field):
 
     # { Index: value }
     index_spec = {
-        'generating_procedure': GeneratingProcedure.IND_VAL.value,
-        'type_structure': TypeStructure.Q_Q.value,
+        'generatingProcedure': GeneratingProcedure.IND_VAL.value,
+        'typeStructure': TypeStructure.Q_Q.value,
         'args': {
-            'field_a': q_field
+            'fieldA': q_field
         },
         'meta': {
             'desc': 'Plot %s against its index' % (q_label)
@@ -52,10 +52,10 @@ def A(q_field):
     if not q_field['unique']:
         # { Value: count }
         count_spec = {
-            'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
-            'type_structure': TypeStructure.C_Q.value,
+            'generatingProcedure': GeneratingProcedure.VAL_COUNT.value,
+            'typeStructure': TypeStructure.C_Q.value,
             'args': {
-                'field_a': q_field  # TODO How to deal with dervied fields?
+                'fieldA': q_field  # TODO How to deal with dervied fields?
             },
             'meta': {
                 'desc': 'Plot values of %s against count of occurrences' % q_label
@@ -69,13 +69,13 @@ def A(q_field):
         for binning_procedure, implemented in binning_procedures.iteritems():
             if implemented:
                 bin_spec = {
-                    'generating_procedure': GeneratingProcedure.BIN_AGG.value,
-                    'type_structure': TypeStructure.B_Q.value,
+                    'generatingProcedure': GeneratingProcedure.BIN_AGG.value,
+                    'typeStructure': TypeStructure.B_Q.value,
                     'args': {
-                        'agg_fn': agg_fn,
-                        'agg_field_a': q_field,
-                        'binning_procedure': binning_procedure,
-                        'binning_field': q_field
+                        'aggFn': agg_fn,
+                        'aggFieldA': q_field,
+                        'binningProcedure': binning_procedure,
+                        'binningField': q_field
                     },
                     'meta': {
                         'desc': 'Bin %s, then aggregate binned values by %s' % (q_label, agg_fn)
@@ -108,10 +108,10 @@ def C(c_field):
 
     # TODO Only create if values are non-unique
     spec = {
-        'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
-        'type_structure': TypeStructure.C_Q.value,
+        'generatingProcedure': GeneratingProcedure.VAL_COUNT.value,
+        'typeStructure': TypeStructure.C_Q.value,
         'args': {
-            'field_a': c_field
+            'fieldA': c_field
         },
         'meta': {
             'desc': 'Unique values of %s mapped to number of occurrences' % (c_label)
@@ -127,11 +127,11 @@ def D(c_field, q_field):
 
     if c_field['unique']:
         spec = {
-            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
-            'type_structure': TypeStructure.Q_Q.value,
+            'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
+            'typeStructure': TypeStructure.Q_Q.value,
             'args': {
-                'field_a': c_field,
-                'field_b': q_field,
+                'fieldA': c_field,
+                'fieldB': q_field,
             },
             'meta': {
                 'desc': 'Plotting raw values of %s against corresponding values of %s' % (c_label, q_label)
@@ -141,12 +141,12 @@ def D(c_field, q_field):
     else:
         for agg_fn in aggregation_functions.keys():
             spec = {
-                'generating_procedure': GeneratingProcedure.VAL_AGG.value,
-                'type_structure': TypeStructure.C_Q.value,
+                'generatingProcedure': GeneratingProcedure.VAL_AGG.value,
+                'typeStructure': TypeStructure.C_Q.value,
                 'args': {
-                    'agg_fn': agg_fn,
-                    'grouped_field': c_field,
-                    'agg_field': q_field,
+                    'aggFn': agg_fn,
+                    'groupedField': c_field,
+                    'aggField': q_field,
                 },
                 'meta': {
                     'desc': 'Plotting raw values of %s against corresponding values of %s, aggregated by %s' % (c_label, q_label, agg_fn)
@@ -165,13 +165,13 @@ def E(c_field, q_fields):
             q_label_a, q_label_b = q_field_a['label'], q_field_b['label']
             for agg_fn in aggregation_functions.keys():
                 spec = {
-                    'generating_procedure': GeneratingProcedure.AGG_AGG.value,
-                    'type_structure': TypeStructure.Q_Q.value,
+                    'generatingProcedure': GeneratingProcedure.AGG_AGG.value,
+                    'typeStructure': TypeStructure.Q_Q.value,
                     'args': {
-                        'agg_fn': agg_fn,
-                        'agg_field_a': q_field_a,
-                        'agg_field_b': q_field_b,
-                        'grouped_field': c_label
+                        'aggFn': agg_fn,
+                        'aggFieldA': q_field_a,
+                        'aggFieldB': q_field_b,
+                        'groupedField': c_label
                     },
                     'meta': {
                         'desc': 'Plotting aggregated values of %s against aggregated values of %s, grouped by %s' % (q_label_a, q_label_b, c_label)
@@ -186,11 +186,11 @@ def F(c_fields):
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
         c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
         spec = {
-            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
-            'type_structure': TypeStructure.Q_Q.value,
+            'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
+            'typeStructure': TypeStructure.Q_Q.value,
             'args': {
-                'field_a': c_field_a,
-                'field_b': c_field_b
+                'fieldA': c_field_a,
+                'fieldB': c_field_b
             },
             'meta': {
                 'desc': 'Plotting values of %s against corresponding values of %s' % (c_label_a, c_label_b)
@@ -207,12 +207,12 @@ def G(c_fields, q_field):
         c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
         q_label = q_field['label']
         spec = {
-            'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
-            'type_structure': TypeStructure.liC_Q.value,
+            'generatingProcedure': GeneratingProcedure.VAL_VAL_Q.value,
+            'typeStructure': TypeStructure.liC_Q.value,
             'args': {
-                'field_a': c_field_a,
-                'field_b': c_field_b,
-                'data_field_a': q_label
+                'fieldA': c_field_a,
+                'fieldB': c_field_b,
+                'dataFieldA': q_label
             },
             'meta': {
                 'desc': 'Plotting values of %s against corresponding values of %s with attached data field %s' % (c_label_a, c_label_b, q_label)
@@ -229,12 +229,12 @@ def H(c_fields, q_fields):
         c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
         q_labels = [ f['label'] for f in q_fields ]
         spec = {
-            'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
-            'type_structure': TypeStructure.liC_Q.value,
+            'generatingProcedure': GeneratingProcedure.VAL_VAL_Q.value,
+            'typeStructure': TypeStructure.liC_Q.value,
             'args': {
-                'field_a': c_field_a,
-                'field_b': c_field_b,
-                'data_fields': q_labels
+                'fieldA': c_field_a,
+                'fieldB': c_field_b,
+                'dataFields': q_labels
             },
             'meta': {
                 'desc': 'Plotting values of %s against corresponding values of %s with attached data fields %s' % (c_label_a, c_label_b, q_labels)
