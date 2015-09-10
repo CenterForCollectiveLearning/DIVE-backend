@@ -7,11 +7,10 @@ from viz_data import get_viz_data_from_enumerated_spec
 from viz_type_mapping import get_viz_types_from_spec
 from scoring import score_spec
 
-
 from pprint import pprint
 from time import time
 import math
-
+import uuid
 
 # Wrapper function
 def get_viz_specs(pID, dID=None):
@@ -320,7 +319,12 @@ def format_viz_specs(scored_viz_specs):
                         'fieldType': field_key
                     })
             s['args'] = new_args
+
+            # TODO: replace by db document ID
+            s['id'] = str(uuid.uuid1())
+
             formatted_viz_specs.append(s)
+
         formatted_viz_specs_by_dID[dID] = {
             "specs": formatted_viz_specs
         }
