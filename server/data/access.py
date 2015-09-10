@@ -110,6 +110,10 @@ def upload_file(pID, file):
         for sheet_name in sheet_names:
             sheet = book.sheet_by_name(sheet_name)
 
+            # Don't save empty sheets
+            if sheet.nrows == 0:
+                continue
+
             csv_file_name = file_name + "_" + sheet_name + ".csv"
             csv_path = os.path.join(config['UPLOAD_FOLDER'], pID, csv_file_name)
 
