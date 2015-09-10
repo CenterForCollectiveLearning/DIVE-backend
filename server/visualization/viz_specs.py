@@ -1,4 +1,3 @@
-from data.access import is_numeric
 from data.db import MongoInstance as MI
 from marginal_spec_functions import A, B, C, D, E, F, G, H
 from viz_stats import *

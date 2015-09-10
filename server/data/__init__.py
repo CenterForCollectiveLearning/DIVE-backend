@@ -15,6 +15,9 @@ class DataType(Enum):
     COUNTRY_NAME = 'countryName'
     CONTINENT_NAME = 'continentName'
 
+class PseudoType(Enum):
+    LIST = 'list'
+
 class FileType(Enum):
     CSV = 'csv'
     TSV = 'tsv'

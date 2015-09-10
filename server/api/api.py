@@ -21,7 +21,7 @@ from bson.objectid import ObjectId
 
 from data import DataType
 from data.db import MongoInstance as MI
-from data.access import upload_file, get_dataset_data, get_dataset_structure, get_column_types, get_delimiter, is_numeric
+from data.access import upload_file, get_dataset_data, get_dataset_structure
 from analysis.analysis import compute_ontologies, get_ontologies
 from properties import get_properties, get_entities, get_attributes, compute_properties
 
