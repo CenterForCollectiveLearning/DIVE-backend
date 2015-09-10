@@ -160,7 +160,6 @@ def upload_file(pID, file):
         csv_file.close()
 
         dID = MI.insertDataset(pID, path2, filename2)
-        # column_attrs, header, sample, rows, cols, extension = get_uploaded_file_data(path2)
 
         result = get_dataset_structure(path2)
         result.update({
