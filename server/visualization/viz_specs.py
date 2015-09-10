@@ -299,7 +299,7 @@ def format_viz_specs(scored_viz_specs):
     for dID, specs in scored_viz_specs.iteritems():
         formatted_viz_specs = []
         for s in specs:
-            new_args = {
+            properties = {
                 'categorical': [],  # TODO Propagate this
                 'quantitative': []
             }
@@ -313,12 +313,14 @@ def format_viz_specs(scored_viz_specs):
                     if field_general_type is 'q': general_type_key = 'quantitative'
                     else: general_type_key = 'categorical'
 
-                    new_args[general_type_key].append({
+                    properties[general_type_key].append({
                         'label': field['label'],
                         'id': field['id'],
                         'fieldType': field_key
                     })
-            s['args'] = new_args
+
+            s['properties'] = properties
+            del s['args']
 
             # TODO: replace by db document ID
             s['id'] = str(uuid.uuid1())
