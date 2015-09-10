@@ -13,6 +13,8 @@ import dateutil.parser as dparser
 from flask import json
 import csv
 
+from . import DataType
+
 from config import config
 from werkzeug.utils import secure_filename
 from db import MongoInstance as MI
@@ -186,19 +188,6 @@ def get_data(pID=None, dID=None, path=None, nrows=None):
     return df
 
 
-# Given a path, reads file and returns headers and a df
-# def read_file(path, nrows=None):
-#     extension = path.rsplit('.', 1)[1]
-
-#     if extension in ['csv', 'tsv', 'txt']:
-#         delim = get_delimiter(path)
-#         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
-#         return df.columns.values, df
-
-#     f.close()
-#     return sample, rows, cols, extension, header
-
-
 INT_REGEX = "^-?[0-9]+$"
 # FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?"
 #"(\d+(?:[.,]\d*)?)"
@@ -218,22 +207,22 @@ def get_variable_type(v):
 
     # Numeric
     if re.match(INT_REGEX, v):
-        return "integer"
+        return DataType.INTEGER.value
     elif re.match(FLOAT_REGEX, v):
-        return "float"
+        return DataType.FLOAT.value
 
     # Factors
     else:
-        if (v in COUNTRY_CODES_2): return 'countryCode2'
-        elif (v in COUNTRY_CODES_3): return 'countryCode3'
-        elif (v in COUNTRY_NAMES): return 'countryName'
-        elif v in CONTINENT_NAMES: return 'continent'
+        if (v in COUNTRY_CODES_2): return DataType.COUNTRY_CODE_2.value
+        elif (v in COUNTRY_CODES_3): return DataType.COUNTRY_CODE_3.value
+        elif (v in COUNTRY_NAMES): return DataType.COUNTRY_NAME.value
+        elif v in CONTINENT_NAMES: return DataType.CONTINENT_NAME.value
         else:
-            r = "string"
+            r = DataType.STRING.value
 
         try:
             if dparser.parse(v):
-                return "datetime"
+                return DataType.DATETIME.value
         except:
             pass
     return r
@@ -254,30 +243,57 @@ def get_delimiter(path):
 
 
 def is_numeric(x):
-    if x in ['integer', 'float', 'datetime']: return True
+    if x in [ DateType.INTEGER.value, DataType.FLOAT.value, DataType.DATETIME.value ]: return True
     else: return False
 
 
-# If all empty, return empty string
-def get_first_nonempty_values(df):
+
+def get_first_n_nonempty_values(df, n=100):
+    '''
+    Given a dataframe, return first n non-empty and non-null values for each
+    column.
+    '''
     result = []
-    for col in df.columns:
-        appended_value = ''
-        for v in df[col]:
-            if (v != '' and not pd.isnull(v)):
-                appended_value = v
-                break
-            else:
-                continue
-        result.append(appended_value)
+    n = min(df.size, n)
+    for col_label in df.columns:
+        col = df[col_label]
+
+        i = 0
+        max_n = len(col)
+        first_n = []
+        while ((len(first_n) < n) and (i != len(col) - 1)):
+            ele = col[i]
+            if (ele != '' and not pd.isnull(ele)):
+                first_n.append(ele)
+            i = i + 1
+
+        result.append(first_n)
     return result
 
 
-# Get column types given a data frame (super naive)
 def get_column_types(df):
-    sample_line = get_first_nonempty_values(df)  #[x for x in df.iloc[0]]
-    types = [get_variable_type(v) for v in sample_line]
-    return types
+    '''
+    For each column, returns most frequent column type of first 100 non-empty
+    instances.
+
+    Args: dataframe
+    Returns: list of types
+    '''
+    print "Getting column types"
+    nonempty_col_samples = get_first_n_nonempty_values(df, n=100)
+
+    col_types = []
+    for col_samples in nonempty_col_samples:
+        if col_samples:
+            types = [ get_variable_type(ele) for ele in col_samples]
+            most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
+            col_types.append(most_common)
+        else:
+            col_types.append(DataType.STRING.value)
+
+    print "types:", col_types
+    return col_types
+
 
 
 # TODO: Get total range, separation of each data point
