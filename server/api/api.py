@@ -392,6 +392,7 @@ class Visualization(Resource):
     def post(self):
         args = request.json
         # TODO Implement required parameters
+        specID = args.get('specID')
         pID = args.get('pID')
         spec = args.get('spec')
         conditional = args.get('conditional')
@@ -606,7 +607,7 @@ api.add_resource(Categorical,                   '/api/properties/v1/categorical'
 api.add_resource(Quantitative,                  '/api/properties/v1/quantitative')
 
 api.add_resource(Specs,                         '/api/specs/v1/specs')
-api.add_resource(Visualization,                 '/api/specs/v1/visualizations/<string:specID>')
+api.add_resource(Visualization,                 '/api/specs/v1/visualizations')
 api.add_resource(Generating_Procedures,         '/api/specs/v1/generating_procedures')
 
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
