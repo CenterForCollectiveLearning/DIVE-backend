@@ -44,7 +44,7 @@ from scipy.stats import pearsonr, linregress
 # Two quantitative variables
 bivariate_tests = {
     'correlation': pearsonr,
-    'linear_regression': linregress
+    'linearRegression': linregress
 }
 
 # Statistical
@@ -54,7 +54,7 @@ def get_statistical_properties(data, gp, ts):
     if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.Q_Q.value]:
         v = None
         if gp == GeneratingProcedure.VAL_AGG.value:
-            v = data.get('agg_field')
+            v = data.get('aggField')
         if gp == GeneratingProcedure.IND_VAL.value:
             v = data.get('val')
         if gp == GeneratingProcedure.BIN_AGG.value:
@@ -70,11 +70,11 @@ def get_statistical_properties(data, gp, ts):
     if ts in [TypeStructure.Q_Q]:
         v = None
         if gp == GeneratingProcedure.AGG_AGG.value:
-            v1 = data.get('field_a')
-            v2 = data.get('field_b')
+            v1 = data.get('fieldA')
+            v2 = data.get('fieldB')
         if gp == GeneratingProcedure.VAL_VAL.value:
-            v1 = data.get('field_a')
-            v2 = data.get('field_b')
+            v1 = data.get('fieldA')
+            v2 = data.get('fieldB')
         if v:
             for test_name, test_fn in bivariate_tests.iteritems():
                 stats[test_name] = test_fn(v1, v2)
@@ -86,8 +86,8 @@ def score_spec(spec):
         'stats': {}
     }
     data = spec['data']
-    gp = spec['generating_procedure']
-    ts = spec['type_structure']
+    gp = spec['generatingProcedure']
+    ts = spec['typeStructure']
 
     score_doc['stats'] = get_statistical_properties(data, gp, ts)
 
