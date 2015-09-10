@@ -321,5 +321,7 @@ def format_viz_specs(scored_viz_specs):
                     })
             s['args'] = new_args
             formatted_viz_specs.append(s)
-        formatted_viz_specs_by_dID[dID] = formatted_viz_specs
+        formatted_viz_specs_by_dID[dID] = {
+            "specs": formatted_viz_specs
+        }
     return formatted_viz_specs_by_dID
