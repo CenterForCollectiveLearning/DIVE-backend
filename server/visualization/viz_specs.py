@@ -248,7 +248,7 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
             viz_types = get_viz_types_from_spec(spec)
             for viz_type in viz_types:
                 spec_with_viz_type = spec
-                spec_with_viz_type['viz_type'] = viz_type
+                spec_with_viz_type['vizType'] = viz_type
                 all_specs_with_types.append(spec_with_viz_type)
 
         specs_by_dID[dID] = all_specs_with_types
