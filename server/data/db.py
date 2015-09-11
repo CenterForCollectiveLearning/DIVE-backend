@@ -31,7 +31,6 @@ def formatObjectIDs(collectionName, results, fullname = False):
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
     def getProjectID(self, formatted_title, userName):
-        print "TITLE: ", formatted_title
         find_doc = {
             "formattedTitle" : formatted_title,
             "user" : userName
@@ -63,7 +62,7 @@ class mongoInstance(object):
 
     # Dataset Deletion
     def deleteData(self, dID, pID):
-        MongoInstance.client[pID].properties.remove({'dID': dID})
+        MongoInstance.client[pID].fieldProperties.remove({'dID': dID})
         resp = MongoInstance.client[pID].datasets.remove({'_id': ObjectId(dID)})
         if resp['n'] and resp['ok']:
             return dID
@@ -126,16 +125,16 @@ class mongoInstance(object):
         MongoInstance.client['dive'].projects.remove({'_id': ObjectId(pID)})
         return
 
-    def upsertProperty(self, dID, pID, properties):
-        info = MongoInstance.client[pID].properties.find_and_modify({'dID': dID}, {'$set': properties}, upsert=True, new=True)
+    def upsertFieldProperty(self, dID, pID, properties):
+        info = MongoInstance.client[pID].fieldProperties.find_and_modify({'dID': dID}, {'$set': properties}, upsert=True, new=True)
         tID = str(info['_id'])
         return tID
 
-    def getProperty(self, find_doc, pID):
-        return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].properties.find(find_doc) ], True)
+    def getFieldProperty(self, find_doc, pID):
+        return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].fieldProperties.find(find_doc) ], True)
 
-    def setProperty(self, pID, _property):
-        return MongoInstance.client[pID].properties.insert(_property)
+    def setFieldProperty(self, pID, _property):
+        return MongoInstance.client[pID].fieldProperties.insert(_property)
 
     def getDatasetProperty(self, find_doc, pID):
         return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].datasetProperties.find(find_doc) ], True)
@@ -193,7 +192,7 @@ class mongoInstance(object):
             db.create_collection('datasets')
             db.create_collection('visualizations')
             db.create_collection('datasetProperties')
-            db.create_collection('properties')
+            db.create_collection('fieldProperties')
             db.create_collection('ontologies')
             db.create_collection('exported')
             print "Creating new project"

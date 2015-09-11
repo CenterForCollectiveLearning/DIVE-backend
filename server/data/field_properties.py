@@ -1,5 +1,5 @@
 '''
-Dataset column properties (should be in /data, not /api)
+Dataset field properties
 '''
 
 import json
@@ -7,20 +7,21 @@ import numpy as np
 
 from time import time
 
-from data.db import MongoInstance as MI
-from data.access import get_data
-from data.type_detection import get_column_types
+from db import MongoInstance as MI
+from access import get_data
+from type_detection import get_column_types
 from analysis.analysis import get_unique, get_bin_edges
 from scipy import stats as sc_stats
 
+
 # Retrieve proeprties given dataset_docs
 # TODO Accept list of dIDs
-def get_properties(pID, datasets, get_values = False) :
+def get_field_properties(pID, datasets, get_values = False) :
     aggregatedProperties = []
     _property_labels = []
 
     _find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
-    _all_properties = MI.getProperty(_find_doc, pID)
+    _all_properties = MI.getFieldProperty(_find_doc, pID)
 
     if len(_all_properties):
         _properties_by_dID = {}
@@ -36,7 +37,7 @@ def get_properties(pID, datasets, get_values = False) :
 
     # If not in DB, compute
     else:
-        _properties_by_dID = compute_properties(pID, datasets)
+        _properties_by_dID = compute_field_properties(pID, datasets)
 
     for _dID, _properties_data in _properties_by_dID.iteritems():
         for _property in _properties_data:
@@ -62,7 +63,7 @@ def get_properties(pID, datasets, get_values = False) :
 
 # Retrieve entities given datasets
 def get_entities(pID, datasets):
-    _properties = get_properties(pID, datasets, get_values = True)
+    _properties = get_field_properties(pID, datasets, get_values = True)
     _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
 
     parent_entities = filter(lambda x: not x['is_child'], _all_entities)
@@ -83,7 +84,7 @@ def populate_child_entities(entity_name, child_entities, all_entities):
 # Retrieve entities given datasets
 def get_attributes(pID, datasets):
     attributes = []
-    _properties = get_properties(pID, datasets)
+    _properties = get_field_properties(pID, datasets)
     attributes = filter(lambda x: x['type'] in ['float', 'integer'], _properties)
 
     return attributes
@@ -93,7 +94,7 @@ def get_attributes(pID, datasets):
 # Currently only getting properties by column
 # Arguments: pID + dataset documents
 # Returns a mapping from dIDs to properties
-def compute_properties(pID, dataset_docs):
+def compute_field_properties(pID, dataset_docs):
     properties_by_dID = {}
 
     for dataset in dataset_docs:
@@ -211,10 +212,10 @@ def compute_properties(pID, dataset_docs):
         # Save properties into collection
         for _property in properties:
             _property['dID'] = dID
-            if MI.getProperty({'dID': dID, 'label': _property['label']}, pID):
-                tID = MI.upsertProperty(dID, pID, _property)
+            if MI.getFieldProperty({'dID': dID, 'label': _property['label']}, pID):
+                tID = MI.upsertFieldProperty(dID, pID, _property)
             else:
-                tID = MI.setProperty(pID, _property)
+                tID = MI.setFieldProperty(pID, _property)
 
         properties_by_dID[dID] = properties
     return properties_by_dID

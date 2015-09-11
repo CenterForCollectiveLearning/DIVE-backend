@@ -1,9 +1,13 @@
-from api.api import app
-from gevent.wsgi import WSGIServer
+import os
+import sys
+import logging
+from logging import StreamHandler
 import werkzeug.serving
 from flask import request
-import os
 from config import config
+from gevent.wsgi import WSGIServer
+
+from api.api import app
 
 TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
 app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
@@ -77,5 +81,9 @@ PORT = 8081
 # http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
 if __name__ == '__main__':
     ensure_directories()
+
+    handler = StreamHandler(stream=sys.stdout)
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
     app.debug = True
     app.run(port=PORT)
