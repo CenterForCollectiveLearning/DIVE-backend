@@ -40,3 +40,70 @@ def get_delimiter(path):
     elif extension == 'txt':
         delim = ','
     return delim
+
+
+def get_conditioned_data(df, conditional_arg):
+    '''
+    Given a data frame and a conditional dict ({ and: [{field, operation,
+    criteria}], or: [...]}).
+
+    Return the conditioned data frame in same dimensions as original.
+
+    TODO Turn this into an argument of the get_data function
+    '''
+    # Replace spaces in column names with underscore
+    # cols = df.columns
+    # cols = cols.map(lambda x: x.replace(' ', '_') if isinstance(x, (str, unicode)) else x)
+    # df.columns = cols
+    # print "DF", df.columns
+    query_strings = {
+        'and': '',
+        'or': ''
+    }
+    orig_cols = df.columns.tolist()
+    df.rename(columns=makeSafeString, inplace=True)
+    if conditional_arg.get('and'):
+        for c in conditional_arg['and']:
+            field = makeSafeString(c['field'])
+            operation = c['operation']
+            criteria = c['criteria']
+            criteria_type = get_variable_type(criteria)
+
+            print criteria_type
+            if criteria_type in ["integer", "float"]:
+                query_string = '%s %s %s' % (field, operation, criteria)
+            else:
+                query_string = '%s %s "%s"' % (field, operation, criteria)
+            query_strings['and'] = query_strings['and'] + ' & ' + query_string
+
+    if conditional_arg.get('or'):
+        for c in conditional_arg['or']:
+            field = makeSafeString(c['field'])
+            operation = c['operation']
+            criteria = c['criteria']
+            criteria_type = get_variable_type(c['criteria'])
+
+            if criteria_type in ["integer", "float"]:
+                query_string = '%s %s %s' % (field, operation, criteria)
+            else:
+                query_string = '%s %s "%s"' % (field, operation, criteria)
+            query_strings['or'] = query_strings['or'] + ' | ' + query_string
+    query_strings['and'] = query_strings['and'].strip(' & ')
+    query_strings['or'] = query_strings['or'].strip(' | ')
+
+    # Concatenate
+    if not (query_strings['and'] or query_strings['or']):
+        conditioned_df = df
+    else:
+        final_query_string = ''
+        if query_strings['and'] and query_strings['or']:
+            final_query_string = '%s | %s' % (query_strings['and'], query_strings['or'])
+        elif query_strings['and'] and not query_strings['or']:
+            final_query_string = query_strings['and']
+        elif query_strings['or'] and not query_strings['and']:
+            final_query_string = query_strings['or']
+        print "FINAL_QUERY_STRING:", final_query_string
+        conditioned_df = df.query(final_query_string)
+    df.columns = orig_cols
+    conditioned_df.columns = orig_cols
+    return conditioned_df

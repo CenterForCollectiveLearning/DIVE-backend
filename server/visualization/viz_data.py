@@ -7,7 +7,7 @@ from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
 from . import GeneratingProcedure, TypeStructure
-from data.access import get_delimiter, get_data
+from data.access import get_delimiter, get_data, get_conditioned_data
 from data.type_detection import detect_time_series, get_variable_type
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
@@ -38,82 +38,22 @@ def makeSafeString(s):
     s = 'temp_' + s
     return s
 
-# Given a data frame and a conditional dict ({ and: [{field, operation, criteria}], or: [...]})
-# Return the conditioned data frame in same dimensions as original
-def getConditionedDF(df, conditional_arg):
-    # Replace spaces in column names with underscore
-    # cols = df.columns
-    # cols = cols.map(lambda x: x.replace(' ', '_') if isinstance(x, (str, unicode)) else x)
-    # df.columns = cols
-    # print "DF", df.columns
-    query_strings = {
-        'and': '',
-        'or': ''
-    }
-    orig_cols = df.columns.tolist()
-    df.rename(columns=makeSafeString, inplace=True)
-    if conditional_arg.get('and'):
-        for c in conditional_arg['and']:
-            field = makeSafeString(c['field'])
-            operation = c['operation']
-            criteria = c['criteria']
-            criteria_type = get_variable_type(criteria)
-
-            print criteria_type
-            if criteria_type in ["integer", "float"]:
-                query_string = '%s %s %s' % (field, operation, criteria)
-            else:
-                query_string = '%s %s "%s"' % (field, operation, criteria)
-            query_strings['and'] = query_strings['and'] + ' & ' + query_string
-
-    if conditional_arg.get('or'):
-        for c in conditional_arg['or']:
-            field = makeSafeString(c['field'])
-            operation = c['operation']
-            criteria = c['criteria']
-            criteria_type = get_variable_type(c['criteria'])
-
-            if criteria_type in ["integer", "float"]:
-                query_string = '%s %s %s' % (field, operation, criteria)
-            else:
-                query_string = '%s %s "%s"' % (field, operation, criteria)
-            query_strings['or'] = query_strings['or'] + ' | ' + query_string
-    query_strings['and'] = query_strings['and'].strip(' & ')
-    query_strings['or'] = query_strings['or'].strip(' | ')
-
-    # Concatenate
-    if not (query_strings['and'] or query_strings['or']):
-        conditioned_df = df
-    else:
-        final_query_string = ''
-        if query_strings['and'] and query_strings['or']:
-            final_query_string = '%s | %s' % (query_strings['and'], query_strings['or'])
-        elif query_strings['and'] and not query_strings['or']:
-            final_query_string = query_strings['and']
-        elif query_strings['or'] and not query_strings['and']:
-            final_query_string = query_strings['or']
-        print "FINAL_QUERY_STRING:", final_query_string
-        conditioned_df = df.query(final_query_string)
-    df.columns = orig_cols
-    conditioned_df.columns = orig_cols
-    return conditioned_df
-
 
 def _get_derived_field(df, label_descriptor):
     label_a, op, label_b = label.split(' ')
     return result
 
 
-def get_viz_data_from_enumerated_spec(spec, dID, pID):
+def get_viz_data_from_enumerated_spec(spec, dID, pID, format='matrix'):
     '''
-    Returns a dictionary containing data corresponding to spec, and all
-    necessary information to interpret data.
+    Returns a dictionary containing data corresponding to spec (in automated-viz
+    structure), and all necessary information to interpret data.
 
     Data is structured as dict of lists for scoring, as opposed to list of dicts
     for visualizing.
 
     Args:
-    spec, dID, pID
+    spec, dID, pID, format
     Returns:
         data specified by spec
     Raises:
@@ -216,6 +156,7 @@ def dict_to_collection(d):
         result.append({k: v})
     return result
 
+
 def lists_to_collection(li_a, li_b):
     if len(li_a) != len(li_b):
         raise ValueError("Lists not equal size", len(li_a), len(li_b))
@@ -227,10 +168,13 @@ def lists_to_collection(li_a, li_b):
         return result
 
 
-# BUILDER VERSION
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
 # spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
-def getVisualizationDataFromSpec(spec, conditional, pID):
+def get_viz_data_from_builder_spec(spec, conditional, pID):
+    '''
+    Deprecated function used to return viz data for a spec constructed by
+    old builder
+    '''
     ### 0) Parse and validate arguments
     # TODO Ensure well-formed spec
     dID = spec.get('dID')
@@ -249,7 +193,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     df = get_data(pID=pID, dID=dID)
 
     ### 2) Apply all conditionals
-    conditioned_df = getConditionedDF(df, conditional)
+    conditioned_df = get_conditioned_data(df, conditional)
 
     ### 3) Query based on operation
     # a) Group
