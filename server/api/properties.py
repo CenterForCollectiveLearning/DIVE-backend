@@ -1,3 +1,7 @@
+'''
+Dataset column properties (should be in /data, not /api)
+'''
+
 import json
 import numpy as np
 

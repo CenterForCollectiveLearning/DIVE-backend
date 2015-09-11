@@ -25,11 +25,12 @@ from bson.objectid import ObjectId
 from in_memory_data import InMemoryData as IMD
 
 
-# Return dataset
-def get_dataset_structure(path):
-    df = get_data(path=path)
+def compute_dataset_properties(dID, pID, path=None):
+    ''' Compute and return dictionary containing whole-dataset properties '''
+    if not path:
+        path = MI.getData({'_id': ObjectId(dID)}, pID)[0]['path']
+    df = get_data(path=path).fillna('')  # TODO turn fillna into an argument
     header = df.columns.values
-    df = df.fillna('')
     n_rows, n_cols = df.shape
     types = get_column_types(df)
     time_series = detect_time_series(df)
@@ -42,7 +43,8 @@ def get_dataset_structure(path):
 
     column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, n_cols)]
 
-    result = {
+    properties = {
+        'dID': dID,
         'column_attrs': column_attrs,
         'header': list(header),
         'rows': n_rows,
@@ -52,24 +54,42 @@ def get_dataset_structure(path):
         'time_series': time_series
     }
 
-    return result
+    MI.setDatasetProperty(properties, pID)
+    del properties['_id']
 
-def get_dataset_data(path, start=0, inc=1000):
+    return properties
+
+
+def get_dataset_properties(dID, pID, path=None):
+    ''' Get whole-dataset properties (recompute if doesnt exist) '''
+    stored_properties = MI.getDatasetProperty({'dID': dID}, pID)
+    if stored_properties:
+        return stored_properties[0]
+    else:
+        return compute_dataset_properties(dID, pID, path=path)
+
+
+def get_dataset_sample(dID, pID, start=0, inc=1000):
     end = start + inc  # Upper bound excluded
-    df = get_data(path=path)
+    df = get_data(dID=dID, pID=pID)
     df = df.fillna('')
     sample = map(list, df.iloc[start:end].values)
 
-    result = get_dataset_structure(path)
+    result = get_dataset_properties(dID, pID)
     result['sample'] = sample
     return result
 
 
-# Dataflow:
-# 1. Save file in uploads/pID directory
-# 2. Save file location in project data collection
-# 3. Return sample
 def upload_file(pID, file):
+    '''
+    Dataflow:
+    1. Save file in uploads/pID directory
+    2. Compute properties
+    3. If all steps are successful, save file location in project data collection
+    4. Return sample
+
+    TODO: Separate these different functions?
+    '''
     full_file_name = secure_filename(file.filename)
     file_name, file_type = full_file_name.rsplit('.', 1)
     path = os.path.join(config['UPLOAD_FOLDER'], pID, full_file_name)
@@ -80,7 +100,8 @@ def upload_file(pID, file):
         file.save(path)
 
         dID = MI.insertDataset(pID, path, full_file_name)
-        data_doc = get_dataset_structure(path)
+        data_doc = compute_dataset_properties(dID, pID, path=path)
+
         data_doc.update({
             'title' : file_name,
             'filename' : full_file_name,
@@ -112,7 +133,7 @@ def upload_file(pID, file):
             csv_file.close()
 
             dID = MI.insertDataset(pID, csv_path, csv_file_name)
-            data_doc = get_dataset_structure(csv_path)
+            data_doc = compute_dataset_properties(dID, pID, path=csv_path)
             data_doc.update({
                 'title' : csv_file_name.rsplit('.', 1)[0],
                 'filename' : csv_file_name,
@@ -122,18 +143,15 @@ def upload_file(pID, file):
             datasets.append(data_doc)
 
     elif file_type == 'json' :
-
-        print "Saving file: ", filename
         file.save(path)
-        print "Saved file: ", filename
 
         f = open(path, 'rU')
         json_data = json.load(f)
 
-        path2 = path + ".csv"
-        filename2 = filename + ".csv"
+        csv_path = path + ".csv"
+        csv_file_name = file_name + ".csv"
 
-        csv_file = open(path2, 'wb')
+        csv_file = open(csv_path, 'wb')
         wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
 
         header = json_data[0].keys()
@@ -147,25 +165,26 @@ def upload_file(pID, file):
             wr.writerow([unicode(v).encode('utf-8') for v in row])
         csv_file.close()
 
-        dID = MI.insertDataset(pID, path2, filename2)
+        dID = MI.insertDataset(pID, csv_path, csv_file_name)
 
-        result = get_dataset_structure(path2)
+        result = compute_dataset_properties(dID, pID, path=json_path)
         result.update({
-            'title' : filename2.rsplit('.', 1)[0],
-            'filename' : filename2,
+            'title' : csv_file_name.rsplit('.', 1)[0],
+            'filename' : csv_file_name,
             'dID' : dID,
         })
         datasets.append(result)
     return datasets
 
-
+# TODO Change to get_data_as_dataframe
+# Or more generally return data in different formats
 def get_data(pID=None, dID=None, path=None, nrows=None):
     if IMD.hasData(dID):
         return IMD.getData(dID)
     if path:
         delim = get_delimiter(path)
         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
-    if dID:
+    if dID and pID:
         dataset = MI.getData({'_id' : ObjectId(dID)}, pID)[0]
         path = dataset['path']
         delim = get_delimiter(path)

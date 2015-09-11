@@ -137,6 +137,12 @@ class mongoInstance(object):
     def setProperty(self, pID, _property):
         return MongoInstance.client[pID].properties.insert(_property)
 
+    def getDatasetProperty(self, find_doc, pID):
+        return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].datasetProperties.find(find_doc) ], True)
+
+    def setDatasetProperty(self, _property, pID):
+        return MongoInstance.client[pID].datasetProperties.insert(_property)
+
     def getOntology(self, find_doc, pID):
         return formatObjectIDs('ontology', [ o for o in MongoInstance.client[pID].ontologies.find(find_doc) ])
 
@@ -186,6 +192,7 @@ class mongoInstance(object):
             db = MongoInstance.client[pID]
             db.create_collection('datasets')
             db.create_collection('visualizations')
+            db.create_collection('datasetProperties')
             db.create_collection('properties')
             db.create_collection('ontologies')
             db.create_collection('exported')

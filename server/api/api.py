@@ -21,7 +21,7 @@ from bson.objectid import ObjectId
 
 from data import DataType
 from data.db import MongoInstance as MI
-from data.access import upload_file, get_dataset_data, get_dataset_structure
+from data.access import upload_file, get_dataset_sample, get_dataset_properties
 from analysis.analysis import compute_ontologies, get_ontologies
 from properties import get_properties, get_entities, get_attributes, compute_properties
 
@@ -66,26 +66,25 @@ uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('pID', type=str, required=True)
 class UploadFile(Resource):
     def post(self):
+        ''' Saves file and returns dataset properties '''
         form_data = json.loads(request.form.get('data'))
         pID = form_data.get('pID').strip().strip('""')
         file = request.files.get('file')
 
         if file and allowed_file(file.filename):
             # Get document with metadata and some samples
-            datasets = upload_file(pID, file)
-            json_data = {
+            dataset_properties = upload_file(pID, file)
+            result = {
                 'status': 'success',
-                'datasets': datasets
+                'datasets': dataset_properties
             }
 
-            data = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, datasets)}, pID)
-            properties_by_dID = compute_properties(pID, data)
-            print "Done initializing properties"
+            dataset_doc = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, dataset_properties)}, pID)
 
             # compute_ontologies(pID, data)
             # print "Done initializing ontologies"
 
-            return make_response(jsonify(format_json(json_data)))
+            return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 
 
@@ -167,11 +166,11 @@ class Datasets(Resource):
     def get(self):
         args = datasetsGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
-        print "[GET] Data", pID
+        print "[GET] Data for pID:", pID
 
         print "Did not request specific dID. Returning all datasets"
         datasets = MI.getData({}, pID)
-        print datasets
+
         data_list = []
         for d in datasets:
             dataset_data = {
@@ -181,7 +180,7 @@ class Datasets(Resource):
             }
 
             if args['getStructure']:
-                dataset_data['details'] = get_dataset_structure(d['path'])
+                dataset_data['details'] = get_dataset_properties(d['path'])
 
             data_list.append(dataset_data)
 
@@ -208,7 +207,7 @@ class Dataset(Resource):
         response = {
             'dID': dataset['dID'],
             'title': dataset['title'],
-            'details': get_dataset_data(dataset['path'])
+            'details': get_dataset_sample(dataset['dID'], pID)
         }
 
         return make_response(jsonify(format_json(response)))
