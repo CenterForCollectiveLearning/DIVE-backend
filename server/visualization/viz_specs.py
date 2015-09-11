@@ -326,7 +326,6 @@ def format_viz_specs(scored_viz_specs):
                     })
 
             s['properties'] = properties
-            del s['args']
 
             # TODO: replace by db document ID
             s['id'] = str(uuid.uuid1())
