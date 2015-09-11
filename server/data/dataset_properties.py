@@ -1,6 +1,14 @@
 '''
 Get and compute whole-dataset properties
 '''
+import pandas as pd
+
+from access import get_data
+from db import MongoInstance as MI
+
+from bson.objectid import ObjectId
+from in_memory_data import InMemoryData as IMD
+
 
 def get_dataset_properties(dID, pID, path=None):
     ''' Get whole-dataset properties (recompute if doesnt exist) '''
@@ -12,7 +20,8 @@ def get_dataset_properties(dID, pID, path=None):
 
 
 def compute_dataset_properties(dID, pID, path=None):
-    ''' Compute and return dictionary containing whole-dataset properties '''
+    ''' Compute and return dictionary containing whole
+    import pandas as pd-dataset properties '''
     if not path:
         path = MI.getData({'_id': ObjectId(dID)}, pID)[0]['path']
     df = get_data(path=path).fillna('')  # TODO turn fillna into an argument

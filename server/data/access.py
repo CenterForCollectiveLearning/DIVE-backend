@@ -14,6 +14,7 @@ from flask import json
 import csv
 
 from . import DataType
+from dataset_properties import get_dataset_properties, compute_dataset_properties
 from type_detection import get_column_types, detect_time_series
 
 from config import config
