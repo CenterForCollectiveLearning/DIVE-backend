@@ -7,7 +7,7 @@ from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
 from . import GeneratingProcedure, TypeStructure
-from data.access import get_delimiter, get_data
+from data.access import get_delimiter, get_data, get_conditioned_data
 from data.type_detection import detect_time_series, get_variable_type
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
@@ -38,115 +38,74 @@ def makeSafeString(s):
     s = 'temp_' + s
     return s
 
-# Given a data frame and a conditional dict ({ and: [{field, operation, criteria}], or: [...]})
-# Return the conditioned data frame in same dimensions as original
-def getConditionedDF(df, conditional_arg):
-    # Replace spaces in column names with underscore
-    # cols = df.columns
-    # cols = cols.map(lambda x: x.replace(' ', '_') if isinstance(x, (str, unicode)) else x)
-    # df.columns = cols
-    # print "DF", df.columns
-    query_strings = {
-        'and': '',
-        'or': ''
-    }
-    orig_cols = df.columns.tolist()
-    df.rename(columns=makeSafeString, inplace=True)
-    if conditional_arg.get('and'):
-        for c in conditional_arg['and']:
-            field = makeSafeString(c['field'])
-            operation = c['operation']
-            criteria = c['criteria']
-            criteria_type = get_variable_type(criteria)
-
-            print criteria_type
-            if criteria_type in ["integer", "float"]:
-                query_string = '%s %s %s' % (field, operation, criteria)
-            else:
-                query_string = '%s %s "%s"' % (field, operation, criteria)
-            query_strings['and'] = query_strings['and'] + ' & ' + query_string
-
-    if conditional_arg.get('or'):
-        for c in conditional_arg['or']:
-            field = makeSafeString(c['field'])
-            operation = c['operation']
-            criteria = c['criteria']
-            criteria_type = get_variable_type(c['criteria'])
-
-            if criteria_type in ["integer", "float"]:
-                query_string = '%s %s %s' % (field, operation, criteria)
-            else:
-                query_string = '%s %s "%s"' % (field, operation, criteria)
-            query_strings['or'] = query_strings['or'] + ' | ' + query_string
-    query_strings['and'] = query_strings['and'].strip(' & ')
-    query_strings['or'] = query_strings['or'].strip(' | ')
-
-    # Concatenate
-    if not (query_strings['and'] or query_strings['or']):
-        conditioned_df = df
-    else:
-        final_query_string = ''
-        if query_strings['and'] and query_strings['or']:
-            final_query_string = '%s | %s' % (query_strings['and'], query_strings['or'])
-        elif query_strings['and'] and not query_strings['or']:
-            final_query_string = query_strings['and']
-        elif query_strings['or'] and not query_strings['and']:
-            final_query_string = query_strings['or']
-        print "FINAL_QUERY_STRING:", final_query_string
-        conditioned_df = df.query(final_query_string)
-    df.columns = orig_cols
-    conditioned_df.columns = orig_cols
-    return conditioned_df
-
 
 def _get_derived_field(df, label_descriptor):
     label_a, op, label_b = label.split(' ')
     return result
 
 
-def get_viz_data_from_enumerated_spec(spec, dID, pID):
+def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
     '''
-    Returns a dictionary containing data corresponding to spec, and all
-    necessary information to interpret data.
+    Returns a dictionary containing data corresponding to spec (in automated-viz
+    structure), and all necessary information to interpret data.
 
-    Data is structured as dict of lists for scoring, as opposed to list of dicts
-    for visualizing.
+    There are three types of formats:
+        Score: a dict of lists for scoring
+        Visualize: a list of dicts (collection)
+        Table: {columns: list, data: matrix}
 
     Args:
-    spec, dID, pID
+    spec, dID, pID, format (list of 'score', 'visualize', or 'table')
     Returns:
-        data specified by spec
+        data specified by spec, in specified format
     Raises:
+
+    TODO Don't do so much in this function
     '''
+    for f in data_formats:
+        if f not in ['score', 'visualize', 'table']:
+            raise ValueError('Passed incorrect data format', f)
+    final_data = dict([(f, {}) for f in data_formats])
 
     gp = spec['generatingProcedure']
     args = spec['args']
     meta = spec['meta']
-    final_viz_data = []
 
-    # Retrieve dataframe
     df = get_data(pID=pID, dID=dID)
 
     if gp == GeneratingProcedure.IND_VAL.value:
-        field_a = args['fieldA']['label']
+        field_a_label = args['fieldA']['label']
 
         # If direct field
-        if isinstance(field_a, basestring):
-            data = df[field_a]
+        if isinstance(field_a_label, basestring):
+            data = df[field_a_label]
         # If derived field
-        elif isinstance(field_a, dict):
-            data = _get_derived_field(df, field_a)
+        # TODO Deal with this later
+        elif isinstance(field_a_label, dict):
+            data = _get_derived_field(df, field_a_label)
         else:
-            # TODO Better warning mechanism
-            print "Ill-formed field_a %s" % (field_a)
+            print "Ill-formed field_a_label %s" % (field_a)
 
-        data = df[field_a]
+        data = df[field_a_label]
 
-        # TODO Return all data in collection format to preserve order
-        final_viz_data = {
-            'ind': [ i for i in range(0, len(data)) ],
-            'val': data.tolist()
-        }
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'ind': [ i for i in range(0, len(data)) ],
+                'val': data.tolist()
+            }
+        if 'visualize' in data_formats:
+            data = []
+            for (i, val) in enumerate(data.tolist()):
+                data.append({
+                    'ind': i,
+                    field_a_label: val
+                })
+            final_data['visualize'] = data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': data.columns.tolist(),
+                'data': data.values.tolist()
+            }
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
         # TODO Get rid of this
@@ -165,48 +124,138 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID):
 
             grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges))
             agg_df = grouped_df.aggregate(agg_fn)
+            agg_values = agg_df[agg_field_a].tolist()
 
-            final_viz_data = {
-                'bins': bin_num_to_edges,
-                'binEdges': bin_edges,
-                'agg': agg_df[agg_field_a].tolist()
-            }
+            if 'score' in data_formats:
+                final_data['score'] = {
+                    'bins': bin_num_to_edges,
+                    'binEdges': bin_edges,
+                    'agg': agg_values
+                }
+            if 'visualize' in data_formats:
+                data = []
+                for (bin_edges, agg_val) in zip(bin_edges, agg_values):
+                    # TODO Generalize the procedure for making this string
+                    data.append({
+                        'bin': '%s-%s'% (bin_edges[0], bin_edges[1]),
+                        agg_field_a: agg_val
+                    })
+                final_data['visualize'] = data
+            if 'table' in data_formats:
+                final_data['table'] = {
+                    'columns': agg_df.columns.tolist(),
+                    'data': agg_df.values.tolist()
+                }
         except:
-            final_viz_data = {
-
+            final_data = {
             }
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
-        grouped_df = df.groupby(args['groupedField']['label'])
+        grouped_field_label = args['groupedField']['label']
+        agg_field_label = args['aggField']['label']
+
+        grouped_df = df.groupby(grouped_field_label)
         agg_df = grouped_df.aggregate(group_fn_from_string[args['aggFn']])
+        grouped_field_list = agg_df.index.tolist()
+        agg_field_list = agg_df[agg_field_label].tolist()
+
         final_viz_data = {
             'groupedField': agg_df.index.tolist(),
-            'aggField': agg_df[args['aggField']['label']].tolist()
+            'aggField': agg_df[agg_field_label].tolist()
         }
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'groupedField': grouped_field_list,
+                'aggField': agg_field_list
+            }
+        if 'visualize' in data_formats:
+            final_data['visualize'] = \
+                [{grouped_field_label: g, agg_field_label: a} for (g, a) in \
+                zip(grouped_field_list, agg_field_list)]
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
+            }
 
     elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_viz_data = {
-            'fieldA': df[args['fieldA']['label']].tolist(),
-            'fieldB': df[args['fieldB']['label']].tolist()
-        }
+        fieldA_label = args['fieldA']['label']
+        fieldB_label = args['fieldB']['label']
+
+        fieldA_list = df[fieldA_label].tolist()
+        fieldB_list = df[fieldB_label].tolist()
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'fieldA': fieldA,
+                'fieldB': fieldB
+            }
+        if 'visualize' in data_formats:
+            data = []
+            for (a, b) in zip(fieldA_list, fieldB_list):
+                data.append({
+                    fieldA_label: a,
+                    fieldB_label: b
+                })
+            final_data['visualize'] = data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': df.columns.tolist(),
+                'data': df.values.tolist()
+            }
 
     elif gp == GeneratingProcedure.VAL_COUNT.value:
-        vc = df[args['fieldA']['label']].value_counts()
-        final_viz_data = {
-            'val': vc.index.tolist(),
-            'count': vc.tolist()
-        }
+        fieldA_label = args['fieldA']['label']
+        vc = df[fieldA_label].value_counts()
+        value_list = vc.index.tolist(),
+        counts = vc.tolist()
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'val': value_list,
+                'count': counts
+            }
+        if 'visualize' in data_formats:
+            final_data['visualize'] = \
+                [{fieldA_label: v, 'count': c} for (v, c) in zip(value_list, counts)]
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': ['val', 'count'],
+                'data': [[v, c] for (v, c) in zip(value_list, counts)]
+            }
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
         grouped_df = df.groupby(args['groupedField']['label'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['aggFn']])
+        agg_field_a_list = agg_df[args['aggFieldA']['label']].tolist()
+        agg_field_b_list = agg_df[args['aggFieldB']['label']].tolist()
         final_viz_data = {
-            'fieldA': agg_df[args['aggFieldB']['label']].tolist(),
-            'fieldB': agg_df[args['aggFieldB']['label']].tolist()
+            'fieldA': agg_field_a_list,
+            'fieldB': agg_field_b_list
         }
 
-    return final_viz_data
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'fieldA': agg_field_a_list,
+                'fieldB': agg_field_b_list,
+            }
+        if 'visualize' in data_formats:
+            data = []
+            for (a, b) in zip(agg_field_a_list, agg_field_b_list):
+                data.append({
+                    args['aggFieldA']['label']: a,
+                    args['aggFieldB']['label']: b
+                })
+            final_data['visualize'] = data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
+            }
+
+    return final_data
 
 
 ### TODO Move these to some utility functions location
@@ -215,6 +264,7 @@ def dict_to_collection(d):
     for k, v in d.iteritems():
         result.append({k: v})
     return result
+
 
 def lists_to_collection(li_a, li_b):
     if len(li_a) != len(li_b):
@@ -227,10 +277,13 @@ def lists_to_collection(li_a, li_b):
         return result
 
 
-# BUILDER VERSION
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
 # spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
-def getVisualizationDataFromSpec(spec, conditional, pID):
+def get_viz_data_from_builder_spec(spec, conditional, pID):
+    '''
+    Deprecated function used to return viz data for a spec constructed by
+    old builder
+    '''
     ### 0) Parse and validate arguments
     # TODO Ensure well-formed spec
     dID = spec.get('dID')
@@ -249,7 +302,7 @@ def getVisualizationDataFromSpec(spec, conditional, pID):
     df = get_data(pID=pID, dID=dID)
 
     ### 2) Apply all conditionals
-    conditioned_df = getConditionedDF(df, conditional)
+    conditioned_df = get_conditioned_data(df, conditional)
 
     ### 3) Query based on operation
     # a) Group

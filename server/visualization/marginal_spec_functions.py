@@ -44,7 +44,7 @@ def A(q_field):
             'fieldA': q_field
         },
         'meta': {
-            'desc': 'Plot %s against its index' % (q_label)
+            'desc': '%s by index' % (q_label)
         }
     }
     specs.append(index_spec)
@@ -58,7 +58,7 @@ def A(q_field):
                 'fieldA': q_field  # TODO How to deal with dervied fields?
             },
             'meta': {
-                'desc': 'Plot values of %s against count of occurrences' % q_label
+                'desc': 'Values of %s against number of occurrences' % q_label
             }
         }
         specs.append(count_spec)
@@ -128,13 +128,13 @@ def D(c_field, q_field):
     if c_field['unique']:
         spec = {
             'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
-            'typeStructure': TypeStructure.Q_Q.value,
+            'typeStructure': TypeStructure.C_Q.value,
             'args': {
                 'fieldA': c_field,
                 'fieldB': q_field,
             },
             'meta': {
-                'desc': 'Plotting raw values of %s against corresponding values of %s' % (c_label, q_label)
+                'desc': 'Values of %s against corresponding values of %s' % (c_label, q_label)
             }
         }
         specs.append(spec)
@@ -149,7 +149,7 @@ def D(c_field, q_field):
                     'aggField': q_field,
                 },
                 'meta': {
-                    'desc': 'Plotting raw values of %s against corresponding values of %s, aggregated by %s' % (c_label, q_label, agg_fn)
+                    'desc': 'Unique values of %s against corresponding values of %s, aggregated by %s' % (c_label, q_label, agg_fn)
                 }
             }
             specs.append(spec)

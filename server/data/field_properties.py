@@ -215,7 +215,7 @@ def compute_field_properties(pID, dataset_docs):
             if MI.getFieldProperty({'dID': dID, 'label': _property['label']}, pID):
                 tID = MI.upsertFieldProperty(dID, pID, _property)
             else:
-                tID = MI.setFieldProperty(pID, _property)
+                tID = MI.setFieldProperty(_property, pID)
 
         properties_by_dID[dID] = properties
     return properties_by_dID
