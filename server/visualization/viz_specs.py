@@ -38,33 +38,43 @@ def compute_viz_specs(pID, dID=None):
     scored_viz_specs = score_viz_specs(filtered_viz_specs, pID)
     formatted_viz_specs = format_viz_specs(scored_viz_specs)
 
+    # Saving specs
     saved_viz_specs = []
-    for dID, specs in formatted_viz_specs.iteritems():
+    for dID_key, specs in formatted_viz_specs.iteritems():
         for spec in specs:
-            spec['dID'] = dID
+            spec['dID'] = dID_key
         saved_viz_specs.extend(specs)
+
     if saved_viz_specs:
-        print saved_viz_specs
         sIDs = MI.setSpecs(saved_viz_specs, pID)
         for s in saved_viz_specs:
-            s['_id'] = str(s['_id'])
+            s['id'] = str(s['_id'])
+            del s['_id']
 
+    if dID:
+        print "Returning just specs, no dID mapping", dID
+        return formatted_viz_specs[dID]
     return formatted_viz_specs
 
 
 def get_viz_specs(pID, dID=None):
     ''' Get viz specs if exists and compute if doesn't exist '''
-    RECOMPUTE = False
+    RECOMPUTE = True
+
     specs_find_doc = {}
     if dID: specs_find_doc['dID'] = dID
+
     existing_specs = MI.getSpecs(specs_find_doc, pID)
     if existing_specs and not RECOMPUTE:
-        result = {}
-        for s in existing_specs:
-            dID = s['dID']
-            if dID not in result: result[dID] = [s]
-            else: result[dID].append(s)
-        return result
+        if dID:
+            return existing_specs
+        else:
+            result = {}
+            for s in existing_specs:
+                dID = s['dID']
+                if dID not in result: result[dID] = [s]
+                else: result[dID].append(s)
+            return result
     else:
         return compute_viz_specs(pID, dID)
 
