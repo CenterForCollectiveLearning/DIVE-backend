@@ -1,4 +1,3 @@
-from data.access import is_numeric
 from data.db import MongoInstance as MI
 from marginal_spec_functions import A, B, C, D, E, F, G, H
 from viz_stats import *
@@ -18,7 +17,7 @@ def get_viz_specs(pID, dID=None):
     if dID:
         dataset_find_doc = {'_id': ObjectId(dID)}
     datasets = MI.getData(dataset_find_doc, pID)
-    properties = MI.getProperty(None, pID)
+    properties = MI.getFieldProperty(None, pID)
     ontologies = MI.getOntology(None, pID)
 
     # TODO Persist the specs

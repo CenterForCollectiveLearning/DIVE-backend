@@ -7,7 +7,8 @@ from flask import Flask  # Don't do this
 from bson.objectid import ObjectId
 
 from . import GeneratingProcedure, TypeStructure
-from data.access import get_delimiter, get_data, detect_time_series, get_variable_type
+from data.access import get_delimiter, get_data
+from data.type_detection import detect_time_series, get_variable_type
 from data.db import MongoInstance as MI
 from data.in_memory_data import InMemoryData as IMD
 from analysis.analysis import get_bin_edges
@@ -97,9 +98,11 @@ def getConditionedDF(df, conditional_arg):
     conditioned_df.columns = orig_cols
     return conditioned_df
 
+
 def _get_derived_field(df, label_descriptor):
     label_a, op, label_b = label.split(' ')
     return result
+
 
 def get_viz_data_from_enumerated_spec(spec, dID, pID):
     '''
