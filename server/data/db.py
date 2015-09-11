@@ -30,6 +30,11 @@ def formatObjectIDs(collectionName, results, fullname = False):
         result[propertyName + 'ID'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
     return results
 
+def stringifyID(results):
+    for result in results: # For each result is passed, convert the _id to the proper mID, cID, etc.
+        result['id'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
+    return results
+
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
@@ -72,13 +77,11 @@ class mongoInstance(object):
 
     def setSpecs(self, specs, pID):
         resp = MongoInstance.client[pID].specifications.insert(specs)
-
-        print resp
         return [ str(sID_obj) for sID_obj in resp ]
 
 
     def getSpecs(self, find_doc, pID):
-        return formatObjectIDs('specification', [s for s in MongoInstance.client[pID].specifications.find(find_doc) ])
+        return stringifyID([s for s in MongoInstance.client[pID].specifications.find(find_doc) ])
 
     # Using preloaded datasets
     def usePublicDataset(self, find_doc, pID):
