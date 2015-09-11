@@ -311,13 +311,13 @@ class Properties(Resource):
         return make_response(jsonify(format_json(results)))
 
 
-entitiesGetParser = reqparse.RequestParser()
-entitiesGetParser.add_argument('pID', type=str, required=True)
-entitiesGetParser.add_argument('dID', type=str, required=True)
-class Entities(Resource):
+categoricalGetParser = reqparse.RequestParser()
+categoricalGetParser.add_argument('pID', type=str, required=True)
+categoricalGetParser.add_argument('dID', type=str, required=True)
+class Categorical(Resource):
     def get(self):
-        print "[GET] Entities"
-        args = entitiesGetParser.parse_args()
+        print "[GET] Categorical"
+        args = categoricalGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID')
 
@@ -325,18 +325,20 @@ class Entities(Resource):
 
         entities = get_entities(pID, dataset_docs)
         results = {
-            'entities': entities
+            'properties': {
+                'categorical': entities
+            }
         }
 
         return make_response(jsonify(format_json(results)))
 
-entitiesGetParser = reqparse.RequestParser()
-entitiesGetParser.add_argument('pID', type=str, required=True)
-entitiesGetParser.add_argument('dID', type=str, required=True)
-class Attributes(Resource):
+quantitativeGetParser = reqparse.RequestParser()
+quantitativeGetParser.add_argument('pID', type=str, required=True)
+quantitativeGetParser.add_argument('dID', type=str, required=True)
+class Quantitative(Resource):
     def get(self):
-        print "[GET] Entities"
-        args = entitiesGetParser.parse_args()
+        print "[GET] Quantitative"
+        args = quantitativeGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         dID = args.get('dID')
 
@@ -344,7 +346,9 @@ class Attributes(Resource):
 
         attributes = get_attributes(pID, dataset_docs)
         results = {
-            'attributes': attributes
+            'properties': {
+                'quantitative': attributes
+            }
         }
 
         return make_response(jsonify(format_json(results)))
@@ -371,71 +375,12 @@ class Generating_Procedures(Resource):
         result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
         return make_response(jsonify(format_json(result)))
 
-#####################################################################
-# Endpoint returning aggregated visualization data given a specification ID
-# INPUT: sID, pID, uID
-# OUTPUT: {nested visualization data}
-#####################################################################
 
-visualizationDataGetParser = reqparse.RequestParser()
-visualizationDataGetParser.add_argument('pID', type=str, required=True)
-visualizationDataGetParser.add_argument('spec', type=str, required=True)
-visualizationDataGetParser.add_argument('conditional', type=str, required=True)
-visualizationDataGetParser.add_argument('config', type=str, required=True)
-class Visualization_Data(Resource):
-    def get(self):
-        args = visualizationDataGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        spec = json.loads(args.get('spec'))
-        category = spec['category']
-        conditional = json.loads(args.get('conditional'))
-        config = json.loads(args.get('config'))
-
-        resp = getVisualizationData(category, spec, conditional, config, pID)
-        stats = getVisualizationStats(category, spec, conditional, config, pID)
-
-        return make_response(jsonify(format_json({'result': resp, 'stats' : stats})))
-
-#####################################################################
-# Endpoint returning aggregated visualization data given a specification ID
-# INPUT: sID, pID, uID
-# OUTPUT: {nested visualization data}
-#####################################################################
-
-# For inferred visualizations
-dataFromSpecPostParser = reqparse.RequestParser()
-dataFromSpecPostParser.add_argument('dID', type=str, location='json')
-dataFromSpecPostParser.add_argument('spec', type=str, location='json')
-dataFromSpecPostParser.add_argument('conditional', type=str, location='json')
-
-class Data_From_Spec(Resource):
+class Visualization(Resource):
     def post(self):
         args = request.json
         # TODO Implement required parameters
-        pID = args.get('pID')
-        spec = args.get('spec')
-        conditional = args.get('conditional')
-
-        result, status = getVisualizationDataFromSpec(spec, conditional, pID)
-        return make_response(jsonify(format_json(result)), status)
-
-
-#####################################################################
-# Endpoint returning aggregated visualization data given a specification
-# INPUT: pID, spec, conditionals
-# OUTPUT: {nested visualization data, table data}
-#####################################################################
-
-# For inferred visualizations
-dataFromSpecPostParser = reqparse.RequestParser()
-dataFromSpecPostParser.add_argument('dID', type=str, location='json')
-dataFromSpecPostParser.add_argument('spec', type=str, location='json')
-dataFromSpecPostParser.add_argument('conditional', type=str, location='json')
-
-class Data_From_Spec(Resource):
-    def post(self):
-        args = request.json
-        # TODO Implement required parameters
+        specID = args.get('specID')
         pID = args.get('pID')
         spec = args.get('spec')
         conditional = args.get('conditional')
@@ -642,15 +587,12 @@ api.add_resource(GetProjectID,                  '/api/getProjectID')
 api.add_resource(Project,                       '/api/project')
 
 api.add_resource(Properties,                    '/api/properties/v1/properties')
-api.add_resource(Entities,                      '/api/properties/v1/entities')
-api.add_resource(Attributes,                    '/api/properties/v1/attributes')
+api.add_resource(Categorical,                   '/api/properties/v1/categorical')
+api.add_resource(Quantitative,                  '/api/properties/v1/quantitative')
 
 api.add_resource(Specs,                         '/api/specs/v1/specs')
-
-# TODO: consolidate /viz_specs, /visualization_data, /data_from_spec under specs/v1
-api.add_resource(Generating_Procedures,         '/api/generating_procedures')
-api.add_resource(Visualization_Data,            '/api/visualization_data')
-api.add_resource(Data_From_Spec,                '/api/data_from_spec')
+api.add_resource(Visualization,                 '/api/specs/v1/visualizations')
+api.add_resource(Generating_Procedures,         '/api/specs/v1/generating_procedures')
 
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
 api.add_resource(Regression_Estimator,          '/api/regression_estimator')

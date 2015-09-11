@@ -6,11 +6,10 @@ from viz_data import get_viz_data_from_enumerated_spec
 from viz_type_mapping import get_viz_types_from_spec
 from scoring import score_spec
 
-
 from pprint import pprint
 from time import time
 import math
-
+import uuid
 
 # Wrapper function
 def get_viz_specs(pID, dID=None):
@@ -248,7 +247,7 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
             viz_types = get_viz_types_from_spec(spec)
             for viz_type in viz_types:
                 spec_with_viz_type = spec
-                spec_with_viz_type['viz_type'] = viz_type
+                spec_with_viz_type['vizType'] = viz_type
                 all_specs_with_types.append(spec_with_viz_type)
 
         specs_by_dID[dID] = all_specs_with_types
@@ -293,13 +292,13 @@ def score_viz_specs(filtered_viz_specs, pID):
 
 def format_viz_specs(scored_viz_specs):
     ''' Get viz specs into a format usable by front end '''
-    field_keys = ['field_a', 'field_b', 'binning_field', 'agg_field_a', 'agg_field_b']
+    field_keys = ['fieldA', 'fieldB', 'binningField', 'aggFieldA', 'aggFieldB']
 
     formatted_viz_specs_by_dID = {}
     for dID, specs in scored_viz_specs.iteritems():
         formatted_viz_specs = []
         for s in specs:
-            new_args = {
+            properties = {
                 'categorical': [],  # TODO Propagate this
                 'quantitative': []
             }
@@ -313,12 +312,21 @@ def format_viz_specs(scored_viz_specs):
                     if field_general_type is 'q': general_type_key = 'quantitative'
                     else: general_type_key = 'categorical'
 
-                    new_args[general_type_key].append({
+                    properties[general_type_key].append({
                         'label': field['label'],
                         'id': field['id'],
                         'fieldType': field_key
                     })
-            s['args'] = new_args
+
+            s['properties'] = properties
+            del s['args']
+
+            # TODO: replace by db document ID
+            s['id'] = str(uuid.uuid1())
+
             formatted_viz_specs.append(s)
-        formatted_viz_specs_by_dID[dID] = formatted_viz_specs
+
+        formatted_viz_specs_by_dID[dID] = {
+            "specs": formatted_viz_specs
+        }
     return formatted_viz_specs_by_dID
