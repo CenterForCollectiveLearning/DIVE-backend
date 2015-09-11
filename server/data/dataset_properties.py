@@ -2,8 +2,9 @@
 Get and compute whole-dataset properties
 '''
 import pandas as pd
-
-from access import get_data
+1
+from .access import get_data, get_delimiter
+from .type_detection import get_column_types, detect_time_series
 from db import MongoInstance as MI
 
 from bson.objectid import ObjectId
@@ -12,8 +13,10 @@ from in_memory_data import InMemoryData as IMD
 
 def get_dataset_properties(dID, pID, path=None):
     ''' Get whole-dataset properties (recompute if doesnt exist) '''
+
+    RECOMPUTE = True
     stored_properties = MI.getDatasetProperty({'dID': dID}, pID)
-    if stored_properties:
+    if stored_properties and not RECOMPUTE:
         return stored_properties[0]
     else:
         return compute_dataset_properties(dID, pID, path=path)

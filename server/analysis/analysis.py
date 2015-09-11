@@ -6,7 +6,7 @@ import json
 from itertools import combinations
 from collections import OrderedDict  # Get unique elements of list while preserving order
 from data.db import MongoInstance as MI
-from data.access import get_data, upload_file
+from data.access import get_data
 from data.type_detection import get_column_types
 
 from time import time

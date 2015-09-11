@@ -19,7 +19,7 @@ from bson.objectid import ObjectId
 
 from data import DataType
 from data.db import MongoInstance as MI
-from data.access import upload_file, get_dataset_sample
+from data.datasets import upload_file, get_dataset_sample
 from data.dataset_properties import get_dataset_properties
 from data.field_properties import get_field_properties, get_entities, get_attributes, compute_field_properties
 

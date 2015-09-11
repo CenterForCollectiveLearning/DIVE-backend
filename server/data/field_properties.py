@@ -7,9 +7,9 @@ import numpy as np
 
 from time import time
 
-from db import MongoInstance as MI
-from access import get_data
-from type_detection import get_column_types
+from .db import MongoInstance as MI
+from .access import get_data
+from .type_detection import get_column_types
 from analysis.analysis import get_unique, get_bin_edges
 from scipy import stats as sc_stats
 
