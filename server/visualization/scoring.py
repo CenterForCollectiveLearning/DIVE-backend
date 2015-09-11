@@ -85,7 +85,7 @@ def score_spec(spec):
     score_doc = {
         'stats': {}
     }
-    data = spec['data']
+    data = spec['data']['score']
     gp = spec['generatingProcedure']
     ts = spec['typeStructure']
 

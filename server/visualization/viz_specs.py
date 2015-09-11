@@ -17,13 +17,16 @@ def get_viz_specs(pID, dID=None):
     if dID:
         dataset_find_doc = {'_id': ObjectId(dID)}
     datasets = MI.getData(dataset_find_doc, pID)
-    properties = MI.getFieldProperty(None, pID)
+    field_properties = MI.getFieldProperty(None, pID)
     ontologies = MI.getOntology(None, pID)
 
+    print "In get_viz_specs", datasets, field_properties, ontologies
     # TODO Persist the specs
     existing_specs = MI.getSpecs(pID, {})
 
-    enumerated_viz_specs = enumerate_viz_specs(datasets, properties, ontologies, pID)
+    enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties, ontologies, pID)
+    for dID, specs in enumerated_viz_specs.iteritems():
+        print dID, len(specs)
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, pID)
     scored_viz_specs = score_viz_specs(filtered_viz_specs, pID)
     formatted_viz_specs = format_viz_specs(scored_viz_specs)
@@ -275,10 +278,15 @@ def score_viz_specs(filtered_viz_specs, pID):
             scored_spec = spec
             # TODO Optimize data reads
             # TODO Don't attach data to spec
-            data = get_viz_data_from_enumerated_spec(spec, dID, pID)
+            data = get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score'])
+            if not data:
+                continue
             scored_spec['data'] = data
 
+
             score_doc = score_spec(spec)
+            if not score_doc:
+                continue
             scored_spec['score'] = score_doc
 
             del scored_spec['data']
@@ -287,7 +295,6 @@ def score_viz_specs(filtered_viz_specs, pID):
         scored_viz_specs_by_dID[dID] = scored_viz_specs
 
     return scored_viz_specs_by_dID
-
 
 
 def format_viz_specs(scored_viz_specs):

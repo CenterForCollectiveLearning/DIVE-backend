@@ -44,49 +44,68 @@ def _get_derived_field(df, label_descriptor):
     return result
 
 
-def get_viz_data_from_enumerated_spec(spec, dID, pID, format='matrix'):
+def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
     structure), and all necessary information to interpret data.
 
-    Data is structured as dict of lists for scoring, as opposed to list of dicts
-    for visualizing.
+    There are three types of formats:
+        Score: a dict of lists for scoring
+        Visualize: a list of dicts (collection)
+        Table: {columns: list, data: matrix}
 
     Args:
-    spec, dID, pID, format
+    spec, dID, pID, format (list of 'score', 'visualize', or 'table')
     Returns:
-        data specified by spec
+        data specified by spec, in specified format
     Raises:
+
+    TODO Don't do so much in this function
     '''
+    for f in data_formats:
+        if f not in ['score', 'visualize', 'table']:
+            raise ValueError('Passed incorrect data format', f)
+    final_data = dict([(f, {}) for f in data_formats])
 
     gp = spec['generatingProcedure']
     args = spec['args']
     meta = spec['meta']
-    final_viz_data = []
 
-    # Retrieve dataframe
     df = get_data(pID=pID, dID=dID)
 
     if gp == GeneratingProcedure.IND_VAL.value:
-        field_a = args['fieldA']['label']
+        field_a_label = args['fieldA']['label']
 
         # If direct field
-        if isinstance(field_a, basestring):
-            data = df[field_a]
+        if isinstance(field_a_label, basestring):
+            data = df[field_a_label]
         # If derived field
-        elif isinstance(field_a, dict):
-            data = _get_derived_field(df, field_a)
+        # TODO Deal with this later
+        elif isinstance(field_a_label, dict):
+            data = _get_derived_field(df, field_a_label)
         else:
-            # TODO Better warning mechanism
-            print "Ill-formed field_a %s" % (field_a)
+            print "Ill-formed field_a_label %s" % (field_a)
 
-        data = df[field_a]
+        data = df[field_a_label]
 
-        # TODO Return all data in collection format to preserve order
-        final_viz_data = {
-            'ind': [ i for i in range(0, len(data)) ],
-            'val': data.tolist()
-        }
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'ind': [ i for i in range(0, len(data)) ],
+                'val': data.tolist()
+            }
+        if 'visualize' in data_formats:
+            data = []
+            for (i, val) in enumerate(data.tolist()):
+                data.append({
+                    'ind': i,
+                    field_a_label: val
+                })
+            final_data['visualize'] = data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': data.columns.tolist(),
+                'data': data.values.tolist()
+            }
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
         # TODO Get rid of this
@@ -105,48 +124,138 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, format='matrix'):
 
             grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges))
             agg_df = grouped_df.aggregate(agg_fn)
+            agg_values = agg_df[agg_field_a].tolist()
 
-            final_viz_data = {
-                'bins': bin_num_to_edges,
-                'binEdges': bin_edges,
-                'agg': agg_df[agg_field_a].tolist()
-            }
+            if 'score' in data_formats:
+                final_data['score'] = {
+                    'bins': bin_num_to_edges,
+                    'binEdges': bin_edges,
+                    'agg': agg_values
+                }
+            if 'visualize' in data_formats:
+                data = []
+                for (bin_edges, agg_val) in zip(bin_edges, agg_values):
+                    # TODO Generalize the procedure for making this string
+                    data.append({
+                        'bin': '%s-%s'% (bin_edges[0], bin_edges[1]),
+                        agg_field_a: agg_val
+                    })
+                final_data['visualize'] = data
+            if 'table' in data_formats:
+                final_data['table'] = {
+                    'columns': agg_df.columns.tolist(),
+                    'data': agg_df.values.tolist()
+                }
         except:
-            final_viz_data = {
-
+            final_data = {
             }
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
-        grouped_df = df.groupby(args['groupedField']['label'])
+        grouped_field_label = args['groupedField']['label']
+        agg_field_label = args['aggField']['label']
+
+        grouped_df = df.groupby(grouped_field_label)
         agg_df = grouped_df.aggregate(group_fn_from_string[args['aggFn']])
+        grouped_field_list = agg_df.index.tolist()
+        agg_field_list = agg_df[agg_field_label].tolist()
+
         final_viz_data = {
             'groupedField': agg_df.index.tolist(),
-            'aggField': agg_df[args['aggField']['label']].tolist()
+            'aggField': agg_df[agg_field_label].tolist()
         }
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'groupedField': grouped_field_list,
+                'aggField': agg_field_list
+            }
+        if 'visualize' in data_formats:
+            final_data['visualize'] = \
+                [{grouped_field_label: g, agg_field_label: a} for (g, a) in \
+                zip(grouped_field_list, agg_field_list)]
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
+            }
 
     elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_viz_data = {
-            'fieldA': df[args['fieldA']['label']].tolist(),
-            'fieldB': df[args['fieldB']['label']].tolist()
-        }
+        fieldA_label = args['fieldA']['label']
+        fieldB_label = args['fieldB']['label']
+
+        fieldA_list = df[fieldA_label].tolist()
+        fieldB_list = df[fieldB_label].tolist()
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'fieldA': fieldA,
+                'fieldB': fieldB
+            }
+        if 'visualize' in data_formats:
+            data = []
+            for (a, b) in zip(fieldA_list, fieldB_list):
+                data.append({
+                    fieldA_label: a,
+                    fieldB_label: b
+                })
+            final_data['visualize'] = data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': df.columns.tolist(),
+                'data': df.values.tolist()
+            }
 
     elif gp == GeneratingProcedure.VAL_COUNT.value:
-        vc = df[args['fieldA']['label']].value_counts()
-        final_viz_data = {
-            'val': vc.index.tolist(),
-            'count': vc.tolist()
-        }
+        fieldA_label = args['fieldA']['label']
+        vc = df[fieldA_label].value_counts()
+        value_list = vc.index.tolist(),
+        counts = vc.tolist()
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'val': value_list,
+                'count': counts
+            }
+        if 'visualize' in data_formats:
+            final_data['visualize'] = \
+                [{fieldA_label: v, 'count': c} for (v, c) in zip(value_list, counts)]
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': ['val', 'count'],
+                'data': [[v, c] for (v, c) in zip(value_list, counts)]
+            }
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
         grouped_df = df.groupby(args['groupedField']['label'])
         agg_df = grouped_df.aggregate(group_fn_from_string[args['aggFn']])
+        agg_field_a_list = agg_df[args['aggFieldA']['label']].tolist()
+        agg_field_b_list = agg_df[args['aggFieldB']['label']].tolist()
         final_viz_data = {
-            'fieldA': agg_df[args['aggFieldB']['label']].tolist(),
-            'fieldB': agg_df[args['aggFieldB']['label']].tolist()
+            'fieldA': agg_field_a_list,
+            'fieldB': agg_field_b_list
         }
 
-    return final_viz_data
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'fieldA': agg_field_a_list,
+                'fieldB': agg_field_b_list,
+            }
+        if 'visualize' in data_formats:
+            data = []
+            for (a, b) in zip(agg_field_a_list, agg_field_b_list):
+                data.append({
+                    args['aggFieldA']['label']: a,
+                    args['aggFieldB']['label']: b
+                })
+            final_data['visualize'] = data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
+            }
+
+    return final_data
 
 
 ### TODO Move these to some utility functions location

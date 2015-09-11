@@ -52,10 +52,15 @@ def upload_file(pID, file):
     path = os.path.join(config['UPLOAD_FOLDER'], pID, full_file_name)
 
     datasets = []
+
+    if file_type in ['csv', 'tsv', 'txt'] or file_type.startswith('xls'):
+        try:
+            file.save(path)
+        except IOError, e:
+            print str(e)
+
     # Flat files
     if file_type in ['csv', 'tsv', 'txt'] :
-        file.save(path)
-
         dID = MI.insertDataset(pID, path, full_file_name)
         data_doc = compute_dataset_properties(dID, pID, path=path)
 
@@ -68,8 +73,6 @@ def upload_file(pID, file):
 
     # Excel files
     elif file_type.startswith('xls') :
-        file.save(path)
-
         book = xlrd.open_workbook(path)
         sheet_names = book.sheet_names()
 
@@ -100,8 +103,6 @@ def upload_file(pID, file):
             datasets.append(data_doc)
 
     elif file_type == 'json' :
-        file.save(path)
-
         f = open(path, 'rU')
         json_data = json.load(f)
 

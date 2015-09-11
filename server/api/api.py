@@ -385,7 +385,7 @@ class Visualization(Resource):
         spec = args.get('spec')
         conditional = args.get('conditional')
 
-        result, status = get_viz_data_from_builder_spec(spec, conditional, pID)
+        result, status = get_viz_data_from_enumerated_spec(spec, conditional, pID)
         return make_response(jsonify(format_json(result)), status)
 
 

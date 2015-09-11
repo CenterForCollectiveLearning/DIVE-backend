@@ -9,6 +9,7 @@ import random
 import time
 import json
 
+
 # TODO: Use a SON manipulator?
 def remove_dots(data):
     for k, d in data.iteritems():
@@ -17,6 +18,7 @@ def remove_dots(data):
             data[k.replace('.', '\uff0E')] = data[k]
             del data[k]
     return data
+
 
 def formatObjectIDs(collectionName, results, fullname = False):
     if fullname:
@@ -27,6 +29,7 @@ def formatObjectIDs(collectionName, results, fullname = False):
     for result in results: # For each result is passed, convert the _id to the proper mID, cID, etc.
         result[propertyName + 'ID'] = str(result.pop('_id')) # Note the .pop removes the _id from the dict
     return results
+
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
@@ -125,6 +128,9 @@ class mongoInstance(object):
         MongoInstance.client['dive'].projects.remove({'_id': ObjectId(pID)})
         return
 
+    ####
+    # Field Properties
+    ####
     def upsertFieldProperty(self, dID, pID, properties):
         info = MongoInstance.client[pID].fieldProperties.find_and_modify({'dID': dID}, {'$set': properties}, upsert=True, new=True)
         tID = str(info['_id'])
@@ -133,9 +139,12 @@ class mongoInstance(object):
     def getFieldProperty(self, find_doc, pID):
         return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].fieldProperties.find(find_doc) ], True)
 
-    def setFieldProperty(self, pID, _property):
+    def setFieldProperty(self, _property, pID):
         return MongoInstance.client[pID].fieldProperties.insert(_property)
 
+    ####
+    # Dataset Properties
+    ####
     def getDatasetProperty(self, find_doc, pID):
         return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].datasetProperties.find(find_doc) ], True)
 
