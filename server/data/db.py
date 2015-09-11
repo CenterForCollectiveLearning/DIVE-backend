@@ -70,13 +70,14 @@ class mongoInstance(object):
         if resp['n'] and resp['ok']:
             return dID
 
-    def postSpecs(self, pID, specs):
-        specs = [ remove_dots(s) for s in specs ]
+    def setSpecs(self, specs, pID):
         resp = MongoInstance.client[pID].specifications.insert(specs)
-        return [str(sID_obj) for sID_obj in resp]
+
+        print resp
+        return [ str(sID_obj) for sID_obj in resp ]
 
 
-    def getSpecs(self, pID, find_doc):
+    def getSpecs(self, find_doc, pID):
         return formatObjectIDs('specification', [s for s in MongoInstance.client[pID].specifications.find(find_doc) ])
 
     # Using preloaded datasets
@@ -131,7 +132,7 @@ class mongoInstance(object):
     ####
     # Field Properties
     ####
-    def upsertFieldProperty(self, dID, pID, properties):
+    def upsertFieldProperty(self, properties, dID, pID):
         info = MongoInstance.client[pID].fieldProperties.find_and_modify({'dID': dID}, {'$set': properties}, upsert=True, new=True)
         tID = str(info['_id'])
         return tID
@@ -140,6 +141,7 @@ class mongoInstance(object):
         return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].fieldProperties.find(find_doc) ], True)
 
     def setFieldProperty(self, _property, pID):
+        print "Saving field property"
         return MongoInstance.client[pID].fieldProperties.insert(_property)
 
     ####

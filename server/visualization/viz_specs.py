@@ -11,29 +11,63 @@ from time import time
 import math
 import uuid
 
-# Wrapper function
-def get_viz_specs(pID, dID=None):
+
+def compute_viz_specs(pID, dID=None):
+    '''
+    Wrapper function used to
+        1. Enumerate
+        2. Filter
+        3. Score
+        4. Format
+    visualization specifications.
+
+    Accepts:
+        pID, dID (optionally)
+    Returns:
+        List of scored specs for dID (all datasets if dID not specified)
+
+    '''
     dataset_find_doc = {}
-    if dID:
-        dataset_find_doc = {'_id': ObjectId(dID)}
+    if dID: dataset_find_doc = {'_id': ObjectId(dID)}
     datasets = MI.getData(dataset_find_doc, pID)
     field_properties = MI.getFieldProperty(None, pID)
     ontologies = MI.getOntology(None, pID)
 
-    print "In get_viz_specs", datasets, field_properties, ontologies
-    # TODO Persist the specs
-    existing_specs = MI.getSpecs(pID, {})
-
     enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties, ontologies, pID)
-    for dID, specs in enumerated_viz_specs.iteritems():
-        print dID, len(specs)
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, pID)
     scored_viz_specs = score_viz_specs(filtered_viz_specs, pID)
     formatted_viz_specs = format_viz_specs(scored_viz_specs)
 
-    if dID:
-        formatted_viz_specs = formatted_viz_specs[dID]
+    saved_viz_specs = []
+    for dID, specs in formatted_viz_specs.iteritems():
+        for spec in specs:
+            spec['dID'] = dID
+        saved_viz_specs.extend(specs)
+    if saved_viz_specs:
+        print saved_viz_specs
+        sIDs = MI.setSpecs(saved_viz_specs, pID)
+        for s in saved_viz_specs:
+            s['_id'] = str(s['_id'])
+
     return formatted_viz_specs
+
+
+def get_viz_specs(pID, dID=None):
+    ''' Get viz specs if exists and compute if doesn't exist '''
+    RECOMPUTE = False
+    specs_find_doc = {}
+    if dID: specs_find_doc['dID'] = dID
+    existing_specs = MI.getSpecs(specs_find_doc, pID)
+    if existing_specs and not RECOMPUTE:
+        result = {}
+        for s in existing_specs:
+            dID = s['dID']
+            if dID not in result: result[dID] = [s]
+            else: result[dID].append(s)
+        return result
+    else:
+        return compute_viz_specs(pID, dID)
+
 
 specific_to_general_type = {
     'float': 'q',
@@ -305,6 +339,7 @@ def format_viz_specs(scored_viz_specs):
     for dID, specs in scored_viz_specs.iteritems():
         formatted_viz_specs = []
         for s in specs:
+            s['dID'] = dID
             properties = {
                 'categorical': [],  # TODO Propagate this
                 'quantitative': []
@@ -328,12 +363,9 @@ def format_viz_specs(scored_viz_specs):
             s['properties'] = properties
             del s['args']
 
-            # TODO: replace by db document ID
-            s['id'] = str(uuid.uuid1())
 
             formatted_viz_specs.append(s)
 
-        formatted_viz_specs_by_dID[dID] = {
-            "specs": formatted_viz_specs
-        }
+        formatted_viz_specs_by_dID[dID] = formatted_viz_specs
+
     return formatted_viz_specs_by_dID
