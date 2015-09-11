@@ -27,7 +27,7 @@ from analysis.analysis import compute_ontologies, get_ontologies
 
 from visualization import GeneratingProcedure
 from visualization.viz_specs import get_viz_specs
-from visualization.viz_data import get_viz_data_from_builder_spec
+from visualization.viz_data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 from visualization.viz_stats import getVisualizationStats
 from statistics.statistics import getStatisticsFromSpec, timeEstimator
 
@@ -382,10 +382,11 @@ class Visualization(Resource):
         # TODO Implement required parameters
         specID = args.get('specID')
         pID = args.get('pID')
+        dID = args.get('dID')
         spec = args.get('spec')
         conditional = args.get('conditional')
 
-        result, status = get_viz_data_from_enumerated_spec(spec, conditional, pID)
+        result, status = get_viz_data_from_enumerated_spec(spec, dID, pID)
         return make_response(jsonify(format_json(result)), status)
 
 
