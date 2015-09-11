@@ -213,8 +213,10 @@ def compute_field_properties(pID, dataset_docs):
         for _property in properties:
             _property['dID'] = dID
             if MI.getFieldProperty({'dID': dID, 'label': _property['label']}, pID):
-                tID = MI.upsertFieldProperty(dID, pID, _property)
+                print "saving field property", pID
+                tID = MI.upsertFieldProperty(_property, dID, pID)
             else:
+                print "saving gield property,", pID
                 tID = MI.setFieldProperty(_property, pID)
 
         properties_by_dID[dID] = properties
