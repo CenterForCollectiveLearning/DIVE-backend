@@ -371,7 +371,6 @@ def format_viz_specs(scored_viz_specs):
                     })
 
             s['properties'] = properties
-            del s['args']
 
 
             formatted_viz_specs.append(s)
