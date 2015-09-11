@@ -11,6 +11,7 @@ def get_effectiveness(spec):
     result = {}
     return result
 
+
 # http://planspace.org/2013/06/21/how-to-calculate-gini-coefficient-from-raw-data-in-python/
 def gini(list_of_values):
   sorted_list = sorted(list_of_values)
@@ -22,9 +23,14 @@ def gini(list_of_values):
   return (fair_area - area) / fair_area
 
 
-# Uniformity: Chi-Sq test or KL test against uniform distribution?
 import numpy as np
 from scipy.stats import entropy, normaltest, mode
+def _mode(v):
+    m = mode(v)
+    return [ m[0][0], m[1][0] ]
+
+
+# Uniformity: Chi-Sq test or KL test against uniform distribution?
 univariate_tests = {
     'gini': gini,
     'entropy': entropy,  # Shannon entropy, base e
@@ -35,7 +41,7 @@ univariate_tests = {
     'variance': np.var,
     'maximum': np.max,
     'minimum': np.min,
-    'mode': mode,
+    'mode': _mode,
     'size': len,
 }
 
@@ -65,7 +71,6 @@ def get_statistical_properties(data, gp, ts):
                 try:
                     stats[test_name] = test_fn(v)
                 except:
-                    # TODO Need to ingest dates properly!!!
                     print "Failed scoring for", test_name, gp, ts
     if ts in [TypeStructure.Q_Q]:
         v = None

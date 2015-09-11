@@ -44,6 +44,7 @@ def compute_viz_specs(pID, dID=None):
             spec['dID'] = dID
         saved_viz_specs.extend(specs)
     if saved_viz_specs:
+        print saved_viz_specs
         sIDs = MI.setSpecs(saved_viz_specs, pID)
         for s in saved_viz_specs:
             s['_id'] = str(s['_id'])
@@ -53,12 +54,17 @@ def compute_viz_specs(pID, dID=None):
 
 def get_viz_specs(pID, dID=None):
     ''' Get viz specs if exists and compute if doesn't exist '''
-    RECOMPUTE = True
+    RECOMPUTE = False
     specs_find_doc = {}
     if dID: specs_find_doc['dID'] = dID
     existing_specs = MI.getSpecs(specs_find_doc, pID)
     if existing_specs and not RECOMPUTE:
-        return existing_specs
+        result = {}
+        for s in existing_specs:
+            dID = s['dID']
+            if dID not in result: result[dID] = [s]
+            else: result[dID].append(s)
+        return result
     else:
         return compute_viz_specs(pID, dID)
 
