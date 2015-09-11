@@ -366,7 +366,7 @@ class Specs(Resource):
 
         specs_by_dID = get_viz_specs(pID, dID)
 
-        return make_response(jsonify(format_json(specs_by_dID)))
+        return make_response(jsonify(format_json({'specs': specs_by_dID})))
 
 
 class Generating_Procedures(Resource):
