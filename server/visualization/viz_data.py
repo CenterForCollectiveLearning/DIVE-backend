@@ -189,8 +189,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
 
         if 'score' in data_formats:
             final_data['score'] = {
-                'fieldA': fieldA,
-                'fieldB': fieldB
+                'fieldA': fieldA_list,
+                'fieldB': fieldB_list
             }
         if 'visualize' in data_formats:
             data = []
