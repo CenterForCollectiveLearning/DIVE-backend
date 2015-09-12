@@ -113,8 +113,13 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
         agg_field_a = args['aggFieldA']['label']
         agg_fn = group_fn_from_string[args['aggFn']]
 
+        print "ARGS", args
+
         unbinned_field = df[binning_field]
-        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
+        try:
+            bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
+        except:
+            return {}
 
         bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
         formatted_bin_edges_list = []  # ['left_edge-right_edge']
@@ -139,14 +144,15 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
                 'agg': agg_values
             }
         if 'visualize' in data_formats:
-            data = []
+            viz_data = []
             for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
                 # TODO Generalize the procedure for making this string
-                data.append({
+
+                viz_data.append({
                     'bin': formatted_bin_edges,
-                    agg_field_a: agg_val
+                    'value': agg_val
                 })
-            final_data['visualize'] = data
+            final_data['visualize'] = viz_data
         if 'table' in data_formats:
             final_data['table'] = {
                 'columns': agg_df.columns.tolist(),
