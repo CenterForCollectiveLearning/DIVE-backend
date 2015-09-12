@@ -209,7 +209,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
     elif gp == GeneratingProcedure.VAL_COUNT.value:
         fieldA_label = args['fieldA']['label']
         vc = df[fieldA_label].value_counts()
-        value_list = vc.index.tolist(),
+        value_list = list(vc.index.values)
         counts = vc.tolist()
 
         if 'score' in data_formats:

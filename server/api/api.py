@@ -386,8 +386,10 @@ class Visualization(Resource):
         spec = args.get('spec')
         conditional = args.get('conditional')
 
-        result, status = get_viz_data_from_enumerated_spec(spec, dID, pID)
-        return make_response(jsonify(format_json(result)), status)
+        result = get_viz_data_from_enumerated_spec(spec,
+            dID, pID, data_formats=['visualize', 'table'])
+
+        return make_response(jsonify(format_json(result)))
 
 
 #####################################################################
