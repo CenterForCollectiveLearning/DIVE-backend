@@ -86,68 +86,71 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
         else:
             print "Ill-formed field_a_label %s" % (field_a)
 
-        data = df[field_a_label]
+        field_a_series = df[field_a_label]
 
         if 'score' in data_formats:
             final_data['score'] = {
                 'ind': [ i for i in range(0, len(data)) ],
-                'val': data.tolist()
+                'val': field_a_series.tolist()
+            }
+        if 'visualize' in data_formats:
+            viz_data = []
+            for (i, val) in enumerate(field_a_series.tolist()):
+                viz_data.append({
+                    'ind': i,
+                    field_a_label: val
+                })
+            final_data['visualize'] = viz_data
+        if 'table' in data_formats:
+            final_data['table'] = {
+                'columns': df.columns.tolist(),
+                'data': df.values.tolist()
+            }
+
+    elif gp == GeneratingProcedure.BIN_AGG.value:
+        binning_field = args['binningField']['label']
+        binning_procedure = args['binningProcedure']
+        agg_field_a = args['aggFieldA']['label']
+        agg_fn = group_fn_from_string[args['aggFn']]
+
+        unbinned_field = df[binning_field]
+        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
+
+        bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
+        formatted_bin_edges_list = []  # ['left_edge-right_edge']
+        for bin_num in range(0, len(bin_edges_list) - 1):
+            left_bin_edge, right_bin_edge = \
+                bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
+            bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
+
+            rounded_left_bin_edge = '%.3f' % left_bin_edge
+            rounded_right_bin_edge = '%.3f' % right_bin_edge
+            formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
+            formatted_bin_edges_list.append(formatted_bin_edge)
+
+        grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list))
+        agg_df = grouped_df.aggregate(agg_fn)
+        agg_values = agg_df[agg_field_a].tolist()
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'bins': bin_num_to_edges,
+                'binEdges': bin_edges_list,
+                'agg': agg_values
             }
         if 'visualize' in data_formats:
             data = []
-            for (i, val) in enumerate(data.tolist()):
+            for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
+                # TODO Generalize the procedure for making this string
                 data.append({
-                    'ind': i,
-                    field_a_label: val
+                    'bin': formatted_bin_edges,
+                    agg_field_a: agg_val
                 })
             final_data['visualize'] = data
         if 'table' in data_formats:
             final_data['table'] = {
-                'columns': data.columns.tolist(),
-                'data': data.values.tolist()
-            }
-
-    elif gp == GeneratingProcedure.BIN_AGG.value:
-        # TODO Get rid of this
-        try:
-            binning_field = args['binningField']['label']
-            binning_procedure = args['binningProcedure']
-            agg_field_a = args['aggFieldA']['label']
-            agg_fn = group_fn_from_string[args['aggFn']]
-
-            unbinned_field = df[binning_field]
-            bin_edges = get_bin_edges(unbinned_field, procedure=binning_procedure)
-
-            bin_num_to_edges = {}
-            for bin_num in range(0, len(bin_edges) - 1):
-                bin_num_to_edges[bin_num] = [ bin_edges[bin_num], bin_edges[bin_num + 1] ]
-
-            grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges))
-            agg_df = grouped_df.aggregate(agg_fn)
-            agg_values = agg_df[agg_field_a].tolist()
-
-            if 'score' in data_formats:
-                final_data['score'] = {
-                    'bins': bin_num_to_edges,
-                    'binEdges': bin_edges,
-                    'agg': agg_values
-                }
-            if 'visualize' in data_formats:
-                data = []
-                for (bin_edges, agg_val) in zip(bin_edges, agg_values):
-                    # TODO Generalize the procedure for making this string
-                    data.append({
-                        'bin': '%s-%s'% (bin_edges[0], bin_edges[1]),
-                        agg_field_a: agg_val
-                    })
-                final_data['visualize'] = data
-            if 'table' in data_formats:
-                final_data['table'] = {
-                    'columns': agg_df.columns.tolist(),
-                    'data': agg_df.values.tolist()
-                }
-        except:
-            final_data = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
             }
 
     # TODO Don't aggregate across numeric columns

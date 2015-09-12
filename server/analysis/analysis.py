@@ -25,11 +25,11 @@ def get_unique(li):
 ###
 MAX_BINS = 19
 def get_bin_edges(v, procedure='freedman'):
-    if procedure is 'freedman':
-        IQR = np.subtract(*np.percentile(v, [75, 25]))
-        bin_width = 2 * IQR * len(v)**(-1/3)
-        num_bins = math.floor((max(v) - min(v)) / bin_width)
-        num_bins = min(num_bins, MAX_BINS)
+    # if procedure == 'freedman':
+    IQR = np.subtract(*np.percentile(v, [75, 25]))
+    bin_width = 2 * IQR * len(v)**(-1/3)
+    num_bins = math.floor((max(v) - min(v)) / bin_width)
+    num_bins = min(num_bins, MAX_BINS)
     bin_edges = np.histogram(v, num_bins)[1]
 
     return bin_edges
