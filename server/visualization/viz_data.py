@@ -170,7 +170,6 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
-        print "VAL_AGG"
         grouped_field_label = args['groupedField']['label']
         agg_field_label = args['aggField']['label']
 
