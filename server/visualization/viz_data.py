@@ -97,8 +97,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             viz_data = []
             for (i, val) in enumerate(field_a_series.tolist()):
                 viz_data.append({
-                    'ind': i,
-                    field_a_label: val
+                    'index': i,
+                    'value': val
                 })
             final_data['visualize'] = viz_data
         if 'table' in data_formats:
@@ -114,10 +114,11 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
         agg_fn = group_fn_from_string[args['aggFn']]
 
         unbinned_field = df[binning_field]
-        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
-        # except Exception, e:
-        #     # Skip this spec
-        #     return None
+        try:
+            bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
+        except Exception, e:
+            # Skip this spec
+            return None
 
         bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
         bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
@@ -139,10 +140,6 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
         grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list)) # Right edge open
         agg_df = grouped_df.aggregate(agg_fn)
         agg_values = agg_df[agg_field_a].tolist()
-
-        print len(bin_edges_list), bin_edges_list
-        print len(agg_df), agg_df
-        print len(agg_values), agg_values
 
         if 'score' in data_formats:
             final_data['score'] = {
@@ -173,6 +170,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
+        print "VAL_AGG"
         grouped_field_label = args['groupedField']['label']
         agg_field_label = args['aggField']['label']
 
@@ -193,7 +191,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             }
         if 'visualize' in data_formats:
             final_data['visualize'] = \
-                [{grouped_field_label: g, agg_field_label: a} for (g, a) in \
+                [{'value': g, 'agg': a} for (g, a) in \
                 zip(grouped_field_list, agg_field_list)]
         if 'table' in data_formats:
             final_data['table'] = {
@@ -217,8 +215,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             data = []
             for (a, b) in zip(fieldA_list, fieldB_list):
                 data.append({
-                    fieldA_label: a,
-                    fieldB_label: b
+                    'x': a,
+                    'y': b
                 })
             final_data['visualize'] = data
         if 'table' in data_formats:
@@ -235,15 +233,15 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
 
         if 'score' in data_formats:
             final_data['score'] = {
-                'val': value_list,
+                'value': value_list,
                 'count': counts
             }
         if 'visualize' in data_formats:
             final_data['visualize'] = \
-                [{fieldA_label: v, 'count': c} for (v, c) in zip(value_list, counts)]
+                [{'value': v, 'count': c} for (v, c) in zip(value_list, counts)]
         if 'table' in data_formats:
             final_data['table'] = {
-                'columns': ['val', 'count'],
+                'columns': ['value', 'count'],
                 'data': [[v, c] for (v, c) in zip(value_list, counts)]
             }
 
@@ -266,8 +264,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             data = []
             for (a, b) in zip(agg_field_a_list, agg_field_b_list):
                 data.append({
-                    args['aggFieldA']['label']: a,
-                    args['aggFieldB']['label']: b
+                    x: a,
+                    y: b
                 })
             final_data['visualize'] = data
         if 'table' in data_formats:
