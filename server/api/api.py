@@ -439,39 +439,71 @@ class Regression_Estimator(Resource):
         return result
 
 
-#####################################################################
-# Endpoint returning data to populate dropdowns for given specification
-# INPUT: sID, pID, uID
-# OUTPUT: [conditional elements]
-#####################################################################
-chooseSpecParser = reqparse.RequestParser()
-chooseSpecParser.add_argument('pID', type=str, required=True)
-chooseSpecParser.add_argument('sID', type=str, required=True)
-chooseSpecParser.add_argument('conditional', type=str, required=True)
-class Choose_Spec(Resource):
+exportedSpecsGetParser = reqparse.RequestParser()
+exportedSpecsGetParser.add_argument('pID', type=str, required=True)
+exportedSpecsGetParser.add_argument('sID', type=str)
+
+exportedSpecsPutParser = reqparse.RequestParser()
+exportedSpecsPutParser.add_argument('pID', type=str, required=True)
+exportedSpecsPutParser.add_argument('sID', type=str, required=True)
+exportedSpecsPutParser.add_argument('conditional', type=str, required=True)
+exportedSpecsPutParser.add_argument('config', type=str, required=True)
+
+exportedSpecsPostParser = reqparse.RequestParser()
+exportedSpecsPostParser.add_argument('pID', type=str, required=True)
+exportedSpecsPostParser.add_argument('sID', type=str, required=True)
+exportedSpecsPostParser.add_argument('conditional', type=str, required=True)
+exportedSpecsPostParser.add_argument('config', type=str, required=True)
+
+exportedSpecsDeleteParser = reqparse.RequestParser()
+exportedSpecsDeleteParser.add_argument('pID', type=str, required=True)
+exportedSpecsDeleteParser.add_argument('sID', type=str, required=True)
+class Exported_Specs(Resource):
+    '''
+    CRUD for exported visualization specs
+
+    TODO Allow for multiple sIDs as arguments
+    '''
     def get(self):
-        args = chooseSpecParser.parse_args()
+        '''
+        If sID specified, return only corresponding exported specs.
+        Else, return all for project
+        '''
+        args = exportedSpecsGetParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        sID = args.get('sID')
+
+        specs = MI.getExportedSpecs(sID, pID)
+        return specs
+
+    def post(self):
+        args = exportedSpecsPostParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         sID = args.get('sID')
         conditional = json.loads(args.get('conditional'))
+        config = json.loads(args.get('config'))
 
-        spec = MI.getSpecs(pID, {"_id" : ObjectId(sID)})[0]
-        stats = getVisualizationStats(spec['category'], spec, conditional, pID)
-
-        print "Choose spec", pID, sID, conditional, stats
-        MI.chooseSpec(pID, sID, conditional, stats)
+        MI.insertExportedSpecs(sID, conditional, config, pID)
         return
 
-rejectSpecParser = reqparse.RequestParser()
-rejectSpecParser.add_argument('pID', type=str, required=True)
-rejectSpecParser.add_argument('sID', type=str, required=True)
-class Reject_Spec(Resource):
-    def get(self):
-        args = rejectSpecParser.parse_args()
+    def put(self):
+        args = exportedSpecsPutParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         sID = args.get('sID')
-        MI.rejectSpec(pID, sID)
+        conditional = json.loads(args.get('conditional'))
+        config = json.loads(args.get('config'))
+
+        MI.updateExportedSpecs(sID, conditional, config, pID)
         return
+
+    def delete(self):
+        args = exportedSpecsDeleteParser.parse_args()
+        pID = args.get('pID').strip().strip('"')
+        sID = args.get('sID')
+
+        MI.deleteExportedSpecs(pID, sID)
+        return
+
 
 
 #####################################################################
@@ -596,6 +628,8 @@ api.add_resource(Quantitative,                  '/api/properties/v1/quantitative
 api.add_resource(Specs,                         '/api/specs/v1/specs')
 api.add_resource(Visualization,                 '/api/specs/v1/visualizations')
 api.add_resource(Generating_Procedures,         '/api/specs/v1/generating_procedures')
+
+api.add_resource(Exported_Specs,                '/api/export/v1/exported_specs')
 
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
 api.add_resource(Regression_Estimator,          '/api/regression_estimator')
