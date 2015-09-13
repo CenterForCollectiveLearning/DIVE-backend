@@ -334,6 +334,7 @@ def score_viz_specs(filtered_viz_specs, pID):
             if not data:
                 continue
             scored_spec['data'] = data
+
             score_doc = score_spec(spec)
             if not score_doc:
                 continue
