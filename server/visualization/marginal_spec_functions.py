@@ -44,7 +44,11 @@ def A(q_field):
             'fieldA': q_field
         },
         'meta': {
-            'desc': '%s by index' % (q_label)
+            'desc': '%s by index' % (q_label),
+            'construction': [
+                { 'string': q_label, 'type': TermType.FIELD.value },
+                { 'string': 'by index', 'type': TermType.PLAIN.value },
+            ]
         }
     }
     specs.append(index_spec)
@@ -58,7 +62,12 @@ def A(q_field):
                 'fieldA': q_field  # TODO How to deal with dervied fields?
             },
             'meta': {
-                'desc': 'Count of %s' % q_label
+                'desc': 'Count of %s' % q_label,
+                'construction': [
+                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'of', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                ]
             }
         }
         specs.append(count_spec)
@@ -96,17 +105,17 @@ def B(q_fields):
     return specs
 
     # Function on pairs of columns
-    for (field_a, field_b) in combinations(q_fields, 2):
-        label_a = field_a['label']
-        label_b = field_b['label']
-        for ew_fn, ew_op in elementwise_functions.iteritems():
-            derived_column_field = {
-                'transform': '2:1',
-                'label': "%s %s %s" % (label_a, ew_op, label_b),
-                'unique': False  # TODO Run property detection again?
-            }
-            A_specs = A(derived_column_field)
-            specs.extend(A_specs)
+    # for (field_a, field_b) in combinations(q_fields, 2):
+    #     label_a = field_a['label']
+    #     label_b = field_b['label']
+    #     for ew_fn, ew_op in elementwise_functions.iteritems():
+    #         derived_column_field = {
+    #             'transform': '2:1',
+    #             'label': "%s %s %s" % (label_a, ew_op, label_b),
+    #             'unique': False  # TODO Run property detection again?
+    #         }
+    #         A_specs = A(derived_column_field)
+    #         specs.extend(A_specs)
     return specs
 
 def C(c_field):
@@ -226,7 +235,7 @@ def F(c_fields):
         c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
         spec = {
             'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
-            'typeStructure': TypeStructure.Q_Q.value,
+            'typeStructure': TypeStructure.C_C.value,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b

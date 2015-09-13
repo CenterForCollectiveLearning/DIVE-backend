@@ -6,6 +6,7 @@ from viz_data import get_viz_data_from_enumerated_spec
 from viz_type_mapping import get_viz_types_from_spec
 from scoring import score_spec
 
+import copy
 from pprint import pprint
 from time import time
 import math
@@ -58,7 +59,9 @@ def compute_viz_specs(pID, dID=None):
 
 def get_viz_specs(pID, dID=None):
     ''' Get viz specs if exists and compute if doesn't exist '''
-    RECOMPUTE = True
+
+    ### TODO Fix bug with getting tons of specs when recomputing
+    RECOMPUTE = False
 
     specs_find_doc = {}
     if dID: specs_find_doc['dID'] = dID
@@ -288,16 +291,22 @@ def enumerate_viz_specs(datasets, properties, ontologies, pID):
 
         all_specs_with_types = []
 
+        desired_viz_types = ["hist", "scatter", "bar", "line", "pie"]
         # Assign viz types to specs (not 1-1)
         for spec in specs:
             viz_types = get_viz_types_from_spec(spec)
+            print viz_types
             for viz_type in viz_types:
-                spec_with_viz_type = spec
-                spec_with_viz_type['vizType'] = viz_type
-                all_specs_with_types.append(spec_with_viz_type)
+
+                # Necessary to deep copy?
+                spec_with_viz_type = copy.deepcopy(spec)
+                if viz_type in desired_viz_types:
+                    spec_with_viz_type['vizType'] = viz_type
+                    all_specs_with_types.append(spec_with_viz_type)
+                else:
+                    continue
 
         specs_by_dID[dID] = all_specs_with_types
-        specs_by_dID[dID] = specs
 
         print "\tN_c:", c_count
         print "\tN_q:", q_count
@@ -319,22 +328,21 @@ def score_viz_specs(filtered_viz_specs, pID):
         scored_viz_specs = []
         for spec in specs:
             scored_spec = spec
+
             # TODO Optimize data reads
-            # TODO Don't attach data to spec
-            data = get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score'])
+            data = get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score', 'visualize'])
             if not data:
                 continue
             scored_spec['data'] = data
-
-
             score_doc = score_spec(spec)
             if not score_doc:
                 continue
             scored_spec['score'] = score_doc
 
-            del scored_spec['data']
+            del scored_spec['data']['score']
 
             scored_viz_specs.append(spec)
+
         scored_viz_specs_by_dID[dID] = scored_viz_specs
 
     return scored_viz_specs_by_dID

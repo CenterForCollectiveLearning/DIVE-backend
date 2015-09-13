@@ -263,8 +263,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             data = []
             for (a, b) in zip(agg_field_a_list, agg_field_b_list):
                 data.append({
-                    x: a,
-                    y: b
+                    'x': a,
+                    'y': b
                 })
             final_data['visualize'] = data
         if 'table' in data_formats:
