@@ -38,11 +38,13 @@ def stringifyID(results):
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
-    def getProjectID(self, formatted_title, userName):
+    def getProjectID(self, formatted_title, userName = None):
         find_doc = {
             "formattedTitle" : formatted_title,
-            "user" : userName
         }
+
+        if userName:
+            find_doc["user"] = userName
 
         try:
             return str(MongoInstance.client['dive'].projects.find_one(find_doc)['_id'])
@@ -97,17 +99,14 @@ class mongoInstance(object):
     ################
     # Exported Specs (pointer to spec + conditional)
     ################
-    def getExportedSpecs(self, sID_arg, pID):
-        exported_specs_find_doc = {}
-        if sID_arg: exported_specs_find_doc['sID'] = sID_arg
-        exported_specs = [ e for e in MongoInstance.client[pID].exported.find(exported_specs_find_doc)]
-
+    def getExportedSpecs(self, find_doc, pID):
+        exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
         for spec in exported_specs:
             sID = spec['sID']
             spec_find_doc = { '_id': ObjectId(sID) }
-            corresponding_spec = MongoInstance.client[pID].specifications.find(spec_find_doc)
+            corresponding_spec = [ c for c in MongoInstance.client[pID].specifications.find(spec_find_doc)]
             if corresponding_spec:
-                exported_specs['spec'] = corresponding_spec
+                spec['spec'] = corresponding_spec
             else:
                 raise ValueError('sID %s does not correspond to a real spec' % (sID))
                 continue

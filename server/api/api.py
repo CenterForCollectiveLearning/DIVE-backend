@@ -375,9 +375,35 @@ class Generating_Procedures(Resource):
         result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
         return make_response(jsonify(format_json(result)))
 
-
+visualizationGetParser = reqparse.RequestParser()
+visualizationGetParser.add_argument('projectTitle', type=str, required=True)
 class Visualization(Resource):
     ''' Returns visualization and table data for a given spec'''
+    def get(self, vID):
+        result = {}
+
+        args = visualizationGetParser.parse_args()
+        projectTitle = args.get('projectTitle').strip().strip('"')
+
+        pID = MI.getProjectID(projectTitle)
+
+        find_doc = {'_id': ObjectId(vID)}
+        visualizations = MI.getExportedSpecs(find_doc, pID)
+        
+        if visualizations:
+            spec = visualizations[0]['spec'][0]
+            dID = spec['dID']
+            formatted_spec = spec
+            del formatted_spec['_id']
+
+            result = {
+                'spec': spec,
+                'visualization': get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['visualize', 'table'])
+            }
+
+        return make_response(jsonify(format_json(result)))
+
+class VisualizationFromSpec(Resource):
     def post(self):
         args = request.json
         # TODO Implement required parameters
@@ -440,72 +466,24 @@ class Regression_Estimator(Resource):
         return result
 
 
-exportedSpecsGetParser = reqparse.RequestParser()
-exportedSpecsGetParser.add_argument('pID', type=str, required=True)
-exportedSpecsGetParser.add_argument('sID', type=str)
-
-exportedSpecsPutParser = reqparse.RequestParser()
-exportedSpecsPutParser.add_argument('pID', type=str, required=True)
-exportedSpecsPutParser.add_argument('sID', type=str, required=True)
-exportedSpecsPutParser.add_argument('conditional', type=str, required=True)
-exportedSpecsPutParser.add_argument('config', type=str, required=True)
-
-exportedSpecsPostParser = reqparse.RequestParser()
-exportedSpecsPostParser.add_argument('pID', type=str, required=True)
-exportedSpecsPostParser.add_argument('sID', type=str, required=True)
-exportedSpecsPostParser.add_argument('conditional', type=str, required=True)
-exportedSpecsPostParser.add_argument('config', type=str, required=True)
-
-exportedSpecsDeleteParser = reqparse.RequestParser()
-exportedSpecsDeleteParser.add_argument('pID', type=str, required=True)
-exportedSpecsDeleteParser.add_argument('sID', type=str, required=True)
-class Exported_Specs(Resource):
-    '''
-    CRUD for exported visualization specs
-
-    TODO Allow for multiple sIDs as arguments
-    '''
-    def get(self):
-        '''
-        If sID specified, return only corresponding exported specs.
-        Else, return all for project
-        '''
-        args = exportedSpecsGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        sID = args.get('sID')
-
-        specs = MI.getExportedSpecs(sID, pID)
-        return specs
-
+exportVisualizationPostParser = reqparse.RequestParser()
+exportVisualizationPostParser.add_argument('pID', type=str, required=True)
+exportVisualizationPostParser.add_argument('sID', type=str, required=True)
+exportVisualizationPostParser.add_argument('conditional', type=unicode, required=True)
+exportVisualizationPostParser.add_argument('config', type=str, required=False)
+class Export_Visualization(Resource):
     def post(self):
-        args = exportedSpecsPostParser.parse_args()
+        args = exportVisualizationPostParser.parse_args()
         pID = args.get('pID').strip().strip('"')
         sID = args.get('sID')
-        conditional = json.loads(args.get('conditional'))
-        config = json.loads(args.get('config'))
+        print args.get('conditional')
+        print str(args.get('conditional'))
+        conditional = None
+        config = None
 
-        MI.insertExportedSpecs(sID, conditional, config, pID)
-        return
-
-    def put(self):
-        args = exportedSpecsPutParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        sID = args.get('sID')
-        conditional = json.loads(args.get('conditional'))
-        config = json.loads(args.get('config'))
-
-        MI.updateExportedSpecs(sID, conditional, config, pID)
-        return
-
-    def delete(self):
-        args = exportedSpecsDeleteParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        sID = args.get('sID')
-
-        MI.deleteExportedSpecs(pID, sID)
-        return
-
-
+        #check if already exists first
+        vID = MI.insertExportedSpecs(sID, conditional, config, pID)
+        return make_response(jsonify(format_json({'vID': vID})))
 
 #####################################################################
 # Endpoint returning data to populate dropdowns for given specification
@@ -528,22 +506,18 @@ class Conditional_Data(Resource):
 
 
 #####################################################################
-# Endpoint returning exported viz specs given a pID and optionally matching an eID
+# Endpoint returning exported viz specs given a pID and optionally matching a vID
 #####################################################################
 exportedVisualizationSpecGetParser = reqparse.RequestParser()
 exportedVisualizationSpecGetParser.add_argument('pID', type=str, required=True)
-exportedVisualizationSpecGetParser.add_argument('eID', type=str, required=False)
-class Exported_Visualization_Spec(Resource):
+exportedVisualizationSpecGetParser.add_argument('vID', type=str, required=False)
+class Exported_Visualizations(Resource):
     # Return all exported viz specs, grouped by category
     def get(self):
         args = exportedVisualizationSpecGetParser.parse_args()
         pID = args.get('pID').strip().strip('"')
 
-        find_doc = {}
-        if args.get('eID'):
-            eID = args.get('eID').strip().strip('"')
-            find_doc = {'_id': ObjectId(eID)}
-        exported_specs = MI.getExportedSpecs(find_doc, pID)
+        exported_specs = MI.getExportedSpecs({}, pID)
 
         specs_by_category = {}
         for exported_doc in exported_specs:
@@ -555,14 +529,14 @@ class Exported_Visualization_Spec(Resource):
 
         return make_response(jsonify(format_json({'result': specs_by_category, 'length': len(exported_specs)})))
 
-    def post(self):
-        args = request.json['params']
-        pID = args['pID']
-        spec = args['spec']
-        conditional = args['conditional']
-        print "Posting exported visualization with args", args
+    # def post(self):
+    #     args = request.json['params']
+    #     pID = args['pID']
+    #     spec = args['spec']
+    #     conditional = args['conditional']
+    #     print "Posting exported visualization with args", args
 
-        return make_response(jsonify(format_json({'result': MI.addExportedSpec(pID, spec, conditional)})))
+    #     return make_response(jsonify(format_json({'result': MI.addExportedSpec(pID, spec, conditional)})))
 
 #####################################################################
 # Endpoint returning exported image
@@ -605,15 +579,6 @@ class Render_SVG(Resource):
         return send_file(img_io)  #, mimetype=mimetypes[format], as_attachment=True, attachment_filename=filename)
 
 
-#####################################################################
-# TEST Endpoint
-#####################################################################
-class Test(Resource):
-    def get(self):
-        return make_response(jsonify(format_json({'result': 'test'})))
-
-
-api.add_resource(Test,                          '/api/test')
 api.add_resource(Public_Data,                   '/api/public_data')
 api.add_resource(Render_SVG,                    '/api/render_svg')
 api.add_resource(UploadFile,                    '/api/upload')
@@ -627,14 +592,15 @@ api.add_resource(Categorical,                   '/api/properties/v1/categorical'
 api.add_resource(Quantitative,                  '/api/properties/v1/quantitative')
 
 api.add_resource(Specs,                         '/api/specs/v1/specs')
-api.add_resource(Visualization,                 '/api/specs/v1/visualizations')
+api.add_resource(VisualizationFromSpec,         '/api/specs/v1/visualizations')
+api.add_resource(Visualization,                 '/api/specs/v1/visualizations/<string:vID>')
 api.add_resource(Generating_Procedures,         '/api/specs/v1/generating_procedures')
 
-api.add_resource(Exported_Specs,                '/api/export/v1/exported_specs')
+api.add_resource(Export_Visualization,          '/api/specs/v1/visualizations/export')
+api.add_resource(Exported_Visualizations,       '/api/specs/v1/visualizations/exported')
 
 api.add_resource(Statistics_From_Spec,          '/api/statistics_from_spec')
 api.add_resource(Regression_Estimator,          '/api/regression_estimator')
 api.add_resource(Conditional_Data,              '/api/conditional_data')
-api.add_resource(Exported_Visualization_Spec,   '/api/exported_spec')
 
 from auth import register, login
