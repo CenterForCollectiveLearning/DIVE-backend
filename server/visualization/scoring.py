@@ -34,7 +34,7 @@ def _mode(v):
 univariate_tests = {
     'gini': gini,
     'entropy': entropy,  # Shannon entropy, base e
-    'normality': normaltest,  # Requires at least n >= 8
+    # 'normality': normaltest,  # Requires at least n >= 8
     'median': np.median,
     'average': np.average,
     'std': np.std,
@@ -72,6 +72,7 @@ def get_statistical_properties(data, gp, ts):
                     stats[test_name] = test_fn(v)
                 except:
                     print "Failed scoring for", test_name, gp, ts
+                    continue
     if ts in [TypeStructure.Q_Q]:
         v = None
         if gp == GeneratingProcedure.AGG_AGG.value:

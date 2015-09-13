@@ -76,6 +76,8 @@ class mongoInstance(object):
             return dID
 
     def setSpecs(self, specs, pID):
+        # TODO Don't drop specs every time
+        MongoInstance.client[pID].specifications.remove({})
         resp = MongoInstance.client[pID].specifications.insert(specs)
         return [ str(sID_obj) for sID_obj in resp ]
 
