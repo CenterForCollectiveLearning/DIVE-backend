@@ -38,11 +38,13 @@ def stringifyID(results):
 
 class mongoInstance(object):
     # Get Project ID from formattedProjectTitle
-    def getProjectID(self, formatted_title, userName):
+    def getProjectID(self, formatted_title, userName = None):
         find_doc = {
             "formattedTitle" : formatted_title,
-            "user" : userName
         }
+
+        if userName:
+            find_doc["user"] = userName
 
         try:
             return str(MongoInstance.client['dive'].projects.find_one(find_doc)['_id'])
@@ -94,28 +96,46 @@ class mongoInstance(object):
             new_dIDs.append(new_dID)
         return new_dIDs
 
-    # Exported visualizations
+    ################
+    # Exported Specs (pointer to spec + conditional)
+    ################
     def getExportedSpecs(self, find_doc, pID):
         exported_specs = [ e for e in MongoInstance.client[pID].exported.find(find_doc)]
-        return formatObjectIDs('exported', exported_specs)
+        for spec in exported_specs:
+            sID = spec['sID']
+            spec_find_doc = { '_id': ObjectId(sID) }
+            corresponding_spec = [ c for c in MongoInstance.client[pID].specifications.find(spec_find_doc)]
+            if corresponding_spec:
+                spec['spec'] = corresponding_spec
+            else:
+                raise ValueError('sID %s does not correspond to a real spec' % (sID))
+                continue
 
-    def addExportedSpec(self, pID, spec, conditional):
+        return stringifyID(exported_specs)
+
+    def insertExportedSpecs(self, sID, conditional, config, pID):
         d = {}
-        d['spec']  = spec
+        d['sID'] = sID
         d['conditional'] = conditional
+        d['config'] = config
         return str(MongoInstance.client[pID].exported.insert(d))
 
-    def chooseSpec(self, pID, sID, conditional, stats):
-        MongoInstance.client[pID].specifications.find_and_modify(
-            {'_id': ObjectId(sID)},
-            {'$set': {'chosen': True, 'conditional': conditional, 'stats' : stats }}, upsert=True, new=True)
-        return sID
+    def updateExportedSpecs(self, sID, conditional, config, pID):
+        d = {}
+        d['sID'] = sID
+        d['conditional'] = conditional
+        d['config'] = config
+        result = MongoInstance.client[pID].exported.find_and_modify({'sID': sID},
+            {'$set': {'conditional': conditional, 'config': config}},
+            upsert=True, new=True)
+        return str(result)
 
-    def rejectSpec(self, pID, sID):
-        MongoInstance.client[pID].specifications.find_and_modify({'_id': ObjectId(sID)}, {'$set': {'chosen': False}}, upsert=True, new=True)
-        return sID
+    def deleteExportedSpecs(self, find_doc, pID):
+        return str(MongoInstance.client[pID].exported.remove(find_doc))
 
+    ################
     # Project Editing
+    ################
     def getProject(self, pID, user):
         projects_collection = MongoInstance.client['dive'].projects
         doc = {
@@ -132,9 +152,9 @@ class mongoInstance(object):
         MongoInstance.client['dive'].projects.remove({'_id': ObjectId(pID)})
         return
 
-    ####
+    ################
     # Field Properties
-    ####
+    ################
     def upsertFieldProperty(self, properties, dID, pID):
         info = MongoInstance.client[pID].fieldProperties.find_and_modify({'dID': dID}, {'$set': properties}, upsert=True, new=True)
         tID = str(info['_id'])
@@ -147,9 +167,9 @@ class mongoInstance(object):
         print "Saving field property"
         return MongoInstance.client[pID].fieldProperties.insert(_property)
 
-    ####
+    ################
     # Dataset Properties
-    ####
+    ################
     def getDatasetProperty(self, find_doc, pID):
         return formatObjectIDs('property', [ t for t in MongoInstance.client[pID].datasetProperties.find(find_doc) ], True)
 
