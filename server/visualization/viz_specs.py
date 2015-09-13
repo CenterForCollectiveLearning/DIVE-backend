@@ -321,7 +321,7 @@ def score_viz_specs(filtered_viz_specs, pID):
             scored_spec = spec
             # TODO Optimize data reads
             # TODO Don't attach data to spec
-            data = get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score'])
+            data = get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score', 'visualize'])
             if not data:
                 continue
             scored_spec['data'] = data
@@ -332,7 +332,7 @@ def score_viz_specs(filtered_viz_specs, pID):
                 continue
             scored_spec['score'] = score_doc
 
-            del scored_spec['data']
+            del scored_spec['data']['score']
 
             scored_viz_specs.append(spec)
         scored_viz_specs_by_dID[dID] = scored_viz_specs
