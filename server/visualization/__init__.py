@@ -19,3 +19,17 @@ class TypeStructure(Enum):
     Q_Q = 'q:q'
     Q_liQ = 'q:[q]'
     B_Q = 'b:q'
+
+class TermType(Enum):
+    '''
+    List of terms in natural language visualization description
+    
+        Plain: and, by
+        Field: binned_field, field_a
+        Operation: aggregate, group by
+        Transformation: binned
+    '''
+    PLAIN = 'plain'
+    FIELD = 'field'
+    TRANSFORMATION = 'transformation'
+    OPERATION = 'operation'
