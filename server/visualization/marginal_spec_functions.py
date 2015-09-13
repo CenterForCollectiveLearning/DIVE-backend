@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import combinations
 
-from . import GeneratingProcedure, TypeStructure
+from . import GeneratingProcedure, TypeStructure, TermType
 
 # TODO How to document defaults?
 aggregation_functions = {
@@ -78,7 +78,14 @@ def A(q_field):
                         'binningField': q_field
                     },
                     'meta': {
-                        'desc': 'Aggregate binned %s by %s' % (q_label, agg_fn)
+                        'description': 'Aggregate binned %s by %s' % (q_label, agg_fn),
+                        'construction': [
+                            { 'string': 'aggregate', 'type': TermType.OPERATION.value },
+                            { 'string': 'binned', 'type': TermType.TRANSFORMATION.value },
+                            { 'string': q_label, 'type': TermType.FIELD.value },
+                            { 'string': 'by', 'type': TermType.PLAIN.value},
+                            { 'string': agg_fn, 'type': TermType.OPERATION.value }
+                        ]
                     }
                 }
                 specs.append(bin_spec)
@@ -114,7 +121,12 @@ def C(c_field):
             'fieldA': c_field
         },
         'meta': {
-            'desc': 'Count of %s' % (c_label)
+            'desc': 'Count of %s' % (c_label),
+            'construction': [
+                { 'string': 'count', 'type': TermType.OPERATION.value },
+                { 'string': 'of', 'type': TermType.PLAIN.value },
+                { 'string': c_label, 'type': TermType.FIELD.value },
+            ]
         }
     }
     specs.append(spec)
@@ -134,7 +146,14 @@ def D(c_field, q_field):
                 'fieldB': q_field,
             },
             'meta': {
-                'desc': '%s against corresponding %s' % (c_label, q_label)
+                'desc': '%s values vs. %s values' % (c_label, q_label),
+                'construction': [
+                    { 'string': c_label, 'type': TermType.FIELD.value },
+                    { 'string': 'values', 'type': TermType.PLAIN.value },
+                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                    { 'string': 'values', 'type': TermType.PLAIN.value },
+                ]
             }
         }
         specs.append(spec)
@@ -149,7 +168,16 @@ def D(c_field, q_field):
                     'aggField': q_field,
                 },
                 'meta': {
-                    'desc': 'Group %s and aggregate %s by %s' % (c_label, q_label, agg_fn)
+                    'desc': 'Group %s and aggregate %s by %s' % (c_label, q_label, agg_fn),
+                    'construction': [
+                        { 'string': 'group', 'type': TermType.OPERATION.value },
+                        { 'string': c_label, 'type': TermType.FIELD.value },
+                        { 'string': 'and', 'type': TermType.PLAIN.value },
+                        { 'string': 'aggregate', 'type': TermType.OPERATION.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'by', 'type': TermType.PLAIN.value },
+                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                    ]
                 }
             }
             specs.append(spec)
@@ -174,7 +202,18 @@ def E(c_field, q_fields):
                         'groupedField': c_label
                     },
                     'meta': {
-                        'desc': 'Aggregate %s and %s by %s, grouped by %s' % (q_label_a, q_label_b, agg_fn, c_label)
+                        'desc': 'Group by %s and aggregate %s and %s by %s' % (c_label, q_label_a, q_label_b, agg_fn),
+                        'construction': [
+                            { 'string': 'Group by', 'type': TermType.OPERATION.value },
+                            { 'string': c_label, 'type': TermType.FIELD.value },
+                            { 'string': 'and', 'type': TermType.PLAIN.value },
+                            { 'string': 'aggregate', 'type': TermType.OPERATION.value },
+                            { 'string': q_label_a, 'type': TermType.FIELD.value },
+                            { 'string': 'and', 'type': TermType.PLAIN.value },
+                            { 'string': q_label_b, 'type': TermType.FIELD.value },
+                            { 'string': 'by', 'type': TermType.PLAIN.value },
+                            { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        ]
                     }
                 }
     return specs
@@ -193,7 +232,14 @@ def F(c_fields):
                 'fieldB': c_field_b
             },
             'meta': {
-                'desc': '%s against %s' % (c_label_a, c_label_b)
+                'desc': '%s values vs. %s values' % (c_label_a, c_label_b),
+                'construction': [
+                    { 'string': c_label_a, 'type': TermType.FIELD.value },
+                    { 'string': 'value', 'type': TermType.PLAIN.value },
+                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_b, 'type': TermType.FIELD.value },
+                    { 'string': 'value', 'type': TermType.PLAIN.value },
+                ]
             }
         }
         specs.append(spec)
@@ -215,7 +261,15 @@ def G(c_fields, q_field):
                 'dataFieldA': q_label
             },
             'meta': {
-                'desc': 'Connect %s and %s, with attached data field %s' % (c_label_a, c_label_b, q_label)
+                'desc': 'Connect %s and %s, with attribute %s' % (c_label_a, c_label_b, q_label),
+                'construction': [
+                    { 'string': 'connect', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_a, 'type': TermType.FIELD.value },
+                    { 'string': 'and', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_b, 'type': TermType.FIELD.value },
+                    { 'string': 'with attribute', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                ]
             }
         }
         specs.append(spec)
@@ -237,7 +291,15 @@ def H(c_fields, q_fields):
                 'dataFields': q_labels
             },
             'meta': {
-                'desc': 'Conenct %s with %s, with attached data fields %s' % (c_label_a, c_label_b, q_labels)
+                'desc': 'Connect %s with %s, with attributes %s' % (c_label_a, c_label_b, q_labels),
+                'construction': [
+                    { 'string': 'connect', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_a, 'type': TermType.FIELD.value },
+                    { 'string': 'and', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_b, 'type': TermType.FIELD.value },
+                    { 'string': 'with attributes', 'type': TermType.PLAIN.value },
+                    { 'string': q_labels, 'type': TermType.FIELD.value },
+                ]
             }
         }
         specs.append(spec)
