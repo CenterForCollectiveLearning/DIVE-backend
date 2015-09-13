@@ -529,15 +529,6 @@ class Exported_Visualizations(Resource):
 
         return make_response(jsonify(format_json({'result': specs_by_category, 'length': len(exported_specs)})))
 
-    # def post(self):
-    #     args = request.json['params']
-    #     pID = args['pID']
-    #     spec = args['spec']
-    #     conditional = args['conditional']
-    #     print "Posting exported visualization with args", args
-
-    #     return make_response(jsonify(format_json({'result': MI.addExportedSpec(pID, spec, conditional)})))
-
 #####################################################################
 # Endpoint returning exported image
 #####################################################################
