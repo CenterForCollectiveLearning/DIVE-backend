@@ -58,7 +58,7 @@ def A(q_field):
                 'fieldA': q_field  # TODO How to deal with dervied fields?
             },
             'meta': {
-                'desc': 'Values of %s against number of occurrences' % q_label
+                'desc': 'Count of %s' % q_label
             }
         }
         specs.append(count_spec)
@@ -78,7 +78,7 @@ def A(q_field):
                         'binningField': q_field
                     },
                     'meta': {
-                        'desc': 'Bin %s, then aggregate binned values by %s' % (q_label, agg_fn)
+                        'desc': 'Aggregate binned %s by %s' % (q_label, agg_fn)
                     }
                 }
                 specs.append(bin_spec)
@@ -114,7 +114,7 @@ def C(c_field):
             'fieldA': c_field
         },
         'meta': {
-            'desc': 'Unique values of %s mapped to number of occurrences' % (c_label)
+            'desc': 'Count of %s' % (c_label)
         }
     }
     specs.append(spec)
@@ -134,7 +134,7 @@ def D(c_field, q_field):
                 'fieldB': q_field,
             },
             'meta': {
-                'desc': 'Values of %s against corresponding values of %s' % (c_label, q_label)
+                'desc': '%s against corresponding %s' % (c_label, q_label)
             }
         }
         specs.append(spec)
@@ -149,7 +149,7 @@ def D(c_field, q_field):
                     'aggField': q_field,
                 },
                 'meta': {
-                    'desc': 'Unique values of %s against corresponding values of %s, aggregated by %s' % (c_label, q_label, agg_fn)
+                    'desc': 'Group %s and aggregate %s by %s' % (c_label, q_label, agg_fn)
                 }
             }
             specs.append(spec)
@@ -174,7 +174,7 @@ def E(c_field, q_fields):
                         'groupedField': c_label
                     },
                     'meta': {
-                        'desc': 'Plotting aggregated values of %s against aggregated values of %s, grouped by %s' % (q_label_a, q_label_b, c_label)
+                        'desc': 'Aggregate %s and %s by %s, grouped by %s' % (q_label_a, q_label_b, agg_fn, c_label)
                     }
                 }
     return specs
@@ -193,7 +193,7 @@ def F(c_fields):
                 'fieldB': c_field_b
             },
             'meta': {
-                'desc': 'Plotting values of %s against corresponding values of %s' % (c_label_a, c_label_b)
+                'desc': '%s against %s' % (c_label_a, c_label_b)
             }
         }
         specs.append(spec)
@@ -215,7 +215,7 @@ def G(c_fields, q_field):
                 'dataFieldA': q_label
             },
             'meta': {
-                'desc': 'Plotting values of %s against corresponding values of %s with attached data field %s' % (c_label_a, c_label_b, q_label)
+                'desc': 'Connect %s and %s, with attached data field %s' % (c_label_a, c_label_b, q_label)
             }
         }
         specs.append(spec)
@@ -237,7 +237,7 @@ def H(c_fields, q_fields):
                 'dataFields': q_labels
             },
             'meta': {
-                'desc': 'Plotting values of %s against corresponding values of %s with attached data fields %s' % (c_label_a, c_label_b, q_labels)
+                'desc': 'Conenct %s with %s, with attached data fields %s' % (c_label_a, c_label_b, q_labels)
             }
         }
         specs.append(spec)

@@ -377,6 +377,7 @@ class Generating_Procedures(Resource):
 
 
 class Visualization(Resource):
+    ''' Returns visualization and table data for a given spec'''
     def post(self):
         args = request.json
         # TODO Implement required parameters

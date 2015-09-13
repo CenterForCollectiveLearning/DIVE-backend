@@ -25,7 +25,6 @@ def compute_viz_specs(pID, dID=None):
         pID, dID (optionally)
     Returns:
         List of scored specs for dID (all datasets if dID not specified)
-
     '''
     dataset_find_doc = {}
     if dID: dataset_find_doc = {'_id': ObjectId(dID)}

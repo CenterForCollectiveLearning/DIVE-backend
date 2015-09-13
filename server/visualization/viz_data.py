@@ -86,68 +86,86 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
         else:
             print "Ill-formed field_a_label %s" % (field_a)
 
-        data = df[field_a_label]
+        field_a_series = df[field_a_label]
 
         if 'score' in data_formats:
             final_data['score'] = {
                 'ind': [ i for i in range(0, len(data)) ],
-                'val': data.tolist()
+                'val': field_a_series.tolist()
             }
         if 'visualize' in data_formats:
-            data = []
-            for (i, val) in enumerate(data.tolist()):
-                data.append({
-                    'ind': i,
-                    field_a_label: val
+            viz_data = []
+            for (i, val) in enumerate(field_a_series.tolist()):
+                viz_data.append({
+                    'index': i,
+                    'value': val
                 })
-            final_data['visualize'] = data
+            final_data['visualize'] = viz_data
         if 'table' in data_formats:
             final_data['table'] = {
-                'columns': data.columns.tolist(),
-                'data': data.values.tolist()
+                'columns': df.columns.tolist(),
+                'data': df.values.tolist()
             }
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
-        # TODO Get rid of this
+        binning_field = args['binningField']['label']
+        binning_procedure = args['binningProcedure']
+        agg_field_a = args['aggFieldA']['label']
+        agg_fn = group_fn_from_string[args['aggFn']]
+
+        unbinned_field = df[binning_field]
         try:
-            binning_field = args['binningField']['label']
-            binning_procedure = args['binningProcedure']
-            agg_field_a = args['aggFieldA']['label']
-            agg_fn = group_fn_from_string[args['aggFn']]
+            bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
+        except Exception, e:
+            # Skip this spec
+            return None
 
-            unbinned_field = df[binning_field]
-            bin_edges = get_bin_edges(unbinned_field, procedure=binning_procedure)
+        bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
+        bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
+        formatted_bin_edges_list = []  # ['left_edge-right_edge']
+        for bin_num in range(0, len(bin_edges_list) - 1):
+            left_bin_edge, right_bin_edge = \
+                bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
+            bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-            bin_num_to_edges = {}
-            for bin_num in range(0, len(bin_edges) - 1):
-                bin_num_to_edges[bin_num] = [ bin_edges[bin_num], bin_edges[bin_num + 1] ]
+            rounded_left_bin_edge = '%.3f' % left_bin_edge
+            rounded_right_bin_edge = '%.3f' % right_bin_edge
+            formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
+            formatted_bin_edges_list.append(formatted_bin_edge)
 
-            grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges))
-            agg_df = grouped_df.aggregate(agg_fn)
-            agg_values = agg_df[agg_field_a].tolist()
+            bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
-            if 'score' in data_formats:
-                final_data['score'] = {
-                    'bins': bin_num_to_edges,
-                    'binEdges': bin_edges,
-                    'agg': agg_values
-                }
-            if 'visualize' in data_formats:
-                data = []
-                for (bin_edges, agg_val) in zip(bin_edges, agg_values):
-                    # TODO Generalize the procedure for making this string
-                    data.append({
-                        'bin': '%s-%s'% (bin_edges[0], bin_edges[1]),
-                        agg_field_a: agg_val
-                    })
-                final_data['visualize'] = data
-            if 'table' in data_formats:
-                final_data['table'] = {
-                    'columns': agg_df.columns.tolist(),
-                    'data': agg_df.values.tolist()
-                }
-        except:
-            final_data = {
+
+        # TODO Ensure that order is preserved here
+        grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list)) # Right edge open
+        agg_df = grouped_df.aggregate(agg_fn)
+        agg_values = agg_df[agg_field_a].tolist()
+
+        if 'score' in data_formats:
+            final_data['score'] = {
+                'bins': bin_num_to_edges,
+                'binEdges': bin_edges_list,
+                'agg': agg_values
+            }
+        if 'visualize' in data_formats:
+            viz_data = []
+            for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
+                viz_data.append({
+                    'bin': formatted_bin_edges,
+                    'value': agg_val
+                })
+            final_data['visualize'] = viz_data
+        if 'table' in data_formats:
+            columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
+
+            table_data = []
+            for i, row in enumerate(agg_df.values.tolist()):
+                new_row = [bin_num_to_formatted_edges[i]] + row
+                table_data.append(new_row)
+
+            final_data['table'] = {
+                'columns': columns,
+                'data': table_data
             }
 
     # TODO Don't aggregate across numeric columns
@@ -172,7 +190,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             }
         if 'visualize' in data_formats:
             final_data['visualize'] = \
-                [{grouped_field_label: g, agg_field_label: a} for (g, a) in \
+                [{'value': g, 'agg': a} for (g, a) in \
                 zip(grouped_field_list, agg_field_list)]
         if 'table' in data_formats:
             final_data['table'] = {
@@ -196,8 +214,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             data = []
             for (a, b) in zip(fieldA_list, fieldB_list):
                 data.append({
-                    fieldA_label: a,
-                    fieldB_label: b
+                    'x': a,
+                    'y': b
                 })
             final_data['visualize'] = data
         if 'table' in data_formats:
@@ -214,15 +232,15 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
 
         if 'score' in data_formats:
             final_data['score'] = {
-                'val': value_list,
+                'value': value_list,
                 'count': counts
             }
         if 'visualize' in data_formats:
             final_data['visualize'] = \
-                [{fieldA_label: v, 'count': c} for (v, c) in zip(value_list, counts)]
+                [{'value': v, 'count': c} for (v, c) in zip(value_list, counts)]
         if 'table' in data_formats:
             final_data['table'] = {
-                'columns': ['val', 'count'],
+                'columns': ['value', 'count'],
                 'data': [[v, c] for (v, c) in zip(value_list, counts)]
             }
 
@@ -245,8 +263,8 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
             data = []
             for (a, b) in zip(agg_field_a_list, agg_field_b_list):
                 data.append({
-                    args['aggFieldA']['label']: a,
-                    args['aggFieldB']['label']: b
+                    x: a,
+                    y: b
                 })
             final_data['visualize'] = data
         if 'table' in data_formats:
