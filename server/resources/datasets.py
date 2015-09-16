@@ -1,6 +1,11 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
+from data.datasets import upload_file, get_dataset_sample
+from data.dataset_properties import get_dataset_properties
+
+from analysis.analysis import compute_ontologies, get_ontologies
+
 from .utilities import format_json
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
