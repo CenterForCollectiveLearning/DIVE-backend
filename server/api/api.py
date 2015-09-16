@@ -389,7 +389,7 @@ class Visualization(Resource):
 
         find_doc = {'_id': ObjectId(vID)}
         visualizations = MI.getExportedSpecs(find_doc, pID)
-        
+
         if visualizations:
             spec = visualizations[0]['spec'][0]
             dID = spec['dID']
