@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from app import logger
+
 class RoundedFloat(float):
     def __repr__(self):
         return '%.3f' % self

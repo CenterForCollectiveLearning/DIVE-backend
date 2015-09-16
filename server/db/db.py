@@ -2,27 +2,36 @@ import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy_utils import database_exists, create_database
-from models import *
+
+# from app import app
+from .models import *
 
 
 # Establish database session
+# engine = create_engine(app.config['DB_URI'], convert_unicode=True)
 engine = create_engine('postgresql+psycopg2://localhost:5432/dive', convert_unicode=True)
-if not database_exists(engine.url):
-    print "Creating database"
-    # TODO Fix error to not call below if not created
-    engine = create_database(engine.url)
-DBSession = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
-                                         bind=engine))
 
-Base = declarative_base()
+if not database_exists(engine.url):
+    app.logger.info("Database doesn't exist, creating now.")
+    engine = create_database(engine.url)
+
+DBSession = scoped_session(sessionmaker(autocommit=False,
+                                        autoflush=False,
+                                        bind=engine))
 Base.query = DBSession.query_property()
+
+# Base.metadata.drop_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
+
 def init_db():
+    app.logger.info("Initializing DB")
     # Recreate each time for testing
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
+
 def populate_db():
+    app.logger.info("Populating DB")
     db_session = DBSession()
     objects = [
         Project(title='Test Project'),
@@ -32,34 +41,8 @@ def populate_db():
     db_session.commit()
     db_session.remove()
 
+
 # @app.teardown_appcontext
-def shutdown_session(exception=None):
-    DBSession.remove()
-
-def row_to_dict(r):
-    return {c.name: str(getattr(r, c.name)) for c in r.__table__.columns}
-
-
-# http://pythoncentral.io/introductory-tutorial-python-sqlalchemy/
-# def get_project():
-#     row_to_dict(session.query(Project).first())
-#
-# def create_project():
-#     new_project = Project(title='Test Project')
-#     session.add(new_project)
-#     session.commit()
-#
-# def update_project(update_doc, projectID):
-#     session.query(Project).filter(Project.id == projectID).update(update_doc).delete()
-#     session.commit()
-#
-# def delete_project(delete_doc):
-#     # Synchronize session?
-#     # How to deal with the filter object?
-#     session.query(Project).filter(Project.id == projectID).delete()
-#     session.commit()
-
-
-# new_project = Project(title='Test Project')
-# session.add(new_project)
-# db_session.commit()
+# def shutdown_session(exception=None):
+#     app.logger.info("Tearing down DB")
+#     DBSession.remove()

@@ -1,6 +1,7 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
+from app import logger
 from .utilities import format_json
 
 

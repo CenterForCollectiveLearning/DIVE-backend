@@ -1,16 +1,17 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, PickleType, Boolean, Enum, SmallInteger
+from sqlalchemy import Column, ForeignKey, Integer, String, PickleType, Boolean, Enum, SmallInteger, Date
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
 
+Base = declarative_base()
 
 class Project(Base):
     __tablename__ = 'project'
     id = Column(Integer, primary_key=True)
     title = Column(String(250))
-    creationDate = Column(Date, index=True)
-    updateDate = Column(Date, index=True)
+    # creationDate = Column(Date, index=True)
+    # updateDate = Column(Date, index=True)
 
 
 # Distinguish from Dataset_Properties?
@@ -37,7 +38,10 @@ class Dataset_Properties(Base):
     is_time_series = Boolean()
     structure = Enum(['wide', 'long'])
 
-    fields_properties = relationship(Field_Properties)  # Get all field properties
+    fields_properties = relationship('Field_Properties',
+        backref="dataset",
+        cascade="all, delete-orphan",
+        lazy='dynamic')  # Get all field properties
 
     dataset_id = Column(Integer, ForeignKey('dataset.id'))
     dataset = relationship(Dataset)
@@ -59,8 +63,7 @@ class Field_Properties(Base):
     unique_values = ARRAY
     stats = JSONB
 
-    dataset_id = Column(Integer, ForeignKey('dataset.id'))
-    dataset = relationship(Dataset)
+    dataset_properties_id = Column(Integer, ForeignKey('dataset_properties.id'))
 
     project_id = Column(Integer, ForeignKey('project.id'))
     project = relationship(Project)

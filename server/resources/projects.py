@@ -4,14 +4,16 @@ import shutil
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
+from app import logger
+from db import db_access
 from .utilities import format_json
 
 ############################
 # Projects
 ############################
 projectsGetParser = reqparse.RequestParser()
-projectsGetParser.add_argument('pID', type=str, default='')
-projectsGetParser.add_argument('user_name', type=str, required=True)
+projectsGetParser.add_argument('project_id', type=str, default='')
+projectsGetParser.add_argument('user_name', type=str)
 
 projectsPostParser = reqparse.RequestParser()
 projectsPostParser.add_argument('title', type=str, required=True)
@@ -23,10 +25,12 @@ projectsDeleteParser = reqparse.RequestParser()
 projectsDeleteParser.add_argument('pID', type=str, default='')
 class Projects(Resource):
     def get(self):
+        logger.info("GET PROJECTS")
         args = projectsGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
-        user_name = args.get('user_name')
-        return MI.getProject(pID, user_name)
+        project_id = int(args.get('project_id').strip().strip('"'))
+        logger.info(args)
+
+        return db_access.get_projects(project_id=project_id)
 
     # Create project, initialize directories and collections
     def post(self):

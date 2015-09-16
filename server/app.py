@@ -3,11 +3,20 @@ import sys
 import logging
 from flask import Flask, request
 from flask.ext.restful import Api
+from flask.ext.sqlalchemy import SQLAlchemy
 from config import config
+from werkzeug.local import LocalProxy
 
 app = Flask(__name__)
 app.debug = True
 api = Api(app)
+db = SQLAlchemy(app)
+logger = app.logger
+
+for k, v in config.items(): app.config[k] = v
+TEST_DATA_FOLDER = os.path.join(os.curdir, app.config['TEST_DATA_FOLDER'])
+PUBLIC_DATA_FOLDER = os.path.join(os.curdir, app.config['PUBLIC_DATA_FOLDER'])
+UPLOAD_FOLDER = os.path.join(os.curdir, app.config['UPLOAD_FOLDER'])
 
 from resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets
 from resources.projects import Projects
@@ -18,6 +27,13 @@ from resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpe
 from resources.render import Render
 # from resources.auth import Register, Login
 
+from flask.ext.restful import Resource
+
+class Test(Resource):
+    def get(self):
+        return 'Succss'
+
+api.add_resource(Test, '/test')
 
 # Multiple projects per user
 api.add_resource(Projects,                      '/projects/v1/projects')
@@ -44,17 +60,6 @@ api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estim
 
 # api.add_resource(Register,                      '/auth/v1/register')
 # api.add_resource(Login,                         '/auth/v1/login')
-
-
-TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
-app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
-
-PUBLIC_DATA_FOLDER = os.path.join(os.curdir, config['PUBLIC_DATA_FOLDER'])
-app.config['PUBLIC_DATA_FOLDER'] = PUBLIC_DATA_FOLDER
-
-UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 
 @app.before_request
 def option_autoreply():
@@ -105,21 +110,3 @@ def set_allow_origin(resp):
     if request.method != 'OPTIONS' and 'Origin' in request.headers:
         h['Access-Control-Allow-Origin'] = request.headers['Origin']
     return resp
-
-
-def ensure_directories():
-    if not os.path.isdir(app.config['UPLOAD_FOLDER']):
-        print "Creating Upload Directory"
-        os.mkdir(app.config['UPLOAD_FOLDER'])
-
-
-PORT = 8081
-# http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
-if __name__ == '__main__':
-    ensure_directories()
-
-    handler = StreamHandler(stream=sys.stdout)
-    handler.setLevel(logging.INFO)
-    app.logger.addHandler(handler)
-    app.debug = True
-    app.run(port=PORT)

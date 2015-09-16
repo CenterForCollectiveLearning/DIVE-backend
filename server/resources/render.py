@@ -5,6 +5,8 @@ import cairosvg
 import cairocffi as cairo
 from StringIO import StringIO
 
+from app import logger
+
 #####################################################################
 # Endpoint returning exported image
 #####################################################################

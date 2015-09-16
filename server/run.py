@@ -2,16 +2,13 @@ import os
 import sys
 import logging
 from logging import StreamHandler
-import werkzeug.serving
-from flask import request
 from config import config
-from gevent.wsgi import WSGIServer
 
 from app import app
 
 def ensure_directories():
     if not os.path.isdir(app.config['UPLOAD_FOLDER']):
-        print "Creating Upload Directory"
+        app.info("Creating Upload directory")
         os.mkdir(app.config['UPLOAD_FOLDER'])
 
 PORT = 8081
