@@ -39,8 +39,8 @@ def shutdown_session(exception=None):
 def row_to_dict(r):
     return {c.name: str(getattr(r, c.name)) for c in r.__table__.columns}
 
-# http://pythoncentral.io/introductory-tutorial-python-sqlalchemy/
 
+# http://pythoncentral.io/introductory-tutorial-python-sqlalchemy/
 # def get_project():
 #     row_to_dict(session.query(Project).first())
 #

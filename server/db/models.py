@@ -17,10 +17,6 @@ class Project(Base):
 class Dataset(Base):
     __tablename__ = 'dataset'
     id = Column(Integer, primary_key=True)
-    title = Column(String(250))  # convert_unicode?
-    path = Column(String(250))
-    file_name = Column(String(250))
-    file_type = Column(String(250))
 
     project_id = Column(Integer, ForeignKey('project.id'))
     project = relationship(Project)
@@ -29,16 +25,23 @@ class Dataset(Base):
 class Dataset_Properties(Base):
     __tablename__ = 'dataset_properties'
     id = Column(Integer, primary_key=True)
+    title = Column(String(250))  # convert_unicode?
+    path = Column(String(250))
+    file_name = Column(String(250))
+    file_type = Column(String(250))
     rows = Column(String(250))
     cols = Column(String(250))
     field_names = JSONB
-    types = JSONB
+    field_types = JSONB
     field_accessors = JSONB
     is_time_series = Boolean()
     structure = Enum(['wide', 'long'])
 
+    fields_properties = relationship(Field_Properties)  # Get all field properties
+
     dataset_id = Column(Integer, ForeignKey('dataset.id'))
     dataset = relationship(Dataset)
+
     project_id = Column(Integer, ForeignKey('project.id'))
     project = relationship(Project)
 
@@ -46,8 +49,9 @@ class Dataset_Properties(Base):
 class Field_Properties(Base):
     __tablename__ = 'field_properties'
     id = Column(Integer, primary_key=True)
-    name = Column(String(250))
-    type = Column(String(250))
+    name = Column(String(250))  # Have these here, vs. in dataset_properties?
+    type = Column(String(250))  #
+    index = Column(Integer)
     normality = JSONB
     is_unique = Boolean()
     child = Column(String(250))
@@ -57,6 +61,7 @@ class Field_Properties(Base):
 
     dataset_id = Column(Integer, ForeignKey('dataset.id'))
     dataset = relationship(Dataset)
+
     project_id = Column(Integer, ForeignKey('project.id'))
     project = relationship(Project)
 
@@ -76,8 +81,8 @@ class Specification(Base):
     project = relationship(Project)
 
 
-class Visualization(Base):
-    __tablename__ = 'visualization'
+class Exported_Specification(Base):
+    __tablename__ = 'exported_specification'
     id = Column(Integer, primary_key=True)
     conditionals = JSONB
     config = JSONB

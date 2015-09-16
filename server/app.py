@@ -1,12 +1,50 @@
-'''
-Module for Gunicorn server
-'''
 import os
-from api.api import app
-from flask import request
-from flask import Flask
+import sys
+import logging
+from flask import Flask, request
+from flask.ext.restful import Api
 from config import config
-from api.api import app
+
+app = Flask(__name__)
+app.debug = True
+api = Api(app)
+
+from resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets
+from resources.projects import Projects
+from resources.field_properties import FieldProperties
+from resources.specs import Specs, VisualizationFromSpec, Visualization, GeneratingProcedures
+from resources.statistics_resources import StatisticsFromSpec, RegressionEstimator
+from resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
+from resources.render import Render
+# from resources.auth import Register, Login
+
+
+# Multiple projects per user
+api.add_resource(Projects,                      '/projects/v1/projects')
+
+# What do you get back here?
+api.add_resource(UploadFile,                    '/datasets/v1/upload')
+api.add_resource(Datasets,                      '/datasets/v1/datasets')  # Returns [ {properties}, {}], not including preloaded
+api.add_resource(PreloadedDatasets,             '/datasets/v1/datasets/preloaded')  # Defer this
+api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dID>')  # Returns preview data
+
+api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')
+
+api.add_resource(Specs,                         '/specs/v1/specs')
+api.add_resource(VisualizationFromSpec,         '/specs/v1/specs/<sID>/visualization')
+api.add_resource(GeneratingProcedures,          '/specs/v1/generating_procedures')
+
+api.add_resource(ExportedSpecs,                 '/exported_specs/v1/exported_specs')  # Get vs post
+api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<eID>/visualization')
+
+api.add_resource(Render,                        '/render/v1/render')
+
+api.add_resource(StatisticsFromSpec,            '/statistics/v1/statistics_from_spec')
+api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
+
+# api.add_resource(Register,                      '/auth/v1/register')
+# api.add_resource(Login,                         '/auth/v1/login')
+
 
 TEST_DATA_FOLDER = os.path.join(os.curdir, config['TEST_DATA_FOLDER'])
 app.config['TEST_DATA_FOLDER'] = TEST_DATA_FOLDER
@@ -16,6 +54,7 @@ app.config['PUBLIC_DATA_FOLDER'] = PUBLIC_DATA_FOLDER
 
 UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 @app.before_request
 def option_autoreply():
@@ -66,3 +105,21 @@ def set_allow_origin(resp):
     if request.method != 'OPTIONS' and 'Origin' in request.headers:
         h['Access-Control-Allow-Origin'] = request.headers['Origin']
     return resp
+
+
+def ensure_directories():
+    if not os.path.isdir(app.config['UPLOAD_FOLDER']):
+        print "Creating Upload Directory"
+        os.mkdir(app.config['UPLOAD_FOLDER'])
+
+
+PORT = 8081
+# http://stackoverflow.com/questions/11150343/slow-requests-on-local-flask-server
+if __name__ == '__main__':
+    ensure_directories()
+
+    handler = StreamHandler(stream=sys.stdout)
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
+    app.debug = True
+    app.run(port=PORT)
