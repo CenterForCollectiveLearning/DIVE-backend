@@ -31,7 +31,7 @@ class RegressionEstimator(Resource):
 
 #####################################################################
 # Endpoint returning statistical data given a specification
-# INPUT: pID, spec
+# INPUT: project_id, spec
 # OUTPUT: {stat data}
 #####################################################################
 
@@ -43,12 +43,12 @@ class StatisticsFromSpec(Resource):
     def post(self):
         args = request.json
         # TODO Implement required parameters
-        pID = args.get('pID')
+        project_id = args.get('project_id')
         spec = args.get('spec')
 
         print time.clock()
 
-        result, status = getStatisticsFromSpec(spec, pID)
+        result, status = getStatisticsFromSpec(spec, project_id)
         # print format_json(result)
         print time.clock()
         return make_response(jsonify(format_json(result)), status)

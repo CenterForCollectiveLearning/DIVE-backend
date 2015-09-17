@@ -18,7 +18,7 @@ from .access import get_data
 from .dataset_properties import get_dataset_properties, compute_dataset_properties
 from .type_detection import get_column_types, detect_time_series
 
-from config import config
+from app import app_config
 from werkzeug.utils import secure_filename
 from db import MongoInstance as MI
 
@@ -49,7 +49,7 @@ def upload_file(pID, file):
     '''
     full_file_name = secure_filename(file.filename)
     file_name, file_type = full_file_name.rsplit('.', 1)
-    path = os.path.join(config['UPLOAD_FOLDER'], pID, full_file_name)
+    path = os.path.join(app_config['UPLOAD_FOLDER'], pID, full_file_name)
 
     datasets = []
 

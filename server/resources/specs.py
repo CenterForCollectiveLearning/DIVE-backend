@@ -8,16 +8,16 @@ from visualization.viz_specs import get_viz_specs
 from visualization.viz_data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 
 specsGetParser = reqparse.RequestParser()
-specsGetParser.add_argument('pID', type=str, required=True)
+specsGetParser.add_argument('project_id', type=str, required=True)
 specsGetParser.add_argument('dID', type=str)
 class Specs(Resource):
     def get(self):
         print "[GET] Specs"
         args = specsGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
+        project_id = args.get('project_id').strip().strip('"')
         dID = args.get('dID', None)
 
-        specs_by_dID = get_viz_specs(pID, dID)
+        specs_by_dID = get_viz_specs(project_id, dID)
 
         return make_response(jsonify(format_json({'specs': specs_by_dID})))
 
@@ -39,10 +39,10 @@ class Visualization(Resource):
         args = visualizationGetParser.parse_args()
         projectTitle = args.get('projectTitle').strip().strip('"')
 
-        pID = MI.getProjectID(projectTitle)
+        project_id = MI.getProjectID(projectTitle)
 
         find_doc = {'_id': ObjectId(vID)}
-        visualizations = MI.getExportedSpecs(find_doc, pID)
+        visualizations = MI.getExportedSpecs(find_doc, project_id)
 
         if visualizations:
             spec = visualizations[0]['spec'][0]
@@ -52,7 +52,7 @@ class Visualization(Resource):
 
             result = {
                 'spec': spec,
-                'visualization': get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['visualize', 'table'])
+                'visualization': get_viz_data_from_enumerated_spec(spec, dID, project_id, data_formats=['visualize', 'table'])
             }
 
         return make_response(jsonify(format_json(result)))
@@ -63,12 +63,12 @@ class VisualizationFromSpec(Resource):
         args = request.json
         # TODO Implement required parameters
         specID = args.get('specID')
-        pID = args.get('pID')
+        project_id = args.get('project_id')
         dID = args.get('dID')
         spec = args.get('spec')
         conditional = args.get('conditional')
 
         result = get_viz_data_from_enumerated_spec(spec,
-            dID, pID, data_formats=['visualize', 'table'])
+            dID, project_id, data_formats=['visualize', 'table'])
 
         return make_response(jsonify(format_json(result)))

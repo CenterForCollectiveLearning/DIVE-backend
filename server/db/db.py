@@ -18,6 +18,7 @@ if not database_exists(engine.url):
 DBSession = scoped_session(sessionmaker(autocommit=False,
                                         autoflush=False,
                                         bind=engine))
+db_session = DBSession()  # Starting with module-wide session
 Base.query = DBSession.query_property()
 
 # Base.metadata.drop_all(bind=engine)

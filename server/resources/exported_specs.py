@@ -10,30 +10,30 @@ class VisualizationFromExportedSpec(Resource):
         args = request.json
         # TODO Implement required parameters
         specID = args.get('specID')
-        pID = args.get('pID')
+        project_id = args.get('project_id')
         dID = args.get('dID')
         spec = args.get('spec')
         conditional = args.get('conditional')
 
         result = get_viz_data_from_enumerated_spec(spec,
-            dID, pID, data_formats=['visualize', 'table'])
+            dID, project_id, data_formats=['visualize', 'table'])
 
         return make_response(jsonify(format_json(result)))
 
 
 #####################################################################
-# Endpoint returning exported viz specs given a pID and optionally matching a vID
+# Endpoint returning exported viz specs given a project_id and optionally matching a vID
 #####################################################################
 exportedSpecsGetParser = reqparse.RequestParser()
-exportedSpecsGetParser.add_argument('pID', type=str, required=True)
+exportedSpecsGetParser.add_argument('project_id', type=str, required=True)
 exportedSpecsGetParser.add_argument('vID', type=str, required=False)
 class ExportedSpecs(Resource):
     # Return all exported viz specs, grouped by category
     def get(self):
         args = exportedSpecsGetParser.parse_args()
-        pID = args.get('pID').strip().strip('"')
+        project_id = args.get('project_id').strip().strip('"')
 
-        exported_specs = MI.getExportedSpecs({}, pID)
+        exported_specs = MI.getExportedSpecs({}, project_id)
 
         specs_by_category = {}
         for exported_doc in exported_specs:

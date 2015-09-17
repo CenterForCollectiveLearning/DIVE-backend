@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 from logging import StreamHandler
-from config import config
 
 from app import app
 

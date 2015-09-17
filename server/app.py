@@ -4,18 +4,16 @@ import logging
 from flask import Flask, request
 from flask.ext.restful import Api
 from flask.ext.sqlalchemy import SQLAlchemy
-from config import config
 from werkzeug.local import LocalProxy
 
 app = Flask(__name__)
-app.debug = True
+app.config.from_object('config.DevelopmentConfig')
+
 api = Api(app)
 db = SQLAlchemy(app)
 logger = app.logger
+app_config = app.config
 
-for k, v in config.items(): app.config[k] = v
-TEST_DATA_FOLDER = os.path.join(os.curdir, app.config['TEST_DATA_FOLDER'])
-PUBLIC_DATA_FOLDER = os.path.join(os.curdir, app.config['PUBLIC_DATA_FOLDER'])
 UPLOAD_FOLDER = os.path.join(os.curdir, app.config['UPLOAD_FOLDER'])
 
 from resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets
