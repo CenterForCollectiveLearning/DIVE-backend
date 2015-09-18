@@ -10,14 +10,13 @@ from dive.resources.render import Render
 
 from flask.ext.restful import Resource
 
-class Test(Resource):
+class FakeGetProjectID(Resource):
     def get(self):
-        return 'Success'
+        return 1
 
 api = Api()
 
-api.add_resource(Test, '/test')
-
+api.add_resource(FakeGetProjectID,              '/projects/v1/getProjectID')
 api.add_resource(Projects,                      '/projects/v1/projects')
 api.add_resource(Project,                       '/projects/v1/projects/<project_id>')
 

@@ -59,81 +59,81 @@ def get_hierarchy(l1, l2):
     return res
 
 
-def compute_ontologies(pID, datasets) :
-    new_dIDs = [d['dID'] for d in datasets]
-    all_datasets = MI.getData({}, pID)
-    all_dIDs = [d['dID'] for d in all_datasets]
-    print "NEW: ", new_dIDs
-    print "ALL: ", all_dIDs
+def compute_ontologies(project_id, datasets) :
+    new_dataset_ids = [d['dataset_id'] for d in datasets]
+    all_datasets = MI.getData({}, project_id)
+    all_dataset_ids = [d['dataset_id'] for d in all_datasets]
+    print "NEW: ", new_dataset_ids
+    print "ALL: ", all_dataset_ids
 
     lengths_dict = {}
     raw_columns_dict = {}
     uniqued_dict = {}
     for d in all_datasets:
-        dID = d['dID']
+        dataset_id = d['dataset_id']
 
         print "\t\tReading file"
-        df = get_data(pID=pID, dID=dID)
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
         header = df.columns.values
 
         print "\t\tGetting raw cols"
-        raw_columns_dict[dID] = [list(df[col]) for col in df]
+        raw_columns_dict[dataset_id] = [list(df[col]) for col in df]
 
         print "\t\tGetting unique cols"
-        uniqued_dict[dID] = [get_unique(df[col]) for col in df]
+        uniqued_dict[dataset_id] = [get_unique(df[col]) for col in df]
 
         print "\t\tGetting col lengths"
-        lengths_dict[dID] = [len(df[col]) for col in df]
+        lengths_dict[dataset_id] = [len(df[col]) for col in df]
 
     print "\tIterating through columns"
 
     overlaps = {}
     hierarchies = {}
-    for dID_a, dID_b in combinations(all_dIDs, 2):
+    for dataset_id_a, dataset_id_b in combinations(all_dataset_ids, 2):
 
-        if (dID_a not in new_dIDs) and (dID_b not in new_dIDs) :
+        if (dataset_id_a not in new_dataset_ids) and (dataset_id_b not in new_dataset_ids) :
             continue
 
-        raw_cols_a = raw_columns_dict[dID_a]
-        raw_cols_b = raw_columns_dict[dID_b]
-        overlaps['%s\t%s' % (dID_a, dID_b)] = {}
-        hierarchies['%s\t%s' % (dID_a, dID_b)] = {}
+        raw_cols_a = raw_columns_dict[dataset_id_a]
+        raw_cols_b = raw_columns_dict[dataset_id_b]
+        overlaps['%s\t%s' % (dataset_id_a, dataset_id_b)] = {}
+        hierarchies['%s\t%s' % (dataset_id_a, dataset_id_b)] = {}
 
         for index_a, col_a in enumerate(raw_cols_a):
             for index_b, col_b in enumerate(raw_cols_b):
-                unique_a, unique_b = uniqued_dict[dID_a][index_a], uniqued_dict[dID_b][index_b]
+                unique_a, unique_b = uniqued_dict[dataset_id_a][index_a], uniqued_dict[dataset_id_b][index_b]
                 d = get_distance(unique_a, unique_b)
 
                 if d:
-                    length_a, length_b = lengths_dict[dID_a][index_a], lengths_dict[dID_b][index_b]
+                    length_a, length_b = lengths_dict[dataset_id_a][index_a], lengths_dict[dataset_id_b][index_b]
                     h = get_hierarchy(length_a, length_b)
 
-                    overlaps['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = d
-                    hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
+                    overlaps['%s\t%s' % (dataset_id_a, dataset_id_b)]['%s\t%s' % (index_a, index_b)] = d
+                    hierarchies['%s\t%s' % (dataset_id_a, dataset_id_b)]['%s\t%s' % (index_a, index_b)] = h
 
                     if d > 0.25 :
                         ontology = {
-                            'source_dID': dID_a,
-                            'target_dID': dID_b,
+                            'source_dataset_id': dataset_id_a,
+                            'target_dataset_id': dataset_id_b,
                             'source_index': index_a,
                             'target_index': index_b,
                             'distance': d,
                             'hierarchy': h
                         }
-                        oID = MI.upsertOntology(pID, ontology)
+                        oID = MI.upsertOntology(project_id, ontology)
     return overlaps, hierarchies
 
 
-def get_ontologies(pID, datasets):
+def get_ontologies(project_id, datasets):
     overlaps = {}
     hierarchies = {}
 
-    ontologies = MI.getOntology({}, pID)
+    ontologies = MI.getOntology({}, project_id)
     for ontology in ontologies:
-        dID_a = ontology['source_dID']
-        dID_b = ontology['target_dID']
+        dataset_id_a = ontology['source_dataset_id']
+        dataset_id_b = ontology['target_dataset_id']
 
-        key = '%s\t%s' % (dID_a, dID_b)
+        key = '%s\t%s' % (dataset_id_a, dataset_id_b)
         if key not in overlaps :
             overlaps[key] = {}
         if key not in hierarchies :
@@ -143,7 +143,7 @@ def get_ontologies(pID, datasets):
         index_b = ontology['target_index']
         d = ontology['distance']
         h = ontology['hierarchy']
-        overlaps['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = d
-        hierarchies['%s\t%s' % (dID_a, dID_b)]['%s\t%s' % (index_a, index_b)] = h
+        overlaps['%s\t%s' % (dataset_id_a, dataset_id_b)]['%s\t%s' % (index_a, index_b)] = d
+        hierarchies['%s\t%s' % (dataset_id_a, dataset_id_b)]['%s\t%s' % (index_a, index_b)] = h
 
     return overlaps, hierarchies

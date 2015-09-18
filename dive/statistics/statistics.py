@@ -16,14 +16,14 @@ from dive.data.access import get_data
 
 
 ############
-#Note: spec is dictionary with at most keys dID, model, arguments, estimator, weights, degree, funcArray
+#Note: spec is dictionary with at most keys dataset_id, model, arguments, estimator, weights, degree, funcArray
 #Note: arguments is in this format {'ind':[list of vectors], 'dep':[vector], 'compare':{'indepedent': bool, 'dataLabels':[list of vectors]}}
 ######argument has a 'compare' field only when a statistical comparison between vectors are performed.
 ######argument has an 'ind' and 'dep' field only when a regression is performed
 
-def getStatisticsFromSpec(spec, pID):
+def getStatisticsFromSpec(spec, project_id):
     # 1) Parse and validate arguments
-    dID = spec.get('dID')
+    dataset_id = spec.get('dataset_id')
     #either a regression or comparison
     model = spec.get('model')
     #arguments is dict, includes compare and dep and datalabals, dep, indep
@@ -33,11 +33,11 @@ def getStatisticsFromSpec(spec, pID):
     degree = spec.get('degree')
     funcArray = spec.get('functions')
 
-    if not (dID, model):
-        return "Did not pass required parameters", 400
+    if not (dataset_id, model):
+        return "dataset_id not pass required parameters", 400
 
     # 1) Access dataset
-    df = get_data(pID=pID, dID=dID)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     # 2) Run test based on test parameters and arguments

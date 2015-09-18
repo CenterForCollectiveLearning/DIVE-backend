@@ -61,8 +61,27 @@ def delete_project(project_id):
 ################
 # Datasets
 ################
+def get_dataset(project_id, dataset_id):
+    # TODO use get_or_404 here?
+    logger.info("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
+    dataset = Dataset.query.get(project_id=project_id, dataset_id=dataset_id)
+    return row_to_dict(dataset)
+
 def get_datasets(**kwargs):
     return
+
+def insert_dataset(project_id, **kwargs):
+    logger.info("Insert dataset with project_id %s", project_id)
+    file_name = kwargs.get('filename')
+    path = kwargs.get('path')
+
+    dataset = Dataset(
+        file_name = file_name,
+        path = path,
+
+    )
+    return row_to_dict(dataset)
+
 
 ################
 # Dataset Properties
@@ -75,6 +94,14 @@ def get_datasets(**kwargs):
 ################
 # Specifications
 ################
+def insert_specs(project_id, specs):
+    spec_objects = []
+    for s in specs:
+        spec_objects.append(Spec(
+            s
+        ))
+    db.session.add_all(spec_objects)
+    db.session.commit()
 
 ################
 # Exported Specifications
@@ -88,7 +115,6 @@ def get_datasets(**kwargs):
 
 model_from_name = {
     'Project': Project,
-    'Dataset_Properties': Dataset_Properties,
 }
 
 def get_objects(project_id, model_name, **kwargs):

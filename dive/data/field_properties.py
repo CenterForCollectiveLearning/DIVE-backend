@@ -14,39 +14,39 @@ from dive.data.analysis import get_unique, get_bin_edges
 
 
 # Retrieve proeprties given dataset_docs
-# TODO Accept list of dIDs
-def get_field_properties(pID, datasets, get_values = False) :
+# TODO Accept list of dataset_ids
+def get_field_properties(project_id, datasets, get_values = False) :
     aggregatedProperties = []
     _property_labels = []
 
-    _find_doc = {"$or" : map(lambda x: {'dID' : x['dID']}, datasets)}
-    _all_properties = MI.getFieldProperty(_find_doc, pID)
+    _find_doc = {"$or" : map(lambda x: {'dataset_id' : x['dataset_id']}, datasets)}
+    _all_properties = MI.getFieldProperty(_find_doc, project_id)
 
     if len(_all_properties):
-        _properties_by_dID = {}
+        _properties_by_dataset_id = {}
 
         for p in _all_properties:
 
-            dID = p['dID']
-            del p['dID']
-            if not _properties_by_dID.get(dID):
-                _properties_by_dID[dID] = []
+            dataset_id = p['dataset_id']
+            del p['dataset_id']
+            if not _properties_by_dataset_id.get(dataset_id):
+                _properties_by_dataset_id[dataset_id] = []
 
-            _properties_by_dID[dID].append(p)
+            _properties_by_dataset_id[dataset_id].append(p)
 
     # If not in DB, compute
     else:
-        _properties_by_dID = compute_field_properties(pID, datasets)
+        _properties_by_dataset_id = compute_field_properties(project_id, datasets)
 
-    for _dID, _properties_data in _properties_by_dID.iteritems():
+    for _dataset_id, _properties_data in _properties_by_dataset_id.iteritems():
         for _property in _properties_data:
             if _property['label'] in _property_labels:
                 _j = _property_labels.index(_property['label'])
-                aggregatedProperties[_j]['dIDs'].append(_dID)
+                aggregatedProperties[_j]['dataset_ids'].append(_dataset_id)
 
             else:
                 _property_labels.append(_property['label'])
-                _property['dIDs'] = [_dID]
+                _property['dataset_ids'] = [_dataset_id]
 
                 if not get_values:
                     del _property['values']
@@ -61,8 +61,8 @@ def get_field_properties(pID, datasets, get_values = False) :
     return aggregatedProperties
 
 # Retrieve entities given datasets
-def get_entities(pID, datasets):
-    _properties = get_field_properties(pID, datasets, get_values = True)
+def get_entities(project_id, datasets):
+    _properties = get_field_properties(project_id, datasets, get_values = True)
     _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
 
     parent_entities = filter(lambda x: not x['is_child'], _all_entities)
@@ -81,9 +81,9 @@ def populate_child_entities(entity_name, child_entities, all_entities):
     return [_entity] + child_entities
 
 # Retrieve entities given datasets
-def get_attributes(pID, datasets):
+def get_attributes(project_id, datasets):
     attributes = []
-    _properties = get_field_properties(pID, datasets)
+    _properties = get_field_properties(project_id, datasets)
     attributes = filter(lambda x: x['type'] in ['float', 'integer'], _properties)
 
     return attributes
@@ -91,16 +91,16 @@ def get_attributes(pID, datasets):
 # TODO Reduce iterations over data elements
 # Compute properties of all passed datasets
 # Currently only getting properties by column
-# Arguments: pID + dataset documents
-# Returns a mapping from dIDs to properties
-def compute_field_properties(pID, dataset_docs):
-    properties_by_dID = {}
+# Arguments: project_id + dataset documents
+# Returns a mapping from dataset_ids to properties
+def compute_field_properties(project_id, dataset_docs):
+    properties_by_dataset_id = {}
 
     for dataset in dataset_docs:
         properties = []
 
-        dID = dataset['dID']
-        df = get_data(pID=pID, dID=dID)
+        dataset_id = dataset['dataset_id']
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = df.fillna('')
 
         _labels = df.columns.values
@@ -110,7 +110,7 @@ def compute_field_properties(pID, dataset_docs):
             properties[i] = {}
             properties[i]['label'] = label
 
-        print "Calculating properties for dID", dID
+        print "Calculating properties for dataset_id", dataset_id
         # Statistical properties
         # Only conduct on certain types?
         print "\tDescribing datasets"
@@ -210,16 +210,16 @@ def compute_field_properties(pID, dataset_docs):
 
         # Save properties into collection
         for _property in properties:
-            _property['dID'] = dID
-            if MI.getFieldProperty({'dID': dID, 'label': _property['label']}, pID):
-                print "saving field property", pID
-                tID = MI.upsertFieldProperty(_property, dID, pID)
+            _property['dataset_id'] = dataset_id
+            if MI.getFieldProperty({'dataset_id': dataset_id, 'label': _property['label']}, project_id):
+                print "saving field property", project_id
+                tID = MI.upsertFieldProperty(_property, dataset_id, project_id)
             else:
-                print "saving gield property,", pID
-                tID = MI.setFieldProperty(_property, pID)
+                print "saving gield property,", project_id
+                tID = MI.setFieldProperty(_property, project_id)
 
-        properties_by_dID[dID] = properties
-    return properties_by_dID
+        properties_by_dataset_id[dataset_id] = properties
+    return properties_by_dataset_id
 
 
 # Detect if a list is comprised of unique elements

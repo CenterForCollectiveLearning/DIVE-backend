@@ -33,10 +33,6 @@ class Dataset(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
 
-
-class Dataset_Properties(db.Model):
-    __tablename__ = 'dataset_properties'
-    id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))  # convert_unicode?
     path = db.Column(db.Unicode(250))
     file_name = db.Column(db.Unicode(250))
@@ -53,9 +49,6 @@ class Dataset_Properties(db.Model):
         backref="dataset",
         cascade="all, delete-orphan",
         lazy='dynamic')  # Get all field properties
-
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
-    dataset = db.relationship(Dataset)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
@@ -74,7 +67,7 @@ class Field_Properties(db.Model):
     unique_values = db.Column(JSONB)
     stats = db.Column(JSONB)
 
-    dataset_properties_id = db.Column(db.Integer, db.ForeignKey('dataset_properties.id'))
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)

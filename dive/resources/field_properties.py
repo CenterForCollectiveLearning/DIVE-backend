@@ -8,20 +8,20 @@ from dive.data.field_properties import get_field_properties, get_entities, get_a
 ############################
 # Property (begins processing on first client API call)
 # Determine: types, hierarchies, uniqueness (subset of distributions), ontology, distributions
-# INPUT: project_id, dID
-# OUTPUT: properties corresponding to that dID
+# INPUT: project_id, dataset_id
+# OUTPUT: properties corresponding to that dataset_id
 ############################
 propertiesGetParser = reqparse.RequestParser()
 propertiesGetParser.add_argument('project_id', type=str, required=True)
-propertiesGetParser.add_argument('dID', type=str, required=True)
+propertiesGetParser.add_argument('dataset_id', type=str, required=True)
 class FieldProperties(Resource):
     def get(self):
         print "[GET] Properties"
         args = propertiesGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
-        dID = args.get('dID')
+        dataset_id = args.get('dataset_id')
 
-        dataset_docs = MI.getData({"_id": ObjectId(dID)}, project_id)
+        dataset_docs = MI.getData({"_id": ObjectId(dataset_id)}, project_id)
 
         # Parse properties into right return format (maybe don't do on this layer)
         properties = []

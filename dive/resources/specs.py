@@ -17,17 +17,17 @@ class GeneratingProcedures(Resource):
 
 specsGetParser = reqparse.RequestParser()
 specsGetParser.add_argument('project_id', type=str, required=True)
-specsGetParser.add_argument('dID', type=str)
+specsGetParser.add_argument('dataset_id', type=str)
 class Specs(Resource):
     def get(self):
         print "[GET] Specs"
         args = specsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
-        dID = args.get('dID', None)
+        dataset_id = args.get('dataset_id', None)
 
-        specs_by_dID = get_viz_specs(project_id, dID)
+        specs_by_dataset_id = get_viz_specs(project_id, dataset_id)
 
-        return make_response(jsonify(format_json({'specs': specs_by_dID})))
+        return make_response(jsonify(format_json({'specs': specs_by_dataset_id})))
 
 
 visualizationGetParser = reqparse.RequestParser()
@@ -47,13 +47,13 @@ class Visualization(Resource):
 
         if visualizations:
             spec = visualizations[0]['spec'][0]
-            dID = spec['dID']
+            dataset_id = spec['dataset_id']
             formatted_spec = spec
             del formatted_spec['_id']
 
             result = {
                 'spec': spec,
-                'visualization': get_viz_data_from_enumerated_spec(spec, dID, project_id, data_formats=['visualize', 'table'])
+                'visualization': get_viz_data_from_enumerated_spec(spec, dataset_id, project_id, data_formats=['visualize', 'table'])
             }
 
         return make_response(jsonify(format_json(result)))
@@ -65,11 +65,11 @@ class VisualizationFromSpec(Resource):
         # TODO Implement required parameters
         specID = args.get('specID')
         project_id = args.get('project_id')
-        dID = args.get('dID')
+        dataset_id = args.get('dataset_id')
         spec = args.get('spec')
         conditional = args.get('conditional')
 
         result = get_viz_data_from_enumerated_spec(spec,
-            dID, project_id, data_formats=['visualize', 'table'])
+            dataset_id, project_id, data_formats=['visualize', 'table'])
 
         return make_response(jsonify(format_json(result)))

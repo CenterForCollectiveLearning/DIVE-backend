@@ -15,28 +15,28 @@ from werkzeug.utils import secure_filename
 from bson.objectid import ObjectId
 from flask import current_app
 
-from dive.db.db import MongoInstance as MI
+from dive.db import db_access
 from dive.data import DataType
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.data.dataset_properties import get_dataset_properties, compute_dataset_properties
 from dive.data.type_detection import get_column_types, detect_time_series
 
-def get_dataset_sample(dID, pID, start=0, inc=1000):
+def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     end = start + inc  # Upper bound excluded
-    df = get_data(dID=dID, pID=pID)
+    df = get_data(dataset_id=dataset_id, project_id=project_id)
     df = df.fillna('')
     sample = map(list, df.iloc[start:end].values)
 
-    result = get_dataset_properties(dID, pID)
+    result = get_dataset_properties(dataset_id, project_id)
     result['sample'] = sample
     return result
 
 
-def upload_file(pID, file):
+def upload_file(project_id, file):
     '''
     Dataflow:
-    1. Save file in uploads/pID directory
+    1. Save file in uploads/project_id directory
     2. Compute properties
     3. If all steps are successful, save file location in project data collection
     4. Return sample
@@ -45,7 +45,7 @@ def upload_file(pID, file):
     '''
     full_file_name = secure_filename(file.filename)
     file_name, file_type = full_file_name.rsplit('.', 1)
-    path = os.path.join(current_app.config['UPLOAD_FOLDER'], pID, full_file_name)
+    path = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id, full_file_name)
 
     datasets = []
 
@@ -57,15 +57,17 @@ def upload_file(pID, file):
 
     # Flat files
     if file_type in ['csv', 'tsv', 'txt'] :
-        dID = MI.insertDataset(pID, path, full_file_name)
-        data_doc = compute_dataset_properties(dID, pID, path=path)
+        dataset = db_access.insert_dataset(project_id, path=path, file_name=full_file_name)
+        dataset_id = dataset['id']
+        # dataset_id = MI.insertDataset(project_id, path, full_file_name)
+        dataset_doc = compute_dataset_properties(dataset_id, project_id, path=path)
 
-        data_doc.update({
+        dataset_doc.update({
             'title' : file_name,
             'filename' : full_file_name,
-            'dID' : dID,
+            'dataset_id' : dataset_id,
         })
-        datasets.append(data_doc)
+        datasets.append(dataset_doc)
 
     # Excel files
     elif file_type.startswith('xls') :
@@ -80,7 +82,7 @@ def upload_file(pID, file):
                 continue
 
             csv_file_name = file_name + "_" + sheet_name + ".csv"
-            csv_path = os.path.join(config['UPLOAD_FOLDER'], pID, csv_file_name)
+            csv_path = os.path.join(config['UPLOAD_FOLDER'], project_id, csv_file_name)
 
             csv_file = open(csv_path, 'wb')
             wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
@@ -88,12 +90,13 @@ def upload_file(pID, file):
                 wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
             csv_file.close()
 
-            dID = MI.insertDataset(pID, csv_path, csv_file_name)
-            data_doc = compute_dataset_properties(dID, pID, path=csv_path)
+            dataset_id = db_access.insert_dataset(project_id, path=csv_path, file_name=csv_file_name)
+            # TODO
+            data_doc = compute_dataset_properties(dataset_id, project_id, path=csv_path)
             data_doc.update({
                 'title' : csv_file_name.rsplit('.', 1)[0],
                 'filename' : csv_file_name,
-                'dID' : dID
+                'dataset_id' : dataset_id
             })
 
             datasets.append(data_doc)
@@ -119,13 +122,13 @@ def upload_file(pID, file):
             wr.writerow([unicode(v).encode('utf-8') for v in row])
         csv_file.close()
 
-        dID = MI.insertDataset(pID, csv_path, csv_file_name)
+        dataset_id = db_access.insert_dataset(project_id, path=csv_path, file_name=csv_file_name)
 
-        result = compute_dataset_properties(dID, pID, path=json_path)
+        result = compute_dataset_properties(dataset_id, project_id, path=json_path)
         result.update({
             'title' : csv_file_name.rsplit('.', 1)[0],
             'filename' : csv_file_name,
-            'dID' : dID,
+            'dataset_id' : dataset_id,
         })
         datasets.append(result)
     return datasets

@@ -1,4 +1,5 @@
-from flask import make_response, jsonify
+import json
+from flask import request, make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
@@ -23,7 +24,9 @@ uploadFileParser.add_argument('project_id', type=str, required=True)
 class UploadFile(Resource):
     ''' Saves file and returns dataset properties '''
     def post(self):
+        logger.info("In upload")
         form_data = json.loads(request.form.get('data'))
+        logger.info(form_data)
         project_id = form_data.get('project_id').strip().strip('""')
         file = request.files.get('file')
 
@@ -34,12 +37,6 @@ class UploadFile(Resource):
                 'status': 'success',
                 'datasets': dataset_properties
             }
-
-            dataset_doc = MI.getData({"$or" : map(lambda x: {"_id" : ObjectId(x['dID'])}, dataset_properties)}, project_id)
-
-            # compute_ontologies(project_id, data)
-            # print "Done initializing ontologies"
-
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 
@@ -62,7 +59,7 @@ class Datasets(Resource):
             dataset_data = {
                 'title': d['title'],
                 'filename': d['filename'],
-                'dID': d['dID']
+                'dataset_id': d['dataset_id']
             }
 
             if args['getStructure']:
@@ -81,55 +78,55 @@ datasetDeleteParser = reqparse.RequestParser()
 datasetDeleteParser.add_argument('project_id', type=str, action='append', required=True)
 class Dataset(Resource):
     # Get dataset descriptions or samples
-    def get(self, dID):
+    def get(self, dataset_id):
         args = datasetGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        dataset = MI.getData({'_id': ObjectId(dID)}, project_id)[0]
+        dataset = MI.getData({'_id': ObjectId(dataset_id)}, project_id)[0]
 
         response = {
-            'dID': dataset['dID'],
+            'dataset_id': dataset['dataset_id'],
             'title': dataset['title'],
-            'details': get_dataset_sample(dataset['dID'], project_id)
+            'details': get_dataset_sample(dataset['dataset_id'], project_id)
         }
         return make_response(jsonify(format_json(response)))
 
 
-    def delete(self, dID):
+    def delete(self, dataset_id):
         args = datasetDeleteParser.parse_args()
         project_id = args.get('project_id')[0]
 
         # TODO Handle this formatting on the client side (or server side for additional safety?)
         project_id = project_id.strip().strip('"')
-        dID = dID.strip().strip('"')
-        return [ MI.deleteData(dID, project_id) ]
+        dataset_id = dataset_id.strip().strip('"')
+        return [ MI.deleteData(dataset_id, project_id) ]
 
 
 # Public Dataset retrieval
 preloadedDataGetParser = reqparse.RequestParser()
-preloadedDataGetParser.add_argument('dID', type=str, action='append')
+preloadedDataGetParser.add_argument('dataset_id', type=str, action='append')
 preloadedDataGetParser.add_argument('sample', type=str, required=True, default='true')
 
 # Use public dataset in project
 preloadedDataPostParser = reqparse.RequestParser()
-preloadedDataPostParser.add_argument('dID', type=str, action='append')
+preloadedDataPostParser.add_argument('dataset_id', type=str, action='append')
 preloadedDataPostParser.add_argument('project_id', type=str, required=True, default='true')
 class PreloadedDatasets(Resource):
     # Get dataset descriptions or samples
     def get(self):
         args = preloadedDataGetParser.parse_args()
-        dIDs = args.get('dID')
+        dataset_ids = args.get('dataset_id')
         project_id = 'dive'
-        print "[GET] PUBLIC Data", project_id, dIDs
+        print "[GET] PUBLIC Data", project_id, dataset_ids
 
-        # Specific dIDs
-        if dIDs:
-            print "Requested specific dIDs:", dIDs
-            dataLocations = [ MI.getData({'_id': ObjectId(dID)}, project_id) for dID in dIDs ]
+        # Specific dataset_ids
+        if dataset_ids:
+            print "Requested specific dataset_ids:", dataset_ids
+            dataLocations = [ MI.getData({'_id': ObjectId(dataset_id)}, project_id) for dataset_id in dataset_ids ]
 
         # All datasets
         else:
-            print "Did not request specific dID. Returning all datasets"
+            print "dataset_id not request specific dataset_id. Returning all datasets"
             datasets = MI.getData({}, project_id)
             data_list = []
             for d in datasets:
@@ -137,32 +134,32 @@ class PreloadedDatasets(Resource):
                 result.update({
                     'title': d['title'],
                     'filename': d['filename'],
-                    'dID': d['dID'],
+                    'dataset_id': d['dataset_id'],
                 })
                 data_list.append(result)
             return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
 
     def post(self):
         args = preloadedDataPostParser.parse_args()
-        dIDs = args.get('dID')
+        dataset_ids = args.get('dataset_id')
         project_id = args.get('project_id')
 
         # Get data for selected datasets
-        formatted_dIDs = [ObjectId(dID) for dID in dIDs]
-        new_dIDs = MI.usePublicDataset({'_id': {'$in': formatted_dIDs}}, project_id)
-        datasets = MI.getData({'_id': {'$in': new_dIDs}}, project_id)
+        formatted_dataset_ids = [ObjectId(dataset_id) for dataset_id in dataset_ids]
+        new_dataset_ids = MI.usePublicDataset({'_id': {'$in': formatted_dataset_ids}}, project_id)
+        datasets = MI.getData({'_id': {'$in': new_dataset_ids}}, project_id)
 
         compute_field_properties(project_id, datasets)
         compute_ontologies(project_id, datasets)
 
         data_list = []
         for d in datasets:
-            # New dID
+            # New dataset_id
             result.update({
                 'title': d['title'],
                 'filename': d['filename'],
                 'path': d['path'],
-                'dID': d['dID']
+                'dataset_id': d['dataset_id']
                 })
             data_list.append(result)
 

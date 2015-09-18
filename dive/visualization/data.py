@@ -40,7 +40,7 @@ def _get_derived_field(df, label_descriptor):
     return result
 
 
-def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
+def get_viz_data_from_enumerated_spec(spec, dataset_id, project_id, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
     structure), and all necessary information to interpret data.
@@ -51,7 +51,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
         Table: {columns: list, data: matrix}
 
     Args:
-    spec, dID, pID, format (list of 'score', 'visualize', or 'table')
+    spec, dataset_id, project_id, format (list of 'score', 'visualize', or 'table')
     Returns:
         data specified by spec, in specified format
     Raises:
@@ -67,7 +67,7 @@ def get_viz_data_from_enumerated_spec(spec, dID, pID, data_formats=['score']):
     args = spec['args']
     meta = spec['meta']
 
-    df = get_data(pID=pID, dID=dID)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     if gp == GeneratingProcedure.IND_VAL.value:
         field_a_label = args['fieldA']['label']
@@ -293,27 +293,27 @@ def lists_to_collection(li_a, li_b):
 
 # df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
 # spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
-def get_viz_data_from_builder_spec(spec, conditional, pID):
+def get_viz_data_from_builder_spec(spec, conditional, project_id):
     '''
     Deprecated function used to return viz data for a spec constructed by
     old builder
     '''
     ### 0) Parse and validate arguments
     # TODO Ensure well-formed spec
-    dID = spec.get('dID')
+    dataset_id = spec.get('dataset_id')
     field_a = spec.get('field_a')
     operation = spec.get('operation')
     arguments = spec.get('arguments')
 
-    if not (dID, field_a, operation):
-        return "Did not pass required parameters", 400
+    if not (dataset_id, field_a, operation):
+        return "dataset_id not pass required parameters", 400
 
     ### Returned data structures
     viz_result = {}
     table_result = {}
 
     ### 1) Access dataset
-    df = get_data(pID=pID, dID=dID)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     ### 2) Apply all conditionals
     conditioned_df = get_conditioned_data(df, conditional)

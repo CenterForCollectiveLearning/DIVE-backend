@@ -13,18 +13,18 @@ from dive.db.db import MongoInstance as MI
 
 # TODO Change to get_data_as_dataframe
 # Or more generally return data in different formats
-def get_data(pID=None, dID=None, path=None, nrows=None):
-    if IMD.hasData(dID):
-        return IMD.getData(dID)
+def get_data(project_id=None, dataset_id=None, path=None, nrows=None):
+    if IMD.hasData(dataset_id):
+        return IMD.getData(dataset_id)
     if path:
         delim = get_delimiter(path)
         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
-    if dID and pID:
-        dataset = MI.getData({'_id' : ObjectId(dID)}, pID)[0]
+    if dataset_id and project_id:
+        dataset = MI.getData({'_id' : ObjectId(dataset_id)}, project_id)[0]
         path = dataset['path']
         delim = get_delimiter(path)
         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
-        IMD.insertData(dID, df)
+        IMD.insertData(dataset_id, df)
     return df
 
 

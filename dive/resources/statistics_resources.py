@@ -37,7 +37,7 @@ class RegressionEstimator(Resource):
 
 # For inferred visualizations
 statsFromSpecPostParser = reqparse.RequestParser()
-statsFromSpecPostParser.add_argument('dID', type=str, location='json')
+statsFromSpecPostParser.add_argument('dataset_id', type=str, location='json')
 statsFromSpecPostParser.add_argument('spec', type=str, location='json')
 class StatisticsFromSpec(Resource):
     def post(self):

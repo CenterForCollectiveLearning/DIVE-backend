@@ -33,8 +33,9 @@ class Project(Resource):
 
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
-        if os.path.isdir(current_app.config['UPLOAD_FOLDER']):
-            shutil.rmtree(os.path.join(current_app.config['UPLOAD_FOLDER'], result['id']))
+        project_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], result['id'])
+        if os.path.isdir(project_dir):
+            shutil.rmtree(project_dir)
         return jsonify({"message": "Successfully deleted project.",
                             "id": int(result['id'])})
 
@@ -66,7 +67,7 @@ class Projects(Resource):
         result = db_access.insert_project(title=title, description=description)
 
         logger.info("Created upload directory for project_id: %s", result['id'])
-        os.mkdir(os.path.join(config['UPLOAD_FOLDER'], result['id']))
+        os.mkdir(os.path.join(current_app.config['UPLOAD_FOLDER'], result['id']))
 
         return jsonify({"message": "Successfully created project.",
                             "id": int(result['id'])})

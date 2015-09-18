@@ -11,12 +11,12 @@ class VisualizationFromExportedSpec(Resource):
         # TODO Implement required parameters
         specID = args.get('specID')
         project_id = args.get('project_id')
-        dID = args.get('dID')
+        dataset_id = args.get('dataset_id')
         spec = args.get('spec')
         conditional = args.get('conditional')
 
         result = get_viz_data_from_enumerated_spec(spec,
-            dID, project_id, data_formats=['visualize', 'table'])
+            dataset_id, project_id, data_formats=['visualize', 'table'])
 
         return make_response(jsonify(format_json(result)))
 
