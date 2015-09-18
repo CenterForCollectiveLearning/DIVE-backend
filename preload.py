@@ -1,5 +1,5 @@
 '''
-Script to add preloaded datasets to DIVE database
+Script to populate database tables
 '''
 from os import listdir, curdir
 from os.path import isfile, join

@@ -1,49 +1,32 @@
 '''
-Script to reset development environment (clean database and upload paths)
+Script to reset development environment (clean database and upload directories)
 '''
 import os
 import shutil
-from bson.objectid import ObjectId
-from data.db import MongoInstance as MI
-from config import config
+from flask import Flask
+from flask.ext.sqlalchemy import SQLAlchemy
 
 
-def remove_uploads():
-    print "Removing data directories in upload folder"
-    UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
-    shutil.rmtree(UPLOAD_FOLDER)
+def drop_tables(db):
+    db.reflect()
+    db.drop_all()
 
+def create_tables(db):
+    import dive.db.models
+    db.create_all()
 
-def create_directories():
-    print "Creating upload and public data folder"
-    UPLOAD_FOLDER = os.path.join(os.curdir, config['UPLOAD_FOLDER'])
-    PUBLIC_DATA_FOLDER = os.path.join(os.curdir, config['PUBLIC_DATA_FOLDER'])
-    os.mkdir(UPLOAD_FOLDER)
-    if not os.path.exists(PUBLIC_DATA_FOLDER):
-        os.mkdir(PUBLIC_DATA_FOLDER)
-
-
-def clean_database():
-    pIDs = [str(e['_id']) for e in MI.client['dive'].projects.find()]
-
-    print "Removing project dbs"
-    for pID in pIDs:
-        MI.client.drop_database(pID)
-
-    print "Cleaning projects from DIVE db"
-    for pID in pIDs:
-        MI.client['dive'].projects.remove({'_id': ObjectId(pID)})
-
-    print "Cleaning users from DIVE db"
-    MI.client['dive'].users.remove()
-
-    print "Cleaning preloaded datasets from DIVE db"
-    MI.client['dive'].datasets.remove()
-    return
+def remove_uploads(app):
+    app.logger.info("Removing data directories in upload folder")
+    if os.path.isdir(app.config['UPLOAD_FOLDER']):
+        UPLOAD_FOLDER = os.path.join(os.curdir, app.config['UPLOAD_FOLDER'])
+        shutil.rmtree(UPLOAD_FOLDER)
 
 
 if __name__ == '__main__':
-    print "Resetting production environment"
-    remove_uploads()
-    create_directories()
-    clean_database()
+    app = Flask(__name__)
+    app.config.from_object('config.DevelopmentConfig')
+    db = SQLAlchemy(app)
+
+    remove_uploads(app)
+    drop_tables(db)
+    create_tables(db)

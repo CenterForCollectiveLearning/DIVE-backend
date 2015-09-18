@@ -7,12 +7,12 @@ from StringIO import StringIO
 
 from dive.core import logger
 
-#####################################################################
-# Endpoint returning exported image
-#####################################################################
 renderSVGPostParser = reqparse.RequestParser()
 renderSVGPostParser.add_argument('data')
 class Render(Resource):
+    '''
+    Endpoint returned rendered version of SVG
+    '''
     def post(self):
         args = renderSVGPostParser.parse_args()
         data = json.loads(args.get('data'))

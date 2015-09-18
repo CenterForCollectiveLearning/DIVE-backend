@@ -8,8 +8,10 @@ class Project(db.Model):
     __tablename__ = 'project'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))
-    # creationDate = db.Column(Date, index=True)
-    # updateDate = db.Column(Date, index=True)
+    description = db.Column(db.Unicode(2000))
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 
 class Dataset(db.Model):
@@ -22,8 +24,8 @@ class Dataset(db.Model):
     __tablename__ = 'dataset'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.Unicode())
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
     # Store dataset here here?
     data = db.Column(JSONB)

@@ -6,11 +6,10 @@ from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.local import LocalProxy
 
-# app_config = app.config
 
 def ensure_directories(app):
     if not os.path.isdir(app.config['UPLOAD_FOLDER']):
-        app.info("Creating Upload directory")
+        app.logger.info("Creating Upload directory")
         os.mkdir(app.config['UPLOAD_FOLDER'])
 
 logger = None

@@ -1,3 +1,10 @@
+'''
+Module containing functions accessing the database.
+
+Other should have no direct access to the database, only to this layer.
+Parameters in, JSONable objects out.
+'''
+
 from models import *
 from dive.core import db, logger
 
@@ -6,51 +13,43 @@ def row_to_dict(r):
 
 ################
 # Projects
+# https://github.com/sloria/PythonORMSleepy/blob/master/sleepy/api_sqlalchemy.py
 ################
 def get_project(project_id):
     project = Project.query.get_or_404(int(project_id))
     return row_to_dict(project)
 
-# https://github.com/sloria/PythonORMSleepy/blob/master/sleepy/api_sqlalchemy.py
+def insert_project(**kwargs):
+    title = kwargs.get('title')
+    description = kwargs.get('description')
+
+    project = Project(
+        title=title,
+        description=description,
+        creation_date=datetime.utcnow()
+    )
+    db.session.add(project)
+    db.session.commit()
+    return row_to_dict(project)
+
+def update_project(project_id, **kwargs):
+    title = kwargs.get('title')
+    description = kwargs.get('description')
+
+    project = Project.query.get_or_404(int(project_id))
+    if kwargs.get('title'): project.title = title
+    if kwargs.get('description'): project.description = description
+
+    project = Project(title=title, description=description)
+    db.session.add(project)
+    db.session.commit()
+    return row_to_dict(project)
+
 def delete_project(project_id):
     project = Project.query.get_or_404(int(project_id))
     db.session.delete(project)
     db.session.commit()
-    return project
-
-# TODO General create function?
-def get_projects(**kwargs):
-    # TODO Ensure auth here
-    if kwargs.get(project_id):
-        logger.info("Requested project given project_id: %s", project_id)
-        result = Project.query.filter(Project.id == project_id).first()
-        if result:
-            return row_to_dict(result)
-        else:
-            return {}, 404
-    # TODO Filter by user_id
-    else:
-        result = Project.query.all()
-    return [ row_to_dict(row) for row in result ]
-
-
-def create_project(**kwargs):
-    new_project = Project(title=title)
-    db.add(new_project)
-    return db.commit()
-
-
-def update_project(update_doc, projectID):
-    db.query(Project).filter(Project.id == projectID).update(update_doc).delete()
-    db.commit()
-
-
-def delete_projects(project_ids = None):
-    # Synchronize session?
-    # How to deal with the filter object?
-    for project_id in project_ids:
-        db.query(Project).filter(Project.id == project_id).delete()
-    return db.commit()
+    return row_to_dict(project)
 
 model_from_name = {
     'Project': Project,

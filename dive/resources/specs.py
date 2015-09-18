@@ -4,8 +4,8 @@ from flask.ext.restful import Resource, reqparse
 from dive.core import logger
 from dive.resources.utilities import format_json
 from dive.visualization import GeneratingProcedure
-from dive.visualization.viz_specs import get_viz_specs
-from dive.visualization.viz_data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
+from dive.visualization.specs import get_viz_specs
+from dive.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 
 
 class GeneratingProcedures(Resource):
