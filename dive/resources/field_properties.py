@@ -1,7 +1,7 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-from dive.core import logger
+import logging
 from dive.resources.utilities import format_json
 from dive.data.field_properties import get_field_properties, get_entities, get_attributes, compute_field_properties
 

@@ -4,11 +4,12 @@ import shutil
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-from dive.core import logger, config
+from dive.core import config
 from dive.db import db_access
 from dive.resources.utilities import format_json
 
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Project(Resource):
     '''
@@ -56,7 +57,7 @@ class Projects(Resource):
 
         result = db_access.insert_project(title=title, description=description)
 
-        # logger.info("Created upload directory for project_id: %s", result.id)
+        logger.info("Created upload directory for project_id: %s", result['id'])
         os.mkdir(os.path.join(config['UPLOAD_FOLDER'], result['id']))
 
         return jsonify({"message": "Successfully created project.",

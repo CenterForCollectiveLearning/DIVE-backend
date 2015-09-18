@@ -5,7 +5,7 @@ import cairosvg
 import cairocffi as cairo
 from StringIO import StringIO
 
-from dive.core import logger
+import logging
 
 renderSVGPostParser = reqparse.RequestParser()
 renderSVGPostParser.add_argument('data')

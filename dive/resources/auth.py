@@ -2,9 +2,11 @@ from flask import request, make_response, json
 from flask.ext.restful import Resource
 from passlib.hash import sha256_crypt
 
-from dive.core import logger
 from dive.db import db_access
 from dive.db.db import MongoInstance as MI
+
+import logging
+logger = logging.getLogger(__name__)
 
 # look at https://github.com/spendb/spendb/blob/master/spendb/views/api/account.py
 

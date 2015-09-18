@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from dive.core import logger
+import logging
 
 class RoundedFloat(float):
     def __repr__(self):

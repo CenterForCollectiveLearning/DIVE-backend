@@ -1,10 +1,13 @@
 import os
 import sys
-import logging
 from celery import Celery
 from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.local import LocalProxy
+
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def ensure_directories(app):
@@ -12,13 +15,14 @@ def ensure_directories(app):
         app.logger.info("Creating Upload directory")
         os.mkdir(app.config['UPLOAD_FOLDER'])
 
-logger = None
 config = None
+logging.basicConfig(level=logging.DEBUG)
+logging.StreamHandler(stream=sys.stdout)
+
 db = SQLAlchemy()
 
 # See https://github.com/spendb/spendb/blob/da042b19884e515eb15e3d56fda01b7b94620983/spendb/core.py
 def create_app(**kwargs):
-    global logger
     global config
     app = Flask(__name__)
     app.config.from_object('config.DevelopmentConfig')
@@ -31,11 +35,6 @@ def create_app(**kwargs):
     # db.create_all(app=app)
     # db.reflect()
     # db.drop_all()
-
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setLevel(logging.INFO)
-    app.logger.addHandler(handler)
-    logger = app.logger
 
     ensure_directories(app)
     return app
