@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from app import logger
+from core import logger
 
 class RoundedFloat(float):
     def __repr__(self):

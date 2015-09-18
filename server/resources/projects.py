@@ -4,7 +4,7 @@ import shutil
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-from app import logger, app_config
+from core import logger, config
 from db import db_access
 from .utilities import format_json
 

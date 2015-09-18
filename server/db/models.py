@@ -1,5 +1,5 @@
-from app import db
-
+from core import db
+from datetime import datetime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
 
@@ -7,15 +7,26 @@ from constants import Role, User_Status
 class Project(db.Model):
     __tablename__ = 'project'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(250))
+    title = db.Column(db.Unicode(250))
     # creationDate = db.Column(Date, index=True)
     # updateDate = db.Column(Date, index=True)
 
 
-# Distinguish from Dataset_Properties?
 class Dataset(db.Model):
+    '''
+    The dataset is the core entity of any access to data.
+    The dataset keeps an in-memory representation of the data model
+    (including all dimensions and measures) which can be used to
+    generate necessary queries.
+    '''
     __tablename__ = 'dataset'
     id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.Unicode())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+    # Store dataset here here?
+    data = db.Column(JSONB)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
@@ -24,12 +35,12 @@ class Dataset(db.Model):
 class Dataset_Properties(db.Model):
     __tablename__ = 'dataset_properties'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(250))  # convert_unicode?
-    path = db.Column(db.String(250))
-    file_name = db.Column(db.String(250))
-    file_type = db.Column(db.String(250))
-    rows = db.Column(db.String(250))
-    cols = db.Column(db.String(250))
+    title = db.Column(db.Unicode(250))  # convert_unicode?
+    path = db.Column(db.Unicode(250))
+    file_name = db.Column(db.Unicode(250))
+    file_type = db.Column(db.Unicode(250))
+    rows = db.Column(db.Unicode(250))
+    cols = db.Column(db.Unicode(250))
     field_names = db.Column(JSONB)
     field_types = db.Column(JSONB)
     field_accessors = db.Column(JSONB)
@@ -51,12 +62,12 @@ class Dataset_Properties(db.Model):
 class Field_Properties(db.Model):
     __tablename__ = 'field_properties'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(250))  # Have these here, vs. in dataset_properties?
-    type = db.Column(db.String(250))  #
+    name = db.Column(db.Unicode(250))  # Have these here, vs. in dataset_properties?
+    type = db.Column(db.Unicode(250))  #
     index = db.Column(db.Integer)
     normality = db.Column(JSONB)
     is_unique = db.Column(db.Boolean())
-    child = db.Column(db.String(250))
+    child = db.Column(db.Unicode(250))
     is_child = db.Column(db.Boolean())
     unique_values = db.Column(JSONB)
     stats = db.Column(JSONB)
@@ -70,9 +81,9 @@ class Field_Properties(db.Model):
 class Specification(db.Model):
     __tablename__ = 'specification'
     id = db.Column(db.Integer, primary_key=True)
-    generating_prodecure = db.Column(db.String(250))
-    type_structure = db.Column(db.String(250))
-    viz_type = db.Column(db.String(250))  # TODO Enum?
+    generating_prodecure = db.Column(db.Unicode(250))
+    type_structure = db.Column(db.Unicode(250))
+    viz_type = db.Column(db.Unicode(250))  # TODO Enum?
     args = db.Column(JSONB)
     meta = db.Column(JSONB)
     score = db.Column(JSONB)
@@ -95,11 +106,21 @@ class Exported_Specification(db.Model):
     project = db.relationship(Project)
 
 
-class User(db.Model):
+class Group(db.Model):
+    __tablename__ = 'group'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Unicode(50), unique=True)
+    email = db.Column(db.Unicode(120), unique=True)
+    password = db.Column(db.Unicode(120))
+    role = db.Column(db.SmallInteger, default=Role.USER.value)
+    status = db.Column(db.SmallInteger, default=User_Status.NEW.value)
+
+
+class Account(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True)
-    email = db.Column(db.String(120), unique=True)
-    password = db.Column(db.String(120))
+    name = db.Column(db.Unicode(50), unique=True)
+    email = db.Column(db.Unicode(120), unique=True)
+    password = db.Column(db.Unicode(120))
     role = db.Column(db.SmallInteger, default=Role.USER.value)
     status = db.Column(db.SmallInteger, default=User_Status.NEW.value)

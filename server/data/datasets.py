@@ -18,7 +18,7 @@ from .access import get_data
 from .dataset_properties import get_dataset_properties, compute_dataset_properties
 from .type_detection import get_column_types, detect_time_series
 
-from app import app_config
+from core import config
 from werkzeug.utils import secure_filename
 from db import MongoInstance as MI
 

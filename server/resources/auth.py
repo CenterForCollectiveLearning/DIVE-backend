@@ -1,4 +1,4 @@
-from app import logger
+from core import logger
 from api import app, api
 from data.db import MongoInstance as MI
 
@@ -6,6 +6,7 @@ from flask import request, make_response, json
 from flask.ext.restful import Resource
 from passlib.hash import sha256_crypt
 
+# look at https://github.com/spendb/spendb/blob/master/spendb/views/api/account.py
 
 @app.route("/api/register", methods=["POST"])
 def register() :

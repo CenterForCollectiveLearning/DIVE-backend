@@ -1,5 +1,5 @@
 from models import *
-from app import db, logger
+from core import db, logger
 
 def row_to_dict(r):
     return {c.name: str(getattr(r, c.name)) for c in r.__table__.columns}

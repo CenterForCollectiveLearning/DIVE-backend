@@ -1,7 +1,7 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-from app import logger
+from core import logger
 from .utilities import format_json
 from db import db_access
 from data.datasets import upload_file, get_dataset_sample
