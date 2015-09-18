@@ -2,7 +2,7 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.core import logger
-from .utilities import format_json
+from dive.resources.utilities import format_json
 
 
 class VisualizationFromExportedSpec(Resource):

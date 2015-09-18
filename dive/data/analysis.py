@@ -5,14 +5,13 @@ import os
 import json
 from itertools import combinations
 from collections import OrderedDict  # Get unique elements of list while preserving order
-from data.db import MongoInstance as MI
-from data.access import get_data
-from data.type_detection import get_column_types
-
 from time import time
 import numpy as np
 import scipy.stats as stats
 import math
+
+from dive.data.access import get_data
+from dive.data.type_detection import get_column_types
 
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order

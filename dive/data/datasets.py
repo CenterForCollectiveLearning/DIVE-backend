@@ -6,25 +6,21 @@ No manipulation or calculation, only description
 
 import os
 import re
+import csv
 import xlrd
+import json
 import codecs
 import pandas as pd
-
-from flask import json
-import csv
-
-from . import DataType
-from .access import get_data
-from .dataset_properties import get_dataset_properties, compute_dataset_properties
-from .type_detection import get_column_types, detect_time_series
+from werkzeug.utils import secure_filename
+from bson.objectid import ObjectId
 
 from dive.core import config
-from werkzeug.utils import secure_filename
-from db import MongoInstance as MI
-
-from bson.objectid import ObjectId
-from in_memory_data import InMemoryData as IMD
-
+from dive.db.db import MongoInstance as MI
+from dive.data import DataType
+from dive.data.access import get_data
+from dive.data.in_memory_data import InMemoryData as IMD
+from dive.data.dataset_properties import get_dataset_properties, compute_dataset_properties
+from dive.data.type_detection import get_column_types, detect_time_series
 
 def get_dataset_sample(dID, pID, start=0, inc=1000):
     end = start + inc  # Upper bound excluded

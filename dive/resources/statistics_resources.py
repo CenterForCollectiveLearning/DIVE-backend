@@ -3,8 +3,8 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.core import logger
-from .utilities import format_json
-from statistics.statistics import getStatisticsFromSpec, timeEstimator
+from dive.resources.utilities import format_json
+from dive.statistics.statistics import getStatisticsFromSpec, timeEstimator
 
 #####################################################################
 # Endpoint returning estimated time for regression

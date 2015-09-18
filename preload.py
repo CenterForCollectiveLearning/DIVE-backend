@@ -4,7 +4,7 @@ Script to add preloaded datasets to DIVE database
 from os import listdir, curdir
 from os.path import isfile, join
 from bson.objectid import ObjectId
-from db import MongoInstance as MI
+from dive.db import MongoInstance as MI
 from config import config
 
 

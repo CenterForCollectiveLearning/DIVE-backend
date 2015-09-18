@@ -3,24 +3,21 @@
 '''
 Functions for returning the data corresponding to a given visualization type and specification
 '''
-from flask import Flask  # Don't do this
-from bson.objectid import ObjectId
-
-from . import GeneratingProcedure, TypeStructure
-from data.access import get_delimiter, get_data, get_conditioned_data
-from data.type_detection import detect_time_series, get_variable_type
-from data.db import MongoInstance as MI
-from data.in_memory_data import InMemoryData as IMD
-from analysis.analysis import get_bin_edges
-import viz_stats
-
-from dive.core import config
-
 import numpy as np
 import pandas as pd
 import scipy as sp
 import math
 from itertools import combinations
+
+
+from dive.core import config
+from dive.visualization import GeneratingProcedure, TypeStructure
+from dive.data.access import get_delimiter, get_data, get_conditioned_data
+from dive.data.type_detection import detect_time_series, get_variable_type
+from dive.db.db import MongoInstance as MI
+from dive.data.in_memory_data import InMemoryData as IMD
+from dive.data.analysis import get_bin_edges
+
 
 # TODO just use regular strings?
 group_fn_from_string = {

@@ -4,14 +4,13 @@ Dataset field properties
 
 import json
 import numpy as np
-
+from scipy import stats as sc_stats
 from time import time
 
-from .db import MongoInstance as MI
-from .access import get_data
-from .type_detection import get_column_types
-from analysis.analysis import get_unique, get_bin_edges
-from scipy import stats as sc_stats
+from dive.db.db import MongoInstance as MI
+from dive.data.access import get_data
+from dive.data.type_detection import get_column_types
+from dive.data.analysis import get_unique, get_bin_edges
 
 
 # Retrieve proeprties given dataset_docs

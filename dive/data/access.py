@@ -7,8 +7,8 @@ TODO Rename either this or access.py to be more descriptive
 import pandas as pd
 from bson.objectid import ObjectId
 
-from .in_memory_data import InMemoryData as IMD
-from .db import MongoInstance as MI
+from dive.data.in_memory_data import InMemoryData as IMD
+from dive.db.db import MongoInstance as MI
 
 
 # TODO Change to get_data_as_dataframe

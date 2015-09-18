@@ -1,17 +1,16 @@
-from data.db import MongoInstance as MI
-from marginal_spec_functions import A, B, C, D, E, F, G, H
-from viz_stats import *
-from scipy import stats as sc_stats
-from viz_data import get_viz_data_from_enumerated_spec
-from viz_type_mapping import get_viz_types_from_spec
-from scoring import score_spec
-
 import copy
 from pprint import pprint
 from time import time
+from scipy import stats as sc_stats
 import math
 import uuid
 
+from dive.db.db import MongoInstance as MI
+from dive.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
+from dive.visualization.viz_stats import *
+from dive.visualization.viz_data import get_viz_data_from_enumerated_spec
+from dive.visualization.viz_type_mapping import get_viz_types_from_spec
+from dive.visualization.scoring import score_spec
 
 def compute_viz_specs(pID, dID=None):
     '''

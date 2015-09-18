@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import scipy
 from scipy.stats import norm, mstats, skew, linregress, chisquare
-from viz_data import *
-
 from time import time
+
+from dive.visualization.viz_data import *
 
 def getVisualizationStats(category, spec, conditional, config, pID):
     stats = {}
@@ -90,7 +90,7 @@ def getTimeSeriesStats(spec, conditional, config, pID):
     if spec.get('group'):
         groupby = spec['group']['by']['title']
         cond_df = getRawData('treemap', spec, conditional, config, pID).fillna(0)
-    
+
         grouped_df = cond_df.groupby(groupby)
         aggregated_series = grouped_df.sum().transpose()
         means = aggregated_series.mean().to_dict()
@@ -98,7 +98,7 @@ def getTimeSeriesStats(spec, conditional, config, pID):
         normalized_stds = {}
         for k, std in stds.iteritems():
             normalized_stds[k] = std / means[k]
-    
+
 
         # stats['describe'] = dict(finalSeries.describe().to_dict().items() + cond_df[groupby].describe().to_dict().items())
         stats['count'] = len(np.unique(cond_df[groupby]))
@@ -111,7 +111,7 @@ def getTimeSeriesStats(spec, conditional, config, pID):
         mean = aggregated_series.mean()
         std = aggregated_series.std()
         normalized_std = std / mean
-    
+
         stats = {}
         stats['count'] = 1
         stats['means'] = {'All': mean}
@@ -173,7 +173,7 @@ def getScatterplotStats(pID, spec, raw_data) :
             stats['linregress'] = {
                 'slope' : lin[0],
                 'intercept' : lin[1],
-                'r' : lin[2], 
+                'r' : lin[2],
                 'p' : lin[3],
                 'std_err' : lin[4]
             }

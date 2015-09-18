@@ -2,10 +2,10 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.core import logger
-from .utilities import format_json
-from visualization import GeneratingProcedure
-from visualization.viz_specs import get_viz_specs
-from visualization.viz_data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
+from dive.resources.utilities import format_json
+from dive.visualization import GeneratingProcedure
+from dive.visualization.viz_specs import get_viz_specs
+from dive.visualization.viz_data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 
 
 class GeneratingProcedures(Resource):

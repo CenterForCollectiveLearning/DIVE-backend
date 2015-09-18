@@ -5,8 +5,8 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.core import logger, config
-from db import db_access
-from .utilities import format_json
+from dive.db import db_access
+from dive.resources.utilities import format_json
 
 
 ############################

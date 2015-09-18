@@ -2,10 +2,10 @@
 Get and compute whole-dataset properties
 '''
 import pandas as pd
-1
-from .access import get_data, get_delimiter
-from .type_detection import get_column_types, detect_time_series
-from db import MongoInstance as MI
+
+from dive.data.access import get_data, get_delimiter
+from dive.data.type_detection import get_column_types, detect_time_series
+from dive.db.db import MongoInstance as MI
 
 from bson.objectid import ObjectId
 from in_memory_data import InMemoryData as IMD

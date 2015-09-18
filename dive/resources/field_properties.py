@@ -2,8 +2,8 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.core import logger
-from .utilities import format_json
-from data.field_properties import get_field_properties, get_entities, get_attributes, compute_field_properties
+from dive.resources.utilities import format_json
+from dive.data.field_properties import get_field_properties, get_entities, get_attributes, compute_field_properties
 
 ############################
 # Property (begins processing on first client API call)

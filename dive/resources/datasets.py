@@ -2,11 +2,11 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.core import logger
-from .utilities import format_json
-from db import db_access
-from data.datasets import upload_file, get_dataset_sample
-from data.dataset_properties import get_dataset_properties
-from analysis.analysis import compute_ontologies, get_ontologies
+from dive.db import db_access
+from dive.resources.utilities import format_json
+from dive.data.datasets import upload_file, get_dataset_sample
+from dive.data.dataset_properties import get_dataset_properties
+from dive.data.analysis import compute_ontologies, get_ontologies
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 

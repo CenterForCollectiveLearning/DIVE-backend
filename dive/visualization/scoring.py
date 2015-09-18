@@ -1,4 +1,4 @@
-from . import GeneratingProcedure, TypeStructure
+from dive.visualization import GeneratingProcedure, TypeStructure
 
 
 # Expressiveness

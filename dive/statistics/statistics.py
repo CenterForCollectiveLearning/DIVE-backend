@@ -8,7 +8,7 @@ from operator import add, mul
 import time
 from math import log10, floor
 
-from data.access import get_data
+from dive.data.access import get_data
 
 ############
 #Functions that run all tests
