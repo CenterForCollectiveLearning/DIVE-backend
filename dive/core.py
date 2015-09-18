@@ -17,7 +17,9 @@ config = None
 db = SQLAlchemy()
 
 # See https://github.com/spendb/spendb/blob/da042b19884e515eb15e3d56fda01b7b94620983/spendb/core.py
-def create_app(**config):
+def create_app(**kwargs):
+    global logger
+    global config
     app = Flask(__name__)
     app.config.from_object('config.DevelopmentConfig')
     config = app.config
@@ -26,9 +28,10 @@ def create_app(**config):
     api.init_app(app)
 
     db.init_app(app)
-
+    # db.create_all(app=app)
     # db.reflect()
     # db.drop_all()
+
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)

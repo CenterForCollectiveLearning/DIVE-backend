@@ -13,3 +13,5 @@ venv/
 *.log
 
 uploads/
+
+migrations/
