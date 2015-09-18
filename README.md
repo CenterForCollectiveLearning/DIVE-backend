@@ -2,11 +2,20 @@ DIVE Backend
 =================================================
 The Data Integration and Visualization Engine (DIVE) is a platform for semi-automatically generating web-based, interactive visualizations of structured data sets. Data visualization is a useful method for understanding complex phenomena, communicating information, and informing inquiry. However, available tools for data visualization are difficult to learn and use, require a priori knowledge of what visualizations to create. See [dive.media.mit.edu](http://dive.media.mit.edu) for more information.
 
-Write-up and documentation
+Install System Dependencies (Mac / brew)
 ---------
-See this [Google Doc](https://docs.google.com/document/d/1J_wwbELz9l_KOoB6xRpUASH1eAzaZpHSRQvMJ_4sJgI/edit?usp=sharing).
+Make
 
-Using Virtual Env to Manage Server-Side Python Dependencies (Mac)
+Install System Dependencies (Linux / apt)
+---------
+```bash
+$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev python-dev libffi-dev liblapack-dev gfortran
+$ sudo su postgres
+$ createuser -D -P -R -S dive
+$ createdb -E utf8 -O dive -T template0 spendb
+```
+
+Using Virtual Env to Manage Server-Side Python Dependencies
 ---------
 0. Install [Homebrew](http://brew.sh/) if you don't already have it.
 1. Installation: See [this fine tutorial](http://simononsoftware.com/virtualenv-tutorial/).
@@ -15,7 +24,6 @@ Using Virtual Env to Manage Server-Side Python Dependencies (Mac)
 4. Reloading from `requirements.txt` (while virtualenv is active): `pip install -r requirements.txt`.
 4. Install XQuartz: `brew install Caskroom/cask/xquartz`.
 5. Install Cairo: `brew install cairo`.
-6. Install MongoDB: `brew install mongodb` and follow the instructions to run mongodb on login and immediately.
 
 Run Server-Side Code / API
 ---------
