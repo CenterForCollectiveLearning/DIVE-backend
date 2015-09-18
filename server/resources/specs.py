@@ -7,6 +7,14 @@ from visualization import GeneratingProcedure
 from visualization.viz_specs import get_viz_specs
 from visualization.viz_data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 
+
+class GeneratingProcedures(Resource):
+    ''' Returns a dictionary containing the existing generating procedures. '''
+    def get(self):
+        result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
+        return make_response(jsonify(format_json(result)))
+
+
 specsGetParser = reqparse.RequestParser()
 specsGetParser.add_argument('project_id', type=str, required=True)
 specsGetParser.add_argument('dID', type=str)
@@ -20,13 +28,6 @@ class Specs(Resource):
         specs_by_dID = get_viz_specs(project_id, dID)
 
         return make_response(jsonify(format_json({'specs': specs_by_dID})))
-
-
-class GeneratingProcedures(Resource):
-    ''' Returns a dictionary containing the existing generating procedures. '''
-    def get(self):
-        result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
-        return make_response(jsonify(format_json(result)))
 
 
 visualizationGetParser = reqparse.RequestParser()

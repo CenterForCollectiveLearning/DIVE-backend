@@ -8,16 +8,16 @@ from werkzeug.local import LocalProxy
 
 app = Flask(__name__)
 app.config.from_object('config.DevelopmentConfig')
+logger = app.logger
+app_config = app.config
 
 api = Api(app)
 db = SQLAlchemy(app)
-logger = app.logger
-app_config = app.config
 
 UPLOAD_FOLDER = os.path.join(os.curdir, app.config['UPLOAD_FOLDER'])
 
 from resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets
-from resources.projects import Projects
+from resources.projects import Project, Projects
 from resources.field_properties import FieldProperties
 from resources.specs import Specs, VisualizationFromSpec, Visualization, GeneratingProcedures
 from resources.statistics_resources import StatisticsFromSpec, RegressionEstimator
@@ -29,27 +29,30 @@ from flask.ext.restful import Resource
 
 class Test(Resource):
     def get(self):
-        return 'Succss'
+        return 'Success'
 
 api.add_resource(Test, '/test')
 
-# Multiple projects per user
+
+# TODO How much data to return for a general endpoint?
+# TODO When to define an endpoint returning data for a single object?
 api.add_resource(Projects,                      '/projects/v1/projects')
+api.add_resource(Project,                       '/projects/v1/projects/<project_id>')
 
 # What do you get back here?
 api.add_resource(UploadFile,                    '/datasets/v1/upload')
 api.add_resource(Datasets,                      '/datasets/v1/datasets')  # Returns [ {properties}, {}], not including preloaded
 api.add_resource(PreloadedDatasets,             '/datasets/v1/datasets/preloaded')  # Defer this
-api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dID>')  # Returns preview data
+api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dataset_id>')  # Returns preview data
 
 api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')
 
 api.add_resource(Specs,                         '/specs/v1/specs')
-api.add_resource(VisualizationFromSpec,         '/specs/v1/specs/<sID>/visualization')
+api.add_resource(VisualizationFromSpec,         '/specs/v1/specs/<string:spec_id>/visualization')
 api.add_resource(GeneratingProcedures,          '/specs/v1/generating_procedures')
 
 api.add_resource(ExportedSpecs,                 '/exported_specs/v1/exported_specs')  # Get vs post
-api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<eID>/visualization')
+api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<string:exported_spec_id>/visualization')
 
 api.add_resource(Render,                        '/render/v1/render')
 

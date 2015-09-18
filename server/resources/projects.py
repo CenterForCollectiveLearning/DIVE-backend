@@ -8,11 +8,30 @@ from app import logger, app_config
 from db import db_access
 from .utilities import format_json
 
+
+############################
+# Single Project
+# GET data for one project
+# UPDATE data for one project
+# DELETE one project
+############################
+class Project(Resource):
+    def get(self, project_id):
+        result = db_access.get_project(project_id)
+        return jsonify(result)
+
+    def delete(self, project_id):
+        result = db_access.delete_project(project_id)
+        return jsonify({"message": "Successfully deleted project.",
+                            "id": int(result.id)})
+
+
 ############################
 # Projects
+# GET list of all projects
+# POST to add new projects
 ############################
 projectsGetParser = reqparse.RequestParser()
-projectsGetParser.add_argument('project_id', type=str, default='')
 projectsGetParser.add_argument('user_name', type=str)
 
 projectsPostParser = reqparse.RequestParser()
@@ -26,9 +45,7 @@ projectsDeleteParser.add_argument('project_id', type=str, action='append', requi
 class Projects(Resource):
     def get(self):
         args = projectsGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
-
-        return db_access.get_projects(project_id=project_id)
+        return db_access.get_projects()
 
     # Create project, initialize directories and collections
     def post(self):

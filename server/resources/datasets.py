@@ -3,6 +3,7 @@ from flask.ext.restful import Resource, reqparse
 
 from app import logger
 from .utilities import format_json
+from db import db_access
 from data.datasets import upload_file, get_dataset_sample
 from data.dataset_properties import get_dataset_properties
 from analysis.analysis import compute_ontologies, get_ontologies
@@ -39,8 +40,6 @@ class UploadFile(Resource):
 
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
-
-
 
 
 # Datasets list retrieval

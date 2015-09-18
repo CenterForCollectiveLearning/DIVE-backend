@@ -8,6 +8,7 @@ class ProductionConfig(BaseConfig):
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
 
 class TestingConfig(BaseConfig):
     TESTING = True
