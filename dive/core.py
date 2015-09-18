@@ -6,19 +6,20 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.cors import CORS
 from werkzeug.local import LocalProxy
 
+# Setup logging config
 from setup_logging import setup_logging
 setup_logging()
 
+# Initialize after setting logging config
 import logging
 logger = logging.getLogger(__name__)
 
+# Initialize app-based objects
 db = SQLAlchemy()
 cors = CORS()
 
-
 # See https://github.com/spendb/spendb/blob/da042b19884e515eb15e3d56fda01b7b94620983/spendb/core.py
 def create_app(**kwargs):
-    setup_logging()
     app = Flask(__name__)
     app.config.from_object('config.DevelopmentConfig')
 

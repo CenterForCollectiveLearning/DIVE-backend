@@ -22,6 +22,10 @@ def get_project(project_id):
     project = Project.query.get_or_404(int(project_id))
     return row_to_dict(project)
 
+def get_projects(**kwargs):
+    projects = Project.query.filter_by(**kwargs).all()
+    return [ row_to_dict(project) for project in projects ]
+
 def insert_project(**kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
@@ -54,6 +58,34 @@ def delete_project(project_id):
     db.session.commit()
     return row_to_dict(project)
 
+################
+# Datasets
+################
+def get_datasets(**kwargs):
+    return
+
+################
+# Dataset Properties
+################
+
+################
+# Field Properties
+################
+
+################
+# Specifications
+################
+
+################
+# Exported Specifications
+################
+
+################
+# Users
+################
+
+#####################
+
 model_from_name = {
     'Project': Project,
     'Dataset_Properties': Dataset_Properties,
@@ -83,29 +115,3 @@ def delete_objects(project_ids = None):
     for project_id in project_ids:
         model.query.filter_by(**kwargs).delete()
     db.session.commit()
-
-################
-# Datasets
-################
-def get_datasets(**kwargs):
-    return
-
-################
-# Dataset Properties
-################
-
-################
-# Field Properties
-################
-
-################
-# Specifications
-################
-
-################
-# Exported Specifications
-################
-
-################
-# Users
-################

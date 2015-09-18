@@ -22,6 +22,10 @@ handlers:
         encoding: utf8
         backupCount: 20
 
+loggers:
+  dive.core.cors:
+    level: ERROR
+
 root:
     level: DEBUG
     handlers: [console, log_file]

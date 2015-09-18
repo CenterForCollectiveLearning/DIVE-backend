@@ -10,26 +10,37 @@ from dive.resources.utilities import format_json
 import logging
 logger = logging.getLogger(__name__)
 
+projectPutParser = reqparse.RequestParser()
+projectPutParser.add_argument('title', type=str, required=False)
+projectPutParser.add_argument('description', type=str, required=False)
 class Project(Resource):
     '''
     Single Project endpoints given a project_id
     GET data for one project
-    UPDATE data for one project
+    PUT data for one project
     DELETE one project
     '''
     def get(self, project_id):
         result = db_access.get_project(project_id)
         return jsonify(result)
 
+    def put(self, project_id):
+        args = projectPutParser.parse_args()
+        title = args.get('title')
+        description = args.get('description')
+        result = db_access.update_project(project_id, title=title, description=description)
+        return jsonify(result)
+
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
-        shutil.rmtree(os.path.join(current_app.config['UPLOAD_FOLDER'], result['id']))
+        if os.path.isdir(current_app.config['UPLOAD_FOLDER']):
+            shutil.rmtree(os.path.join(current_app.config['UPLOAD_FOLDER'], result['id']))
         return jsonify({"message": "Successfully deleted project.",
                             "id": int(result['id'])})
 
 
 projectsPostParser = reqparse.RequestParser()
-projectsPostParser.add_argument('title', type=str, required=True)
+projectsPostParser.add_argument('title', type=str, required=False)
 projectsPostParser.add_argument('description', type=str, required=False)
 projectsPostParser.add_argument('username', type=str, required=False)
 projectsPostParser.add_argument('anonymous', type=bool, required=False, default=False)
