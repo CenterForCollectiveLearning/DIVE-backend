@@ -10,6 +10,7 @@ CairoSVG==1.0.9
 celery==3.1.18
 certifi==14.5.14
 cffi==0.8.6
+colorlog==2.6.0
 csvkit==0.9.1
 DataShape==0.4.3
 dbf==0.94.3

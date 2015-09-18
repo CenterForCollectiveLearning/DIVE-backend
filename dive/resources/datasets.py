@@ -50,7 +50,7 @@ class Datasets(Resource):
     def get(self):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
-        app.logger.info("[GET] Data for project_id: %s" % project_id)
+        logger.info("[GET] Data for project_id: %s" % project_id)
 
         datasets = MI.getData({}, project_id)
 

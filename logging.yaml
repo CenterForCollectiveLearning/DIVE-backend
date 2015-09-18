@@ -6,12 +6,16 @@ formatters:
     detailed:
         format: '[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)d:%(funcName)s:%(message)s'
         datefmt: '%Y-%m-%d %H:%M:%S'
+    colored:
+        (): 'colorlog.ColoredFormatter'
+        format: '[%(asctime)s] %(log_color)s [%(levelname)s] %(reset)s %(name)s:%(lineno)d:%(funcName)s:%(blue)s%(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
 
 handlers:
     console:
         class: logging.StreamHandler
         level: DEBUG
-        formatter: detailed
+        formatter: colored
         stream: ext://sys.stdout
 
     log_file:
