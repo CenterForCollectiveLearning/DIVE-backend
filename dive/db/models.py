@@ -23,6 +23,7 @@ class Dataset(db.Model):
     '''
     __tablename__ = 'dataset'
     id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.Unicode(250))
     description = db.Column(db.Unicode())
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
@@ -30,10 +31,6 @@ class Dataset(db.Model):
     # Store dataset here here?
     data = db.Column(JSONB)
 
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
-    project = db.relationship(Project)
-
-    title = db.Column(db.Unicode(250))  # convert_unicode?
     path = db.Column(db.Unicode(250))
     file_name = db.Column(db.Unicode(250))
     file_type = db.Column(db.Unicode(250))
@@ -111,7 +108,7 @@ class Group(db.Model):
     status = db.Column(db.SmallInteger, default=User_Status.NEW.value)
 
 
-class Account(db.Model):
+class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(50), unique=True)

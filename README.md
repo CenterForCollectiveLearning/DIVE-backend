@@ -26,6 +26,7 @@ Install and get into a virtual environment
 2. Freezing virtual env packages: `pip freeze > requirements.txt`.
 3. Starting virtual env: `source venv/bin/activate`.
 
+
 Install Python Dependencies
 ---------
 Within a virtual environment, install dependencies in `requirements.txt`. But due to a dependency issue in numexpr, we need to install numpy first.
@@ -39,3 +40,16 @@ Run API
 1. Load virtual environment.
 2. To run development Flask server, run `python run.py`.
 3. To run production Gunicorn server, run `./run.sh`.
+
+Database Migrations
+--------
+Follow [the docs](https://flask-migrate.readthedocs.org/en/latest/). The first time, run the migration script.
+```bash
+python migrate.py db init
+```
+
+Then, review and edit the migration script. Finally, each time models ar echanged, run the following:
+```
+python migrate.py db migrate
+python migrate.py db upgrade
+```

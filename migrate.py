@@ -11,12 +11,12 @@ app = Flask(__name__)
 app.config.from_object('config.DevelopmentConfig')
 
 db = SQLAlchemy(app)
+from dive.db.models import *
 migrate = Migrate(app, db)
 
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 
-from dive.db.models import *
 
 if __name__ == '__main__':
     manager.run()

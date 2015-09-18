@@ -52,14 +52,14 @@ class Datasets(Resource):
         project_id = args.get('project_id').strip().strip('"')
         logger.info("[GET] Data for project_id: %s" % project_id)
 
-        datasets = MI.getData({}, project_id)
+        datasets = db_access.get_datasets(project_id=project_id)
 
         data_list = []
         for d in datasets:
             dataset_data = {
-                'title': d['title'],
-                'filename': d['filename'],
-                'dataset_id': d['dataset_id']
+                'title': d.get('title'),
+                'filename': d.get('filename'),
+                'dataset_id': d.get('id')
             }
 
             if args['getStructure']:

@@ -47,6 +47,11 @@ def upload_file(project_id, file):
     file_name, file_type = full_file_name.rsplit('.', 1)
     path = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id, full_file_name)
 
+    # Ensure project directory exists
+    project_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id)
+    if not os.path.isdir(project_dir):
+        os.mkdir(os.path.join(project_dir))
+
     datasets = []
 
     if file_type in ['csv', 'tsv', 'txt'] or file_type.startswith('xls'):

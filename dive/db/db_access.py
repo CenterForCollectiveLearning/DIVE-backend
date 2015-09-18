@@ -68,7 +68,8 @@ def get_dataset(project_id, dataset_id):
     return row_to_dict(dataset)
 
 def get_datasets(**kwargs):
-    return
+    dataset = Dataset.query.filter_by(**kwargs).all()
+    return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
     logger.info("Insert dataset with project_id %s", project_id)

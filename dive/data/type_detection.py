@@ -5,6 +5,9 @@ from csvkit import sniffer
 
 from . import DataType
 
+import logging
+logger = logging.getLogger(__name__)
+
 INT_REGEX = "^-?[0-9]+$"
 # FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?"
 #"(\d+(?:[.,]\d*)?)"
@@ -96,7 +99,7 @@ def get_column_types(df):
     Args: dataframe
     Returns: list of types
     '''
-    print "Getting column types"
+    logger.info("Detecting column types")
     nonempty_col_samples = get_first_n_nonempty_values(df, n=100)
 
     col_types = []
@@ -145,7 +148,7 @@ def detect_time_series(df):
     # 2) Find contiguous blocks of headers that are dates
     # 2a) Require at least one field to be a date (to avoid error catching below)
     if not any(col_header_types):
-        print "Not a time series: need at least one field to be a date"
+        logging.info("Not a time series: need at least one field to be a date")
         return False
 
     # 2b) Require at least two fields to be dates
