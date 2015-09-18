@@ -13,8 +13,8 @@ import codecs
 import pandas as pd
 from werkzeug.utils import secure_filename
 from bson.objectid import ObjectId
+from flask import current_app
 
-from dive.core import config
 from dive.db.db import MongoInstance as MI
 from dive.data import DataType
 from dive.data.access import get_data
@@ -45,7 +45,7 @@ def upload_file(pID, file):
     '''
     full_file_name = secure_filename(file.filename)
     file_name, file_type = full_file_name.rsplit('.', 1)
-    path = os.path.join(app_config['UPLOAD_FOLDER'], pID, full_file_name)
+    path = os.path.join(current_app.config['UPLOAD_FOLDER'], pID, full_file_name)
 
     datasets = []
 

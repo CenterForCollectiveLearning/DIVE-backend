@@ -8,9 +8,8 @@ import pandas as pd
 import scipy as sp
 import math
 from itertools import combinations
+from flask import current_app
 
-
-from dive.core import config
 from dive.visualization import GeneratingProcedure, TypeStructure
 from dive.data.access import get_delimiter, get_data, get_conditioned_data
 from dive.data.type_detection import detect_time_series, get_variable_type

@@ -1,0 +1,28 @@
+version: 1
+
+disable_existing_loggers: True
+
+formatters:
+    detailed:
+        format: '[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)d:%(funcName)s:%(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: detailed
+        stream: ext://sys.stdout
+
+    log_file:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: detailed
+        filename: dive.log
+        encoding: utf8
+        backupCount: 20
+
+root:
+    level: DEBUG
+    handlers: [console, log_file]
+    propagate: true

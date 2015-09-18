@@ -6,7 +6,10 @@ Parameters in, JSONable objects out.
 '''
 
 from models import *
-from dive.core import db, logger
+from dive.core import db
+
+import logging
+logger = logging.getLogger(__name__)
 
 def row_to_dict(r):
     return {c.name: str(getattr(r, c.name)) for c in r.__table__.columns}

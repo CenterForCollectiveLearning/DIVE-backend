@@ -1,10 +1,9 @@
 import os
 import shutil
 
-from flask import make_response, jsonify
+from flask import make_response, jsonify, current_app
 from flask.ext.restful import Resource, reqparse
 
-from dive.core import config
 from dive.db import db_access
 from dive.resources.utilities import format_json
 
@@ -24,11 +23,9 @@ class Project(Resource):
 
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
-        shutil.rmtree(os.path.join(app_config['UPLOAD_FOLDER'], result['id']))
+        shutil.rmtree(os.path.join(current_app.config['UPLOAD_FOLDER'], result['id']))
         return jsonify({"message": "Successfully deleted project.",
                             "id": int(result['id'])})
-
-
 
 
 projectsPostParser = reqparse.RequestParser()

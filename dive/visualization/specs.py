@@ -7,7 +7,6 @@ import uuid
 
 from dive.db.db import MongoInstance as MI
 from dive.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
-from dive.visualization.viz_stats import *
 from dive.visualization.data import get_viz_data_from_enumerated_spec
 from dive.visualization.type_mapping import get_viz_types_from_spec
 from dive.visualization.scoring import score_spec

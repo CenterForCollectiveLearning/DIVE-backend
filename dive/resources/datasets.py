@@ -21,8 +21,8 @@ def allowed_file(filename):
 uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('project_id', type=str, required=True)
 class UploadFile(Resource):
+    ''' Saves file and returns dataset properties '''
     def post(self):
-        ''' Saves file and returns dataset properties '''
         form_data = json.loads(request.form.get('data'))
         project_id = form_data.get('project_id').strip().strip('""')
         file = request.files.get('file')
@@ -49,7 +49,7 @@ datasetsGetParser = reqparse.RequestParser()
 datasetsGetParser.add_argument('project_id', type=str, required=True)
 datasetsGetParser.add_argument('getStructure', type=bool, required=False, default=False)
 class Datasets(Resource):
-    # Get dataset descriptions or samples
+    ''' Get dataset descriptions or samples '''
     def get(self):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
