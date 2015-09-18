@@ -8,7 +8,7 @@ import pandas as pd
 from bson.objectid import ObjectId
 
 from dive.data.in_memory_data import InMemoryData as IMD
-from dive.db.db import MongoInstance as MI
+from dive.db import db_access
 
 
 # TODO Change to get_data_as_dataframe
@@ -20,7 +20,7 @@ def get_data(project_id=None, dataset_id=None, path=None, nrows=None):
         delim = get_delimiter(path)
         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
     if dataset_id and project_id:
-        dataset = MI.getData({'_id' : ObjectId(dataset_id)}, project_id)[0]
+        dataset = db_access.get_dataset(project_id, dataset_id)
         path = dataset['path']
         delim = get_delimiter(path)
         df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)

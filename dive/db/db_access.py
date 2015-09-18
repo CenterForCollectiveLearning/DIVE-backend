@@ -62,27 +62,61 @@ def delete_project(project_id):
 # Datasets
 ################
 def get_dataset(project_id, dataset_id):
-    # TODO use get_or_404 here?
+    # http://stackoverflow.com/questions/2128505/whats-the-difference-between-filter-and-filter-by-in-sqlalchemy
     logger.info("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
-    dataset = Dataset.query.get(project_id=project_id, dataset_id=dataset_id)
+    dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
     return row_to_dict(dataset)
 
-def get_datasets(**kwargs):
-    dataset = Dataset.query.filter_by(**kwargs).all()
-    return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
     logger.info("Insert dataset with project_id %s", project_id)
-    file_name = kwargs.get('filename')
+    title = kwargs.get('title')
+    file_name = kwargs.get('file_name')
     path = kwargs.get('path')
 
+
+    # TODO Unpack these programmatically?
     dataset = Dataset(
+        title = title,
         file_name = file_name,
         path = path,
-
+        project_id = project_id
     )
+    logger.info(dataset)
+    db.session.add(dataset)
+    db.session.commit()
     return row_to_dict(dataset)
 
+
+def delete_project(project_id, dataset_id):
+    dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
+    db.session.delete(dataset)
+    db.session.commit()
+    return row_to_dict(dataset)
+
+
+def get_dataset_properties(project_id, dataset_id):
+    dp = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).all()
+    return [ row_to_dict(dp) for dp in dp ]
+
+
+# TODO Do an upsert?
+def insert_dataset_properties(project_id, dataset_id, **kwargs):
+    logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
+    dataset_properties = Dataset_Properties(
+        # n_rows = kwargs.get('n_rows')
+        # n_cols
+        # field_names = kwargs.get('field_names')
+        # field_types
+        # field_accessors =
+        # is_time_series = kwargs.get('time_series')
+        # structure = kwargs.get('structure')
+        # dataset_id = kwargs.get('dataset_id')
+        # project_id = kwargs.get('project_id')
+    )
+    db.session.add(dataset_properties)
+    db.session.commit()
+    return row_to_dict(dataset_properties)
 
 ################
 # Dataset Properties

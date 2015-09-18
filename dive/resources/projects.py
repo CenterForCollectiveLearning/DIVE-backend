@@ -67,7 +67,9 @@ class Projects(Resource):
         result = db_access.insert_project(title=title, description=description)
 
         logger.info("Created upload directory for project_id: %s", result['id'])
-        os.mkdir(os.path.join(current_app.config['UPLOAD_FOLDER'], result['id']))
+        project_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], result['id'])
+        if os.path.isdir(project_dir):
+            os.mkdir(project_dir)
 
         return jsonify({"message": "Successfully created project.",
                             "id": int(result['id'])})

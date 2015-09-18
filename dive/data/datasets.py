@@ -64,7 +64,6 @@ def upload_file(project_id, file):
     if file_type in ['csv', 'tsv', 'txt'] :
         dataset = db_access.insert_dataset(project_id, path=path, file_name=full_file_name)
         dataset_id = dataset['id']
-        # dataset_id = MI.insertDataset(project_id, path, full_file_name)
         dataset_doc = compute_dataset_properties(dataset_id, project_id, path=path)
 
         dataset_doc.update({
@@ -95,7 +94,8 @@ def upload_file(project_id, file):
                 wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
             csv_file.close()
 
-            dataset_id = db_access.insert_dataset(project_id, path=csv_path, file_name=csv_file_name)
+            dataset = db_access.insert_dataset(project_id, path=csv_path, file_name=csv_file_name)
+            dataset_id = dataset['id']
             # TODO
             data_doc = compute_dataset_properties(dataset_id, project_id, path=csv_path)
             data_doc.update({

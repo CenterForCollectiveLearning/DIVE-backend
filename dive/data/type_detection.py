@@ -148,21 +148,21 @@ def detect_time_series(df):
     # 2) Find contiguous blocks of headers that are dates
     # 2a) Require at least one field to be a date (to avoid error catching below)
     if not any(col_header_types):
-        logging.info("Not a time series: need at least one field to be a date")
+        logger.info("Not a time series: need at least one field to be a date")
         return False
 
     # 2b) Require at least two fields to be dates
     start_index = col_header_types.index(True)
     end_index = len(col_header_types) - 1 - col_header_types[::-1].index(True)
     if (end_index - start_index) <= 0:
-        print "Not a time series: need at least two contiguous fields to be dates"
+        logger.info("Not a time series: need at least two contiguous fields to be dates")
         return False
 
     # 3) Ensure that the contiguous block are all of the same type and numeric
     col_types = get_column_types(df)
     col_types_of_dates = [col_types[i] for (i, is_date) in enumerate(col_header_types) if is_date]
     if not (len(set(col_types_of_dates)) == 1):
-        print "Not a time series: need contiguous fields to have the same type"
+        logger.info("Not a time series: need contiguous fields to have the same type")
         return False
 
     start_name = df.columns.values[start_index]

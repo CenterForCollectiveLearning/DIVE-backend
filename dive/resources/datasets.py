@@ -53,9 +53,11 @@ class Datasets(Resource):
         logger.info("[GET] Data for project_id: %s" % project_id)
 
         datasets = db_access.get_datasets(project_id=project_id)
+        logger.info(datasets)
 
         data_list = []
         for d in datasets:
+            logger.info("Dataset", d)
             dataset_data = {
                 'title': d.get('title'),
                 'filename': d.get('filename'),
@@ -82,12 +84,12 @@ class Dataset(Resource):
         args = datasetGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        dataset = MI.getData({'_id': ObjectId(dataset_id)}, project_id)[0]
+        dataset = db_access.get_dataset(project_id, dataset_id)
 
         response = {
-            'dataset_id': dataset['dataset_id'],
-            'title': dataset['title'],
-            'details': get_dataset_sample(dataset['dataset_id'], project_id)
+            'dataset_id': dataset.get('id'),
+            'title': dataset.get('title'),
+            'details': get_dataset_sample(dataset.get('id'), project_id)
         }
         return make_response(jsonify(format_json(response)))
 
@@ -132,9 +134,9 @@ class PreloadedDatasets(Resource):
             for d in datasets:
                 path = d['path']
                 result.update({
-                    'title': d['title'],
-                    'filename': d['filename'],
-                    'dataset_id': d['dataset_id'],
+                    'title': d.get('title'),
+                    'filename': d('filename'),
+                    'dataset_id': d('id'),
                 })
                 data_list.append(result)
             return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))

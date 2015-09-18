@@ -12,7 +12,7 @@ from flask.ext.restful import Resource
 
 class FakeGetProjectID(Resource):
     def get(self):
-        return 1
+        return "1"
 
 api = Api()
 

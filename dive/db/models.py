@@ -34,18 +34,31 @@ class Dataset(db.Model):
     path = db.Column(db.Unicode(250))
     file_name = db.Column(db.Unicode(250))
     file_type = db.Column(db.Unicode(250))
-    rows = db.Column(db.Unicode(250))
-    cols = db.Column(db.Unicode(250))
+
+    dataset_properties = db.relationship('Dataset_Properties', uselist=False, backref="dataset")
+
+    fields_properties = db.relationship('Field_Properties',
+        backref="dataset",
+        cascade="all, delete-orphan",
+        lazy='dynamic')  # Get all field properties
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project = db.relationship(Project)
+
+
+# TODO Decide between a separate table and more fields on Dataset
+class Dataset_Properties(db.Model):
+    __tablename__ = 'dataset_properties'
+    id = db.Column(db.Integer, primary_key=True)
+    n_rows = db.Column(db.Unicode(250))
+    n_cols = db.Column(db.Unicode(250))
     field_names = db.Column(JSONB)
     field_types = db.Column(JSONB)
     field_accessors = db.Column(JSONB)
     is_time_series = db.Column(db.Boolean())
     structure = db.Enum(['wide', 'long'])
 
-    fields_properties = db.relationship('Field_Properties',
-        backref="dataset",
-        cascade="all, delete-orphan",
-        lazy='dynamic')  # Get all field properties
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
