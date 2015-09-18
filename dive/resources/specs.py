@@ -1,7 +1,7 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-from core import logger
+from dive.core import logger
 from .utilities import format_json
 from visualization import GeneratingProcedure
 from visualization.viz_specs import get_viz_specs

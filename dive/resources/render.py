@@ -5,7 +5,7 @@ import cairosvg
 import cairocffi as cairo
 from StringIO import StringIO
 
-from core import logger
+from dive.core import logger
 
 #####################################################################
 # Endpoint returning exported image

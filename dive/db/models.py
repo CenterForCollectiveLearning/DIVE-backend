@@ -1,4 +1,4 @@
-from core import db
+from dive.core import db
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status

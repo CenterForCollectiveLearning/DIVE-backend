@@ -14,7 +14,7 @@ from data.in_memory_data import InMemoryData as IMD
 from analysis.analysis import get_bin_edges
 import viz_stats
 
-from core import config
+from dive.core import config
 
 import numpy as np
 import pandas as pd

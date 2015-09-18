@@ -1,4 +1,4 @@
-from core import logger
+from dive.core import logger
 from api import app, api
 from data.db import MongoInstance as MI
 

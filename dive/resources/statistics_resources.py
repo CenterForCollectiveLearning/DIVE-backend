@@ -2,7 +2,7 @@ import time
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-from core import logger
+from dive.core import logger
 from .utilities import format_json
 from statistics.statistics import getStatisticsFromSpec, timeEstimator
 

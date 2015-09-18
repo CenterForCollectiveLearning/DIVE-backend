@@ -1,4 +1,4 @@
-from core import create_app
+from dive.core import create_app
 
 
 if __name__ == '__main__':
