@@ -29,30 +29,26 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
     if not path:
         path = db_access.get_dataset(project_id, dataset_id)['path']
     df = get_data(path=path).fillna('')  # TODO turn fillna into an argument
-    header = df.columns.values
     n_rows, n_cols = df.shape
-    types = get_column_types(df)
+    field_names = df.columns.values.tolist()
+    field_types = get_column_types(df)
+
     time_series = detect_time_series(df)
     if time_series:
         structure = 'wide'
     else:
         structure = 'long'
 
-    extension = path.rsplit('.', 1)[1]
-
-    column_attrs = [{'name': header[i], 'type': types[i], 'column_id': i} for i in range(0, n_cols)]
-
     properties = {
-        'field_names': column_attrs,
-        'header': list(header),
         'n_rows': n_rows,
         'n_cols': n_cols,
-        'filetype': extension,
+        'field_names': field_names,
+        'field_types': field_types,
+        'field_accessors': [ i for i in range(0, n_cols) ],
         'structure': structure,
-        'time_series': time_series
+        'is_time_series': time_series,
     }
 
-    db_access.insert_data_properties(project_id, dataset_id, **properties)
-    del properties['_id']
+    db_access.insert_dataset_properties(project_id, dataset_id, **properties)
 
     return properties

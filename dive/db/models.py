@@ -13,7 +13,14 @@ class Project(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    users = db.relationship("User")
+    # TODO Define relationships for other one-to-manys?
 
+    def __repr__(self):
+        return "<Project - ID: %s, Title: %s>" % (self.id, self.title)
+
+# TODO Use mixins and custom base classes to support dataset -> postgres?
 class Dataset(db.Model):
     '''
     The dataset is the core entity of any access to data.
@@ -33,15 +40,19 @@ class Dataset(db.Model):
 
     path = db.Column(db.Unicode(250))
     file_name = db.Column(db.Unicode(250))
-    file_type = db.Column(db.Unicode(250))
+    type = db.Column(db.Unicode(250))
+    orig_type = db.Column(db.Unicode(250))
 
+    # One-to-one with dataset_properties
     dataset_properties = db.relationship('Dataset_Properties', uselist=False, backref="dataset")
 
+    # One-to-many with field_properties
     fields_properties = db.relationship('Field_Properties',
         backref="dataset",
         cascade="all, delete-orphan",
         lazy='dynamic')  # Get all field properties
 
+    # Many-to-one with project
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
 
@@ -55,8 +66,9 @@ class Dataset_Properties(db.Model):
     field_names = db.Column(JSONB)
     field_types = db.Column(JSONB)
     field_accessors = db.Column(JSONB)
-    is_time_series = db.Column(db.Boolean())
     structure = db.Enum(['wide', 'long'])
+    is_time_series = db.Column(db.Boolean())
+
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
 
@@ -82,9 +94,12 @@ class Field_Properties(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
 
-
-class Specification(db.Model):
-    __tablename__ = 'specification'
+# TODO Make this not dataset-specific?
+class Spec(db.Model):
+    '''
+    Many-to-one with Dataset
+    '''
+    __tablename__ = 'spec'
     id = db.Column(db.Integer, primary_key=True)
     generating_prodecure = db.Column(db.Unicode(250))
     type_structure = db.Column(db.Unicode(250))
@@ -94,24 +109,33 @@ class Specification(db.Model):
     score = db.Column(JSONB)
     stats = db.Column(JSONB)
 
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    dataset = db.relationship(Dataset)
+
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
 
 
-class Exported_Specification(db.Model):
-    __tablename__ = 'exported_specification'
+class Exported_Spec(db.Model):
+    '''
+    Many-to-one with Specification
+    '''
+    __tablename__ = 'exported_spec'
     id = db.Column(db.Integer, primary_key=True)
     conditionals = db.Column(JSONB)
     config = db.Column(JSONB)
 
-    specification_id = db.Column(db.Integer, db.ForeignKey('specification.id'))
-    specification = db.relationship(Specification)
+    spec_id = db.Column(db.Integer, db.ForeignKey('spec.id'))
+    spec = db.relationship(Spec)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
 
 
 class Group(db.Model):
+    '''
+    One-to-many with User
+    '''
     __tablename__ = 'group'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(50), unique=True)
@@ -122,6 +146,9 @@ class Group(db.Model):
 
 
 class User(db.Model):
+    '''
+    Many-to-one with Group
+    '''
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(50), unique=True)

@@ -8,6 +8,7 @@ from scipy import stats as sc_stats
 from time import time
 
 from dive.db.db import MongoInstance as MI
+from dive.db import db_access
 from dive.data.access import get_data
 from dive.data.type_detection import get_column_types
 from dive.data.analysis import get_unique, get_bin_edges
@@ -15,28 +16,30 @@ from dive.data.analysis import get_unique, get_bin_edges
 
 # Retrieve proeprties given dataset_docs
 # TODO Accept list of dataset_ids
-def get_field_properties(project_id, datasets, get_values = False) :
+def get_field_properties(project_id, dataset_ids, get_values=False, flatten=True) :
+    '''
+    Returns field properties given a list of dataset_ids. Basically a wrapper /
+    formatter around compute_field_properties.
+
+    Args:
+    project_id
+    dataset_ids
+    get_values - return unique values of fields along with properties
+    flatten - return as list of all properties vs a dict keyed by dataset_id
+    '''
+    properties_by_dataset_id = {}
+
+    for dataset_id in dataset_ids:
+        field_properties = db_access.get_field_properties(project_id, dataset_id)
+        if not field_properties:
+            field_properties = compute_field_properties(project_id, dataset_id)
+
+        for field_property in field_properties:
+            continue
+        _properties_by_dataset_id[dataset_id] = _dataset_properties
+
     aggregatedProperties = []
     _property_labels = []
-
-    _find_doc = {"$or" : map(lambda x: {'dataset_id' : x['dataset_id']}, datasets)}
-    _all_properties = MI.getFieldProperty(_find_doc, project_id)
-
-    if len(_all_properties):
-        _properties_by_dataset_id = {}
-
-        for p in _all_properties:
-
-            dataset_id = p['dataset_id']
-            del p['dataset_id']
-            if not _properties_by_dataset_id.get(dataset_id):
-                _properties_by_dataset_id[dataset_id] = []
-
-            _properties_by_dataset_id[dataset_id].append(p)
-
-    # If not in DB, compute
-    else:
-        _properties_by_dataset_id = compute_field_properties(project_id, datasets)
 
     for _dataset_id, _properties_data in _properties_by_dataset_id.iteritems():
         for _property in _properties_data:
@@ -51,10 +54,8 @@ def get_field_properties(project_id, datasets, get_values = False) :
                 if not get_values:
                     del _property['values']
 
-
-                if _property.get('_id'):
-                    _property['propertyID'] = str(_property['_id'])
-                    del _property['_id']
+                _property['property_id']
+                del _property('id')
 
                 aggregatedProperties.append(_property)
 
@@ -89,11 +90,15 @@ def get_attributes(project_id, datasets):
     return attributes
 
 # TODO Reduce iterations over data elements
-# Compute properties of all passed datasets
-# Currently only getting properties by column
-# Arguments: project_id + dataset documents
-# Returns a mapping from dataset_ids to properties
-def compute_field_properties(project_id, dataset_docs):
+
+def compute_field_properties(project_id, dataset_ids):
+    '''
+    Compute properties of all passed datasets
+    Currently only getting properties by column
+
+    Arguments: project_id + dataset documents
+    Returns a mapping from dataset_ids to properties
+    '''
     properties_by_dataset_id = {}
 
     for dataset in dataset_docs:
@@ -110,10 +115,10 @@ def compute_field_properties(project_id, dataset_docs):
             properties[i] = {}
             properties[i]['label'] = label
 
-        print "Calculating properties for dataset_id", dataset_id
+        logger.info("Calculating properties for dataset_id %s", dataset_id)
         # Statistical properties
         # Only conduct on certain types?
-        print "\tDescribing datasets"
+        logger.info("\tDescribing datasets")
         df_stats = df.describe()
         df_stats_dict = json.loads(df_stats.to_json())
         df_stats_list = []
@@ -126,13 +131,14 @@ def compute_field_properties(project_id, dataset_docs):
             properties[i]['stats'] = stats
 
         ### Getting column types
-        print "\tGetting types"
+        start_time = time()
         _types = get_column_types(df)
         for i, _type in enumerate(_types):
             properties[i]['type'] = _type
+        type_time = time() - start_time
+        logger.info("Field type detection took %s seconds", type_time)
 
         ### Determining normality
-        print "\tDetermining normality"
         start_time = time()
         for i, col in enumerate(df):
             _type = _types[i]
@@ -145,19 +151,18 @@ def compute_field_properties(project_id, dataset_docs):
                     normality_result = None
             else:
                 normality_result = None
-
             properties[i]['normality'] = normality_result
+        normality_time = time() - start_time
+        logger.info("Normality analysis took %s seconds", normality_time)
 
-        print "\t\t", time() - start_time, "seconds"
 
         ### Detecting if a column is unique
-        print "\tDetecting uniques"
         start_time = time()
         # List of booleans -- is a column composed of unique elements?
         for i, col in enumerate(df):
             properties[i]['unique'] = detect_unique_list(df[col])
-
-        print "\t\t", time() - start_time, "seconds"
+        is_unique_time = time() - start_time
+        logger.info("Unique detection took %s seconds", is_unique_time)
 
         ### Unique values for columns
         print "\tGetting unique values"

@@ -1,8 +1,11 @@
 '''
-Module containing functions accessing the database.
+Module containing functions accessing the database. Other should have no direct
+access to the database, only to this layer. Parameters in, JSONable objects out.
 
-Other should have no direct access to the database, only to this layer.
-Parameters in, JSONable objects out.
+Mainly used to separate session management from models, and to provide uniform
+db interfaces to both the API and compute layers.
+
+TODO Have a general decorator argument
 '''
 
 from models import *
@@ -67,17 +70,23 @@ def get_dataset(project_id, dataset_id):
     dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
     return row_to_dict(dataset)
 
+def get_datasets(**kwargs):
+    datasets = Dataset.query.filter_by(**kwargs).all()
+    return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
     logger.info("Insert dataset with project_id %s", project_id)
     title = kwargs.get('title')
     file_name = kwargs.get('file_name')
     path = kwargs.get('path')
-
+    file_type = kwargs.get('type')
+    orig_type = kwargs.get('orig_type')
 
     # TODO Unpack these programmatically?
     dataset = Dataset(
         title = title,
+        type = file_type,
+        orig_type = orig_type,
         file_name = file_name,
         path = path,
         project_id = project_id
@@ -88,20 +97,54 @@ def insert_dataset(project_id, **kwargs):
     return row_to_dict(dataset)
 
 
-def delete_project(project_id, dataset_id):
+def delete_dataset(project_id, dataset_id):
     dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
     db.session.delete(dataset)
     db.session.commit()
     return row_to_dict(dataset)
 
 
+################
+# Dataset Properties
+################
 def get_dataset_properties(project_id, dataset_id):
     dp = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).all()
     return [ row_to_dict(dp) for dp in dp ]
 
-
 # TODO Do an upsert?
 def insert_dataset_properties(project_id, dataset_id, **kwargs):
+    logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
+    dataset_properties = Dataset_Properties(
+        n_rows = kwargs.get('n_rows'),
+        n_cols = kwargs.get('n_cols'),
+        field_names = kwargs.get('field_names'),
+        field_types = kwargs.get('field_types'),
+        field_accessors = kwargs.get('field_accessors'),
+        is_time_series = kwargs.get('is_time_series'),
+        structure = kwargs.get('structure'),
+        dataset_id = dataset_id,
+        project_id = project_id,
+    )
+    db.session.add(dataset_properties)
+    db.session.commit()
+    return row_to_dict(dataset_properties)
+
+
+def delete_dataset_properties(project_id, dataset_id):
+    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).one()
+    db.session.delete(dataset_properties)
+    db.session.commit()
+    return row_to_dict(dataset_properties)
+
+################
+# Field Properties
+################
+def get_field_properties(project_id, dataset_id):
+    dp = Field_Properties.query.filter_by(project_id=project_id, id=dataset_id).all()
+    return [ row_to_dict(dp) for dp in dp ]
+
+# TODO Do an upsert?
+def insert_field_properties(project_id, dataset_id, **kwargs):
     logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
     dataset_properties = Dataset_Properties(
         # n_rows = kwargs.get('n_rows')
@@ -118,13 +161,12 @@ def insert_dataset_properties(project_id, dataset_id, **kwargs):
     db.session.commit()
     return row_to_dict(dataset_properties)
 
-################
-# Dataset Properties
-################
 
-################
-# Field Properties
-################
+def delete_field_properties(project_id, dataset_id):
+    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).one()
+    db.session.delete(dataset_properties)
+    db.session.commit()
+    return row_to_dict(dataset_properties)
 
 ################
 # Specifications
@@ -138,41 +180,26 @@ def insert_specs(project_id, specs):
     db.session.add_all(spec_objects)
     db.session.commit()
 
+def delete_spec(project_id, exported_spec_id):
+    spec = Exported_Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
+    if exported_spec:
+        db.session.delete(spec)
+        db.session.commit()
+        return row_to_dict(spec)
+
 ################
 # Exported Specifications
 ################
-
-################
-# Users
-################
-
-#####################
-
-model_from_name = {
-    'Project': Project,
-}
-
-def get_objects(project_id, model_name, **kwargs):
-    model = model_from_name[model_name]
-    model.query.filter_by(**kwargs).all()
-
-# TODO Upsert?
-
-def update_objects(project_id, model_name, **kwargs):
-    model = model_from_name[model_name]
-    model.query.filter_by(**kwargs).all()
-
-def insert_objects(project_id, model_name, **kwargs):
-    model = model_from_name[model_name]
-    model.query.filter_by(**kwargs).all()
-
-# Cascade
-def delete_objects(project_ids = None):
-    # Synchronize session?
-    # How to deal with the filter object?
-
-    model = model_from_name[model_name]
-
-    for project_id in project_ids:
-        model.query.filter_by(**kwargs).delete()
+def insert_exported_spec(project_id, exported_spec):
+    exported_spec = Exported_Spec(
+    )
+    db.session.add_all(exported_spec)
     db.session.commit()
+    return row_to_dict(exported_spec)
+
+def delete_exported_spec(project_id, exported_spec_id):
+    exported_spec = Exported_Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
+    if exported_spec:
+        db.session.delete(exported_spec)
+        db.session.commit()
+        return row_to_dict(exported_spec)

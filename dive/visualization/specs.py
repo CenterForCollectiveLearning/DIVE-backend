@@ -28,9 +28,10 @@ def compute_viz_specs(project_id, dataset_id=None):
     '''
     dataset_find_doc = {}
 
-    datasets = MI.get_dataset(dataset_find_doc, project_id)
-    field_properties = MI.getFieldProperty(None, project_id)
-    ontologies = MI.getOntology(None, project_id)
+    datasets = db_access.get_datasets(project_id)
+    field_properties = db_access.get_field_properties(dataset_id, project_id)
+    # TODO Store ontologies
+    # ontologies = db_access.getOntology(None, project_id)
 
     enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties, ontologies, project_id)
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, project_id)

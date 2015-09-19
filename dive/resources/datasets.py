@@ -60,7 +60,7 @@ class Datasets(Resource):
             logger.info("Dataset", d)
             dataset_data = {
                 'title': d.get('title'),
-                'filename': d.get('filename'),
+                'file_name': d.get('file_name'),
                 'dataset_id': d.get('id')
             }
 
