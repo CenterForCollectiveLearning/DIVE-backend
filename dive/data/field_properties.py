@@ -36,6 +36,7 @@ def get_field_properties(project_id, dataset_ids, get_values=False, flatten=True
     for dataset_id in dataset_ids:
         dataset_field_properties = db_access.get_field_properties(project_id, dataset_id)
         if (not dataset_field_properties) or current_app.config['RECOMPUTE_FIELD_PROPERTIES']:
+            logger.info("Computing field types")
             dataset_field_properties = compute_field_properties(project_id, dataset_id)
         # if not get_values:
         #     for field_properties in dataset_field_properties:

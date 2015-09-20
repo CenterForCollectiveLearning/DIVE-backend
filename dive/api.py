@@ -1,5 +1,5 @@
 from flask.ext.restful import Api
-from dive.resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets
+from dive.resources.datasets import UploadFile, Dataset, Datasets
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, Visualization, GeneratingProcedures
@@ -22,7 +22,7 @@ api.add_resource(Project,                       '/projects/v1/projects/<project_
 
 api.add_resource(UploadFile,                    '/datasets/v1/upload')
 api.add_resource(Datasets,                      '/datasets/v1/datasets')
-api.add_resource(PreloadedDatasets,             '/datasets/v1/datasets/preloaded')
+# api.add_resource(PreloadedDatasets,             '/datasets/v1/datasets/preloaded')
 api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dataset_id>')
 
 api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')

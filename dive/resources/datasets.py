@@ -77,7 +77,7 @@ datasetGetParser = reqparse.RequestParser()
 datasetGetParser.add_argument('project_id', type=str, required=True)
 
 datasetDeleteParser = reqparse.RequestParser()
-datasetDeleteParser.add_argument('project_id', type=str, action='append', required=True)
+datasetDeleteParser.add_argument('project_id', type=str, required=True)
 class Dataset(Resource):
     # Get dataset descriptions or samples
     def get(self, dataset_id):
@@ -96,73 +96,12 @@ class Dataset(Resource):
 
     def delete(self, dataset_id):
         args = datasetDeleteParser.parse_args()
-        project_id = args.get('project_id')[0]
+        project_id = args.get('project_id').strip().strip('"')
 
-        # TODO Handle this formatting on the client side (or server side for additional safety?)
-        project_id = project_id.strip().strip('"')
-        dataset_id = dataset_id.strip().strip('"')
-        return [ MI.deleteData(dataset_id, project_id) ]
+        # Delete from datasets table
+        result = db_access.delete_dataset(project_id, dataset_id)
 
-
-# Public Dataset retrieval
-preloadedDataGetParser = reqparse.RequestParser()
-preloadedDataGetParser.add_argument('dataset_id', type=str, action='append')
-preloadedDataGetParser.add_argument('sample', type=str, required=True, default='true')
-
-# Use public dataset in project
-preloadedDataPostParser = reqparse.RequestParser()
-preloadedDataPostParser.add_argument('dataset_id', type=str, action='append')
-preloadedDataPostParser.add_argument('project_id', type=str, required=True, default='true')
-class PreloadedDatasets(Resource):
-    # Get dataset descriptions or samples
-    def get(self):
-        args = preloadedDataGetParser.parse_args()
-        dataset_ids = args.get('dataset_id')
-        project_id = 'dive'
-        print "[GET] PUBLIC Data", project_id, dataset_ids
-
-        # Specific dataset_ids
-        if dataset_ids:
-            print "Requested specific dataset_ids:", dataset_ids
-            dataLocations = [ MI.getData({'_id': ObjectId(dataset_id)}, project_id) for dataset_id in dataset_ids ]
-
-        # All datasets
-        else:
-            print "dataset_id not request specific dataset_id. Returning all datasets"
-            datasets = MI.getData({}, project_id)
-            data_list = []
-            for d in datasets:
-                path = d['path']
-                result.update({
-                    'title': d.get('title'),
-                    'filename': d('filename'),
-                    'dataset_id': d('id'),
-                })
-                data_list.append(result)
-            return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
-
-    def post(self):
-        args = preloadedDataPostParser.parse_args()
-        dataset_ids = args.get('dataset_id')
-        project_id = args.get('project_id')
-
-        # Get data for selected datasets
-        formatted_dataset_ids = [ObjectId(dataset_id) for dataset_id in dataset_ids]
-        new_dataset_ids = MI.usePublicDataset({'_id': {'$in': formatted_dataset_ids}}, project_id)
-        datasets = MI.getData({'_id': {'$in': new_dataset_ids}}, project_id)
-
-        compute_field_properties(project_id, datasets)
-        compute_ontologies(project_id, datasets)
-
-        data_list = []
-        for d in datasets:
-            # New dataset_id
-            result.update({
-                'title': d['title'],
-                'filename': d['filename'],
-                'path': d['path'],
-                'dataset_id': d['dataset_id']
-                })
-            data_list.append(result)
-
-        return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
+        # Delete from file ststem
+        os.remove(result['path'])
+        return jsonify({"message": "Successfully deleted dataset.",
+                            "id": int(result['id'])})

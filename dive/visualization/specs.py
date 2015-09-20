@@ -1,10 +1,10 @@
+import math
 import copy
 from pprint import pprint
 from time import time
 from scipy import stats as sc_stats
-import math
+from flask import current_app
 
-from dive.db.db import MongoInstance as MI
 from dive.db import db_access
 from dive.data.field_properties import get_field_properties
 from dive.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
@@ -29,7 +29,6 @@ def compute_viz_specs(project_id, dataset_id=None):
     Returns:
         List of scored specs for dataset_id (all datasets if dataset_id not specified)
     '''
-    logger.info("In compute viz specs")
     dataset_find_doc = {}
 
     datasets = db_access.get_datasets(project_id)
@@ -38,7 +37,6 @@ def compute_viz_specs(project_id, dataset_id=None):
     dataset_ids = [d['id'] for d in datasets]
     field_properties_by_dataset_id = get_field_properties(project_id, dataset_ids)
 
-    logger.info(field_properties_by_dataset_id)
     # TODO Store ontologies
     ontologies = None  # db_access.get_ontology(project_id)
 
@@ -47,14 +45,15 @@ def compute_viz_specs(project_id, dataset_id=None):
     scored_viz_specs = score_viz_specs(filtered_viz_specs, project_id)
     formatted_viz_specs = format_viz_specs(scored_viz_specs)
 
-    # Saving specs
-    for dataset_id_key, specs in formatted_viz_specs.iteritems():
-        db_access.insert_specs(project_id, dataset_id, specs)
+    # Saving specs, using return from insert to get id
+    final_viz_specs = {}
+    for dataset_id, specs in formatted_viz_specs.iteritems():
+        final_viz_specs[dataset_id] = db_access.insert_specs(project_id, dataset_id, specs)
 
     if dataset_id:
         logger.info("Returning just specs, no dataset_id mapping")
-        return formatted_viz_specs[dataset_id]
-    return formatted_viz_specs
+        return final_viz_specs[dataset_id]
+    return final_viz_specs
 
 def get_viz_specs(project_id, dataset_id=None):
     ''' Get viz specs if exists and compute if doesn't exist '''
@@ -65,6 +64,7 @@ def get_viz_specs(project_id, dataset_id=None):
     if dataset_id: specs_find_doc['dataset_id'] = dataset_id
 
     existing_specs = db_access.get_specs(project_id, dataset_id)
+    logger.info("Number of existing specs: %s", len(existing_specs))
     if existing_specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
         if dataset_id:
             return existing_specs
@@ -76,6 +76,7 @@ def get_viz_specs(project_id, dataset_id=None):
                 else: result[dataset_id].append(s)
             return result
     else:
+        logger.info("Computing viz specs")
         return compute_viz_specs(project_id, dataset_id)
 
 
@@ -339,7 +340,6 @@ def format_viz_specs(scored_viz_specs):
                     if field_general_type is 'q': general_type_key = 'quantitative'
                     else: general_type_key = 'categorical'
 
-                    logger.info(field)
                     properties[general_type_key].append({
                         'name': field['name'],
                         'id': field['id'],

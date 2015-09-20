@@ -53,7 +53,7 @@ def A(q_field):
     }
     specs.append(index_spec)
 
-    if not q_field['unique']:
+    if not q_field['is_unique']:
         # { Value: count }
         count_spec = {
             'generatingProcedure': GeneratingProcedure.VAL_COUNT.value,
@@ -112,7 +112,7 @@ def B(q_fields):
     #         derived_column_field = {
     #             'transform': '2:1',
     #             'name': "%s %s %s" % (label_a, ew_op, label_b),
-    #             'unique': False  # TODO Run property detection again?
+    #             'is_unique': False  # TODO Run property detection again?
     #         }
     #         A_specs = A(derived_column_field)
     #         specs.extend(A_specs)
@@ -146,7 +146,7 @@ def D(c_field, q_field):
     c_label = c_field['name']
     q_label = q_field['name']
 
-    if c_field['unique']:
+    if c_field['is_unique']:
         spec = {
             'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
             'typeStructure': TypeStructure.C_Q.value,
@@ -196,7 +196,7 @@ def E(c_field, q_fields):
     specs = []
 
     # Two-field agg:agg
-    if not c_field['unique']:
+    if not c_field['is_unique']:
         c_label = c_field['name']
         for (q_field_a, q_field_b) in combinations(q_fields, 2):
             q_label_a, q_label_b = q_field_a['name'], q_field_b['name']

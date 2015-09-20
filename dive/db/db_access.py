@@ -15,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def row_to_dict(r):
-    return {c.name: str(getattr(r, c.name)) for c in r.__table__.columns}
+    return {c.name: getattr(r, c.name) for c in r.__table__.columns}
 
 ################
 # Projects
@@ -204,7 +204,7 @@ def delete_field_properties(project_id, dataset_id):
 ################
 def get_specs(project_id, dataset_id, **kwargs):
     # TODO Add in field for kwargs name
-    specs = Spec.query.filter_by(project_id=project_id, id=dataset_id).all()
+    specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
     return [ row_to_dict(spec) for spec in specs ]
 
 def insert_specs(project_id, dataset_id, specs):
@@ -213,14 +213,17 @@ def insert_specs(project_id, dataset_id, specs):
         spec_objects.append(Spec(
             generating_procedure = s['generatingProcedure'],
             type_structure = s['typeStructure'],
+            viz_type = s['vizType'],
             args = s['args'],
             meta = s['meta'],
+            data = s['data'],
             score = s['score'],
             dataset_id = dataset_id,
             project_id = project_id,
         ))
     db.session.add_all(spec_objects)
     db.session.commit()
+    return [ row_to_dict(s) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
     spec = Exported_Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()

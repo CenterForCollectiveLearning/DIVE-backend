@@ -44,7 +44,10 @@ class Dataset(db.Model):
     orig_type = db.Column(db.Unicode(250))
 
     # One-to-one with dataset_properties
-    dataset_properties = db.relationship('Dataset_Properties', uselist=False, backref="dataset")
+    dataset_properties = db.relationship('Dataset_Properties',
+        uselist=False,
+        cascade="all, delete-orphan",
+        backref="dataset")
 
     # One-to-many with field_properties
     fields_properties = db.relationship('Field_Properties',
@@ -107,6 +110,7 @@ class Spec(db.Model):
     args = db.Column(JSONB)
     meta = db.Column(JSONB)
     score = db.Column(JSONB)
+    data = db.Column(JSONB)  # TODO Distinguish between data formats?
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
     dataset = db.relationship(Dataset)
