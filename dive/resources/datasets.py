@@ -52,12 +52,12 @@ class Datasets(Resource):
         project_id = args.get('project_id').strip().strip('"')
         logger.info("[GET] Data for project_id: %s" % project_id)
 
-        datasets = db_access.get_datasets(project_id=project_id)
+        datasets = db_access.get_datasets(project_id)
         logger.info(datasets)
 
         data_list = []
         for d in datasets:
-            logger.info("Dataset", d)
+            logger.info("Dataset %s", d)
             dataset_data = {
                 'title': d.get('title'),
                 'file_name': d.get('file_name'),

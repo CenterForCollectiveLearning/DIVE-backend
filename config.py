@@ -3,6 +3,8 @@ class BaseConfig(object):
     TESTING = False
     UPLOAD_FOLDER = 'uploads'
     PORT = 8081
+    RECOMPUTE_FIELD_PROPERTIES = True
+    RECOMPUTE_SPECS = True
 
 class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'

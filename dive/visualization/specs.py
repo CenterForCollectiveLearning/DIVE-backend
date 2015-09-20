@@ -4,9 +4,12 @@ from time import time
 from scipy import stats as sc_stats
 import math
 import uuid
+import logging
+logger = logging.getLogger(__name__)
 
 from dive.db.db import MongoInstance as MI
 from dive.db import db_access
+from dive.data.field_properties import get_field_properties
 from dive.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.visualization.data import get_viz_data_from_enumerated_spec
 from dive.visualization.type_mapping import get_viz_types_from_spec
@@ -26,12 +29,17 @@ def compute_viz_specs(project_id, dataset_id=None):
     Returns:
         List of scored specs for dataset_id (all datasets if dataset_id not specified)
     '''
+    logger.info("In compute viz specs")
     dataset_find_doc = {}
 
     datasets = db_access.get_datasets(project_id)
-    field_properties = db_access.get_field_properties(dataset_id, project_id)
+    logger.info("Datasets %s", datasets)
+
+    dataset_ids = [d['id'] for d in datasets]
+    field_properties = get_field_properties(project_id, dataset_ids, flatten=True)
+
     # TODO Store ontologies
-    # ontologies = db_access.getOntology(None, project_id)
+    ontologies = None  # db_access.get_ontology(project_id)
 
     enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties, ontologies, project_id)
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, project_id)
@@ -108,7 +116,7 @@ class Specification(object):
 # TODO Move the case classifying into dataset ingestion (doesn't need to be here!)
 # 1) Enumerated viz specs given data, properties, and ontologies
 def enumerate_viz_specs(datasets, properties, ontologies, project_id):
-    dataset_ids = [ d['dataset_id'] for d in datasets ]
+    dataset_ids = [ d['id'] for d in datasets ]
     specs_by_dataset_id = dict([(dataset_id, []) for dataset_id in dataset_ids])
 
     types_by_dataset_id = {}

@@ -70,7 +70,7 @@ def get_dataset(project_id, dataset_id):
     dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
     return row_to_dict(dataset)
 
-def get_datasets(**kwargs):
+def get_datasets(project_id, **kwargs):
     datasets = Dataset.query.filter_by(**kwargs).all()
     return [ row_to_dict(dataset) for dataset in datasets ]
 
@@ -138,28 +138,56 @@ def delete_dataset_properties(project_id, dataset_id):
 
 ################
 # Field Properties
+#
+# TODO Write functions dealing with one vs many field properties
 ################
-def get_field_properties(project_id, dataset_id):
+def get_field_properties(project_id, dataset_id, **kwargs):
+    # TODO Add in field for kwargs name
     dp = Field_Properties.query.filter_by(project_id=project_id, id=dataset_id).all()
     return [ row_to_dict(dp) for dp in dp ]
 
-# TODO Do an upsert?
+
 def insert_field_properties(project_id, dataset_id, **kwargs):
-    logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
-    dataset_properties = Dataset_Properties(
-        # n_rows = kwargs.get('n_rows')
-        # n_cols
-        # field_names = kwargs.get('field_names')
-        # field_types
-        # field_accessors =
-        # is_time_series = kwargs.get('time_series')
-        # structure = kwargs.get('structure')
-        # dataset_id = kwargs.get('dataset_id')
-        # project_id = kwargs.get('project_id')
+    logger.info("Insert field properties with project_id %s, and dataset_id %s", project_id, dataset_id)
+    field_properties = Field_Properties(
+        name = kwargs.get('name'),
+        type = kwargs.get('type'),
+        index = kwargs.get('index'),
+        normality = kwargs.get('normality'),
+        is_unique = kwargs.get('is_unique'),
+        unique_values = kwargs.get('unique_values'),
+        is_child = kwargs.get('is_child'),
+        child = kwargs.get('child'),
+        stats = kwargs.get('stats'),
+        dataset_id = dataset_id,
+        project_id = project_id,
     )
-    db.session.add(dataset_properties)
+    db.session.add(field_properties)
     db.session.commit()
-    return row_to_dict(dataset_properties)
+    return row_to_dict(field_properties)
+
+
+def update_field_properties(project_id, dataset_id, name, **kwargs):
+    title = kwargs.get('title')
+    description = kwargs.get('description')
+
+    field_properties = Field_Properties.query.filter_by(project_id=project_id,
+        dataset_id=dataset_id,
+        name=name).one()
+
+    if kwargs.get('name'): field_properties.name = kwargs.get('name')
+    if kwargs.get('type'): field_properties.type = kwargs.get('type')
+    if kwargs.get('index'): field_properties.index = kwargs.get('index')
+    if kwargs.get('normality'): field_properties.normality = kwargs.get('normality')
+    if kwargs.get('is_unique'): field_properties.is_unique = kwargs.get('is_unique')
+    if kwargs.get('child'): field_properties.child = kwargs.get('child')
+    if kwargs.get('child'): field_properties.child = kwargs.get('is_child')
+    if kwargs.get('unique_values'): field_properties.unique_values = kwargs.get('unique_values')
+    if kwargs.get('stats'): field_properties.stats = kwargs.get('stats')
+
+    db.session.add(field_properties)
+    db.session.commit()
+    return row_to_dict(field_properties)
 
 
 def delete_field_properties(project_id, dataset_id):
