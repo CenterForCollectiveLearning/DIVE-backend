@@ -3,7 +3,6 @@ from flask.ext.restful import Resource
 from passlib.hash import sha256_crypt
 
 from dive.db import db_access
-from dive.db.db import MongoInstance as MI
 
 import logging
 logger = logging.getLogger(__name__)

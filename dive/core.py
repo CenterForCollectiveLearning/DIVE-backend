@@ -3,6 +3,7 @@ import sys
 from celery import Celery
 from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.login import LoginManager
 from flask.ext.cors import CORS
 from werkzeug.local import LocalProxy
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize app-based objects
 db = SQLAlchemy()
+login_manager = LoginManager()
 cors = CORS()
 
 # See https://github.com/spendb/spendb/blob/da042b19884e515eb15e3d56fda01b7b94620983/spendb/core.py
@@ -27,9 +29,7 @@ def create_app(**kwargs):
     api.init_app(app)
 
     db.init_app(app)
-    # db.create_all(app=app)
-    # db.reflect()
-    # db.drop_all()
+    login_manager.init_app(app)
 
     cors.init_app(app,
         resources=r'/*',

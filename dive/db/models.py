@@ -64,8 +64,8 @@ class Dataset(db.Model):
 class Dataset_Properties(db.Model):
     __tablename__ = 'dataset_properties'
     id = db.Column(db.Integer, primary_key=True)
-    n_rows = db.Column(db.Unicode(250))
-    n_cols = db.Column(db.Unicode(250))
+    n_rows = db.Column(db.Integer)
+    n_cols = db.Column(db.Integer)
     field_names = db.Column(JSONB)
     field_types = db.Column(JSONB)
     field_accessors = db.Column(JSONB)
@@ -87,9 +87,9 @@ class Field_Properties(db.Model):
     index = db.Column(db.Integer)  # TODO Tie this down with a foreign key?
     normality = db.Column(JSONB)
     is_unique = db.Column(db.Boolean())
+    unique_values = db.Column(JSONB)
     child = db.Column(db.Unicode(250))
     is_child = db.Column(db.Boolean())
-    unique_values = db.Column(JSONB)
     stats = db.Column(JSONB)
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
