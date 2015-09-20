@@ -37,9 +37,9 @@ def get_field_properties(project_id, dataset_ids, get_values=False, flatten=True
         dataset_field_properties = db_access.get_field_properties(project_id, dataset_id)
         if (not dataset_field_properties) or current_app.config['RECOMPUTE_FIELD_PROPERTIES']:
             dataset_field_properties = compute_field_properties(project_id, dataset_id)
-        if not get_values:
-            for field_properties in dataset_field_properties:
-                del field_properties['unique_values']
+        # if not get_values:
+        #     for field_properties in dataset_field_properties:
+        #         del field_properties['unique_values']
         properties_by_dataset_id[dataset_id] = dataset_field_properties
 
     if len(dataset_ids) == 1:
@@ -159,7 +159,6 @@ def compute_field_properties(project_id, dataset_id):
             all_properties[i]['unique_values'] = col
     get_unique_values_time = time() - start_time
 
-
     ### Detect parents
     start_time = time()
     MAX_ROW_THRESHOLD = 100
@@ -195,9 +194,12 @@ def compute_field_properties(project_id, dataset_id):
 
     # TODO Pull saving out of calculation
     # Save properties into collection
+    all_properties_with_id = []
     for _properties in all_properties:
-        upsert_field_properties(project_id, dataset_id, _properties)
-    return all_properties
+        upserted_field_properties = upsert_field_properties(project_id, dataset_id, _properties)
+        all_properties_with_id.append(upserted_field_properties)
+
+    return all_properties_with_id
 
 
 def upsert_field_properties(project_id, dataset_id, _properties):

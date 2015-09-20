@@ -3,9 +3,6 @@ from pprint import pprint
 from time import time
 from scipy import stats as sc_stats
 import math
-import uuid
-import logging
-logger = logging.getLogger(__name__)
 
 from dive.db.db import MongoInstance as MI
 from dive.db import db_access
@@ -14,6 +11,9 @@ from dive.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.visualization.data import get_viz_data_from_enumerated_spec
 from dive.visualization.type_mapping import get_viz_types_from_spec
 from dive.visualization.scoring import score_spec
+
+import logging
+logger = logging.getLogger(__name__)
 
 def compute_viz_specs(project_id, dataset_id=None):
     '''
@@ -36,46 +36,36 @@ def compute_viz_specs(project_id, dataset_id=None):
     logger.info("Datasets %s", datasets)
 
     dataset_ids = [d['id'] for d in datasets]
-    field_properties = get_field_properties(project_id, dataset_ids, flatten=True)
+    field_properties_by_dataset_id = get_field_properties(project_id, dataset_ids)
 
+    logger.info(field_properties_by_dataset_id)
     # TODO Store ontologies
     ontologies = None  # db_access.get_ontology(project_id)
 
-    enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties, ontologies, project_id)
+    enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, project_id)
     filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, project_id)
     scored_viz_specs = score_viz_specs(filtered_viz_specs, project_id)
     formatted_viz_specs = format_viz_specs(scored_viz_specs)
 
     # Saving specs
-    saved_viz_specs = []
     for dataset_id_key, specs in formatted_viz_specs.iteritems():
-        for spec in specs:
-            spec['dataset_id'] = dataset_id_key
-        saved_viz_specs.extend(specs)
-
-    if saved_viz_specs:
-        sIDs = db_access.insert_specs(project_id, saved_viz_specs)
-        for s in saved_viz_specs:
-            s['id'] = str(s['_id'])
-            del s['_id']
+        db_access.insert_specs(project_id, dataset_id, specs)
 
     if dataset_id:
-        print "Returning just specs, no dataset_id mapping", dataset_id
+        logger.info("Returning just specs, no dataset_id mapping")
         return formatted_viz_specs[dataset_id]
     return formatted_viz_specs
-
 
 def get_viz_specs(project_id, dataset_id=None):
     ''' Get viz specs if exists and compute if doesn't exist '''
 
     ### TODO Fix bug with getting tons of specs when recomputing
-    RECOMPUTE = False
 
     specs_find_doc = {}
     if dataset_id: specs_find_doc['dataset_id'] = dataset_id
 
-    existing_specs = MI.getSpecs(specs_find_doc, project_id)
-    if existing_specs and not RECOMPUTE:
+    existing_specs = db_access.get_specs(project_id, dataset_id)
+    if existing_specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
         if dataset_id:
             return existing_specs
         else:
@@ -98,53 +88,22 @@ specific_to_general_type = {
     'datetime': 'q'
 }
 
-def specs_to_viz_types(specs):
-    result = []
-    return result
-
-
-class Specification(object):
-    '''
-    A visualization specification with the following properties: structure, args, and description.
-    '''
-    def __init__(self, structure, arguments, description={}):
-        self.structure = structure
-        self.arguments = arguments
-        self.description = description
-
 
 # TODO Move the case classifying into dataset ingestion (doesn't need to be here!)
 # 1) Enumerated viz specs given data, properties, and ontologies
-def enumerate_viz_specs(datasets, properties, ontologies, project_id):
+def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, project_id):
     dataset_ids = [ d['id'] for d in datasets ]
     specs_by_dataset_id = dict([(dataset_id, []) for dataset_id in dataset_ids])
 
     types_by_dataset_id = {}
     fields_by_dataset_id = {}
 
-    for p in properties:
-        dataset_id = p['dataset_id']
-        relevant_fields = {
-            'id': str(p['propertyID']),
-            'label': p['label'],
-            'unique': p['unique'],
-            'type': p['type'],
-            'normality': p['normality'],
-            'values': p['values']
-        }
-        if dataset_id in fields_by_dataset_id:
-            # TODO Necessary to preserve the order of fields?
-            fields_by_dataset_id[dataset_id].append(relevant_fields)
-        else:
-            fields_by_dataset_id[dataset_id] = [ relevant_fields ]
-
     # Iterate through datasets (no cross-dataset visualizations for now)
-    for dataset_id in fields_by_dataset_id.keys():
+    for dataset_id, dataset_field_properties in field_properties_by_dataset_id.iteritems():
         specs = []
         c_fields = []
         q_fields = []
-        fields = fields_by_dataset_id[dataset_id]
-        for f in fields:
+        for f in dataset_field_properties:
             general_type = specific_to_general_type[f['type']]
             if general_type is 'q':
                 q_fields.append(f)
@@ -380,14 +339,14 @@ def format_viz_specs(scored_viz_specs):
                     if field_general_type is 'q': general_type_key = 'quantitative'
                     else: general_type_key = 'categorical'
 
+                    logger.info(field)
                     properties[general_type_key].append({
-                        'label': field['label'],
+                        'name': field['name'],
                         'id': field['id'],
-                        'fieldType': field_key
+                        'fieldType': field['type']
                     })
 
             s['properties'] = properties
-
 
             formatted_viz_specs.append(s)
 

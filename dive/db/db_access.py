@@ -143,7 +143,10 @@ def delete_dataset_properties(project_id, dataset_id):
 ################
 def get_field_properties(project_id, dataset_id, **kwargs):
     # TODO Add in field for kwargs name
-    dp = Field_Properties.query.filter_by(project_id=project_id, id=dataset_id).all()
+    filter_dict = kwargs
+    filter_dict['project_id'] = project_id
+    filter_dict['dataset_id'] = dataset_id
+    dp = Field_Properties.query.filter_by(**filter_dict).all()
     return [ row_to_dict(dp) for dp in dp ]
 
 
@@ -199,11 +202,22 @@ def delete_field_properties(project_id, dataset_id):
 ################
 # Specifications
 ################
-def insert_specs(project_id, specs):
+def get_specs(project_id, dataset_id, **kwargs):
+    # TODO Add in field for kwargs name
+    specs = Spec.query.filter_by(project_id=project_id, id=dataset_id).all()
+    return [ row_to_dict(spec) for spec in specs ]
+
+def insert_specs(project_id, dataset_id, specs):
     spec_objects = []
     for s in specs:
         spec_objects.append(Spec(
-            s
+            generating_procedure = s['generatingProcedure'],
+            type_structure = s['typeStructure'],
+            args = s['args'],
+            meta = s['meta'],
+            score = s['score'],
+            dataset_id = dataset_id,
+            project_id = project_id,
         ))
     db.session.add_all(spec_objects)
     db.session.commit()

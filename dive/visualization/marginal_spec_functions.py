@@ -34,7 +34,7 @@ binning_procedures = {
 def A(q_field):
     specs = []
 
-    q_label = q_field['label']
+    q_label = q_field['name']
 
     # { Index: value }
     index_spec = {
@@ -106,12 +106,12 @@ def B(q_fields):
 
     # Function on pairs of columns
     # for (field_a, field_b) in combinations(q_fields, 2):
-    #     label_a = field_a['label']
-    #     label_b = field_b['label']
+    #     label_a = field_a['name']
+    #     label_b = field_b['name']
     #     for ew_fn, ew_op in elementwise_functions.iteritems():
     #         derived_column_field = {
     #             'transform': '2:1',
-    #             'label': "%s %s %s" % (label_a, ew_op, label_b),
+    #             'name': "%s %s %s" % (label_a, ew_op, label_b),
     #             'unique': False  # TODO Run property detection again?
     #         }
     #         A_specs = A(derived_column_field)
@@ -120,7 +120,7 @@ def B(q_fields):
 
 def C(c_field):
     specs = []
-    c_label = c_field['label']
+    c_label = c_field['name']
 
     # TODO Only create if values are non-unique
     spec = {
@@ -143,8 +143,8 @@ def C(c_field):
 
 def D(c_field, q_field):
     specs = []
-    c_label = c_field['label']
-    q_label = q_field['label']
+    c_label = c_field['name']
+    q_label = q_field['name']
 
     if c_field['unique']:
         spec = {
@@ -197,9 +197,9 @@ def E(c_field, q_fields):
 
     # Two-field agg:agg
     if not c_field['unique']:
-        c_label = c_field['label']
+        c_label = c_field['name']
         for (q_field_a, q_field_b) in combinations(q_fields, 2):
-            q_label_a, q_label_b = q_field_a['label'], q_field_b['label']
+            q_label_a, q_label_b = q_field_a['name'], q_field_b['name']
             for agg_fn in aggregation_functions.keys():
                 spec = {
                     'generatingProcedure': GeneratingProcedure.AGG_AGG.value,
@@ -232,7 +232,7 @@ def F(c_fields):
 
     # Two-field val:val
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
-        c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
+        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
         spec = {
             'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
             'typeStructure': TypeStructure.C_C.value,
@@ -259,8 +259,8 @@ def G(c_fields, q_field):
     # TODO How do you deal with this?
     # Two-field val:val:q with quantitative data
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
-        c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
-        q_label = q_field['label']
+        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+        q_label = q_field['name']
         spec = {
             'generatingProcedure': GeneratingProcedure.VAL_VAL_Q.value,
             'typeStructure': TypeStructure.liC_Q.value,
@@ -289,8 +289,8 @@ def H(c_fields, q_fields):
     # TODO How do you deal with this?
     # Two-field val:val:[q] with quantitative data
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
-        c_label_a, c_label_b = c_field_a['label'], c_field_b['label']
-        q_labels = [ f['label'] for f in q_fields ]
+        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+        q_labels = [ f['name'] for f in q_fields ]
         spec = {
             'generatingProcedure': GeneratingProcedure.VAL_VAL_Q.value,
             'typeStructure': TypeStructure.liC_Q.value,

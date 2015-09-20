@@ -30,4 +30,4 @@ class FieldProperties(Resource):
         dataset_ids = [ dataset_id ]
         logger.info("%s %s", type(dataset_ids), dataset_ids)
         field_properties = get_field_properties(project_id, dataset_ids, get_values=False, flatten=False)
-        return make_response(jsonify(format_json(field_properties)))
+        return make_response(jsonify(format_json({"properties": field_properties})))

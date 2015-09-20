@@ -1,11 +1,14 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-import logging
 from dive.resources.utilities import format_json
 from dive.visualization import GeneratingProcedure
 from dive.visualization.specs import get_viz_specs
 from dive.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
+
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class GeneratingProcedures(Resource):
@@ -20,13 +23,12 @@ specsGetParser.add_argument('project_id', type=str, required=True)
 specsGetParser.add_argument('dataset_id', type=str)
 class Specs(Resource):
     def get(self):
-        print "[GET] Specs"
+        logger.info("[GET] Specs")
         args = specsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
         dataset_id = args.get('dataset_id', None)
 
         specs_by_dataset_id = get_viz_specs(project_id, dataset_id)
-
         return make_response(jsonify(format_json({'specs': specs_by_dataset_id})))
 
 
