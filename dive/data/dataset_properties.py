@@ -7,9 +7,13 @@ from dive.data.access import get_data, get_delimiter
 from dive.data.type_detection import get_column_types, detect_time_series
 from dive.db import db_access
 
+from dive.tasks import celery
+
 from bson.objectid import ObjectId
 from in_memory_data import InMemoryData as IMD
 
+import logging
+logger = logging.getLogger("__name__")
 
 def get_dataset_properties(dataset_id, project_id, path=None):
     ''' Get whole-dataset properties (recompute if doesnt exist) '''
@@ -20,9 +24,10 @@ def get_dataset_properties(dataset_id, project_id, path=None):
     if stored_properties and not RECOMPUTE:
         return stored_properties[0]
     else:
-        return compute_dataset_properties(dataset_id, project_id, path=path)
+        logger.info("Computing dataset properties")
+        return compute_dataset_properties.delay(dataset_id, project_id, path=path)
 
-
+@celery.task
 def compute_dataset_properties(dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
     import pandas as pd-dataset properties '''

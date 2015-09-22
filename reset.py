@@ -24,9 +24,9 @@ def create_tables(db):
 
 def remove_uploads(app):
     app.logger.info("Removing data directories in upload folder")
-    if os.path.isdir(app.config['UPLOAD_FOLDER']):
-        UPLOAD_FOLDER = os.path.join(os.curdir, app.config['UPLOAD_FOLDER'])
-        shutil.rmtree(UPLOAD_FOLDER)
+    if os.path.isdir(app.config['UPLOAD_DIR']):
+        UPLOAD_DIR = os.path.join(os.curdir, app.config['UPLOAD_DIR'])
+        shutil.rmtree(UPLOAD_DIR)
 
 
 if __name__ == '__main__':

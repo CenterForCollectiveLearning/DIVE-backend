@@ -9,6 +9,7 @@ from scipy import stats as sc_stats
 from flask import current_app
 
 from dive.db import db_access
+from dive.tasks import celery
 from dive.data.access import get_data
 from dive.data.type_detection import get_column_types
 from dive.data.analysis import get_unique, get_bin_edges
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Retrieve proeprties given dataset_docs
 # TODO Accept list of dataset_ids
-def get_field_properties(project_id, dataset_ids, get_values=False, flatten=True) :
+def get_field_properties(project_id, dataset_id, get_values=False, flatten=True) :
     '''
     Returns field properties given a list of dataset_ids. Basically a wrapper /
     formatter around compute_field_properties.
@@ -32,21 +33,21 @@ def get_field_properties(project_id, dataset_ids, get_values=False, flatten=True
     properties_by_dataset_id = {}
     aggregated_properties = []
 
-    logger.info("Getting field properties for dataset_ids %s and project_id %s", dataset_ids, project_id)
-    for dataset_id in dataset_ids:
-        dataset_field_properties = db_access.get_field_properties(project_id, dataset_id)
-        if (not dataset_field_properties) or current_app.config['RECOMPUTE_FIELD_PROPERTIES']:
-            logger.info("Computing field types")
-            dataset_field_properties = compute_field_properties(project_id, dataset_id)
-        # if not get_values:
-        #     for field_properties in dataset_field_properties:
-        #         del field_properties['unique_values']
-        properties_by_dataset_id[dataset_id] = dataset_field_properties
+    logger.info("Getting field properties for dataset_id %s and project_id %s", dataset_id, project_id)
+    dataset_field_properties = db_access.get_field_properties(project_id, dataset_id)
+    if (not dataset_field_properties) or current_app.config['RECOMPUTE_FIELD_PROPERTIES']:
+        logger.info("Computing field types")
+        # dataset_field_properties = compute_field_properties.delay(project_id, dataset_id)
+        task = compute_field_properties.delay(project_id, dataset_id)
+        async_id = "2f949c58-db00-4980-9cf5-c24229c5b1cb"
+        logger.error(task)
+        logger.info([t for t in task.collect()])
+    # if not get_values:
+    #     for field_properties in dataset_field_properties:
+    #         del field_properties['unique_values']
+    properties_by_dataset_id[dataset_id] = dataset_field_properties
 
-    if len(dataset_ids) == 1:
-        return properties_by_dataset_id[dataset_ids[0]]
-    else:
-        return properties_by_dataset_id
+    return properties_by_dataset_id
 
 # Retrieve entities given datasets
 def get_entities(project_id, datasets):
@@ -77,7 +78,7 @@ def get_attributes(project_id, datasets):
     return attributes
 
 # TODO Reduce iterations over data elements
-
+@celery.task
 def compute_field_properties(project_id, dataset_id):
     '''
     Compute field properties of a specific dataset

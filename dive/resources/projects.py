@@ -2,7 +2,7 @@ import os
 import shutil
 
 from flask import make_response, jsonify, current_app
-from flask.ext.restful import Resource, reqparse
+from flask.ext.restful import Resource, reqparse, marshal_with
 
 from dive.db import db_access
 from dive.resources.utilities import format_json
@@ -33,7 +33,7 @@ class Project(Resource):
 
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
-        project_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], result['id'])
+        project_dir = os.path.join(current_app.config['UPLOAD_DIR'], result['id'])
         if os.path.isdir(project_dir):
             shutil.rmtree(project_dir)
         return jsonify({"message": "Successfully deleted project.",
@@ -45,9 +45,6 @@ projectsPostParser.add_argument('title', type=str, required=False)
 projectsPostParser.add_argument('description', type=str, required=False)
 projectsPostParser.add_argument('username', type=str, required=False)
 projectsPostParser.add_argument('anonymous', type=bool, required=False, default=False)
-
-projectsDeleteParser = reqparse.RequestParser()
-projectsDeleteParser.add_argument('project_id', type=str, action='append', required=True)
 class Projects(Resource):
     '''
     GET list of all projects
@@ -67,7 +64,7 @@ class Projects(Resource):
         result = db_access.insert_project(title=title, description=description)
 
         logger.info("Created upload directory for project_id: %s", result['id'])
-        project_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], result['id'])
+        project_dir = os.path.join(current_app.config['UPLOAD_DIR'], result['id'])
         if os.path.isdir(project_dir):
             os.mkdir(project_dir)
 

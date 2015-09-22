@@ -49,7 +49,7 @@ def save_excel_to_csv(file_title, file_name, path):
 
         csv_file_title = file_name + "_" + sheet_name
         csv_file_name = csv_file_title + ".csv"
-        csv_path = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id, csv_file_name)
+        csv_path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, csv_file_name)
 
         csv_file = open(csv_path, 'wb')
         wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
@@ -74,7 +74,7 @@ def save_json_to_csv(file_title, file_name, path):
     orig_type = file_name.rsplit('.', 1)[1]
     csv_file_title = file_title
     csv_file_name = csv_file_title + ".csv"
-    csv_path = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id, csv_file_name)
+    csv_path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, csv_file_name)
 
     csv_file = open(csv_path, 'wb')
     wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
@@ -98,6 +98,13 @@ def save_json_to_csv(file_title, file_name, path):
     return file_doc
 
 
+from dive.tasks import celery
+@celery.task
+def test_background_task(a1, a2):
+    return a1 + a2
+
+
+@celery.task(ignore_result=True)
 def upload_file(project_id, file):
     '''
     1. Save file in uploads/project_id directory
@@ -114,10 +121,10 @@ def upload_file(project_id, file):
 
     # TODO Create file_type enum
     file_title, file_type = file_name.rsplit('.', 1)
-    path = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id, file_name)
+    path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, file_name)
 
     # Ensure project directory exists
-    project_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], project_id)
+    project_dir = os.path.join(current_app.config['UPLOAD_DIR'], project_id)
     if not os.path.isdir(project_dir):
         os.mkdir(os.path.join(project_dir))
 

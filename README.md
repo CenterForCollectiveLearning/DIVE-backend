@@ -6,7 +6,7 @@ The Data Integration and Visualization Engine (DIVE) is a platform for semi-auto
 Install System Dependencies (Linux / apt)
 ---------
 ```bash
-$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev python-dev libffi-dev liblapack-dev gfortran
+$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev python-dev libffi-dev liblapack-dev gfortran rabbitmq-server
 $ sudo su postgres
 $ createuser -D -P -R -S dive
 $ createdb -E utf8 -O dive -T template0 spendb
@@ -26,7 +26,6 @@ Install and get into a virtual environment
 2. Freezing virtual env packages: `pip freeze > requirements.txt`.
 3. Starting virtual env: `source venv/bin/activate`.
 
-
 Install Python Dependencies
 ---------
 Within a virtual environment, install dependencies in `requirements.txt`. But due to a dependency issue in numexpr, we need to install numpy first.
@@ -40,6 +39,17 @@ Run API
 1. Load virtual environment.
 2. To run development Flask server, run `python run.py`.
 3. To run production Gunicorn server, run `./run.sh`.
+
+Start RabbitMQ
+---------
+1. Create a RabbitMQ user and virtual host:
+```
+sudo rabbitmqctl add_user admin password
+sudo rabbitmqctl add_vhost dive
+sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
+```
+2. Run the server as a background process
+`sudo rabbitmq-server -detached`
 
 Database Migrations
 --------

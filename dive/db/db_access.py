@@ -1,6 +1,6 @@
 '''
-Module containing functions accessing the database. Other should have no direct
-access to the database, only to this layer. Parameters in, JSONable objects out.
+Module containing functions and Data Access Objects for accessing the database.
+Parameters in, JSONable objects out.
 
 Mainly used to separate session management from models, and to provide uniform
 db interfaces to both the API and compute layers.

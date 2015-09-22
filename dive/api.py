@@ -14,7 +14,22 @@ class FakeGetProjectID(Resource):
     def get(self):
         return "1"
 
+class Test(Resource):
+    def get(self):
+        from dive.data.datasets import test_background_task
+        result = test_background_task.delay(10, 10)
+        return result
+
+class Result(Resource):
+    def get(self, task_id):
+        from dive.tasks import celery
+        result = celery.AsyncResult(task_id)
+        return result.get()
+
 api = Api()
+
+api.add_resource(Test, '/test')
+api.add_resource(Result, '/result/<task_id>')
 
 api.add_resource(FakeGetProjectID,              '/projects/v1/getProjectID')
 api.add_resource(Projects,                      '/projects/v1/projects')
