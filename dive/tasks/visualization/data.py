@@ -10,13 +10,14 @@ import math
 from itertools import combinations
 from flask import current_app
 
-from dive.visualization import GeneratingProcedure, TypeStructure
 from dive.data.access import get_delimiter, get_data, get_conditioned_data
-from dive.data.type_detection import detect_time_series, get_variable_type
-from dive.db.db import MongoInstance as MI
 from dive.data.in_memory_data import InMemoryData as IMD
-from dive.data.analysis import get_bin_edges
+from dive.tasks.ingestion.type_detection import detect_time_series, get_variable_type
+from dive.tasks.ingestion.analysis import get_bin_edges
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure
 
+import logging
+logger = logging.getLogger(__name__)
 
 # TODO just use regular strings?
 group_fn_from_string = {

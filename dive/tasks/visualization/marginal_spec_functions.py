@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import combinations
 
-from dive.visualization import GeneratingProcedure, TypeStructure, TermType
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
 
 # TODO How to document defaults?
 aggregation_functions = {

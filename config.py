@@ -17,7 +17,7 @@ class BaseConfig(object):
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
 
     CELERY_IMPORTS = [
-        'dive.api'
+        'dive.tasks.ingestion.upload'
     ]
 
 class ProductionConfig(BaseConfig):

@@ -2,9 +2,9 @@ from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.resources.utilities import format_json
-from dive.visualization import GeneratingProcedure
-from dive.visualization.specs import get_viz_specs
-from dive.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
+from dive.tasks.visualization import GeneratingProcedure
+from dive.tasks.visualization.specs import get_viz_specs
+from dive.tasks.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 
 
 import logging
@@ -33,7 +33,7 @@ class Specs(Resource):
 
 
 visualizationGetParser = reqparse.RequestParser()
-visualizationGetParser.add_argument('projectTitle', type=str, required=True)
+visualizationGetParser.add_argument('project_id', type=str, required=True)
 class Visualization(Resource):
     ''' Returns visualization and table data for a given spec'''
     def get(self, vID):
@@ -41,11 +41,7 @@ class Visualization(Resource):
 
         args = visualizationGetParser.parse_args()
         projectTitle = args.get('projectTitle').strip().strip('"')
-
-        project_id = MI.getProjectID(projectTitle)
-
-        find_doc = {'_id': ObjectId(vID)}
-        visualizations = MI.getExportedSpecs(find_doc, project_id)
+        # visualizations = MI.getExportedSpecs(find_doc, project_id)
 
         if visualizations:
             spec = visualizations[0]['spec'][0]

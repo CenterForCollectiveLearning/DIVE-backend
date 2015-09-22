@@ -11,13 +11,12 @@ import scipy.stats as stats
 import math
 
 from dive.data.access import get_data
-from dive.data.type_detection import get_column_types
+from dive.tasks.ingestion.type_detection import get_column_types
 
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def get_unique(li):
     return list(np.unique(li))
-
 
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
@@ -61,7 +60,7 @@ def get_hierarchy(l1, l2):
 
 def compute_ontologies(project_id, datasets) :
     new_dataset_ids = [d['dataset_id'] for d in datasets]
-    all_datasets = MI.getData({}, project_id)
+    all_datasets = db_access.get_datasets(project_id)
     all_dataset_ids = [d['dataset_id'] for d in all_datasets]
     print "NEW: ", new_dataset_ids
     print "ALL: ", all_dataset_ids

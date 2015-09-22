@@ -7,11 +7,11 @@ from flask import current_app
 
 from dive.db import db_access
 from dive.tasks import celery
-from dive.data.field_properties import get_field_properties
-from dive.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
-from dive.visualization.data import get_viz_data_from_enumerated_spec
-from dive.visualization.type_mapping import get_viz_types_from_spec
-from dive.visualization.scoring import score_spec
+from dive.tasks.ingestion.field_properties import get_field_properties
+from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
+from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
+from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
+from dive.tasks.visualization.scoring import score_spec
 
 import logging
 logger = logging.getLogger(__name__)

@@ -11,8 +11,8 @@ from flask import current_app
 from dive.db import db_access
 from dive.tasks import celery
 from dive.data.access import get_data
-from dive.data.type_detection import get_column_types
-from dive.data.analysis import get_unique, get_bin_edges
+from dive.tasks.ingestion.type_detection import get_column_types
+from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
 
 import logging
 logger = logging.getLogger(__name__)

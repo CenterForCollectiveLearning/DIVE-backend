@@ -5,10 +5,20 @@ TODO Rename either this or access.py to be more descriptive
 '''
 
 import pandas as pd
-from bson.objectid import ObjectId
 
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.db import db_access
+
+
+def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
+    end = start + inc  # Upper bound excluded
+    df = get_data(dataset_id=dataset_id, project_id=project_id)
+    df = df.fillna('')
+    sample = map(list, df.iloc[start:end].values)
+
+    result = get_dataset_properties(dataset_id, project_id)
+    result['sample'] = sample
+    return result
 
 
 # TODO Change to get_data_as_dataframe

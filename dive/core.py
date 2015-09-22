@@ -50,14 +50,13 @@ def create_celery(app):
     return celery
 
 
-def create_api(**kwargs):
+def create_api(app):
     '''
     Attach API endpoints / resources to app
     '''
-    app = create_app(**kwargs)
     from api import api
     api.init_app(app)
-    return app
+    return api
 
 
 def ensure_directories(app):

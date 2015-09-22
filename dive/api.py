@@ -16,7 +16,7 @@ class FakeGetProjectID(Resource):
 
 class Test(Resource):
     def get(self):
-        from dive.data.datasets import test_background_task
+        from dive.tasks.ingestion.upload import test_background_task
         result = test_background_task.delay(10, 10)
         return result
 

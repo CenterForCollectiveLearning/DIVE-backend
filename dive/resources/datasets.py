@@ -1,12 +1,14 @@
 import json
 from flask import request, make_response, jsonify
 from flask.ext.restful import Resource, reqparse
+from celery import chain
 
 from dive.db import db_access
 from dive.resources.utilities import format_json
-from dive.data.datasets import upload_file, get_dataset_sample
-from dive.data.dataset_properties import get_dataset_properties
-from dive.data.analysis import compute_ontologies, get_ontologies
+from dive.data.access import get_dataset_sample
+from dive.tasks.ingestion.upload import upload_file
+from dive.tasks.ingestion.dataset_properties import get_dataset_properties
+from dive.tasks.ingestion.analysis import compute_ontologies, get_ontologies
 
 import logging
 logger = logging.getLogger(__name__)

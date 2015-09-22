@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from dive.resources.utilities import format_json
-from dive.data.field_properties import get_field_properties, get_entities, get_attributes, compute_field_properties
+from dive.tasks.ingestion.field_properties import get_field_properties, get_entities, get_attributes, compute_field_properties
 
 
 fieldPropertiesGetParser = reqparse.RequestParser()

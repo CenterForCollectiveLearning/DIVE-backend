@@ -3,14 +3,11 @@ Get and compute whole-dataset properties
 '''
 import pandas as pd
 
-from dive.data.access import get_data, get_delimiter
-from dive.data.type_detection import get_column_types, detect_time_series
 from dive.db import db_access
-
 from dive.tasks import celery
-
-from bson.objectid import ObjectId
-from in_memory_data import InMemoryData as IMD
+from dive.data.access import get_data, get_delimiter
+from dive.data.in_memory_data import InMemoryData as IMD
+from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
 
 import logging
 logger = logging.getLogger("__name__")

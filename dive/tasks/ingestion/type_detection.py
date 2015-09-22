@@ -3,7 +3,7 @@ import pandas as pd
 import dateutil.parser as dparser
 from csvkit import sniffer
 
-from . import DataType
+from dive.tasks.ingestion import DataType
 
 import logging
 logger = logging.getLogger(__name__)

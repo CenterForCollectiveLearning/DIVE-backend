@@ -51,6 +51,11 @@ sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
 2. Run the server as a background process
 `sudo rabbitmq-server -detached`
 
+Start Celery worker
+---------
+1. `celery -A dive.tasks worker -l info`
+2. `celery -A dive.tasks flower`
+
 Database Migrations
 --------
 Follow [the docs](https://flask-migrate.readthedocs.org/en/latest/). The first time, run the migration script.

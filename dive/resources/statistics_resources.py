@@ -4,7 +4,7 @@ from flask.ext.restful import Resource, reqparse
 
 import logging
 from dive.resources.utilities import format_json
-from dive.statistics.statistics import getStatisticsFromSpec, timeEstimator
+from dive.tasks.statistics.statistics import getStatisticsFromSpec, timeEstimator
 
 #####################################################################
 # Endpoint returning estimated time for regression

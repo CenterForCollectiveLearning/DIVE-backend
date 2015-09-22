@@ -12,29 +12,17 @@ import json
 import codecs
 import pandas as pd
 from werkzeug.utils import secure_filename
-from bson.objectid import ObjectId
 from flask import current_app
 
 import logging
 logger = logging.getLogger(__name__)
 
 from dive.db import db_access
-from dive.data import DataType
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
-from dive.data.dataset_properties import get_dataset_properties, compute_dataset_properties
-from dive.data.type_detection import get_column_types, detect_time_series
-
-
-def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
-    end = start + inc  # Upper bound excluded
-    df = get_data(dataset_id=dataset_id, project_id=project_id)
-    df = df.fillna('')
-    sample = map(list, df.iloc[start:end].values)
-
-    result = get_dataset_properties(dataset_id, project_id)
-    result['sample'] = sample
-    return result
+from dive.tasks.ingestion import DataType
+from dive.tasks.ingestion.dataset_properties import get_dataset_properties, compute_dataset_properties
+from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
 
 
 def save_excel_to_csv(file_title, file_name, path):
