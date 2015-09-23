@@ -6,7 +6,7 @@ from scipy import stats as sc_stats
 from flask import current_app
 
 from dive.db import db_access
-from dive.tasks import celery
+from dive.task_core import celery, task_app
 from dive.tasks.ingestion.field_properties import get_field_properties
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
@@ -17,7 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 @celery.task
-def compute_viz_specs(project_id, dataset_id=None):
+def compute_viz_specs(project_id, dataset_id):
     '''
     Wrapper function used to
         1. Enumerate
@@ -31,31 +31,32 @@ def compute_viz_specs(project_id, dataset_id=None):
     Returns:
         List of scored specs for dataset_id (all datasets if dataset_id not specified)
     '''
-    dataset_find_doc = {}
+    with task_app.app_context():
+        dataset_find_doc = {}
 
-    datasets = db_access.get_datasets(project_id)
-    logger.info("Datasets %s", datasets)
+        # datasets = db_access.get_dataset(project_id, dataset_id)
+        # logger.info("Datasets %s", datasets)
 
-    dataset_ids = [d['id'] for d in datasets]
-    field_properties_by_dataset_id = get_field_properties(project_id, dataset_ids)
+        # dataset_ids = [d['id'] for d in datasets]
+        field_properties_by_dataset_id = get_field_properties(project_id, dataset_id)
 
-    # TODO Store ontologies
-    ontologies = None  # db_access.get_ontology(project_id)
+        # TODO Store ontologies
+        ontologies = None  # db_access.get_ontology(project_id)
 
-    enumerated_viz_specs = enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, project_id)
-    filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, project_id)
-    scored_viz_specs = score_viz_specs(filtered_viz_specs, project_id)
-    formatted_viz_specs = format_viz_specs(scored_viz_specs)
+        enumerated_viz_specs = enumerate_viz_specs(dataset_id, field_properties_by_dataset_id, ontologies, project_id)
+        filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, project_id)
+        scored_viz_specs = score_viz_specs(filtered_viz_specs, project_id)
+        formatted_viz_specs = format_viz_specs(scored_viz_specs)
 
-    # Saving specs, using return from insert to get id
-    final_viz_specs = {}
-    for dataset_id, specs in formatted_viz_specs.iteritems():
-        final_viz_specs[dataset_id] = db_access.insert_specs(project_id, dataset_id, specs)
+        # Saving specs, using return from insert to get id
+        final_viz_specs = {}
+        for dataset_id, specs in formatted_viz_specs.iteritems():
+            final_viz_specs[dataset_id] = db_access.insert_specs(project_id, dataset_id, specs)
 
-    if dataset_id:
-        logger.info("Returning just specs, no dataset_id mapping")
-        return final_viz_specs[dataset_id]
-    return final_viz_specs
+        if dataset_id:
+            logger.info("Returning just specs, no dataset_id mapping")
+            return final_viz_specs[dataset_id]
+        return final_viz_specs
 
 def get_viz_specs(project_id, dataset_id=None):
     ''' Get viz specs if exists and compute if doesn't exist '''
@@ -94,8 +95,9 @@ specific_to_general_type = {
 
 # TODO Move the case classifying into dataset ingestion (doesn't need to be here!)
 # 1) Enumerated viz specs given data, properties, and ontologies
-def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, project_id):
-    dataset_ids = [ d['id'] for d in datasets ]
+def enumerate_viz_specs(dataset_id, field_properties_by_dataset_id, ontologies, project_id):
+    # dataset_ids = [ d['id'] for d in datasets ]
+    dataset_ids = [ dataset_id ]
     specs_by_dataset_id = dict([(dataset_id, []) for dataset_id in dataset_ids])
 
     types_by_dataset_id = {}
@@ -122,12 +124,12 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
         if q_count and not c_count:
             # Case A) Q = 1, C = 0
             if q_count == 1:
-                print "Case A"
+                logger.info("Case A")
                 q_field = q_fields[0]
                 A_specs = A(q_field)
                 specs.extend(A_specs)
             elif q_count >= 1:
-                print "Case B"
+                logger.info("Case B")
                 for q_field in q_fields:
                     A_specs = A(q_field)
                     specs.extend(A_specs)
@@ -139,14 +141,14 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
         elif c_count == 1:
             # Case C) C = 1, Q = 0
             if q_count == 0:
-                print "Case C"
+                logger.info("Case C")
                 c_field = c_fields[0]
                 C_specs = C(c_field)
                 specs.extend(C_specs)
 
             # Case D) C = 1, Q = 1
             elif q_count == 1:
-                print "Case D"
+                logger.info("Case D")
 
                 # One case of A
                 q_field = q_fields[0]
@@ -165,7 +167,7 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
 
             # Case E) C = 1, Q >= 1
             elif q_count > 1:
-                print "Case E"
+                logger.info("Case E")
 
                 for q_field in q_fields:
                     # N_Q cases of A
@@ -195,7 +197,7 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
         elif c_count >= 1:
             # Case F) C >= 1, Q = 0
             if q_count == 0:
-                print "Case F"
+                logger.info("Case F")
 
                 # N_C cases of C
                 for c_field in c_fields:
@@ -208,7 +210,7 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
 
             # Case G) C >= 1, Q = 1
             elif q_count == 1:
-                print "Case G"
+                logger.info("Case G")
                 q_field = q_fields[0]
 
                 # N_C cases of D
@@ -226,7 +228,7 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
 
             # Case H) C >= 1, Q > 1
             elif q_count > 1:
-                print "Case H"
+                logger.info("Case H")
 
                 # N_C cases of C
                 # N_C cases of E
@@ -265,7 +267,6 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
         # Assign viz types to specs (not 1-1)
         for spec in specs:
             viz_types = get_viz_types_from_spec(spec)
-            print viz_types
             for viz_type in viz_types:
 
                 # Necessary to deep copy?
@@ -278,9 +279,7 @@ def enumerate_viz_specs(datasets, field_properties_by_dataset_id, ontologies, pr
 
         specs_by_dataset_id[dataset_id] = all_specs_with_types
 
-        print "\tN_c:", c_count
-        print "\tN_q:", q_count
-        print "\tNumber of specs:", len(specs_by_dataset_id[dataset_id])
+        logger.info("\tNumber of specs:", len(specs_by_dataset_id[dataset_id]))
         # pprint(specs_by_dataset_id)
     return specs_by_dataset_id
 

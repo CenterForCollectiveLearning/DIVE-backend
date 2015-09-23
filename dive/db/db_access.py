@@ -108,8 +108,8 @@ def delete_dataset(project_id, dataset_id):
 # Dataset Properties
 ################
 def get_dataset_properties(project_id, dataset_id):
-    dp = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).all()
-    return [ row_to_dict(dp) for dp in dp ]
+    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
+    return row_to_dict(dataset_properties)
 
 # TODO Do an upsert?
 def insert_dataset_properties(project_id, dataset_id, **kwargs):

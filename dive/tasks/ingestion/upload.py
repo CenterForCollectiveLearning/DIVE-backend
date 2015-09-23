@@ -25,7 +25,7 @@ from dive.tasks.ingestion.dataset_properties import get_dataset_properties, comp
 from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
 
 
-def save_excel_to_csv(file_title, file_name, path):
+def save_excel_to_csv(project_id, file_title, file_name, path):
     book = xlrd.open_workbook(path)
     sheet_names = book.sheet_names()
 
@@ -49,13 +49,13 @@ def save_excel_to_csv(file_title, file_name, path):
             'file_name': csv_file_name,
             'path': csv_path,
             'type': 'csv',
-            'orig_type': orig_type
+            'orig_type': 'xls'
         }
         file_docs.append(file_doc)
     return file_docs
 
 
-def save_json_to_csv(file_title, file_name, path):
+def save_json_to_csv(project_id, file_title, file_name, path):
     f = open(path, 'rU')
     json_data = json.load(f)
 
@@ -86,13 +86,7 @@ def save_json_to_csv(file_title, file_name, path):
     return file_doc
 
 
-from dive.tasks import celery
 @celery.task
-def test_background_task(a1, a2):
-    return a1 + a2
-
-
-@celery.task(ignore_result=True)
 def upload_file(project_id, file):
     '''
     1. Save file in uploads/project_id directory
@@ -134,10 +128,10 @@ def upload_file(project_id, file):
         file_docs.append(file_doc)
 
     elif file_type.startswith('xls'):
-        file_docs = save_excel_to_csv(file_title, file_name, path)
+        file_docs = save_excel_to_csv(project_id, file_title, file_name, path)
 
     elif file_type == 'json' :
-        file_doc = save_json_to_csv(file_title, file_name, path)
+        file_doc = save_json_to_csv(project_id, file_title, file_name, path)
         file_docs.append(file_doc)
 
     for file_doc in file_docs:

@@ -30,10 +30,11 @@ def remove_uploads(app):
 
 
 if __name__ == '__main__':
-    app = Flask(__name__)
-    app.config.from_object('config.DevelopmentConfig')
+    from dive.core import create_app
+    app = create_app()
     db = SQLAlchemy(app)
-    from dive.db.models import Project, Dataset, Field_Properties, Specification, Exported_Specification, Group, User
+
+    from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Group, User
 
     remove_uploads(app)
     drop_tables(db)

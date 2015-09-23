@@ -25,8 +25,6 @@ class FieldProperties(Resource):
         dataset_id = args.get('dataset_id')
         logger.info("Field properties dataset_id %s", dataset_id)
 
-        # TODO Make this work with multiple dataset_ids
-
         from dive.db import db_access
         field_properties = get_field_properties(project_id, dataset_id)
         return make_response(jsonify(format_json({"properties": field_properties})))

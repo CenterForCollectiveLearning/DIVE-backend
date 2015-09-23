@@ -34,6 +34,9 @@ pip install numpy
 pip install -r requirements.txt
 ```
 
+Start postgres
+---------
+
 Run API
 ---------
 1. Load virtual environment.
@@ -53,8 +56,8 @@ sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
 
 Start Celery worker
 ---------
-1. `celery -A dive.tasks worker -l info`
-2. `celery -A dive.tasks flower`
+1. Start celery worker: `celery -A dive.task_core worker -l info --autoreload`
+2. Start celery monitor (flower): `celery -A dive.tasks flower`
 
 Database Migrations
 --------

@@ -9,6 +9,8 @@ import pandas as pd
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.db import db_access
 
+import logging
+logger = logging.getLogger(__name__)
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     end = start + inc  # Upper bound excluded
@@ -16,7 +18,8 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     df = df.fillna('')
     sample = map(list, df.iloc[start:end].values)
 
-    result = get_dataset_properties(dataset_id, project_id)
+    result = db_access.get_dataset_properties(project_id, dataset_id)
+    logger.info("Result, %s", result)
     result['sample'] = sample
     return result
 

@@ -20,7 +20,6 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 cors = CORS()
 
-# See https://github.com/spendb/spendb/blob/da042b19884e515eb15e3d56fda01b7b94620983/spendb/core.py
 def create_app(**kwargs):
     '''
     Initialize Flask application
@@ -54,8 +53,13 @@ def create_api(app):
     '''
     Attach API endpoints / resources to app
     '''
-    from api import api
+    from flask.ext.restful import Api
+    api = Api()
+
+    from api import add_resources
+    api = add_resources(api)
     api.init_app(app)
+
     return api
 
 

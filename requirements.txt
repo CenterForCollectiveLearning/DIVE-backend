@@ -2,6 +2,7 @@ alembic==0.8.2
 amqp==1.4.6
 aniso8601==0.92
 anyjson==0.3.3
+Babel==2.0
 backports.ssl-match-hostname==3.4.0.2
 billiard==3.3.0.20
 blaze==0.7.2
@@ -20,10 +21,13 @@ enum==0.4.4
 enum34==1.0.4
 Flask==0.10.1
 Flask-Cors==2.1.0
+Flask-Login==0.3.0
 Flask-Migrate==1.6.0
 Flask-RESTful==0.3.1
 Flask-Script==2.0.5
 Flask-SQLAlchemy==2.0
+flower==0.8.3
+futures==3.0.3
 gevent==1.0.1
 greenlet==0.4.5
 gunicorn==19.3.0
