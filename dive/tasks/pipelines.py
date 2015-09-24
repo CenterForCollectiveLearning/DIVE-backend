@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def full_pipeline(dataset_id, project_id):
     '''
-    Get properties and then get viz Specs
+    Get properties and then get viz specs
     '''
     pipeline = chain([
         ingestion_pipeline(dataset_id, project_id),
@@ -53,6 +53,6 @@ def viz_spec_pipeline(dataset_id, project_id):
         filter_viz_specs.s(project_id),
         score_viz_specs.s(project_id),
         format_viz_specs.s(project_id),
-        save_viz_specs.s(project_id)
+        save_viz_specs.s(dataset_id, project_id)
     ])
     return pipeline

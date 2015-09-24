@@ -6,7 +6,7 @@ from dive.resources.statistics_resources import StatisticsFromSpec, RegressionEs
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.render import Render
 
-from dive.resources.task_results import TaskResult
+from dive.resources.task_resources import TestPipeline, TaskResult
 # from dive.resources.auth import Register, Login
 
 from flask.ext.restful import Resource
@@ -16,17 +16,8 @@ class FakeGetProjectID(Resource):
         return "1"
 
 
-class Test(Resource):
-    def get(self):
-        from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
-        full_task = full_pipeline(25, 1).apply_async()
-        # spec_task = viz_spec_pipeline(25, 1).apply_async()
-        # return { 'ingestion': ingestion_task.id, 'spec': spec_task.id }
-        return full_task.id
-
-
 def add_resources(api):
-    api.add_resource(Test, '/test')
+    api.add_resource(TestPipeline, '/test/<project_id>/<dataset_id>')
     api.add_resource(TaskResult, '/task_result/<task_id>')
 
     api.add_resource(FakeGetProjectID,              '/projects/v1/getProjectID')

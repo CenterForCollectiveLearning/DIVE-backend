@@ -250,6 +250,7 @@ def insert_specs(project_id, specs):
     return [ row_to_dict(s) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
+    # TODO Accept multiple IDs
     spec = Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
     if spec is None:
         abort(404)

@@ -24,11 +24,11 @@ class BaseConfig(object):
         'dive.tasks.statistics.statistics'
     ]
 
-class ProductionConfig(BaseConfig):
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
-
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
+
+class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
 
 class TestingConfig(BaseConfig):

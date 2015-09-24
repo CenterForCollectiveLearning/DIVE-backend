@@ -279,8 +279,12 @@ def format_viz_specs(scored_viz_specs, project_id):
 
 
 @celery.task
-def save_viz_specs(specs, project_id):
+def save_viz_specs(specs, dataset_id, project_id):
     logger.info("Saving viz specs")
     with task_app.app_context():
         # TODO Delete existing specs
+        existing_specs = db_access.get_specs(project_id, dataset_id)
+        if existing_specs:
+            for spec in existing_specs:
+                db_access.delete_spec(project_id, spec['id'])
         db_access.insert_specs(project_id, specs)
