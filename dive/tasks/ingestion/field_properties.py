@@ -173,23 +173,24 @@ def compute_field_properties(self, dataset_id, project_id):
 
 @celery.task
 def save_field_properties(all_properties, dataset_id, project_id):
-    all_properties_with_id = []
-    with task_app.app_context():
-        for properties in all_properties:
-            saved_field_properties = db_access.insert_field_properties(project_id, dataset_id, **properties)
-            all_properties_with_id.append(saved_field_properties)
-    return all_properties_with_id
+    ''' Upsert all field properties corresponding to a dataset '''
+    field_properties_with_id = []
+    for field_properties in all_properties:
+        name = field_properties['name']
 
+        with task_app.app_context():
+            existing_field_properties = db_access.get_field_properties(project_id, dataset_id, name=name)
 
-def upsert_field_properties(project_id, dataset_id, _properties):
-    name = _properties['name']
-    if db_access.get_field_properties(project_id, dataset_id, name=name):
-        logger.info("Updating field property of dataset %s with name %s", dataset_id, name)
-        field_properties = db_access.update_field_properties(project_id, dataset_id, **_properties)
-    else:
-        logger.info("Inserting field property of dataset %s with name %s", dataset_id, name)
-        field_properties = db_access.insert_field_properties(project_id, dataset_id, **_properties)
-    return field_properties
+        if existing_field_properties:
+            logger.info("Updating field property of dataset %s with name %s", dataset_id, name)
+            with task_app.app_context():
+                field_properties = db_access.update_field_properties(project_id, dataset_id, **field_properties)
+        else:
+            logger.info("Inserting field property of dataset %s with name %s", dataset_id, name)
+            with task_app.app_context():
+                field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
+        field_properties_with_id.append(field_properties)
+    return field_properties_with_id
 
 
 # Detect if a list is comprised of unique elements

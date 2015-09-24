@@ -13,12 +13,6 @@ import logging
 logger = logging.getLogger("__name__")
 
 
-@celery.task
-def save_dataset_properties(properties, dataset_id, project_id):
-    with task_app.app_context():
-        db_access.insert_dataset_properties(project_id, dataset_id, **properties)
-
-
 @celery.task(bind=True)
 def compute_dataset_properties(self, dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
@@ -49,3 +43,18 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
     }
 
     return properties
+
+
+@celery.task
+def save_dataset_properties(properties, dataset_id, project_id):
+    with task_app.app_context():
+        existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
+    if existing_dataset_properties:
+        logger.info("Updating field property of dataset %s", dataset_id)
+        with task_app.app_context():
+            dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
+    else:
+        logger.info("Inserting field property of dataset %s", dataset_id)
+        with task_app.app_context():
+            dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
+    return dataset_properties

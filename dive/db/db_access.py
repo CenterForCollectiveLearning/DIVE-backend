@@ -130,6 +130,25 @@ def insert_dataset_properties(project_id, dataset_id, **kwargs):
     db.session.commit()
     return row_to_dict(dataset_properties)
 
+# TODO Do an upsert?
+def update_dataset_properties(project_id, dataset_id, **kwargs):
+    logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
+
+    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id,
+        dataset_id=dataset_id,
+        ).one()
+
+    if kwargs.get('n_rows'): dataset_properties.n_rows = kwargs.get('n_rows')
+    if kwargs.get('n_cols'): dataset_properties.n_cols = kwargs.get('n_cols')
+    if kwargs.get('field_names'): dataset_properties.field_names = kwargs.get('field_names')
+    if kwargs.get('field_types'): dataset_properties.field_types = kwargs.get('field_types')
+    if kwargs.get('field_accessors'): dataset_properties.field_accessors = kwargs.get('field_accessors')
+    if kwargs.get('is_time_series'): dataset_properties.is_time_series = kwargs.get('is_time_series')
+    if kwargs.get('structure'): dataset_properties.structure = kwargs.get('structure'),
+
+    db.session.add(dataset_properties)
+    db.session.commit()
+    return row_to_dict(dataset_properties)
 
 def delete_dataset_properties(project_id, dataset_id):
     dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).one()

@@ -282,4 +282,5 @@ def format_viz_specs(scored_viz_specs, project_id):
 def save_viz_specs(specs, project_id):
     logger.info("Saving viz specs")
     with task_app.app_context():
+        # TODO Delete existing specs
         db_access.insert_specs(project_id, specs)
