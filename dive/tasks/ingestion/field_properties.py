@@ -35,16 +35,6 @@ def get_field_properties(project_id, dataset_id, get_values=False, flatten=True)
 
     logger.info("Getting field properties for dataset_id %s and project_id %s", dataset_id, project_id)
     dataset_field_properties = db_access.get_field_properties(project_id, dataset_id)
-    if (not dataset_field_properties) or current_app.config['RECOMPUTE_FIELD_PROPERTIES']:
-        logger.info("Computing field types")
-        # dataset_field_properties = compute_field_properties.delay(project_id, dataset_id)
-        task = compute_field_properties.delay(project_id, dataset_id)
-        async_id = "2f949c58-db00-4980-9cf5-c24229c5b1cb"
-        logger.error(task)
-        logger.info([t for t in task.collect()])
-    # if not get_values:
-    #     for field_properties in dataset_field_properties:
-    #         del field_properties['unique_values']
     properties_by_dataset_id[dataset_id] = dataset_field_properties
 
     return properties_by_dataset_id
@@ -78,8 +68,8 @@ def get_attributes(project_id, datasets):
     return attributes
 
 # TODO Reduce iterations over data elements
-@celery.task
-def compute_field_properties(project_id, dataset_id):
+@celery.task(bind=True)
+def compute_field_properties(self, project_id, dataset_id):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
@@ -87,6 +77,7 @@ def compute_field_properties(project_id, dataset_id):
     Arguments: project_id + dataset ids
     Returns a mapping from dataset_ids to properties
     '''
+    self.update_state(state='STARTED')
     with task_app.app_context():
         logger.info("Computing field properties for dataset_id %s", dataset_id)
 
@@ -202,6 +193,7 @@ def compute_field_properties(project_id, dataset_id):
             upserted_field_properties = upsert_field_properties(project_id, dataset_id, _properties)
             all_properties_with_id.append(upserted_field_properties)
 
+        self.update_state(state='SUCCESS')
         return all_properties_with_id
 
 

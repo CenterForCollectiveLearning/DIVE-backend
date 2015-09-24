@@ -36,6 +36,7 @@ pip install -r requirements.txt
 
 Start postgres
 ---------
+1. Once you have postgres running, create the DIVE database: `createdb dive`
 
 Run API
 ---------

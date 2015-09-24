@@ -24,8 +24,8 @@ def get_dataset_properties(dataset_id, project_id, path=None):
         logger.info("Computing dataset properties")
         return compute_dataset_properties.delay(dataset_id, project_id, path=path)
 
-@celery.task
-def compute_dataset_properties(dataset_id, project_id, path=None):
+@celery.task(bind=True)
+def compute_dataset_properties(self, dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
     import pandas as pd-dataset properties '''
     with task_app.app_context():

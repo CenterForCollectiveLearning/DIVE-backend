@@ -41,7 +41,7 @@ def _get_derived_field(df, label_descriptor):
     return result
 
 
-def get_viz_data_from_enumerated_spec(spec, dataset_id, project_id, data_formats=['score']):
+def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
     structure), and all necessary information to interpret data.
@@ -67,6 +67,7 @@ def get_viz_data_from_enumerated_spec(spec, dataset_id, project_id, data_formats
     gp = spec['generatingProcedure']
     args = spec['args']
     meta = spec['meta']
+    dataset_id = spec['dataset_id']
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
 

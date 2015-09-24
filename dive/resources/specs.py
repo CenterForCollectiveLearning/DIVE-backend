@@ -3,7 +3,6 @@ from flask.ext.restful import Resource, reqparse
 
 from dive.resources.utilities import format_json
 from dive.tasks.visualization import GeneratingProcedure
-from dive.tasks.visualization.specs import get_viz_specs
 from dive.tasks.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
 
 
@@ -16,6 +15,31 @@ class GeneratingProcedures(Resource):
     def get(self):
         result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
         return make_response(jsonify(format_json(result)))
+
+
+def get_viz_specs(project_id, dataset_id=None):
+    ''' Get viz specs if exists and compute if doesn't exist '''
+
+    ### TODO Fix bug with getting tons of specs when recomputing
+
+    specs_find_doc = {}
+    if dataset_id: specs_find_doc['dataset_id'] = dataset_id
+
+    existing_specs = db_access.get_specs(project_id, dataset_id)
+    logger.info("Number of existing specs: %s", len(existing_specs))
+    if existing_specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
+        if dataset_id:
+            return existing_specs
+        else:
+            result = {}
+            for s in existing_specs:
+                dataset_id = s['dataset_id']
+                if dataset_id not in result: result[dataset_id] = [s]
+                else: result[dataset_id].append(s)
+            return result
+    else:
+        logger.info("Computing viz specs")
+        return compute_viz_specs(project_id, dataset_id)
 
 
 specsGetParser = reqparse.RequestParser()

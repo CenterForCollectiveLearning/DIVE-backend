@@ -20,7 +20,7 @@ class BaseConfig(object):
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
         'dive.tasks.ingestion.field_properties',
-        'dive.tasks.visualization.specs'
+        'dive.tasks.visualization.specs',
     ]
 
 class ProductionConfig(BaseConfig):

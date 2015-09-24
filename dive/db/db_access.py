@@ -146,8 +146,9 @@ def get_field_properties(project_id, dataset_id, **kwargs):
     filter_dict = kwargs
     filter_dict['project_id'] = project_id
     filter_dict['dataset_id'] = dataset_id
-    dp = Field_Properties.query.filter_by(**filter_dict).all()
-    return [ row_to_dict(dp) for dp in dp ]
+    result = Field_Properties.query.filter_by(**filter_dict).all()
+    field_properties = [ row_to_dict(r) for r in result ]
+    return field_properties
 
 
 def insert_field_properties(project_id, dataset_id, **kwargs):

@@ -18,6 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from dive.db import db_access
+from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion import DataType
@@ -86,7 +87,6 @@ def save_json_to_csv(project_id, file_title, file_name, path):
     return file_doc
 
 
-@celery.task
 def upload_file(project_id, file):
     '''
     1. Save file in uploads/project_id directory

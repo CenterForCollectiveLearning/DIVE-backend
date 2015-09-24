@@ -24,7 +24,8 @@ def format_json(obj):
         return map(format_json, obj)
     elif isinstance(obj,(pd.DataFrame,pd.Series)):
         return format_json(obj.to_dict())
-    # elif isinstance(obj, str):
+    elif isinstance(obj, str):
+        return obj.replace('nan', 'null').replace('NaN', 'null')
     #     # If un-deserialized json string
     #     if obj.startswith('{') and obj.endswith('}'):
     #         logger.info(json.loads(obj))
