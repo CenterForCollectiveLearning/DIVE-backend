@@ -13,7 +13,7 @@ class TestPipeline(Resource):
 class TaskResult(Resource):
     def get(self, task_id):
         result = celery.AsyncResult(task_id)
-        if result:
-            return jsonify(format_json({"result": result.get()}))
-        else:
-            return
+        return jsonify(format_json({
+            'state': result.state
+            'result': result.get(),
+        }))

@@ -8,6 +8,7 @@ If tables are dropped, need to run migration script again.
 '''
 import os
 import shutil
+import contextlib
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 
@@ -36,8 +37,8 @@ if __name__ == '__main__':
 
     from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Group, User
 
-    remove_uploads(app)
+    # remove_uploads(app)
     drop_tables(db)
 
     # Handled by flask-migrate
-    # create_tables(db)
+    create_tables(db)

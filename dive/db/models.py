@@ -46,13 +46,13 @@ class Dataset(db.Model):
     # One-to-one with dataset_properties
     dataset_properties = db.relationship('Dataset_Properties',
         uselist=False,
-        cascade="all, delete-orphan",
+        cascade="all, delete-orphan, delete",
         backref="dataset")
 
     # One-to-many with field_properties
     fields_properties = db.relationship('Field_Properties',
         backref="dataset",
-        cascade="all, delete-orphan",
+        cascade="all, delete-orphan, delete",
         lazy='dynamic')  # Get all field properties
 
     # Many-to-one with project

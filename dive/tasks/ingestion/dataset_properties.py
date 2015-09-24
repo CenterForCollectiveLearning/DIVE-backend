@@ -17,6 +17,7 @@ logger = logging.getLogger("__name__")
 def compute_dataset_properties(self, dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
     import pandas as pd-dataset properties '''
+    self.update_state(state='STARTED', meta={'status': 'Computing dataset properties'})
 
     if not path:
         with task_app.app_context():
@@ -42,6 +43,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
         'is_time_series': time_series,
     }
 
+    self.update_state(state='STARTED')
     return properties
 
 

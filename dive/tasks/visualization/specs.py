@@ -22,7 +22,9 @@ specific_to_general_type = {
     'string': 'c',
     'continent': 'c',
     'countryName': 'c',
-    'datetime': 'q'
+    'countryCode2': 'c',
+    'countryCode3': 'c',
+    'datetime': 'q',
 }
 
 
@@ -222,12 +224,18 @@ def filter_viz_specs(enumerated_viz_specs, project_id):
 def score_viz_specs(filtered_viz_specs, project_id):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
     scored_viz_specs = []
-    for spec in filtered_viz_specs:
+    for i, spec in enumerate(filtered_viz_specs):
+        if ((i + 1) % 100) == 0:
+            logger.info('Scored %s out of %s specs', len(filtered_viz_specs))
         scored_spec = spec
 
         # TODO Optimize data reads
         with task_app.app_context():
-            data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
+            try:
+                data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
+            except Exception as e:
+                logger.error(e)
+                continue
         if not data:
             continue
         scored_spec['data'] = data
