@@ -43,10 +43,7 @@ def get_field_properties(project_id, dataset_ids, get_values=False, flatten=True
         #         del field_properties['unique_values']
         properties_by_dataset_id[dataset_id] = dataset_field_properties
 
-    if len(dataset_ids) == 1:
-        return properties_by_dataset_id[dataset_ids[0]]
-    else:
-        return properties_by_dataset_id
+    return properties_by_dataset_id
 
 # Retrieve entities given datasets
 def get_entities(project_id, datasets):
