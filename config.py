@@ -21,6 +21,7 @@ class BaseConfig(object):
         'dive.tasks.ingestion.dataset_properties',
         'dive.tasks.ingestion.field_properties',
         'dive.tasks.visualization.specs',
+        'dive.tasks.statistics.statistics'
     ]
 
 class ProductionConfig(BaseConfig):

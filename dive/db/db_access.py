@@ -8,6 +8,8 @@ db interfaces to both the API and compute layers.
 TODO Have a general decorator argument
 '''
 
+from flask import abort
+
 from models import *
 from dive.core import db
 
@@ -91,7 +93,6 @@ def insert_dataset(project_id, **kwargs):
         path = path,
         project_id = project_id
     )
-    logger.info(dataset)
     db.session.add(dataset)
     db.session.commit()
     return row_to_dict(dataset)
@@ -200,26 +201,29 @@ def delete_field_properties(project_id, dataset_id):
     db.session.commit()
     return row_to_dict(dataset_properties)
 
+
 ################
 # Specifications
 ################
 def get_specs(project_id, dataset_id, **kwargs):
     # TODO Add in field for kwargs name
     specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
+    if specs is None:
+        abort(404)
     return [ row_to_dict(spec) for spec in specs ]
 
-def insert_specs(project_id, dataset_id, specs):
+def insert_specs(project_id, specs):
     spec_objects = []
     for s in specs:
         spec_objects.append(Spec(
-            generating_procedure = s['generatingProcedure'],
-            type_structure = s['typeStructure'],
-            viz_type = s['vizType'],
+            generating_procedure = s['generating_procedure'],
+            type_structure = s['type_structure'],
+            viz_type = s['viz_type'],
             args = s['args'],
             meta = s['meta'],
             data = s['data'],
             score = s['score'],
-            dataset_id = dataset_id,
+            dataset_id = s['dataset_id'],
             project_id = project_id,
         ))
     db.session.add_all(spec_objects)
@@ -227,17 +231,25 @@ def insert_specs(project_id, dataset_id, specs):
     return [ row_to_dict(s) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
-    spec = Exported_Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
-    if exported_spec:
-        db.session.delete(spec)
-        db.session.commit()
-        return row_to_dict(spec)
+    spec = Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
+    if spec is None:
+        abort(404)
+    db.session.delete(spec)
+    db.session.commit()
+    return row_to_dict(spec)
 
 ################
 # Exported Specifications
 ################
-def insert_exported_spec(project_id, exported_spec):
+def get_exported_specs(project_id, exported_spec):
+    specs = Exported_Spec.query.filter_by(project_id=project_id).all()
+    return [ row_to_dict(spec) for spec in specs ]
+
+def insert_exported_spec(project_id, spec_id, conditional, config):
     exported_spec = Exported_Spec(
+        spec_id = spec_id,
+        conditional = conditional,
+        config = config
     )
     db.session.add_all(exported_spec)
     db.session.commit()
@@ -245,7 +257,10 @@ def insert_exported_spec(project_id, exported_spec):
 
 def delete_exported_spec(project_id, exported_spec_id):
     exported_spec = Exported_Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
-    if exported_spec:
-        db.session.delete(exported_spec)
-        db.session.commit()
-        return row_to_dict(exported_spec)
+
+    if exported_spec is None:
+        abort(404)
+
+    db.session.delete(exported_spec)
+    db.session.commit()
+    return row_to_dict(exported_spec)

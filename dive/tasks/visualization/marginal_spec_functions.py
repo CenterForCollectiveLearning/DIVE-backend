@@ -38,8 +38,8 @@ def A(q_field):
 
     # { Index: value }
     index_spec = {
-        'generatingProcedure': GeneratingProcedure.IND_VAL.value,
-        'typeStructure': TypeStructure.Q_Q.value,
+        'generating_procedure': GeneratingProcedure.IND_VAL.value,
+        'type_structure': TypeStructure.Q_Q.value,
         'args': {
             'fieldA': q_field
         },
@@ -56,8 +56,8 @@ def A(q_field):
     if not q_field['is_unique']:
         # { Value: count }
         count_spec = {
-            'generatingProcedure': GeneratingProcedure.VAL_COUNT.value,
-            'typeStructure': TypeStructure.C_Q.value,
+            'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
+            'type_structure': TypeStructure.C_Q.value,
             'args': {
                 'fieldA': q_field  # TODO How to deal with dervied fields?
             },
@@ -78,8 +78,8 @@ def A(q_field):
         for binning_procedure, implemented in binning_procedures.iteritems():
             if implemented:
                 bin_spec = {
-                    'generatingProcedure': GeneratingProcedure.BIN_AGG.value,
-                    'typeStructure': TypeStructure.B_Q.value,
+                    'generating_procedure': GeneratingProcedure.BIN_AGG.value,
+                    'type_structure': TypeStructure.B_Q.value,
                     'args': {
                         'aggFn': agg_fn,
                         'aggFieldA': q_field,
@@ -124,8 +124,8 @@ def C(c_field):
 
     # TODO Only create if values are non-unique
     spec = {
-        'generatingProcedure': GeneratingProcedure.VAL_COUNT.value,
-        'typeStructure': TypeStructure.C_Q.value,
+        'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
+        'type_structure': TypeStructure.C_Q.value,
         'args': {
             'fieldA': c_field
         },
@@ -148,8 +148,8 @@ def D(c_field, q_field):
 
     if c_field['is_unique']:
         spec = {
-            'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
-            'typeStructure': TypeStructure.C_Q.value,
+            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
+            'type_structure': TypeStructure.C_Q.value,
             'args': {
                 'fieldA': c_field,
                 'fieldB': q_field,
@@ -169,8 +169,8 @@ def D(c_field, q_field):
     else:
         for agg_fn in aggregation_functions.keys():
             spec = {
-                'generatingProcedure': GeneratingProcedure.VAL_AGG.value,
-                'typeStructure': TypeStructure.C_Q.value,
+                'generating_procedure': GeneratingProcedure.VAL_AGG.value,
+                'type_structure': TypeStructure.C_Q.value,
                 'args': {
                     'aggFn': agg_fn,
                     'groupedField': c_field,
@@ -202,8 +202,8 @@ def E(c_field, q_fields):
             q_label_a, q_label_b = q_field_a['name'], q_field_b['name']
             for agg_fn in aggregation_functions.keys():
                 spec = {
-                    'generatingProcedure': GeneratingProcedure.AGG_AGG.value,
-                    'typeStructure': TypeStructure.Q_Q.value,
+                    'generating_procedure': GeneratingProcedure.AGG_AGG.value,
+                    'type_structure': TypeStructure.Q_Q.value,
                     'args': {
                         'aggFn': agg_fn,
                         'aggFieldA': q_field_a,
@@ -234,8 +234,8 @@ def F(c_fields):
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
         spec = {
-            'generatingProcedure': GeneratingProcedure.VAL_VAL.value,
-            'typeStructure': TypeStructure.C_C.value,
+            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
+            'type_structure': TypeStructure.C_C.value,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b
@@ -262,8 +262,8 @@ def G(c_fields, q_field):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
         q_label = q_field['name']
         spec = {
-            'generatingProcedure': GeneratingProcedure.VAL_VAL_Q.value,
-            'typeStructure': TypeStructure.liC_Q.value,
+            'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
+            'type_structure': TypeStructure.liC_Q.value,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
@@ -292,8 +292,8 @@ def H(c_fields, q_fields):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
         q_labels = [ f['name'] for f in q_fields ]
         spec = {
-            'generatingProcedure': GeneratingProcedure.VAL_VAL_Q.value,
-            'typeStructure': TypeStructure.liC_Q.value,
+            'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
+            'type_structure': TypeStructure.liC_Q.value,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,

@@ -64,7 +64,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
             raise ValueError('Passed incorrect data format', f)
     final_data = dict([(f, {}) for f in data_formats])
 
-    gp = spec['generatingProcedure']
+    gp = spec['generating_procedure']
     args = spec['args']
     meta = spec['meta']
     dataset_id = spec['dataset_id']

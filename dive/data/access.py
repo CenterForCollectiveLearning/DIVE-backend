@@ -12,7 +12,9 @@ from dive.db import db_access
 import logging
 logger = logging.getLogger(__name__)
 
+
 def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
+    logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
     df = df.fillna('')

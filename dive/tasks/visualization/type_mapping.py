@@ -15,5 +15,5 @@ data_types_to_viz_types = {
 }
 
 def get_viz_types_from_spec(spec):
-    viz_types = data_types_to_viz_types[spec['typeStructure']]
+    viz_types = data_types_to_viz_types[spec['type_structure']]
     return viz_types

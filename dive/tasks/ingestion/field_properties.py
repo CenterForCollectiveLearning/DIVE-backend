@@ -17,27 +17,6 @@ from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
 import logging
 logger = logging.getLogger(__name__)
 
-# Retrieve proeprties given dataset_docs
-# TODO Accept list of dataset_ids
-def get_field_properties(project_id, dataset_id, get_values=False, flatten=True) :
-    '''
-    Returns field properties given a list of dataset_ids. Basically a wrapper /
-    formatter around compute_field_properties.
-
-    Args:
-    project_id
-    dataset_ids
-    get_values - return unique values of fields along with properties
-    flatten - return as list of all properties vs a dict keyed by dataset_id
-    '''
-    properties_by_dataset_id = {}
-    aggregated_properties = []
-
-    logger.info("Getting field properties for dataset_id %s and project_id %s", dataset_id, project_id)
-    dataset_field_properties = db_access.get_field_properties(project_id, dataset_id)
-    properties_by_dataset_id[dataset_id] = dataset_field_properties
-
-    return properties_by_dataset_id
 
 # Retrieve entities given datasets
 def get_entities(project_id, datasets):
@@ -52,6 +31,7 @@ def get_entities(project_id, datasets):
 
     return parent_entities
 
+
 def populate_child_entities(entity_name, child_entities, all_entities):
     _entity = filter(lambda x: x['name'] == entity_name, all_entities)[0]
     if _entity['child']:
@@ -59,17 +39,19 @@ def populate_child_entities(entity_name, child_entities, all_entities):
 
     return [_entity] + child_entities
 
+
 # Retrieve entities given datasets
 def get_attributes(project_id, datasets):
     attributes = []
     _properties = get_field_properties(project_id, datasets)
     attributes = filter(lambda x: x['type'] in ['float', 'integer'], _properties)
-
     return attributes
+
+
 
 # TODO Reduce iterations over data elements
 @celery.task(bind=True)
-def compute_field_properties(self, project_id, dataset_id):
+def compute_field_properties(self, dataset_id, project_id):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
@@ -186,15 +168,17 @@ def compute_field_properties(self, project_id, dataset_id):
         get_hierarchies_time = time() - start_time
         logger.info("Get hierarchies time took %s seconds", get_hierarchies_time)
 
-        # TODO Pull saving out of calculation
-        # Save properties into collection
-        all_properties_with_id = []
-        for _properties in all_properties:
-            upserted_field_properties = upsert_field_properties(project_id, dataset_id, _properties)
-            all_properties_with_id.append(upserted_field_properties)
+        return all_properties
 
-        self.update_state(state='SUCCESS')
-        return all_properties_with_id
+
+@celery.task
+def save_field_properties(all_properties, dataset_id, project_id):
+    all_properties_with_id = []
+    with task_app.app_context():
+        for properties in all_properties:
+            saved_field_properties = db_access.insert_field_properties(project_id, dataset_id, **properties)
+            all_properties_with_id.append(saved_field_properties)
+    return all_properties_with_id
 
 
 def upsert_field_properties(project_id, dataset_id, _properties):

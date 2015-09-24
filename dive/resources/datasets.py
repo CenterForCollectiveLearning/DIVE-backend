@@ -1,3 +1,6 @@
+'''
+Endpoints for uploading, getting, updating, and deleting datasets
+'''
 import os
 import json
 from flask import request, make_response, jsonify
@@ -7,12 +10,12 @@ from celery import chain
 from dive.db import db_access
 from dive.resources.utilities import format_json
 from dive.data.access import get_dataset_sample
+from dive.tasks.pipelines import full_pipeline
 from dive.tasks.ingestion.upload import upload_file
-from dive.tasks.ingestion.dataset_properties import get_dataset_properties
-from dive.tasks.ingestion.analysis import compute_ontologies, get_ontologies
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
@@ -25,21 +28,27 @@ def allowed_file(filename):
 uploadFileParser = reqparse.RequestParser()
 uploadFileParser.add_argument('project_id', type=str, required=True)
 class UploadFile(Resource):
-    ''' Saves file and returns dataset properties '''
+    '''
+    1) Saves file
+    2) Triggers data ingestion tasks
+    3) Returns dataset_id
+    '''
     def post(self):
         logger.info("In upload")
         form_data = json.loads(request.form.get('data'))
         logger.info(form_data)
         project_id = form_data.get('project_id').strip().strip('""')
-        file = request.files.get('file')
+        file_obj = request.files.get('file')
 
-        if file and allowed_file(file.filename):
-            # Get document with metadata and some samples
-            dataset_properties = upload_file(project_id, file)
+        if file_obj and allowed_file(file_obj.filename):
+            # Get dataset_ids corresponding to file if successful upload
+            dataset_ids = upload_file(project_id, file_obj)
             result = {
                 'status': 'success',
-                'datasets': dataset_properties
+                'dataset_ids': dataset_ids
             }
+            for dataset_id in dataset_ids:
+                full_pipeline(dataset_id, project_id).apply_async()
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 
@@ -66,7 +75,7 @@ class Datasets(Resource):
             }
 
             if args['getStructure']:
-                dataset_data['details'] = get_dataset_properties(d['path'])
+                dataset_data['details'] = db_access.get_dataset_properties(project_id, dataset_id)
 
             data_list.append(dataset_data)
 
@@ -87,10 +96,12 @@ class Dataset(Resource):
 
         dataset = db_access.get_dataset(project_id, dataset_id)
 
+        sample = get_dataset_sample(dataset.get('id'), project_id)
+
         response = {
             'dataset_id': dataset.get('id'),
             'title': dataset.get('title'),
-            'details': get_dataset_sample(dataset.get('id'), project_id)
+            'details': sample
         }
         return make_response(jsonify(format_json(response)))
 

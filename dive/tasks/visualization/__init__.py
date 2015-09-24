@@ -23,7 +23,7 @@ class TypeStructure(Enum):
 class TermType(Enum):
     '''
     List of terms in natural language visualization description
-    
+
         Plain: and, by
         Field: binned_field, field_a
         Operation: aggregate, group by

@@ -22,8 +22,66 @@ from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion import DataType
-from dive.tasks.ingestion.dataset_properties import get_dataset_properties, compute_dataset_properties
 from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
+
+
+def upload_file(project_id, file):
+    '''
+    1. Save file in uploads/project_id directory
+    2. If excel or json, also save CSV versions
+    3. If all steps are successful, save file location in project data collection
+
+    file_name = foo.csv
+    file_title = foo
+    '''
+    file_name = secure_filename(file.filename)
+
+    # TODO Create file_type enum
+    file_title, file_type = file_name.rsplit('.', 1)
+    path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, file_name)
+
+    # Ensure project directory exists
+    project_dir = os.path.join(current_app.config['UPLOAD_DIR'], project_id)
+    if not os.path.isdir(project_dir):
+        os.mkdir(os.path.join(project_dir))
+
+    if file_type in ['csv', 'tsv', 'txt', 'json'] or file_type.startswith('xls'):
+        try:
+            file.save(path)
+        except IOError:
+            logger.error('Error saving file with path %s', path, exc_info=True)
+
+    file_docs = []
+    # result = []
+    if file_type in ['csv', 'tsv', 'txt'] :
+        file_doc = {
+            'file_title': file_title,
+            'file_name': file_name,
+            'type': file_type,
+            'path': path
+        }
+        file_docs.append(file_doc)
+
+    elif file_type.startswith('xls'):
+        file_docs = save_excel_to_csv(project_id, file_title, file_name, path)
+
+    elif file_type == 'json' :
+        file_doc = save_json_to_csv(project_id, file_title, file_name, path)
+        file_docs.append(file_doc)
+
+    # Insert into database
+    dataset_ids = []
+    for file_doc in file_docs:
+        dataset = db_access.insert_dataset(project_id,
+            path = file_doc['path'],
+            title = file_doc['file_title'],
+            file_name = file_doc['file_name'],
+            type = file_doc['type']
+        )
+        dataset_id = dataset['id']
+        dataset_ids.append(dataset_id)
+    return dataset_ids
+
 
 
 def save_excel_to_csv(project_id, file_title, file_name, path):
@@ -85,67 +143,3 @@ def save_json_to_csv(project_id, file_title, file_name, path):
         'orig_type': 'json'
     }
     return file_doc
-
-
-def upload_file(project_id, file):
-    '''
-    1. Save file in uploads/project_id directory
-    2. If excel or json, also save CSV versions
-    2. If all steps are successful, save file location in project data collection
-    2. Compute properties
-
-    4. Return sample
-
-    file_name = foo.csv
-    file_title = foo
-    '''
-    file_name = secure_filename(file.filename)
-
-    # TODO Create file_type enum
-    file_title, file_type = file_name.rsplit('.', 1)
-    path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, file_name)
-
-    # Ensure project directory exists
-    project_dir = os.path.join(current_app.config['UPLOAD_DIR'], project_id)
-    if not os.path.isdir(project_dir):
-        os.mkdir(os.path.join(project_dir))
-
-    if file_type in ['csv', 'tsv', 'txt', 'json'] or file_type.startswith('xls'):
-        try:
-            file.save(path)
-        except IOError:
-            logger.error('Error saving file with path %s', path, exc_info=True)
-
-    file_docs = []
-    result = []
-    if file_type in ['csv', 'tsv', 'txt'] :
-        file_doc = {
-            'file_title': file_title,
-            'file_name': file_name,
-            'type': file_type,
-            'path': path
-        }
-        file_docs.append(file_doc)
-
-    elif file_type.startswith('xls'):
-        file_docs = save_excel_to_csv(project_id, file_title, file_name, path)
-
-    elif file_type == 'json' :
-        file_doc = save_json_to_csv(project_id, file_title, file_name, path)
-        file_docs.append(file_doc)
-
-    for file_doc in file_docs:
-        dataset = db_access.insert_dataset(project_id,
-            path = file_doc['path'],
-            title = file_doc['file_title'],
-            file_name = file_doc['file_name'],
-            type = file_doc['type']
-        )
-
-        dataset_id = dataset['id']
-        dataset_doc = compute_dataset_properties(dataset_id, project_id, path=file_doc['path'])
-
-        dataset_doc.update(dataset)
-        result.append(dataset_doc)
-
-    return result

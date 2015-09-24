@@ -18,11 +18,11 @@ class FakeGetProjectID(Resource):
 
 class Test(Resource):
     def get(self):
-        from dive.tasks.tasks import ingestion_pipeline, viz_spec_pipeline
-        # ingestion_task = ingestion_pipeline(3, 1)
-        spec_task = viz_spec_pipeline(3, 1)
+        from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
+        full_task = full_pipeline(25, 1).apply_async()
+        # spec_task = viz_spec_pipeline(25, 1).apply_async()
         # return { 'ingestion': ingestion_task.id, 'spec': spec_task.id }
-        return spec_task.id
+        return full_task.id
 
 
 def add_resources(api):

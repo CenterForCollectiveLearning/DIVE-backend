@@ -7,7 +7,6 @@ from flask import current_app
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
-from dive.tasks.ingestion.field_properties import get_field_properties
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
@@ -15,48 +14,6 @@ from dive.tasks.visualization.scoring import score_spec
 
 import logging
 logger = logging.getLogger(__name__)
-
-# @celery.task
-# def compute_viz_specs(project_id, dataset_id):
-#     '''
-#     Wrapper function used to
-#         1. Enumerate
-#         2. Filter
-#         3. Score
-#         4. Format
-#     visualization specifications.
-#
-#     Accepts:
-#         project_id, dataset_id (optionally)
-#     Returns:
-#         List of scored specs for dataset_id (all datasets if dataset_id not specified)
-#     '''
-#     with task_app.app_context():
-#         dataset_find_doc = {}
-#
-#         # datasets = db_access.get_dataset(project_id, dataset_id)
-#         # logger.info("Datasets %s", datasets)
-#
-#         # dataset_ids = [d['id'] for d in datasets]
-#         field_properties_by_dataset_id = get_field_properties(project_id, dataset_id)
-#
-#         # TODO Store ontologies
-#         ontologies = None  # db_access.get_ontology(project_id)
-#
-#         enumerated_viz_specs = enumerate_viz_specs(dataset_id, field_properties_by_dataset_id, ontologies, project_id)
-#         filtered_viz_specs = filter_viz_specs(enumerated_viz_specs, project_id)
-#         scored_viz_specs = score_viz_specs(filtered_viz_specs, project_id)
-#         formatted_viz_specs = format_viz_specs(scored_viz_specs)
-#
-#         # Saving specs, using return from insert to get id
-#         final_viz_specs = {}
-#         for dataset_id, specs in formatted_viz_specs.iteritems():
-#             final_viz_specs[dataset_id] = db_access.insert_specs(project_id, dataset_id, specs)
-#
-#         if dataset_id:
-#             logger.info("Returning just specs, no dataset_id mapping")
-#             return final_viz_specs[dataset_id]
-#         return final_viz_specs
 
 
 specific_to_general_type = {
@@ -242,17 +199,16 @@ def enumerate_viz_specs(dataset_id, project_id):
         for viz_type in viz_types:
 
             # Necessary to deep copy?
-            spec_with_viz_type = copy.deepcopy(spec)
+            spec_with_viz_type = spec
             if viz_type in desired_viz_types:
-                spec_with_viz_type['vizType'] = viz_type
+                spec_with_viz_type['viz_type'] = viz_type
                 all_specs_with_types.append(spec_with_viz_type)
             else:
                 continue
 
+    logger.info("Number of specs: %s", len(all_specs_with_types))
 
-    logger.info("\tNumber of specs: %s", len(specs))
-
-    return specs
+    return all_specs_with_types
 
 
 @celery.task
@@ -320,3 +276,10 @@ def format_viz_specs(scored_viz_specs, project_id):
         formatted_viz_specs.append(s)
 
     return formatted_viz_specs
+
+
+@celery.task
+def save_viz_specs(specs, project_id):
+    logger.info("Saving viz specs")
+    with task_app.app_context():
+        db_access.insert_specs(project_id, specs)

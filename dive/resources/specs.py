@@ -1,6 +1,7 @@
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
+from dive.db import db_access
 from dive.resources.utilities import format_json
 from dive.tasks.visualization import GeneratingProcedure
 from dive.tasks.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
@@ -52,8 +53,8 @@ class Specs(Resource):
         project_id = args.get('project_id').strip().strip('"')
         dataset_id = args.get('dataset_id', None)
 
-        specs_by_dataset_id = get_viz_specs(project_id, dataset_id)
-        return make_response(jsonify(format_json({'specs': specs_by_dataset_id})))
+        specs = db_access.get_specs(project_id, dataset_id)
+        return make_response(jsonify(format_json({'specs': specs})))
 
 
 visualizationGetParser = reqparse.RequestParser()
@@ -71,11 +72,14 @@ class Visualization(Resource):
             spec = visualizations[0]['spec'][0]
             dataset_id = spec['dataset_id']
             formatted_spec = spec
-            del formatted_spec['_id']
 
+            viz_data = get_viz_data_from_enumerated_spec(spec,
+                project_id,
+                data_formats=['visualize', 'table']
+            )
             result = {
                 'spec': spec,
-                'visualization': get_viz_data_from_enumerated_spec(spec, dataset_id, project_id, data_formats=['visualize', 'table'])
+                'visualization': viz_data
             }
 
         return make_response(jsonify(format_json(result)))

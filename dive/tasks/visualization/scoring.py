@@ -92,8 +92,8 @@ def score_spec(spec):
         'stats': {}
     }
     data = spec['data']['score']
-    gp = spec['generatingProcedure']
-    ts = spec['typeStructure']
+    gp = spec['generating_procedure']
+    ts = spec['type_structure']
 
     score_doc['stats'] = get_statistical_properties(data, gp, ts)
 
