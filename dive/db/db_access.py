@@ -71,8 +71,18 @@ def delete_project(project_id):
 def get_dataset(project_id, dataset_id):
     # http://stackoverflow.com/questions/2128505/whats-the-difference-between-filter-and-filter-by-in-sqlalchemy
     logger.info("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
-    dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
-    return row_to_dict(dataset)
+    try:
+        dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
+        return row_to_dict(dataset)
+
+    # TODO Decide between raising error and aborting with 404
+    except NoResultFound, e:
+        logger.error(e)
+        return None
+
+    except MultipleResultsFound, e:
+        logger.error(e)
+        raise e
 
 def get_datasets(project_id, **kwargs):
     datasets = Dataset.query.filter_by(**kwargs).all()

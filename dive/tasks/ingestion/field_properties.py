@@ -14,44 +14,13 @@ from dive.data.access import get_data
 from dive.tasks.ingestion.type_detection import get_column_types
 from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
 
-import logging
-logger = logging.getLogger(__name__)
-
-
-# Retrieve entities given datasets
-def get_entities(project_id, datasets):
-    _properties = get_field_properties(project_id, datasets, get_values = True)
-    _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
-
-    parent_entities = filter(lambda x: not x['is_child'], _all_entities)
-
-    for i, _entity in enumerate(parent_entities):
-        if _entity['child']:
-            _entity['child'] = populate_child_entities(_entity['child'], [], _all_entities)
-
-    return parent_entities
-
-
-def populate_child_entities(entity_name, child_entities, all_entities):
-    _entity = filter(lambda x: x['name'] == entity_name, all_entities)[0]
-    if _entity['child']:
-        child_entities = populate_child_entities(_entity['child'], child_entities, all_entities)
-
-    return [_entity] + child_entities
-
-
-# Retrieve entities given datasets
-def get_attributes(project_id, datasets):
-    attributes = []
-    _properties = get_field_properties(project_id, datasets)
-    attributes = filter(lambda x: x['type'] in ['float', 'integer'], _properties)
-    return attributes
-
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
 
 # TODO Reduce iterations over data elements
-@celery.task(bind=True)
-def compute_field_properties(self, dataset_id, project_id):
+@celery.task(bind=True, task_name='field_properties')
+def compute_field_properties(self, dataset_id, project_id, track_started=True):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
@@ -59,7 +28,8 @@ def compute_field_properties(self, dataset_id, project_id):
     Arguments: project_id + dataset ids
     Returns a mapping from dataset_ids to properties
     '''
-    self.update_state(state='STARTED', meta={'status': 'Computing field properties'})
+    self.update_state(state='PENDING', meta={'status': 'Computing dataset properties'})
+
     from time import sleep
 
     logger.info("Computing field properties for dataset_id %s", dataset_id)
@@ -170,12 +140,55 @@ def compute_field_properties(self, dataset_id, project_id):
     get_hierarchies_time = time() - start_time
     logger.info("Get hierarchies time took %s seconds", get_hierarchies_time)
 
+    self.update_state(state='SUCCESS')
     return all_properties
 
 
-@celery.task
-def save_field_properties(all_properties, dataset_id, project_id):
+# Retrieve entities given datasets
+def get_entities(project_id, datasets):
+    _properties = get_field_properties(project_id, datasets, get_values = True)
+    _all_entities = filter(lambda x: x['type'] not in ['float', 'integer'], _properties)
+
+    parent_entities = filter(lambda x: not x['is_child'], _all_entities)
+
+    for i, _entity in enumerate(parent_entities):
+        if _entity['child']:
+            _entity['child'] = populate_child_entities(_entity['child'], [], _all_entities)
+
+    return parent_entities
+
+
+def populate_child_entities(entity_name, child_entities, all_entities):
+    _entity = filter(lambda x: x['name'] == entity_name, all_entities)[0]
+    if _entity['child']:
+        child_entities = populate_child_entities(_entity['child'], child_entities, all_entities)
+
+    return [_entity] + child_entities
+
+
+# Retrieve entities given datasets
+def get_attributes(project_id, datasets):
+    attributes = []
+    _properties = get_field_properties(project_id, datasets)
+    attributes = filter(lambda x: x['type'] in ['float', 'integer'], _properties)
+    return attributes
+
+
+# Detect if a list is comprised of unique elements
+def detect_unique_list(l):
+    # TODO Vary threshold by number of elements (be smarter about it)
+    THRESHOLD = 0.95
+
+    # Comparing length of uniqued elements with original list
+    if (len(np.unique(l)) / float(len(l))) >= THRESHOLD:
+        return True
+    return False
+
+
+@celery.task(bind=True, ignore_result=True)
+def save_field_properties(self, all_properties, dataset_id, project_id):
     ''' Upsert all field properties corresponding to a dataset '''
+    self.update_state(state='PENDING', meta={'status': 'Saving field properties'})
     field_properties_with_id = []
     for field_properties in all_properties:
         name = field_properties['name']
@@ -192,15 +205,4 @@ def save_field_properties(all_properties, dataset_id, project_id):
             with task_app.app_context():
                 field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
         field_properties_with_id.append(field_properties)
-    return field_properties_with_id
-
-
-# Detect if a list is comprised of unique elements
-def detect_unique_list(l):
-    # TODO Vary threshold by number of elements (be smarter about it)
-    THRESHOLD = 0.95
-
-    # Comparing length of uniqued elements with original list
-    if (len(np.unique(l)) / float(len(l))) >= THRESHOLD:
-        return True
-    return False
+    self.update_state(state='SUCCESS', meta={'status': 'Saved field properties'})
