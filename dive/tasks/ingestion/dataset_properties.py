@@ -9,6 +9,7 @@ from dive.data.access import get_data, get_delimiter
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
 
+from celery import states
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
@@ -16,7 +17,7 @@ logger = get_task_logger(__name__)
 def compute_dataset_properties(self, dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
     import pandas as pd-dataset properties '''
-    self.update_state(state='PENDING')
+    self.update_state(state=states.PENDING, meta={})
 
     if not path:
         with task_app.app_context():
@@ -42,13 +43,13 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
         'is_time_series': time_series,
     }
 
-    self.update_state(state='SUCCESS')
+    self.update_state(state=states.SUCCESS)
     return properties
 
 
 @celery.task(bind=True, ignore_result=True)
 def save_dataset_properties(self, properties, dataset_id, project_id):
-    self.update_state(state='PENDING')
+    self.update_state(state=states.PENDING)
     with task_app.app_context():
         existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
     if existing_dataset_properties:
@@ -59,4 +60,4 @@ def save_dataset_properties(self, properties, dataset_id, project_id):
         logger.info("Inserting field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
-    self.update_state(state='SUCCESS')
+    self.update_state(state=states.SUCCESS)

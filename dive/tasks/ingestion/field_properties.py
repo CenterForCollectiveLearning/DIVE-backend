@@ -14,6 +14,7 @@ from dive.data.access import get_data
 from dive.tasks.ingestion.type_detection import get_column_types
 from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
 
+from celery import states
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
@@ -28,9 +29,10 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
     Arguments: project_id + dataset ids
     Returns a mapping from dataset_ids to properties
     '''
-    self.update_state(state='PENDING', meta={'status': 'Computing dataset properties'})
+    self.update_state(state=states.PENDING, meta={'status': 'Computing dataset properties'})
 
     from time import sleep
+    sleep(20)
 
     logger.info("Computing field properties for dataset_id %s", dataset_id)
 
@@ -140,7 +142,7 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
     get_hierarchies_time = time() - start_time
     logger.info("Get hierarchies time took %s seconds", get_hierarchies_time)
 
-    self.update_state(state='SUCCESS')
+    self.update_state(state=states.SUCCESS)
     return all_properties
 
 
@@ -188,7 +190,7 @@ def detect_unique_list(l):
 @celery.task(bind=True, ignore_result=True)
 def save_field_properties(self, all_properties, dataset_id, project_id):
     ''' Upsert all field properties corresponding to a dataset '''
-    self.update_state(state='PENDING', meta={'status': 'Saving field properties'})
+    self.update_state(state=states.PENDING, meta={'status': 'Saving field properties'})
     field_properties_with_id = []
     for field_properties in all_properties:
         name = field_properties['name']
@@ -205,4 +207,4 @@ def save_field_properties(self, all_properties, dataset_id, project_id):
             with task_app.app_context():
                 field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
         field_properties_with_id.append(field_properties)
-    self.update_state(state='SUCCESS', meta={'status': 'Saved field properties'})
+    self.update_state(state=states.SUCCESS, meta={'status': 'Saved field properties'})

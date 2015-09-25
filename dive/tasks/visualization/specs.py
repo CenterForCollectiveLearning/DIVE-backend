@@ -12,6 +12,7 @@ from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
 from dive.tasks.visualization.scoring import score_spec
 
+from celery import states
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
@@ -211,7 +212,7 @@ def enumerate_viz_specs(self, dataset_id, project_id):
 
     logger.info("Number of specs: %s", len(all_specs_with_types))
 
-    self.update_state(state='SUCCESS', meta={'status': 'Enumerated viz specs'})
+    self.update_state(state=states.SUCCESS, meta={'status': 'Enumerated viz specs'})
     return all_specs_with_types
 
 
@@ -220,7 +221,7 @@ def filter_viz_specs(self, enumerated_viz_specs, project_id):
     ''' Filtering enumerated viz specs based on interpretability and renderability '''
     self.update_state(state='PROGRESS')
     filtered_viz_specs = enumerated_viz_specs
-    self.update_state(state='SUCCESS', meta={'status': 'Filtered viz specs'})
+    self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
     return filtered_viz_specs
 
 
@@ -254,7 +255,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
 
         scored_viz_specs.append(spec)
 
-    self.update_state(state='SUCCESS', meta={'status': 'Scored viz specs'})
+    self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
     return scored_viz_specs
 
 
@@ -290,7 +291,7 @@ def format_viz_specs(self, scored_viz_specs, project_id):
 
         formatted_viz_specs.append(s)
 
-    self.update_state(state='SUCCESS', meta={'status': 'Formatted viz specs'})
+    self.update_state(state=states.SUCCESS, meta={'status': 'Formatted viz specs'})
     return formatted_viz_specs
 
 
@@ -305,4 +306,4 @@ def save_viz_specs(self, specs, dataset_id, project_id):
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
         db_access.insert_specs(project_id, specs)
-    self.update_state(state='SUCCESS', meta={'status': 'Saved viz specs'})
+    self.update_state(state=states.SUCCESS, meta={'status': 'Saved viz specs'})
