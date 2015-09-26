@@ -9,15 +9,17 @@ TODO Have a general decorator argument
 '''
 
 from flask import abort
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import MultipleResultsFound
 
-from models import *
 from dive.core import db
+from dive.db.models import *
 
 import logging
 logger = logging.getLogger(__name__)
 
 def row_to_dict(r):
-    return {c.name: getattr(r, c.name) for c in r.__table__.columns}
+    return { c.name: getattr(r, c.name) for c in r.__table__.columns }
 
 ################
 # Projects
@@ -34,11 +36,13 @@ def get_projects(**kwargs):
 def insert_project(**kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
+    user_id = kwargs.get('user_id')
 
     project = Project(
         title=title,
         description=description,
-        creation_date=datetime.utcnow()
+        creation_date=datetime.utcnow(),
+        user_id=user_id
     )
     db.session.add(project)
     db.session.commit()
@@ -69,8 +73,18 @@ def delete_project(project_id):
 def get_dataset(project_id, dataset_id):
     # http://stackoverflow.com/questions/2128505/whats-the-difference-between-filter-and-filter-by-in-sqlalchemy
     logger.info("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
-    dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
-    return row_to_dict(dataset)
+    try:
+        dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
+        return row_to_dict(dataset)
+
+    # TODO Decide between raising error and aborting with 404
+    except NoResultFound, e:
+        logger.error(e)
+        return None
+
+    except MultipleResultsFound, e:
+        logger.error(e)
+        raise e
 
 def get_datasets(project_id, **kwargs):
     datasets = Dataset.query.filter_by(**kwargs).all()
@@ -109,8 +123,15 @@ def delete_dataset(project_id, dataset_id):
 # Dataset Properties
 ################
 def get_dataset_properties(project_id, dataset_id):
-    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
-    return row_to_dict(dataset_properties)
+    try:
+        dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
+        return row_to_dict(dataset_properties)
+    except NoResultFound, e:
+        logger.error(e)
+        return None
+    except MultipleResultsFound, e:
+        logger.error(e)
+        raise e
 
 # TODO Do an upsert?
 def insert_dataset_properties(project_id, dataset_id, **kwargs):
@@ -172,7 +193,6 @@ def get_field_properties(project_id, dataset_id, **kwargs):
 
 
 def insert_field_properties(project_id, dataset_id, **kwargs):
-    logger.info("Insert field properties with project_id %s, and dataset_id %s", project_id, dataset_id)
     field_properties = Field_Properties(
         name = kwargs.get('name'),
         type = kwargs.get('type'),
@@ -251,9 +271,12 @@ def insert_specs(project_id, specs):
 
 def delete_spec(project_id, exported_spec_id):
     # TODO Accept multiple IDs
-    spec = Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
-    if spec is None:
-        abort(404)
+    try:
+        spec = Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
     db.session.delete(spec)
     db.session.commit()
     return row_to_dict(spec)

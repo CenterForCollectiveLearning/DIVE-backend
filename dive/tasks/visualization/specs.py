@@ -12,8 +12,9 @@ from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
 from dive.tasks.visualization.scoring import score_spec
 
-import logging
-logger = logging.getLogger(__name__)
+from celery import states
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
 
 specific_to_general_type = {
@@ -22,13 +23,16 @@ specific_to_general_type = {
     'string': 'c',
     'continent': 'c',
     'countryName': 'c',
-    'datetime': 'q'
+    'countryCode2': 'c',
+    'countryCode3': 'c',
+    'datetime': 'q',
 }
 
 
-@celery.task
-def enumerate_viz_specs(dataset_id, project_id):
+@celery.task(bind=True)
+def enumerate_viz_specs(self, dataset_id, project_id):
     ''' Enumerated viz specs given data, properties, and ontologies '''
+    self.update_state(state='PROGRESS')
     with task_app.app_context():
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
@@ -208,26 +212,36 @@ def enumerate_viz_specs(dataset_id, project_id):
 
     logger.info("Number of specs: %s", len(all_specs_with_types))
 
+    self.update_state(state=states.SUCCESS, meta={'status': 'Enumerated viz specs'})
     return all_specs_with_types
 
 
-@celery.task
-def filter_viz_specs(enumerated_viz_specs, project_id):
+@celery.task(bind=True)
+def filter_viz_specs(self, enumerated_viz_specs, project_id):
     ''' Filtering enumerated viz specs based on interpretability and renderability '''
+    self.update_state(state='PROGRESS')
     filtered_viz_specs = enumerated_viz_specs
+    self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
     return filtered_viz_specs
 
 
-@celery.task
-def score_viz_specs(filtered_viz_specs, project_id):
+@celery.task(bind=True)
+def score_viz_specs(self, filtered_viz_specs, project_id):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
+    self.update_state(state='PROGRESS')
     scored_viz_specs = []
-    for spec in filtered_viz_specs:
+    for i, spec in enumerate(filtered_viz_specs):
+        if ((i + 1) % 100) == 0:
+            logger.info('Scored %s out of %s specs', (i + 1), len(filtered_viz_specs))
         scored_spec = spec
 
         # TODO Optimize data reads
         with task_app.app_context():
-            data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
+            try:
+                data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
+            except Exception as e:
+                logger.error(e)
+                continue
         if not data:
             continue
         scored_spec['data'] = data
@@ -241,12 +255,14 @@ def score_viz_specs(filtered_viz_specs, project_id):
 
         scored_viz_specs.append(spec)
 
+    self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
     return scored_viz_specs
 
 
-@celery.task
-def format_viz_specs(scored_viz_specs, project_id):
+@celery.task(bind=True)
+def format_viz_specs(self, scored_viz_specs, project_id):
     ''' Get viz specs into a format usable by front end '''
+    self.update_state(state='PROGRESS')
     field_keys = ['fieldA', 'fieldB', 'binningField', 'aggFieldA', 'aggFieldB']
 
     formatted_viz_specs = []
@@ -275,12 +291,14 @@ def format_viz_specs(scored_viz_specs, project_id):
 
         formatted_viz_specs.append(s)
 
+    self.update_state(state=states.SUCCESS, meta={'status': 'Formatted viz specs'})
     return formatted_viz_specs
 
 
-@celery.task
-def save_viz_specs(specs, dataset_id, project_id):
+@celery.task(bind=True, ignore_result=True)
+def save_viz_specs(self, specs, dataset_id, project_id):
     logger.info("Saving viz specs")
+    self.update_state(state='PROGRESS')
     with task_app.app_context():
         # TODO Delete existing specs
         existing_specs = db_access.get_specs(project_id, dataset_id)
@@ -288,3 +306,4 @@ def save_viz_specs(specs, dataset_id, project_id):
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
         db_access.insert_specs(project_id, specs)
+    self.update_state(state=states.SUCCESS, meta={'status': 'Saved viz specs'})

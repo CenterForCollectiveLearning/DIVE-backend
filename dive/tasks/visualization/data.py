@@ -3,10 +3,11 @@
 '''
 Functions for returning the data corresponding to a given visualization type and specification
 '''
+
+import math
 import numpy as np
 import pandas as pd
 import scipy as sp
-import math
 from itertools import combinations
 from flask import current_app
 

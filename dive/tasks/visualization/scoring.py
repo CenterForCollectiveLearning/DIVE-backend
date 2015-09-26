@@ -1,5 +1,7 @@
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure
 
+import logging
+logger = logging.getLogger(__name__)
 
 # Expressiveness
 def get_expressiveness(spec):
@@ -71,7 +73,7 @@ def get_statistical_properties(data, gp, ts):
                 try:
                     stats[test_name] = test_fn(v)
                 except:
-                    print "Failed scoring for", test_name, gp, ts
+                    logger.error('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
                     continue
     if ts in [TypeStructure.Q_Q]:
         v = None

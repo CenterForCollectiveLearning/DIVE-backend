@@ -11,7 +11,7 @@ class BaseConfig(object):
     RECOMPUTE_VIZ_SPECS = False
 
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
-    CELERY_RESULT_BACKEND = 'amqp://'
+    CELERY_RESULT_BACKEND = 'db+postgresql://localhost:5432/dive'
 
     ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
