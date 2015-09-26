@@ -36,11 +36,13 @@ def get_projects(**kwargs):
 def insert_project(**kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
+    user_id = kwargs.get('user_id')
 
     project = Project(
         title=title,
         description=description,
-        creation_date=datetime.utcnow()
+        creation_date=datetime.utcnow(),
+        user_id=user_id
     )
     db.session.add(project)
     db.session.commit()

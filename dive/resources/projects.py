@@ -43,7 +43,7 @@ class Project(Resource):
 projectsPostParser = reqparse.RequestParser()
 projectsPostParser.add_argument('title', type=str, required=False)
 projectsPostParser.add_argument('description', type=str, required=False)
-projectsPostParser.add_argument('username', type=str, required=False)
+projectsPostParser.add_argument('userId', type=str, required=False)
 projectsPostParser.add_argument('anonymous', type=bool, required=False, default=False)
 class Projects(Resource):
     '''
@@ -58,15 +58,18 @@ class Projects(Resource):
         args = projectsPostParser.parse_args()
         title = args.get('title')
         description = args.get('description')
-        username = args.get('username')
+        user_id = args.get('userId')
         anonymous = args.get('anonymous')
 
-        result = db_access.insert_project(title=title, description=description)
+        result = db_access.insert_project(
+            title=title,
+            description=description,
+            user_id=user_id
+        )
 
         logger.info("Created upload directory for project_id: %s", result['id'])
-        project_dir = os.path.join(current_app.config['UPLOAD_DIR'], result['id'])
+        project_dir = os.path.join(current_app.config['UPLOAD_DIR'], str(result['id']))
         if os.path.isdir(project_dir):
             os.mkdir(project_dir)
 
-        return jsonify({"message": "Successfully created project.",
-                            "id": int(result['id'])})
+        return jsonify(result)

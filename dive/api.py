@@ -11,16 +11,11 @@ from dive.resources.task_resources import TestPipeline, TaskResult
 
 from flask.ext.restful import Resource
 
-class FakeGetProjectID(Resource):
-    def get(self):
-        return "1"
-
 
 def add_resources(api):
     api.add_resource(TestPipeline, '/test/<project_id>/<dataset_id>')
     api.add_resource(TaskResult, '/task_result/<task_id>')
 
-    api.add_resource(FakeGetProjectID,              '/projects/v1/getProjectID')
     api.add_resource(Projects,                      '/projects/v1/projects')
     api.add_resource(Project,                       '/projects/v1/projects/<project_id>')
 

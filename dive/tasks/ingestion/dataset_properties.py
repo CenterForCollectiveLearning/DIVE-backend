@@ -13,7 +13,7 @@ from celery import states
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-@celery.task(bind=True, track_started=True, task_name='Dataset Properties')
+@celery.task(bind=True, track_started=True, name='compute_dataset_properties')
 def compute_dataset_properties(self, dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
     import pandas as pd-dataset properties '''
@@ -47,7 +47,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
     return properties
 
 
-@celery.task(bind=True, ignore_result=True)
+@celery.task(bind=True, ignore_result=True, name="save_dataset_properties")
 def save_dataset_properties(self, properties, dataset_id, project_id):
     self.update_state(state=states.PENDING)
     with task_app.app_context():

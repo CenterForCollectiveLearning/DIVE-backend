@@ -36,8 +36,7 @@ class UploadFile(Resource):
     def post(self):
         logger.info("In upload")
         form_data = json.loads(request.form.get('data'))
-        logger.info(form_data)
-        project_id = form_data.get('project_id').strip().strip('""')
+        project_id = str(form_data.get('project_id'))
         file_obj = request.files.get('file')
 
         if file_obj and allowed_file(file_obj.filename):

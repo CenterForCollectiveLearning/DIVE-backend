@@ -55,6 +55,12 @@ class Dataset(db.Model):
         cascade="all, delete-orphan, delete",
         lazy='dynamic')  # Get all field properties
 
+    # One-to-many with specs
+    specs = db.relationship('Spec',
+        backref="dataset",
+        cascade="all, delete-orphan, delete",
+        lazy='dynamic')  # Get all field properties
+
     # Many-to-one with project
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
@@ -113,7 +119,6 @@ class Spec(db.Model):
     data = db.Column(JSONB)  # TODO Distinguish between data formats?
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
-    dataset = db.relationship(Dataset)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
