@@ -87,7 +87,7 @@ def get_dataset(project_id, dataset_id):
         raise e
 
 def get_datasets(project_id, **kwargs):
-    datasets = Dataset.query.filter_by(**kwargs).all()
+    datasets = Dataset.query.filter_by(project_id=project_id, **kwargs).all()
     return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
