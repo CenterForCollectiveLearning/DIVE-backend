@@ -84,18 +84,17 @@ class Visualization(Resource):
 
         return make_response(jsonify(format_json(result)))
 
-
+visualizationFromSpecGetParser = reqparse.RequestParser()
+visualizationFromSpecGetParser.add_argument('project_id', type=str, required=True)
 class VisualizationFromSpec(Resource):
-    def post(self):
-        args = request.json
+    def get(self, spec_id):
+        args = visualizationFromSpecGetParser.parse_args()
         # TODO Implement required parameters
-        specID = args.get('specID')
-        project_id = args.get('project_id')
-        dataset_id = args.get('dataset_id')
-        spec = args.get('spec')
-        conditional = args.get('conditional')
+        project_id = args.get('project_id').strip().strip('"')
+
+        spec = db_access.get_spec(spec_id)
 
         result = get_viz_data_from_enumerated_spec(spec,
-            dataset_id, project_id, data_formats=['visualize', 'table'])
+            project_id, data_formats=['visualize', 'table'])
 
         return make_response(jsonify(format_json(result)))
