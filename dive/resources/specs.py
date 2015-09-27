@@ -94,7 +94,9 @@ class VisualizationFromSpec(Resource):
 
         spec = db_access.get_spec(spec_id)
 
-        result = get_viz_data_from_enumerated_spec(spec,
-            project_id, data_formats=['visualize', 'table'])
+        result = {
+            'spec': spec,
+            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['visualize', 'table'])
+        }
 
         return make_response(jsonify(format_json(result)))
