@@ -92,7 +92,7 @@ class VisualizationFromSpec(Resource):
         # TODO Implement required parameters
         project_id = args.get('project_id').strip().strip('"')
 
-        spec = db_access.get_spec(spec_id)
+        spec = db_access.get_spec(spec_id, project_id)
 
         result = {
             'spec': spec,
