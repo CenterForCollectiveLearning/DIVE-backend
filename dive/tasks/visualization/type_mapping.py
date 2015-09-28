@@ -1,5 +1,8 @@
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure
 
+import logging
+logger = logging.getLogger(__name__)
+
 viz_types = ['tree', 'bar', 'scatter', 'hist', 'pie', 'network']
 
 # TODO Come up with a better name for this...

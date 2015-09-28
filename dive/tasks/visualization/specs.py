@@ -201,15 +201,10 @@ def enumerate_viz_specs(self, dataset_id, project_id):
         spec['dataset_id'] = dataset_id
         viz_types = get_viz_types_from_spec(spec)
         for viz_type in viz_types:
-
-            # Necessary to deep copy?
-            spec_with_viz_type = spec
+            spec_with_viz_type = copy.deepcopy(spec)
             if viz_type in desired_viz_types:
                 spec_with_viz_type['viz_type'] = viz_type
                 all_specs_with_types.append(spec_with_viz_type)
-            else:
-                continue
-
     logger.info("Number of specs: %s", len(all_specs_with_types))
 
     self.update_state(state=states.SUCCESS, meta={'status': 'Enumerated viz specs'})
