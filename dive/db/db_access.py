@@ -244,6 +244,13 @@ def delete_field_properties(project_id, dataset_id):
 ################
 # Specifications
 ################
+def get_spec(spec_id, project_id, **kwargs):
+    # TODO Add in field for kwargs name
+    spec = Spec.query.filter_by(id=spec_id, project_id=project_id).one()
+    if spec is None:
+        abort(404)
+    return row_to_dict(spec)
+
 def get_specs(project_id, dataset_id, **kwargs):
     # TODO Add in field for kwargs name
     specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
