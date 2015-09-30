@@ -51,8 +51,12 @@ def upload_file(project_id, file):
         except IOError:
             logger.error('Error saving file with path %s', path, exc_info=True)
 
+    dataset_ids = save_dataset(project_id, file_title, file_name, file_type, path)
+    return dataset_ids
+
+
+def save_dataset(project_id, file_title, file_name, file_type, path):
     file_docs = []
-    # result = []
     if file_type in ['csv', 'tsv', 'txt'] :
         file_doc = {
             'file_title': file_title,
@@ -80,8 +84,8 @@ def upload_file(project_id, file):
         )
         dataset_id = dataset['id']
         dataset_ids.append(dataset_id)
-    return dataset_ids
 
+    return dataset_ids
 
 
 def save_excel_to_csv(project_id, file_title, file_name, path):

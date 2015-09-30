@@ -7,6 +7,9 @@ class BaseConfig(object):
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
     UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)
 
+    PRELOADED_DIR = os.path.join(os.path.dirname(__file__), 'preloaded')
+    PRELOADED_DIR = os.path.abspath(PRELOADED_DIR)
+
     RECOMPUTE_FIELD_PROPERTIES = True
     RECOMPUTE_VIZ_SPECS = False
 

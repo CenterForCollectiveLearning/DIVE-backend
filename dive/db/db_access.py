@@ -37,12 +37,18 @@ def insert_project(**kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
     user_id = kwargs.get('user_id')
+    topic = kwargs.get('topic')
+    directory = kwargs.get('directory')
+    preloaded = kwargs.get('preloaded', False)
 
     project = Project(
         title=title,
         description=description,
         creation_date=datetime.utcnow(),
-        user_id=user_id
+        user_id=user_id,
+        topic=topic,
+        preloaded=preloaded,
+        directory=directory
     )
     db.session.add(project)
     db.session.commit()
