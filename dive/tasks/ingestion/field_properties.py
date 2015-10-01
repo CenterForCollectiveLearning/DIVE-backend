@@ -11,7 +11,7 @@ from flask import current_app
 from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
-from dive.tasks.ingestion.type_detection import get_column_types
+from dive.tasks.ingestion.type_detection import get_field_types
 from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
 
 from celery import states
@@ -65,7 +65,7 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
 
     ### Getting column types
     start_time = time()
-    _types = get_column_types(df)
+    _types = get_field_types(df)
     for i, _type in enumerate(_types):
         all_properties[i]['type'] = _type
     type_time = time() - start_time

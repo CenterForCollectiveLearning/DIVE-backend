@@ -7,7 +7,7 @@ from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
-from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
+from dive.tasks.ingestion.type_detection import get_field_types, detect_time_series
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -29,7 +29,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
 
     n_rows, n_cols = df.shape
     field_names = df.columns.values.tolist()
-    field_types = get_column_types(df)
+    field_types = get_field_types(df)
 
     time_series = detect_time_series(df)
     if time_series: structure = 'wide'

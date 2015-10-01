@@ -1,16 +1,56 @@
 import re
 import pandas as pd
-import dateutil.parser as dparser
 from csvkit import sniffer
 
-from dive.tasks.ingestion import DataType
+from collections import defaultdict
+from dive.tasks.ingestion.type_classes import IntegerType, StringType, DecimalType, \
+    BooleanType, DateType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
+    CountryNameType, ContinentNameType
+from dive.tasks.ingestion import DataType, DataTypeWeights
 
 import logging
 logger = logging.getLogger(__name__)
 
+
+def get_field_types(df):
+    '''
+    For each field, returns highest-scoring field type of first 100 non-empty
+    instances.
+
+    Args: dataframe
+    Returns: list of types
+    '''
+    logger.info("Detecting column types")
+    nonempty_col_samples = get_first_n_nonempty_values(df, n=100)
+
+    col_types = []
+    for samples in nonempty_col_samples:
+        if samples:
+            # If elements are lists
+            aggregate_list = []
+            for ele in samples:
+                l = detect_if_list(ele)
+                if l:
+                    aggregate_list.extend(l)
+                else:
+                    continue
+
+            if aggregate_list:
+                types = [ get_variable_type(ele) for ele in aggregate_list ]
+                most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
+                col_types.append(most_common)
+            else:
+                types = [ get_variable_type(ele) for ele in samples]
+                most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
+                col_types.append(most_common)
+        else:
+            col_types.append(DataType.STRING.value)
+
+    return col_types
+
+
 INT_REGEX = "^-?[0-9]+$"
-# FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?"
-#"(\d+(?:[.,]\d*)?)"
+# FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?" #"(\d+(?:[.,]\d*)?)"
 FLOAT_REGEX = "^\d+([\,]\d+)*([\.]\d+)?$"
 
 
@@ -18,34 +58,37 @@ COUNTRY_CODES_2 = ['AD', 'AE', 'AF', 'AG', 'AL', 'AM', 'AO', 'AR', 'AT', 'AU', '
 COUNTRY_CODES_3 = ['AND', 'ARE', 'AFG', 'ATG', 'ALB', 'ARM', 'AGO', 'ARG', 'AUT', 'AUS', 'ABW', 'AZE', 'BIH', 'BRB', 'BGD', 'BEL', 'BFA', 'BGR', 'BHR', 'BDI', 'BEN', 'BMU', 'BRN', 'BOL', 'BRA', 'BTN', 'BWA', 'BLR', 'CAN', 'COD', 'CAF', 'COG', 'CHE', 'CIV', 'CHL', 'CMR', 'CHN', 'COL', 'CRI', 'CUB', 'CPV', 'CYP', 'CZE', 'DEU', 'DJI', 'DNK', 'DOM', 'DZA', 'ECU', 'EST', 'EGY', 'ERI', 'ESP', 'ETH', 'FIN', 'FSM', 'FRO', 'FRA', 'GAB', 'GBR', 'GEO', 'GHA', 'GIB', 'GRL', 'GMB', 'GIN', 'GNQ', 'GRC', 'GTM', 'GNB', 'GUY', 'HKG', 'HND', 'HRV', 'HTI', 'HUN', 'IDN', 'IRL', 'ISR', 'IMN', 'IND', 'IRQ', 'IRN', 'ISL', 'ITA', 'JEY', 'JAM', 'JOR', 'JPN', 'KEN', 'KGZ', 'KHM', 'KIR', 'KNA', 'PRK', 'KOR', 'KWT', 'KAZ', 'LAO', 'LBN', 'LCA', 'LIE', 'LKA', 'LBR', 'LSO', 'LTU', 'LUX', 'LVA', 'LBY', 'MAR', 'MCO', 'MDA', 'MNE', 'MDG', 'MKD', 'MLI', 'MMR', 'MNG', 'MRT', 'MLT', 'MUS', 'MDV', 'MWI', 'MEX', 'MYS', 'MOZ', 'NAM', 'NER', 'NGA', 'NIC', 'NLD', 'NOR', 'NPL', 'NRU', 'NZL', 'OMN', 'PAN', 'PER', 'PHL', 'PAK', 'POL', 'PRI', 'PSE', 'PRT', 'PRY', 'QAT', 'ROU', 'SRB', 'RUS', 'RWA', 'SAU', 'SYC', 'SDN', 'SWE', 'SGP', 'SVN', 'SVK', 'SLE', 'SEN', 'SOM', 'SUR', 'SSD', 'STP', 'SLV', 'SYR', 'SWZ', 'TCD', 'TGO', 'THA', 'TJK', 'TLS', 'TKM', 'TUN', 'TON', 'TUR', 'TTO', 'TWN', 'TZA', 'UKR', 'UGA', 'UNK', 'USA', 'URY', 'UZB', 'VEN', 'VIR', 'VNM', 'VUT', 'WSM', 'SCG', 'YEM', 'ZAF', 'ZMB', 'ZWE']
 COUNTRY_NAMES = ['Andorra', 'United Arab Emirates', 'Afghanistan', 'Antigua and Barbuda', 'Albania', 'Armenia', 'Angola', 'Argentina', 'Austria', 'Australia', 'Aruba', 'Azerbaijan', 'Bosnia and Herzegovina', 'Barbados', 'Bangladesh', 'Belgium', 'Burkina Faso', 'Bulgaria', 'Bahrain', 'Burundi', 'Benin', 'Bermuda', 'Brunei', 'Bolivia', 'Brazil', 'Bhutan', 'Botswana', 'Belarus', 'Canada', 'Democratic Republic of Congo', 'Central African Republic', 'Congo [Republic]', 'Switzerland', 'Chile', 'Cameroon', 'China', 'Colombia', 'Costa Rica', 'Cuba', 'Cape Verde', 'Cyprus', 'Czech Republic', 'Germany', 'Djibouti', 'Denmark', 'Dominican Republic', 'Algeria', 'Ecuador', 'Estonia', 'Egypt', 'Eritrea', 'Spain', 'Ethiopia', 'Finland', 'Micronesia', 'Faroe Islands', 'France', 'Gabon', 'United Kingdom', 'Georgia', 'Ghana', 'Gibraltar', 'Greenland', 'The Gambia', 'Guinea', 'Equatorial Guinea', 'Greece', 'Guatemala', 'Guinea-Bissau', 'Guyana', 'Hong Kong', 'Honduras', 'Croatia', 'Haiti', 'Hungary', 'Indonesia', 'Ireland', 'Israel', 'Isle of Man', 'India', 'Iraq', 'Iran', 'Iceland', 'Italy', 'Jersey', 'Jamaica', 'Jordan', 'Japan', 'Kenya', 'Kyrgyzstan', 'Cambodia', 'Kiribati', 'Saint Kitts and Nevis', 'North Korea', 'South Korea', 'Kuwait', 'Kazakhstan', 'Laos', 'Lebanon', 'St. Lucia', 'Liechtenstein', 'Sri Lanka', 'Liberia', 'Lesotho', 'Lithuania', 'Luxembourg', 'Latvia', 'Libya', 'Morocco', 'Monaco', 'Moldova', 'Montenegro', 'Madagascar', 'Republic of Macedonia', 'Mali', 'Myanmar [Burma]', 'Mongolia', 'Mauritania', 'Malta', 'Mauritius', 'Maldives', 'Malawi', 'Mexico', 'Malaysia', 'Mozambique', 'Namibia', 'Niger', 'Nigeria', 'Nicaragua', 'Netherlands', 'Norway', 'Nepal', 'Nauru', 'New Zealand', 'Oman', 'Panama', 'Peru', 'Philippines', 'Pakistan', 'Poland', 'Puerto Rico', 'Palestine', 'Portugal', 'Paraguay', 'Qatar', 'Romania', 'Serbia', 'Russia', 'Rwanda', 'Saudi Arabia', 'Seychelles', 'Sudan', 'Sweden', 'Singapore', 'Slovenia', 'Slovakia', 'Sierra Leone', 'Senegal', 'Somalia', 'Suriname', 'South Sudan', 'El Salvador', 'Syria', 'Swaziland', 'Chad', 'Togo', 'Thailand', 'Tajikistan', 'Timor-Leste', 'Turkmenistan', 'Tunisia', 'Tonga', 'Turkey', 'Trinidad and Tobago', 'Taiwan', 'Tanzania', 'Ukraine', 'Uganda', 'Unknown', 'United States', 'Uruguay', 'Uzbekistan', 'Venezuela', 'U.S. Virgin Islands', 'Vietnam', 'Vanuatu', 'Samoa', 'Kosovo', 'Yemen', 'South Africa', 'Zambia', 'Zimbabwe']
 CONTINENT_NAMES = ['Asia', 'Europe', 'North America', 'South America', 'Australia', 'Antarctica', 'Africa']
-def get_variable_type(v):
+def get_variable_type(v, strict=False):
     '''
     Detect whether a string represents list of variables or a single variable.
     Then return the most likely type of the variable.
     '''
-    v = str(v)
+    return
+    # v = str(v)
 
     # Numeric
-    if re.match(INT_REGEX, v):
-        return DataType.INTEGER.value
-    elif re.match(FLOAT_REGEX, v):
-        return DataType.FLOAT.value
-
-    # Factors
-    else:
-        if (v in COUNTRY_CODES_2): return DataType.COUNTRY_CODE_2.value
-        elif (v in COUNTRY_CODES_3): return DataType.COUNTRY_CODE_3.value
-        elif (v in COUNTRY_NAMES): return DataType.COUNTRY_NAME.value
-        elif v in CONTINENT_NAMES: return DataType.CONTINENT_NAME.value
-        else:
-            r = DataType.STRING.value
-
-        try:
-            if dparser.parse(v):
-                return DataType.DATETIME.value
-        except:
-            pass
-    return r
+    # if re.match(INT_REGEX, v):
+    #     return DataType.INTEGER.value
+    # elif re.match(FLOAT_REGEX, v):
+    #     return DataType.FLOAT.value
+    #
+    # # Factors
+    # else:
+    #     if (v in COUNTRY_CODES_2): return DataType.COUNTRY_CODE_2.value
+    #     elif (v in COUNTRY_CODES_3): return DataType.COUNTRY_CODE_3.value
+    #     elif (v in COUNTRY_NAMES): return DataType.COUNTRY_NAME.value
+    #     elif v in CONTINENT_NAMES: return DataType.CONTINENT_NAME.value
+    #     elif (v in BOOLEAN_TRUE_VALUES) or (v in BOOLEAN_FALSE_VALUES):
+    #         return DataType.BOOLEAN.value
+    #     else:
+    #         r = DataType.STRING.value
+    #
+    #     try:
+    #         if dparser.parse(v):
+    #             return DataType.DATETIME.value
+    #     except:
+    #         pass
+    # return r
 
 
 def get_first_n_nonempty_values(df, n=100):
@@ -55,6 +98,7 @@ def get_first_n_nonempty_values(df, n=100):
     '''
     result = []
     n = min(df.size, n)
+
     for col_label in df.columns:
         col = df[col_label]
 
@@ -91,41 +135,8 @@ def detect_if_list(v):
     return False
 
 
-def get_column_types(df):
-    '''
-    For each column, returns most frequent column type of first 100 non-empty
-    instances.
 
-    Args: dataframe
-    Returns: list of types
-    '''
-    logger.info("Detecting column types")
-    nonempty_col_samples = get_first_n_nonempty_values(df, n=100)
 
-    col_types = []
-    for samples in nonempty_col_samples:
-        if samples:
-            # If elements are lists
-            aggregate_list = []
-            for ele in samples:
-                l = detect_if_list(ele)
-                if l:
-                    aggregate_list.extend(l)
-                else:
-                    continue
-
-            if aggregate_list:
-                types = [ get_variable_type(ele) for ele in aggregate_list ]
-                most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
-                col_types.append(most_common)
-            else:
-                types = [ get_variable_type(ele) for ele in samples]
-                most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
-                col_types.append(most_common)
-        else:
-            col_types.append(DataType.STRING.value)
-
-    return col_types
 
 
 # TODO: Get total range, separation of each data point
@@ -159,7 +170,7 @@ def detect_time_series(df):
         return False
 
     # 3) Ensure that the contiguous block are all of the same type and numeric
-    col_types = get_column_types(df)
+    col_types = get_field_types(df)
     col_types_of_dates = [col_types[i] for (i, is_date) in enumerate(col_header_types) if is_date]
     if not (len(set(col_types_of_dates)) == 1):
         logger.info("Not a time series: need contiguous fields to have the same type")
