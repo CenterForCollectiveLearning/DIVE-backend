@@ -103,6 +103,8 @@ def insert_dataset(project_id, **kwargs):
     path = kwargs.get('path')
     file_type = kwargs.get('type')
     orig_type = kwargs.get('orig_type')
+    offset = kwargs.get('offset')
+    dialect = kwargs.get('dialect')
 
     # TODO Unpack these programmatically?
     dataset = Dataset(
@@ -110,8 +112,10 @@ def insert_dataset(project_id, **kwargs):
         type = file_type,
         orig_type = orig_type,
         file_name = file_name,
+        offset = offset,
         path = path,
-        project_id = project_id
+        project_id = project_id,
+        dialect = dialect,
     )
     db.session.add(dataset)
     db.session.commit()
@@ -133,10 +137,8 @@ def get_dataset_properties(project_id, dataset_id):
         dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
         return row_to_dict(dataset_properties)
     except NoResultFound, e:
-        logger.error(e)
         return None
     except MultipleResultsFound, e:
-        logger.error(e)
         raise e
 
 # TODO Do an upsert?

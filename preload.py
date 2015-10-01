@@ -13,7 +13,7 @@ from dive.db import db_access
 from dive.tasks.pipelines import ingestion_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 
-def preload():
+def preload_from_metadata(app):
     '''
     Populate preloaded project tree
     '''
@@ -68,31 +68,25 @@ def preload():
                 print dataset_ids
 
 
-    # # Topic iteration
-    # for topic_dir in listdir(PRELOADED_DIR):
-    #     full_topic_dir = join(PRELOADED_DIR, topic_dir)
-    #     if isdir(full_topic_dir) and not \
-    #         (topic_dir.startswith('.') or topic_dir.endswith('.yaml')):
-    #         print 'Topic', topic_dir
-    #
-    #         # Project iteration
-    #         for project_dir in listdir(full_topic_dir):
-    #             full_project_dir = join(full_topic_dir, project_dir)
-    #             if isdir(full_project_dir) and not (project_dir.startswith('.')):
-    #                 print '\tProject', project_dir
-    #
-    #                 # Dataset iteration
-    #                 for dataset in listdir(full_project_dir):
-    #                     if not dataset.startswith('.'):
-    #                         print '\t\tDataset', dataset
+def preload_from_directory_tree(app):
+    # Topic iteration
+    for topic_dir in listdir(PRELOADED_DIR):
+        full_topic_dir = join(PRELOADED_DIR, topic_dir)
+        if isdir(full_topic_dir) and not \
+            (topic_dir.startswith('.') or topic_dir.endswith('.yaml')):
+            print 'Topic', topic_dir
 
-    # # For each directory
-    # for d in listdir(PRELOADED_DIR):
-    #     if (not d[0].startswith('.')):
-    #         print "DIRECTORY:", d
-    #         # For each file in directory
-    #         for f in listdir(join(PRELOADED_DIR, d)):
-    #             print '\tFILE:', f
+            # Project iteration
+            for project_dir in listdir(full_topic_dir):
+                full_project_dir = join(full_topic_dir, project_dir)
+                if isdir(full_project_dir) and not (project_dir.startswith('.')):
+                    print '\tProject', project_dir
+
+                    # Dataset iteration
+                    for dataset in listdir(full_project_dir):
+                        if not dataset.startswith('.'):
+                            print '\t\tDataset', dataset
+    return
 
 
 # TODO Job triggering?
@@ -100,4 +94,4 @@ if __name__ == '__main__':
     from dive.core import create_app
     app = create_app()
     # celery = create_celery(task_app)
-    preload()
+    preload_from_metadata(app)

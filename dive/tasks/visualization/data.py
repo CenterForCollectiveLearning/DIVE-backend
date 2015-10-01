@@ -11,7 +11,7 @@ import scipy as sp
 from itertools import combinations
 from flask import current_app
 
-from dive.data.access import get_delimiter, get_data, get_conditioned_data
+from dive.data.access import get_data, get_conditioned_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion.type_detection import detect_time_series, get_variable_type
 from dive.tasks.ingestion.analysis import get_bin_edges

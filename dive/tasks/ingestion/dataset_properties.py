@@ -5,13 +5,14 @@ import pandas as pd
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
-from dive.data.access import get_data, get_delimiter
+from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
 
 from celery import states
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+
 
 @celery.task(bind=True, track_started=True, name='compute_dataset_properties')
 def compute_dataset_properties(self, dataset_id, project_id, path=None):
@@ -21,17 +22,18 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
 
     if not path:
         with task_app.app_context():
-            path = db_access.get_dataset(project_id, dataset_id)['path']
-    df = get_data(path=path).fillna('')  # TODO turn fillna into an argument
+            dataset = db_access.get_dataset(project_id, dataset_id)
+            path = dataset['path']
+
+            df = get_data(project_id=project_id, dataset_id=dataset_id)
+
     n_rows, n_cols = df.shape
     field_names = df.columns.values.tolist()
     field_types = get_column_types(df)
 
     time_series = detect_time_series(df)
-    if time_series:
-        structure = 'wide'
-    else:
-        structure = 'long'
+    if time_series: structure = 'wide'
+    else: structure = 'long'
 
     properties = {
         'n_rows': n_rows,

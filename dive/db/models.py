@@ -38,9 +38,9 @@ class Dataset(db.Model):
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
-    # Store dataset here here?
-    data = db.Column(JSONB)
 
+    offset = db.Column(db.Integer)
+    dialect = db.Column(JSONB)
     path = db.Column(db.Unicode(250))
     file_name = db.Column(db.Unicode(250))
     type = db.Column(db.Unicode(250))

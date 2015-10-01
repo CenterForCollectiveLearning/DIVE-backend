@@ -28,11 +28,10 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
 
     Arguments: project_id + dataset ids
     Returns a mapping from dataset_ids to properties
+
+    TODO Clean up and optimize this function
     '''
     self.update_state(state=states.PENDING, meta={'status': 'Computing dataset properties'})
-
-    from time import sleep
-    sleep(20)
 
     logger.info("Computing field properties for dataset_id %s", dataset_id)
 
@@ -50,19 +49,19 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
 
     # Statistical properties
     # Only conduct on certain types?
-    start_time = time()
-    df_stats = df.describe()
-    df_stats_dict = json.loads(df_stats.to_json())
-    df_stats_list = []
-    for l in _names:
-        if l in df_stats_dict:
-            df_stats_list.append(df_stats_dict[l])
-        else:
-            df_stats_list.append({})
-    for i, stats in enumerate(df_stats_list):
-        all_properties[i]['stats'] = stats
-    describe_time = time() - start_time
-    logger.info("Describing dataset took %s seconds", describe_time)
+    # start_time = time()
+    # df_stats = df.describe()
+    # df_stats_dict = json.loads(df_stats.to_json())
+    # df_stats_list = []
+    # for l in _names:
+    #     if l in df_stats_dict:
+    #         df_stats_list.append(df_stats_dict[l])
+    #     else:
+    #         df_stats_list.append({})
+    # for i, stats in enumerate(df_stats_list):
+    #     all_properties[i]['stats'] = stats
+    # describe_time = time() - start_time
+    # logger.info("Describing dataset took %s seconds", describe_time)
 
     ### Getting column types
     start_time = time()
@@ -103,7 +102,8 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
     raw_uniqued_values = [ get_unique(df[col]) for col in df ]
     for i, col in enumerate(raw_uniqued_values):
         _type = _types[i]
-        if _type in ["integer", "float"]:
+        # TODO Better classification of uniques
+        if _type in ["integer", "float", "datetime"]:
             all_properties[i]['unique_values'] = []
         else:
             all_properties[i]['unique_values'] = col

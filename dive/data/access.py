@@ -26,35 +26,35 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     return result
 
 
-# TODO Change to get_data_as_dataframe
-# Or more generally return data in different formats
-def get_data(project_id=None, dataset_id=None, path=None, nrows=None):
+def get_data(project_id=None, dataset_id=None, nrows=None):
+    '''
+    Generally return data in different formats
+
+    TODO Change to get_data_as_dataframe
+    TODO fill_na arguments
+    '''
     if IMD.hasData(dataset_id):
         return IMD.getData(dataset_id)
-    if path:
-        delim = get_delimiter(path)
-        df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
+
     if dataset_id and project_id:
         dataset = db_access.get_dataset(project_id, dataset_id)
         path = dataset['path']
-        delim = get_delimiter(path)
-        df = pd.read_table(path, sep=delim, error_bad_lines=False, nrows=nrows)
+        dialect = dataset['dialect']
+
+        # delim = get_delimiter(path)
+        df = pd.read_table(
+            path,
+            skiprows = dataset['offset'],
+            sep = dialect['delimiter'],
+            # lineterminator = dialect['lineterminator'],
+            escapechar = dialect['escapechar'],
+            doublequote = dialect['doublequote'],
+            quotechar = dialect['quotechar'],
+            error_bad_lines = False,
+            nrows = nrows
+        )
         IMD.insertData(dataset_id, df)
     return df
-
-
-def get_delimiter(path):
-    ''' Utility function to detect extension and return delimiter '''
-    filename = path.rsplit('/')[-1]
-    extension = filename.rsplit('.', 1)[1]
-    if extension == 'csv':
-        delim = ','
-    elif extension == 'tsv':
-        delim = '\t'
-    # TODO Detect separators intelligently
-    elif extension == 'txt':
-        delim = ','
-    return delim
 
 
 def get_conditioned_data(df, conditional_arg):

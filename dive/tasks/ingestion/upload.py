@@ -14,6 +14,8 @@ import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import current_app
 
+from messytables import any_tableset, headers_guess
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,37 @@ def upload_file(project_id, file):
     return dataset_ids
 
 
+def get_offset_and_headers(f):
+    f.seek(0)
+    table_set = any_tableset(f)
+    row_set = table_set.tables[0]
+
+    offset, headers = headers_guess(row_set.sample)
+    return offset, headers
+
+
+def get_dialect(f):
+    '''
+    TODO Use file extension as an indication?
+    TODO list of delimiters
+    '''
+    DELIMITERS = ''.join([',', ';', '|', '$', ';', ' ', ' | ', '\t'])
+    f.seek(0)
+    sample = f.readline()
+
+    sniffer = csv.Sniffer()
+    dialect = sniffer.sniff(sample)
+
+    result = {
+        'delimiter': dialect.delimiter,
+        'doublequote': dialect.doublequote,
+        'escapechar': dialect.escapechar,
+        'lineterminator': dialect.lineterminator,
+        'quotechar': dialect.quotechar,
+    }
+    return result
+
+
 def save_dataset(project_id, file_title, file_name, file_type, path):
     file_docs = []
     if file_type in ['csv', 'tsv', 'txt'] :
@@ -69,15 +102,24 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
     elif file_type.startswith('xls'):
         file_docs = save_excel_to_csv(project_id, file_title, file_name, path)
 
-    elif file_type == 'json' :
+    elif file_type == 'json':
         file_doc = save_json_to_csv(project_id, file_title, file_name, path)
         file_docs.append(file_doc)
 
-    # Insert into database
     dataset_ids = []
     for file_doc in file_docs:
+        path = file_doc['path']
+
+        # Get pre-read dataset properties (all data needed to correctly read)
+        # Insert into database
+        with open(path, 'rb') as f:
+            dialect = get_dialect(f)
+            offset, headers = get_offset_and_headers(f)
+
         dataset = db_access.insert_dataset(project_id,
-            path = file_doc['path'],
+            path = path,
+            dialect = dialect,
+            offset = offset,
             title = file_doc['file_title'],
             file_name = file_doc['file_name'],
             type = file_doc['type']
