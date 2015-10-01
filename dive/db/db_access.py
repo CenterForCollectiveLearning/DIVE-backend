@@ -37,7 +37,7 @@ def insert_project(**kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
     user_id = kwargs.get('user_id')
-    topic = kwargs.get('topic')
+    topics = kwargs.get('topics')
     directory = kwargs.get('directory')
     preloaded = kwargs.get('preloaded', False)
 
@@ -46,7 +46,7 @@ def insert_project(**kwargs):
         description=description,
         creation_date=datetime.utcnow(),
         user_id=user_id,
-        topic=topic,
+        topics=topics,
         preloaded=preloaded,
         directory=directory
     )

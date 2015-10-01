@@ -9,7 +9,7 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))
     description = db.Column(db.Unicode(2000))
-    topic = db.Column(db.Unicode(2000))
+    topics = db.Column(JSONB)
     preloaded = db.Column(db.Boolean())
     directory = db.Column(db.Unicode(2000))
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
