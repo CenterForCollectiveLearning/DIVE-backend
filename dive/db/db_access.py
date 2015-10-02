@@ -204,6 +204,7 @@ def insert_field_properties(project_id, dataset_id, **kwargs):
     field_properties = Field_Properties(
         name = kwargs.get('name'),
         type = kwargs.get('type'),
+        type_scores = kwargs.get('type_scores'),
         index = kwargs.get('index'),
         normality = kwargs.get('normality'),
         is_unique = kwargs.get('is_unique'),
@@ -229,6 +230,7 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
 
     if kwargs.get('name'): field_properties.name = kwargs.get('name')
     if kwargs.get('type'): field_properties.type = kwargs.get('type')
+    if kwargs.get('type_scores'): field_properties.type_scores = kwargs.get('type_scores')
     if kwargs.get('index'): field_properties.index = kwargs.get('index')
     if kwargs.get('normality'): field_properties.normality = kwargs.get('normality')
     if kwargs.get('is_unique'): field_properties.is_unique = kwargs.get('is_unique')

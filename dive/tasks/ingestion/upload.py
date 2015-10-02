@@ -14,6 +14,7 @@ import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import current_app
 
+from messytables.error import ReadError
 from messytables import any_tableset, headers_guess
 
 import logging
@@ -114,7 +115,11 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
         # Insert into database
         with open(path, 'rb') as f:
             dialect = get_dialect(f)
-            offset, headers = get_offset_and_headers(f)
+            try:
+                offset, headers = get_offset_and_headers(f)
+            except ReadError:
+                logger.error('Error getting offset for %s', file_name, exc_info=True)
+                continue
 
         dataset = db_access.insert_dataset(project_id,
             path = path,
@@ -142,7 +147,7 @@ def save_excel_to_csv(project_id, file_title, file_name, path):
 
         csv_file_title = file_name + "_" + sheet_name
         csv_file_name = csv_file_title + ".csv"
-        csv_path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, csv_file_name)
+        csv_path = os.path.join(current_app.config['UPLOAD_DIR'], str(project_id), csv_file_name)
 
         csv_file = open(csv_path, 'wb')
         wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)

@@ -12,9 +12,9 @@ def is_date(value):
 
 
 def create_date_formats(day_first=True):
-    """generate combinations of time and date
+    '''generate combinations of time and date
     formats with different delimeters
-    """
+    '''
 
     if day_first:
         date_formats = ['dd/mm/yyyy', 'dd/mm/yy', 'yyyy/mm/dd']

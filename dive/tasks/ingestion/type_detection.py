@@ -1,10 +1,11 @@
 import re
 import pandas as pd
 from csvkit import sniffer
+import dateutil.parser as dparser
 
 from collections import defaultdict
 from dive.tasks.ingestion.type_classes import IntegerType, StringType, DecimalType, \
-    BooleanType, DateType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
+    BooleanType, DateType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
     CountryNameType, ContinentNameType
 from dive.tasks.ingestion import DataType, DataTypeWeights
 
@@ -12,79 +13,79 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_field_types(df):
+FIELD_TYPES = [
+    IntegerType, StringType, DecimalType,
+    BooleanType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type,
+    CountryNameType, ContinentNameType
+]
+
+def get_field_types(df, types=FIELD_TYPES, num_samples=20):
     '''
     For each field, returns highest-scoring field type of first 100 non-empty
     instances.
 
     Args: dataframe
     Returns: list of types
+
+    all_fields_type_scores = [
+        {bool: 80, str: 20},
+        {float: 30, int: 10},
+    ]
     '''
+    all_fields_type_scores = []
     logger.info("Detecting column types")
-    nonempty_col_samples = get_first_n_nonempty_values(df, n=100)
+    nonempty_field_samples = get_first_n_nonempty_values(df, num_samples)
 
-    col_types = []
-    for samples in nonempty_col_samples:
-        if samples:
-            # If elements are lists
-            aggregate_list = []
-            for ele in samples:
-                l = detect_if_list(ele)
-                if l:
-                    aggregate_list.extend(l)
-                else:
-                    continue
+    type_instances = [i for t in types for i in t.instances()]
 
-            if aggregate_list:
-                types = [ get_variable_type(ele) for ele in aggregate_list ]
-                most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
-                col_types.append(most_common)
-            else:
-                types = [ get_variable_type(ele) for ele in samples]
-                most_common = max(map(lambda val: (types.count(val), val), set(types)))[1]
-                col_types.append(most_common)
-        else:
-            col_types.append(DataType.STRING.value)
+    header_strings = {
+        DataType.YEAR.value: ['year', 'Year'],
+        DataType.MONTH.value: ['month', 'Month'],
+        DataType.DAY.value: ['day', 'Days'],
+        DataType.BOOLEAN.value: ['is'],
+        DataType.DATETIME.value: ['date', 'Date', 'time', 'Time']
+    }
 
-    return col_types
+    # Tabulate field scores
+    for i, field_sample in enumerate(nonempty_field_samples):
+        field_type_scores = defaultdict(int)
+        # Default to string
+        field_type_scores[StringType().name] = 0
 
+        # Detection from field names
+        field_name = df.columns[i]
+        for datatype, strings in header_strings.iteritems():
+            for s in strings:
+                if s in field_name:
+                    field_type_scores[datatype] += 20
 
-INT_REGEX = "^-?[0-9]+$"
-# FLOAT_REGEX = "[+-]?(\d+(\.\d*)|\.\d+)([eE][+-]?\d+)?" #"(\d+(?:[.,]\d*)?)"
-FLOAT_REGEX = "^\d+([\,]\d+)*([\.]\d+)?$"
+        # Detection from values
+        for field_value in field_sample:
+            for type_instance in type_instances:
+                if type_instance.test(field_value):
+                    field_type_scores[type_instance.name] += type_instance.weight
+        all_fields_type_scores.append(field_type_scores)
+    logger.info(all_fields_type_scores)
 
+    field_types = []
+    all_fields_normalized_type_scores = []
 
-def get_variable_type(v, strict=False):
-    '''
-    Detect whether a string represents list of variables or a single variable.
-    Then return the most likely type of the variable.
-    '''
-    return
-    # v = str(v)
+    # Normalize field scores
+    for field_type_scores in all_fields_type_scores:
+        field_normalized_type_scores = {}
 
-    # Numeric
-    # if re.match(INT_REGEX, v):
-    #     return DataType.INTEGER.value
-    # elif re.match(FLOAT_REGEX, v):
-    #     return DataType.FLOAT.value
-    #
-    # # Factors
-    # else:
-    #     if (v in COUNTRY_CODES_2): return DataType.COUNTRY_CODE_2.value
-    #     elif (v in COUNTRY_CODES_3): return DataType.COUNTRY_CODE_3.value
-    #     elif (v in COUNTRY_NAMES): return DataType.COUNTRY_NAME.value
-    #     elif v in CONTINENT_NAMES: return DataType.CONTINENT_NAME.value
-    #     elif (v in BOOLEAN_TRUE_VALUES) or (v in BOOLEAN_FALSE_VALUES):
-    #         return DataType.BOOLEAN.value
-    #     else:
-    #         r = DataType.STRING.value
-    #
-    #     try:
-    #         if dparser.parse(v):
-    #             return DataType.DATETIME.value
-    #     except:
-    #         pass
-    # return r
+        _normalized_score_tuples = []
+        total_score = sum(field_type_scores.values())
+
+        for type_name, score in field_type_scores.iteritems():
+            normalized_score = float(score) / total_score
+            field_normalized_type_scores[type_name] = normalized_score
+            _normalized_score_tuples.append((type_name, normalized_score))
+
+        all_fields_normalized_type_scores.append(field_normalized_type_scores)
+        field_types.append(max(_normalized_score_tuples, key=lambda t: t[1])[0])
+
+    return (field_types, all_fields_normalized_type_scores)
 
 
 def get_first_n_nonempty_values(df, n=100):
@@ -129,10 +130,6 @@ def detect_if_list(v):
         if filtered_vals >= 2:
             return filtered_vals
     return False
-
-
-
-
 
 
 # TODO: Get total range, separation of each data point

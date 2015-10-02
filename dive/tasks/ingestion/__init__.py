@@ -52,9 +52,9 @@ class DataTypeWeights(Enum):
     CONTINENT_NAME = 10
 
     # Temporal
-    DATETIME = 3
-    DATE = 3
-    TIME = 3
+    DATETIME = 10
+    DATE = 10
+    TIME = 10
     YEAR = 10
     MONTH = 10
     DAY = 10

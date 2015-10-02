@@ -23,6 +23,8 @@ class BaseConfig(object):
     CELERY_IMPORTS = [
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
+        'dive.tasks.ingestion.type_detection',
+        'dive.tasks.ingestion.type_classes',
         'dive.tasks.ingestion.field_properties',
         'dive.tasks.visualization.specs',
         'dive.tasks.statistics.statistics'

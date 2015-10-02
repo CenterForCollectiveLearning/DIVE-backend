@@ -29,7 +29,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
 
     n_rows, n_cols = df.shape
     field_names = df.columns.values.tolist()
-    field_types = get_field_types(df)
+    field_types, field_scores = get_field_types(df)
 
     time_series = detect_time_series(df)
     if time_series: structure = 'wide'

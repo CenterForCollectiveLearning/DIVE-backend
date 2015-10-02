@@ -4,19 +4,19 @@ import dateutil.parser as dparser
 
 
 class CellType(object):
-    """ A cell type maintains information about the format
+    ''' A cell type maintains information about the format
     of the cell, providing methods to check if a type is
     applicable to a given value and to convert a value to the
-    type. """
+    type. '''
 
     guessing_weight = 1
     # the type that the result will have
     result_type = None
 
     def test(self, value):
-        """ Test if the value is of the given type. The
+        ''' Test if the value is of the given type. The
         default implementation calls ``cast`` and checks if
-        that throws an exception. True or False"""
+        that throws an exception. True or False'''
         if isinstance(value, self.result_type):
             return True
         try:
@@ -30,8 +30,8 @@ class CellType(object):
         return [cls()]
 
     def cast(self, value):
-        """ Convert the value to the type. This may throw
-        a quasi-random exception if conversion fails. """
+        ''' Convert the value to the type. This may throw
+        a quasi-random exception if conversion fails. '''
         return value
 
     def __eq__(self, other):
@@ -64,9 +64,9 @@ class IntegerType(CellType):
 
 
 class BoolType(CellType):
-    """ A boolean field. Matches true/false, yes/no and 0/1 by default,
+    ''' A boolean field. Matches true/false, yes/no and 0/1 by default,
     but a custom set of values can be optionally provided.
-    """
+    '''
     guessing_weight = 7
     result_type = bool
     true_values = ('yes', 'true', '0')
@@ -90,7 +90,7 @@ class BoolType(CellType):
 
 
 class DecimalType(CellType):
-    """ Decimal number, ``decimal.Decimal`` or float numbers. """
+    ''' Decimal number, ``decimal.Decimal`` or float numbers. '''
     guessing_weight = 4
     result_type = decimal.Decimal
 
@@ -107,9 +107,9 @@ class DecimalType(CellType):
 
 
 class DateType(CellType):
-    """ The date type is special in that it also includes a specific
+    ''' The date type is special in that it also includes a specific
     date format that is used to parse the date, additionally to the
-    basic type information. """
+    basic type information. '''
     guessing_weight = 3
     formats = DATE_FORMATS
     result_type = datetime.datetime
@@ -147,11 +147,11 @@ class DateType(CellType):
 
 
 class DateUtilType(CellType):
-    """ The date util type uses the dateutil library to
+    ''' The date util type uses the dateutil library to
     parse the dates. The advantage of this type over
     DateType is the speed and better date detection. However,
     it does not offer format detection.
-    Do not use this together with the DateType"""
+    Do not use this together with the DateType'''
     guessing_weight = 3
     result_type = datetime.datetime
 

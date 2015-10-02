@@ -65,9 +65,10 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
 
     ### Getting column types
     start_time = time()
-    _types = get_field_types(df)
+    _types, _type_scores = get_field_types(df)
     for i, _type in enumerate(_types):
         all_properties[i]['type'] = _type
+        all_properties[i]['type_scores'] = _type_scores[i]
     type_time = time() - start_time
     logger.info("Field type detection took %s seconds", type_time)
 

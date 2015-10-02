@@ -112,7 +112,7 @@ def preload_from_directory_tree(app):
             # If dataset-level config for project
             if project_datasets:
                 for d in project_datasets:
-                    if d['filename'] = dataset_file_name:
+                    if d['filename'] is dataset_file_name:
                         dataset_title = d.get('title')
                         dataset_description = d.get('description')
                         dataset_type = d.get('description', dataset_type)
