@@ -1,9 +1,10 @@
 import re
 import pandas as pd
 from csvkit import sniffer
+from random import sample as random_sample
 import dateutil.parser as dparser
-
 from collections import defaultdict
+
 from dive.tasks.ingestion.type_classes import IntegerType, StringType, DecimalType, \
     BooleanType, DateType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
     CountryNameType, ContinentNameType
@@ -19,24 +20,21 @@ FIELD_TYPES = [
     CountryNameType, ContinentNameType
 ]
 
-def get_field_types(df, types=FIELD_TYPES, num_samples=20):
+def calculate_field_type(field_name, field_values, field_types=FIELD_TYPES, num_samples=20, random=True):
     '''
-    For each field, returns highest-scoring field type of first 100 non-empty
+    For each field, returns highest-scoring field type of first num_samples non-empty
     instances.
-
-    Args: dataframe
-    Returns: list of types
-
-    all_fields_type_scores = [
-        {bool: 80, str: 20},
-        {float: 30, int: 10},
-    ]
     '''
-    all_fields_type_scores = []
-    logger.info("Detecting column types")
-    nonempty_field_samples = get_first_n_nonempty_values(df, num_samples)
+    num_samples = min(len(field_values), num_samples)
+    if random:
+        field_sample = random_sample(field_values, num_samples)
+    else:
+        field_sample = field_values[:num_samples]
 
-    type_instances = [i for t in types for i in t.instances()]
+    type_instances = []
+    for field_type in field_types:
+        for inst in field_type.instances():
+            type_instances.append(inst)
 
     header_strings = {
         DataType.YEAR.value: ['year', 'Year'],
@@ -47,45 +45,32 @@ def get_field_types(df, types=FIELD_TYPES, num_samples=20):
     }
 
     # Tabulate field scores
-    for i, field_sample in enumerate(nonempty_field_samples):
-        field_type_scores = defaultdict(int)
-        # Default to string
-        field_type_scores[StringType().name] = 0
+    field_type_scores = defaultdict(int)
+    # Default to string
+    field_type_scores[StringType().name] = 0
 
-        # Detection from field names
-        field_name = df.columns[i]
-        for datatype, strings in header_strings.iteritems():
-            for s in strings:
-                if s in field_name:
-                    field_type_scores[datatype] += 20
+    # Detection from field names
+    for datatype, strings in header_strings.iteritems():
+        for s in strings:
+            if s in field_name:
+                field_type_scores[datatype] += 20
 
-        # Detection from values
-        for field_value in field_sample:
-            for type_instance in type_instances:
-                if type_instance.test(field_value):
-                    field_type_scores[type_instance.name] += type_instance.weight
-        all_fields_type_scores.append(field_type_scores)
-    logger.info(all_fields_type_scores)
-
-    field_types = []
-    all_fields_normalized_type_scores = []
+    # Detection from values
+    for field_value in field_sample:
+        for type_instance in type_instances:
+            if type_instance.test(field_value):
+                field_type_scores[type_instance.name] += type_instance.weight
 
     # Normalize field scores
-    for field_type_scores in all_fields_type_scores:
-        field_normalized_type_scores = {}
+    score_tuples = []
+    normalized_type_scores = {}
+    total_score = sum(field_type_scores.values())
+    for type_name, score in field_type_scores.iteritems():
+        score_tuples.append((type_name, score))
+        normalized_type_scores[type_name] = float(score) / total_score
 
-        _normalized_score_tuples = []
-        total_score = sum(field_type_scores.values())
-
-        for type_name, score in field_type_scores.iteritems():
-            normalized_score = float(score) / total_score
-            field_normalized_type_scores[type_name] = normalized_score
-            _normalized_score_tuples.append((type_name, normalized_score))
-
-        all_fields_normalized_type_scores.append(field_normalized_type_scores)
-        field_types.append(max(_normalized_score_tuples, key=lambda t: t[1])[0])
-
-    return (field_types, all_fields_normalized_type_scores)
+    final_field_type = max(score_tuples, key=lambda t: t[1])[0]
+    return (final_field_type, normalized_type_scores)
 
 
 def get_first_n_nonempty_values(df, n=100):

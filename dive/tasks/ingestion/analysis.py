@@ -11,7 +11,6 @@ import scipy.stats as stats
 import math
 
 from dive.data.access import get_data
-from dive.tasks.ingestion.type_detection import get_field_types
 
 # Return unique elements from list while maintaining order in O(N)
 # http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order

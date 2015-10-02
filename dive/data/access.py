@@ -17,7 +17,6 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
-    df = df.fillna('')
     sample = map(list, df.iloc[start:end].values)
 
     result = db_access.get_dataset_properties(project_id, dataset_id)
@@ -53,6 +52,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None):
             error_bad_lines = False,
             nrows = nrows
         )
+        df = df.fillna(value='')
         IMD.insertData(dataset_id, df)
     return df
 
