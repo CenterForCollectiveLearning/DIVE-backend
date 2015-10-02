@@ -61,11 +61,11 @@ def save_dataset_properties(self, properties, dataset_id, project_id):
     with task_app.app_context():
         existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
     if existing_dataset_properties:
-        logger.info("Updating field property of dataset %s", dataset_id)
+        logger.debug("Updating field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
     else:
-        logger.info("Inserting field property of dataset %s", dataset_id)
+        logger.debug("Inserting field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
     self.update_state(state=states.SUCCESS)

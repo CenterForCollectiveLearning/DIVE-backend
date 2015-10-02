@@ -1,11 +1,13 @@
-from dive.core import db
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
 
+from dive.core import db
+from dive.db import ModelName
+
 
 class Project(db.Model):
-    __tablename__ = 'project'
+    __tablename__ = ModelName.PROJECT.value
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))
     description = db.Column(db.Unicode(2000))
@@ -31,7 +33,7 @@ class Dataset(db.Model):
     (including all dimensions and measures) which can be used to
     generate necessary queries.
     '''
-    __tablename__ = 'dataset'
+    __tablename__ = ModelName.DATASET.value
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))
     description = db.Column(db.Unicode())
@@ -71,7 +73,7 @@ class Dataset(db.Model):
 
 # TODO Decide between a separate table and more fields on Dataset
 class Dataset_Properties(db.Model):
-    __tablename__ = 'dataset_properties'
+    __tablename__ = ModelName.DATASET_PROPERTIES.value
     id = db.Column(db.Integer, primary_key=True)
     n_rows = db.Column(db.Integer)
     n_cols = db.Column(db.Integer)
@@ -92,7 +94,7 @@ class Dataset_Properties(db.Model):
 
 
 class Field_Properties(db.Model):
-    __tablename__ = 'field_properties'
+    __tablename__ = ModelName.FIELD_PROPERTIES.value
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(250))  # Have these here, vs. in dataset_properties?
     type = db.Column(db.Unicode(250))
@@ -120,7 +122,7 @@ class Spec(db.Model):
     '''
     Many-to-one with Dataset
     '''
-    __tablename__ = 'spec'
+    __tablename__ = ModelName.SPEC.value
     id = db.Column(db.Integer, primary_key=True)
     generating_procedure = db.Column(db.Unicode(250))
     type_structure = db.Column(db.Unicode(250))
@@ -144,7 +146,7 @@ class Exported_Spec(db.Model):
     '''
     Many-to-one with Specification
     '''
-    __tablename__ = 'exported_spec'
+    __tablename__ = ModelName.EXPORTED_SPEC.value
     id = db.Column(db.Integer, primary_key=True)
     conditionals = db.Column(JSONB)
     config = db.Column(JSONB)
@@ -164,24 +166,19 @@ class Group(db.Model):
     '''
     One-to-many with User
     '''
-    __tablename__ = 'group'
+    __tablename__ = ModelName.GROUP.value
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Unicode(50), unique=True)
-    email = db.Column(db.Unicode(120), unique=True)
-    password = db.Column(db.Unicode(120))
-    role = db.Column(db.SmallInteger, default=Role.USER.value)
-    status = db.Column(db.SmallInteger, default=User_Status.NEW.value)
-
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
+    # One-to-many with specs
+    users = db.relationship('User',
+        backref="dataset",
+        cascade="all, delete-orphan, delete",
+        lazy='dynamic')  # Get all field properties
 
 class User(db.Model):
     '''
     Many-to-one with Group
     '''
-    __tablename__ = 'user'
+    __tablename__ = ModelName.USER.value
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(50), unique=True)
     email = db.Column(db.Unicode(120), unique=True)
@@ -191,3 +188,6 @@ class User(db.Model):
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
+
+    project_id = db.Column(db.Integer, db.ForeignKey('group.id'))
+    project = db.relationship('Group')

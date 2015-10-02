@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 
 from dive.core import db
 from dive.db import ModelName
-from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties \
+from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Group, User
 
 
@@ -24,9 +24,16 @@ def row_to_dict(r):
     return { c.name: getattr(r, c.name) for c in r.__table__.columns }
 
 
-def get_object():
-    return
-
+model_from_name = {
+    ModelName.PROJECT.value: Project,
+    ModelName.DATASET.value: Dataset,
+    ModelName.DATASET_PROPERTIES.value: Dataset_Properties,
+    ModelName.FIELD_PROPERTIES.value: Field_Properties,
+    ModelName.SPEC.value: Spec,
+    ModelName.EXPORTED_SPEC.value: Exported_Spec,
+    ModelName.GROUP.value: Group,
+    ModelName.USER.value: User,
+}
 
 ################
 # Projects
@@ -41,10 +48,7 @@ def get_projects(**kwargs):
     return [ row_to_dict(project) for project in projects ]
 
 def insert_project(**kwargs):
-
-    project = Project(
-        **kwargs
-    )
+    project = Project(**kwargs)
     db.session.add(project)
     db.session.commit()
     return row_to_dict(project)
@@ -53,12 +57,11 @@ def update_project(project_id, **kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
 
-    # TODO Update this
     project = Project.query.get_or_404(int(project_id))
-    if kwargs.get('title'): project.title = title
-    if kwargs.get('description'): project.description = description
 
-    project = Project(title=title, description=description)
+    for k, v in kwargs.iteritems():
+        project[k] = v
+
     db.session.add(project)
     db.session.commit()
     return row_to_dict(project)
@@ -74,7 +77,7 @@ def delete_project(project_id):
 ################
 def get_dataset(project_id, dataset_id):
     # http://stackoverflow.com/questions/2128505/whats-the-difference-between-filter-and-filter-by-in-sqlalchemy
-    logger.info("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
+    logger.debug("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
     try:
         dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
         return row_to_dict(dataset)
@@ -93,7 +96,7 @@ def get_datasets(project_id, **kwargs):
     return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
-    logger.info("Insert dataset with project_id %s", project_id)
+    logger.debug("Insert dataset with project_id %s", project_id)
 
     dataset = Dataset(
         project_id=project_id,
@@ -125,7 +128,7 @@ def get_dataset_properties(project_id, dataset_id):
 
 # TODO Do an upsert?
 def insert_dataset_properties(project_id, dataset_id, **kwargs):
-    logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
+    logger.debug("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
     dataset_properties = Dataset_Properties(
         dataset_id = dataset_id,
         project_id = project_id,
@@ -135,21 +138,14 @@ def insert_dataset_properties(project_id, dataset_id, **kwargs):
     db.session.commit()
     return row_to_dict(dataset_properties)
 
-# TODO Do an upsert?
 def update_dataset_properties(project_id, dataset_id, **kwargs):
-    logger.info("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
 
     dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id,
         dataset_id=dataset_id,
         ).one()
 
-    if kwargs.get('n_rows'): dataset_properties.n_rows = kwargs.get('n_rows')
-    if kwargs.get('n_cols'): dataset_properties.n_cols = kwargs.get('n_cols')
-    if kwargs.get('field_names'): dataset_properties.field_names = kwargs.get('field_names')
-    if kwargs.get('field_types'): dataset_properties.field_types = kwargs.get('field_types')
-    if kwargs.get('field_accessors'): dataset_properties.field_accessors = kwargs.get('field_accessors')
-    if kwargs.get('is_time_series'): dataset_properties.is_time_series = kwargs.get('is_time_series')
-    if kwargs.get('structure'): dataset_properties.structure = kwargs.get('structure'),
+    for k, v in kwargs.iteritems():
+        dataset_properties[k] = v
 
     db.session.add(dataset_properties)
     db.session.commit()
