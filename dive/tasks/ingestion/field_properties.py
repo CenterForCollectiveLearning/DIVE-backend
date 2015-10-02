@@ -4,6 +4,7 @@ Dataset field properties
 
 import json
 import numpy as np
+import pandas as pd
 from time import time
 from scipy import stats as sc_stats
 from flask import current_app
@@ -11,7 +12,7 @@ from flask import current_app
 from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
-from dive.tasks.ingestion import numeric_fields, quantitative_fields
+from dive.tasks.ingestion import DataType, numeric_types, quantitative_types
 from dive.tasks.ingestion.type_detection import calculate_field_type
 from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
 
@@ -30,21 +31,13 @@ quantitative_stats_functions = {
 }
 
 
-def calculate_field_stats(values, logging=False):
+def calculate_field_stats(field_type, field_values, logging=False):
     if logging: start_time = time()
+    percentiles = [(i * .5) / 10 for i in range(1, 20)]
 
-    try:
-        parsed_values = values.astype(np.float)
-    except:
-        logger.error(values, exc_info=True)
-    stats = {}
-    for (name, fn) in quantitative_stats_functions.iteritems():
+    df = pd.DataFrame(field_values)
+    stats = df.describe(percentiles=percentiles).to_dict().values()[0]
 
-        stats[name] = fn(parsed_values)
-
-    if logging:
-        describe_time = time() - start_time
-        logger.info("Describing field took %s seconds", describe_time)
     return stats
 
 
@@ -76,31 +69,26 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
         field_type, field_type_scores = \
             calculate_field_type(field_name, field_values)
 
-        if field_type in numeric_fields:
-            is_unique = detect_unique_list(field_values)
-            stats = calculate_field_stats(field_values)
-            field_properties['is_unique'] = is_unique
-            field_properties['stats'] = stats
-        else:
+        is_unique = detect_unique_list(field_values)
+        stats = calculate_field_stats(field_type, field_values)
+        field_properties['is_unique'] = is_unique
+        field_properties['stats'] = stats
+        if not (field_type in quantitative_types or is_unique ):
             unique_values = get_unique(field_values)
             field_properties['unique_values'] = unique_values
 
+        if field_type is DataType.INTEGER.value and is_unique:
+            is_id = True
+        else:
+            is_id = False
+
+
         field_properties.update({
             'type': field_type,
-            'type_scores': field_type_scores
+            'type_scores': field_type_scores,
+            'is_id': is_id
         })
         all_field_properties[i] = field_properties
-
-        # field_properties[i] = {
-        #     'index': i,
-        #     'name': field_name,
-        #     'stats': stats,
-        #     'type': field_type,
-        #     'type_scores': field_type_scores,
-        #     'is_id': is_id,
-        #     'is_unique': is_unique,
-        #     'unique_values': unique_values
-        # }
 
     # describe_time = time() - start_time
     # logger.info("Describing dataset took %s seconds", describe_time)

@@ -81,6 +81,9 @@ class Dataset_Properties(db.Model):
     structure = db.Enum(['wide', 'long'])
     is_time_series = db.Column(db.Boolean())
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
 
@@ -97,10 +100,15 @@ class Field_Properties(db.Model):
     index = db.Column(db.Integer)  # TODO Tie this down with a foreign key?
     normality = db.Column(JSONB)
     is_unique = db.Column(db.Boolean())
+    is_id = db.Column(db.Boolean())
     unique_values = db.Column(JSONB)
     child = db.Column(db.Unicode(250))
     is_child = db.Column(db.Boolean())
     stats = db.Column(JSONB)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
 
@@ -122,6 +130,10 @@ class Spec(db.Model):
     score = db.Column(JSONB)
     data = db.Column(JSONB)  # TODO Distinguish between data formats?
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
@@ -136,6 +148,10 @@ class Exported_Spec(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     conditionals = db.Column(JSONB)
     config = db.Column(JSONB)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
     spec_id = db.Column(db.Integer, db.ForeignKey('spec.id'))
     spec = db.relationship(Spec)
@@ -156,6 +172,10 @@ class Group(db.Model):
     role = db.Column(db.SmallInteger, default=Role.USER.value)
     status = db.Column(db.SmallInteger, default=User_Status.NEW.value)
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 
 class User(db.Model):
     '''
@@ -168,3 +188,6 @@ class User(db.Model):
     password = db.Column(db.Unicode(120))
     role = db.Column(db.SmallInteger, default=Role.USER.value)
     status = db.Column(db.SmallInteger, default=User_Status.NEW.value)
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)

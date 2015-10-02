@@ -50,8 +50,11 @@ def get_data(project_id=None, dataset_id=None, nrows=None):
             doublequote = dialect['doublequote'],
             quotechar = dialect['quotechar'],
             error_bad_lines = False,
+            parse_dates = True,
+            encoding = 'utf-8',
             nrows = nrows
         )
+        df = df.fillna('')
         IMD.insertData(dataset_id, df)
     return df
 

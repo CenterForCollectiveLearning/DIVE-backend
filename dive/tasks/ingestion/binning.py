@@ -13,7 +13,6 @@ import math
 from dive.data.access import get_data
 
 
-
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
 ###

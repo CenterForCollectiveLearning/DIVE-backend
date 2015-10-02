@@ -31,12 +31,12 @@ class DataType(Enum):
     MONTH = 'month'
     DAY = 'day'
 
-numeric_fields = [
+numeric_types = [
     DataType.INTEGER.value,
     DataType.DECIMAL.value
 ]
 
-quantitative_fields = [
+quantitative_types = [
     DataType.INTEGER.value,
     DataType.DECIMAL.value,
     DataType.DATETIME.value,

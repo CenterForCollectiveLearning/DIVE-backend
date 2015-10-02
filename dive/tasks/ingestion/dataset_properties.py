@@ -23,6 +23,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
     if not path:
         with task_app.app_context():
             dataset = db_access.get_dataset(project_id, dataset_id)
+
             path = dataset['path']
 
             df = get_data(project_id=project_id, dataset_id=dataset_id)

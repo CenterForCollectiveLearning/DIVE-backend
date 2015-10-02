@@ -117,6 +117,7 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
                 offset, headers = get_offset_and_headers(f)
             except ReadError:
                 logger.error('Error getting offset for %s', file_name, exc_info=True)
+                offset = 0
                 continue
 
         dataset = db_access.insert_dataset(project_id,
