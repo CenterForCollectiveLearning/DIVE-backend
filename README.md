@@ -25,6 +25,7 @@ Install System Dependencies (Mac / brew)
 Install [Homebrew](http://brew.sh/) if you don't already have it. Then, run the following code:
 ```
 brew install postgres
+brew install libmagic
 brew install Caskroom/cask/xquartz
 brew install cairo
 ```

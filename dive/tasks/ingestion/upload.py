@@ -14,6 +14,9 @@ import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import current_app
 
+from messytables.error import ReadError
+from messytables import any_tableset, headers_guess
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,7 @@ from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion import DataType
-from dive.tasks.ingestion.type_detection import get_column_types, detect_time_series
+from dive.tasks.ingestion.type_detection import get_field_types, detect_time_series
 
 
 def upload_file(project_id, file):
@@ -51,8 +54,43 @@ def upload_file(project_id, file):
         except IOError:
             logger.error('Error saving file with path %s', path, exc_info=True)
 
+    dataset_ids = save_dataset(project_id, file_title, file_name, file_type, path)
+    return dataset_ids
+
+
+def get_offset_and_headers(f):
+    f.seek(0)
+    table_set = any_tableset(f)
+    row_set = table_set.tables[0]
+
+    offset, headers = headers_guess(row_set.sample)
+    return offset, headers
+
+
+def get_dialect(f):
+    '''
+    TODO Use file extension as an indication?
+    TODO list of delimiters
+    '''
+    DELIMITERS = ''.join([',', ';', '|', '$', ';', ' ', ' | ', '\t'])
+    f.seek(0)
+    sample = f.readline()
+
+    sniffer = csv.Sniffer()
+    dialect = sniffer.sniff(sample)
+
+    result = {
+        'delimiter': dialect.delimiter,
+        'doublequote': dialect.doublequote,
+        'escapechar': dialect.escapechar,
+        'lineterminator': dialect.lineterminator,
+        'quotechar': dialect.quotechar,
+    }
+    return result
+
+
+def save_dataset(project_id, file_title, file_name, file_type, path):
     file_docs = []
-    # result = []
     if file_type in ['csv', 'tsv', 'txt'] :
         file_doc = {
             'file_title': file_title,
@@ -65,23 +103,36 @@ def upload_file(project_id, file):
     elif file_type.startswith('xls'):
         file_docs = save_excel_to_csv(project_id, file_title, file_name, path)
 
-    elif file_type == 'json' :
+    elif file_type == 'json':
         file_doc = save_json_to_csv(project_id, file_title, file_name, path)
         file_docs.append(file_doc)
 
-    # Insert into database
     dataset_ids = []
     for file_doc in file_docs:
+        path = file_doc['path']
+
+        # Get pre-read dataset properties (all data needed to correctly read)
+        # Insert into database
+        with open(path, 'rb') as f:
+            dialect = get_dialect(f)
+            try:
+                offset, headers = get_offset_and_headers(f)
+            except ReadError:
+                logger.error('Error getting offset for %s', file_name, exc_info=True)
+                continue
+
         dataset = db_access.insert_dataset(project_id,
-            path = file_doc['path'],
+            path = path,
+            dialect = dialect,
+            offset = offset,
             title = file_doc['file_title'],
             file_name = file_doc['file_name'],
             type = file_doc['type']
         )
         dataset_id = dataset['id']
         dataset_ids.append(dataset_id)
-    return dataset_ids
 
+    return dataset_ids
 
 
 def save_excel_to_csv(project_id, file_title, file_name, path):
@@ -96,7 +147,7 @@ def save_excel_to_csv(project_id, file_title, file_name, path):
 
         csv_file_title = file_name + "_" + sheet_name
         csv_file_name = csv_file_title + ".csv"
-        csv_path = os.path.join(current_app.config['UPLOAD_DIR'], project_id, csv_file_name)
+        csv_path = os.path.join(current_app.config['UPLOAD_DIR'], str(project_id), csv_file_name)
 
         csv_file = open(csv_path, 'wb')
         wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)

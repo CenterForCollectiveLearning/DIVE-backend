@@ -37,12 +37,18 @@ def insert_project(**kwargs):
     title = kwargs.get('title')
     description = kwargs.get('description')
     user_id = kwargs.get('user_id')
+    topics = kwargs.get('topics')
+    directory = kwargs.get('directory')
+    preloaded = kwargs.get('preloaded', False)
 
     project = Project(
         title=title,
         description=description,
         creation_date=datetime.utcnow(),
-        user_id=user_id
+        user_id=user_id,
+        topics=topics,
+        preloaded=preloaded,
+        directory=directory
     )
     db.session.add(project)
     db.session.commit()
@@ -97,6 +103,8 @@ def insert_dataset(project_id, **kwargs):
     path = kwargs.get('path')
     file_type = kwargs.get('type')
     orig_type = kwargs.get('orig_type')
+    offset = kwargs.get('offset')
+    dialect = kwargs.get('dialect')
 
     # TODO Unpack these programmatically?
     dataset = Dataset(
@@ -104,8 +112,10 @@ def insert_dataset(project_id, **kwargs):
         type = file_type,
         orig_type = orig_type,
         file_name = file_name,
+        offset = offset,
         path = path,
-        project_id = project_id
+        project_id = project_id,
+        dialect = dialect,
     )
     db.session.add(dataset)
     db.session.commit()
@@ -127,10 +137,8 @@ def get_dataset_properties(project_id, dataset_id):
         dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
         return row_to_dict(dataset_properties)
     except NoResultFound, e:
-        logger.error(e)
         return None
     except MultipleResultsFound, e:
-        logger.error(e)
         raise e
 
 # TODO Do an upsert?
@@ -196,6 +204,7 @@ def insert_field_properties(project_id, dataset_id, **kwargs):
     field_properties = Field_Properties(
         name = kwargs.get('name'),
         type = kwargs.get('type'),
+        type_scores = kwargs.get('type_scores'),
         index = kwargs.get('index'),
         normality = kwargs.get('normality'),
         is_unique = kwargs.get('is_unique'),
@@ -221,6 +230,7 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
 
     if kwargs.get('name'): field_properties.name = kwargs.get('name')
     if kwargs.get('type'): field_properties.type = kwargs.get('type')
+    if kwargs.get('type_scores'): field_properties.type_scores = kwargs.get('type_scores')
     if kwargs.get('index'): field_properties.index = kwargs.get('index')
     if kwargs.get('normality'): field_properties.normality = kwargs.get('normality')
     if kwargs.get('is_unique'): field_properties.is_unique = kwargs.get('is_unique')

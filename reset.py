@@ -9,7 +9,6 @@ If tables are dropped, need to run migration script again.
 import os
 import shutil
 import contextlib
-from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 
 

@@ -9,6 +9,9 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))
     description = db.Column(db.Unicode(2000))
+    topics = db.Column(JSONB)
+    preloaded = db.Column(db.Boolean())
+    directory = db.Column(db.Unicode(2000))
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
@@ -35,9 +38,9 @@ class Dataset(db.Model):
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
-    # Store dataset here here?
-    data = db.Column(JSONB)
 
+    offset = db.Column(db.Integer)
+    dialect = db.Column(JSONB)
     path = db.Column(db.Unicode(250))
     file_name = db.Column(db.Unicode(250))
     type = db.Column(db.Unicode(250))
@@ -90,6 +93,7 @@ class Field_Properties(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(250))  # Have these here, vs. in dataset_properties?
     type = db.Column(db.Unicode(250))
+    type_scores = db.Column(JSONB)
     index = db.Column(db.Integer)  # TODO Tie this down with a foreign key?
     normality = db.Column(JSONB)
     is_unique = db.Column(db.Boolean())

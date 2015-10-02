@@ -47,7 +47,7 @@ class UploadFile(Resource):
                 'dataset_ids': dataset_ids
             }
             for dataset_id in dataset_ids:
-                full_pipeline(dataset_id, project_id).apply_async()
+                ingestion_result = full_pipeline(dataset_id, project_id).apply_async()
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 

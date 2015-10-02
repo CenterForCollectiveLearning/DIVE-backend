@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import simplejson as json
+# from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -20,6 +21,8 @@ def format_json(obj):
         return obj.item()
     elif isinstance(obj, float):
         return RoundedFloat(obj)
+    # elif isinstance(obj, datetime):
+        # return str(obj)
     elif isinstance(obj, (np.ndarray, list, tuple)):
         return map(format_json, obj)
     elif isinstance(obj,(pd.DataFrame,pd.Series)):
