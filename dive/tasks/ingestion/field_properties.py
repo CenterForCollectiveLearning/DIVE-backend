@@ -20,7 +20,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-stats_functions = {
+quantitative_stats_functions = {
     'min': np.min,
     'max': np.max,
     'average': np.average,
@@ -33,9 +33,14 @@ stats_functions = {
 def calculate_field_stats(values, logging=False):
     if logging: start_time = time()
 
+    try:
+        parsed_values = values.astype(np.float)
+    except:
+        logger.error(values, exc_info=True)
     stats = {}
-    for (name, fn) in stats_functions.iteritems():
-        stats[name] = fn(values.astype(np.float))
+    for (name, fn) in quantitative_stats_functions.iteritems():
+
+        stats[name] = fn(parsed_values)
 
     if logging:
         describe_time = time() - start_time

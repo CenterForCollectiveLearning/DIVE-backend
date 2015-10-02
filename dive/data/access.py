@@ -52,7 +52,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None):
             error_bad_lines = False,
             nrows = nrows
         )
-        df = df.fillna(value='')
         IMD.insertData(dataset_id, df)
     return df
 
