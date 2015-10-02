@@ -1,6 +1,7 @@
 from enum import Enum
 
 
+
 class DataType(Enum):
 
     # Fundamental
@@ -30,6 +31,17 @@ class DataType(Enum):
     MONTH = 'month'
     DAY = 'day'
 
+numeric_types = [
+    DataType.INTEGER.value,
+    DataType.DECIMAL.value
+]
+
+quantitative_types = [
+    DataType.INTEGER.value,
+    DataType.DECIMAL.value,
+    DataType.DATETIME.value,
+    DataType.DATE.value,
+]
 
 class DataTypeWeights(Enum):
     # Fundamental

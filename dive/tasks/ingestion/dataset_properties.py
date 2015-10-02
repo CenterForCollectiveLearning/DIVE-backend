@@ -7,7 +7,7 @@ from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
-from dive.tasks.ingestion.type_detection import get_field_types, detect_time_series
+from dive.tasks.ingestion.type_detection import calculate_field_type, detect_time_series
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -23,13 +23,19 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
     if not path:
         with task_app.app_context():
             dataset = db_access.get_dataset(project_id, dataset_id)
+
             path = dataset['path']
 
             df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     n_rows, n_cols = df.shape
     field_names = df.columns.values.tolist()
-    field_types, field_scores = get_field_types(df)
+
+    field_types = []
+    for (i, field_name) in enumerate(df):
+        field_values = df[field_name]
+        field_type, field_type_scores = calculate_field_type(field_name, field_values)
+        field_types.append(field_type)
 
     time_series = detect_time_series(df)
     if time_series: structure = 'wide'
@@ -55,11 +61,11 @@ def save_dataset_properties(self, properties, dataset_id, project_id):
     with task_app.app_context():
         existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
     if existing_dataset_properties:
-        logger.info("Updating field property of dataset %s", dataset_id)
+        logger.debug("Updating field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
     else:
-        logger.info("Inserting field property of dataset %s", dataset_id)
+        logger.debug("Inserting field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
     self.update_state(state=states.SUCCESS)

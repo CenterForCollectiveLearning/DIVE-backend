@@ -24,8 +24,6 @@ from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
-from dive.tasks.ingestion import DataType
-from dive.tasks.ingestion.type_detection import get_field_types, detect_time_series
 
 
 def upload_file(project_id, file):
@@ -119,6 +117,7 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
                 offset, headers = get_offset_and_headers(f)
             except ReadError:
                 logger.error('Error getting offset for %s', file_name, exc_info=True)
+                offset = 0
                 continue
 
         dataset = db_access.insert_dataset(project_id,
