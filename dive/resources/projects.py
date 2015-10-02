@@ -22,36 +22,42 @@ class Project(Resource):
     '''
     def get(self, project_id):
         result = db_access.get_project(project_id)
-        return jsonify(result)
+        return jsonify(format_json(result))
 
     def put(self, project_id):
         args = projectPutParser.parse_args()
         title = args.get('title')
         description = args.get('description')
         result = db_access.update_project(project_id, title=title, description=description)
-        return jsonify(result)
+        return jsonify(format_json(result))
 
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
         project_dir = os.path.join(current_app.config['UPLOAD_DIR'], result['id'])
         if os.path.isdir(project_dir):
             shutil.rmtree(project_dir)
-        return jsonify({"message": "Successfully deleted project.",
-                            "id": int(result['id'])})
+        return jsonify(format_json({"message": "Successfully deleted project.",
+                            "id": int(result['id'])}))
 
+projectsGetParser = reqparse.RequestParser()
+projectsGetParser.add_argument('preloaded', type=str, required=False)
 
 projectsPostParser = reqparse.RequestParser()
 projectsPostParser.add_argument('title', type=str, required=False)
 projectsPostParser.add_argument('description', type=str, required=False)
 projectsPostParser.add_argument('userId', type=str, required=False)
-projectsPostParser.add_argument('anonymous', type=bool, required=False, default=False)
+projectsPostParser.add_argument('anonymous', type=str, required=False, default=False)
 class Projects(Resource):
     '''
     GET list of all projects
     POST to add new projects
     '''
     def get(self):
-        return db_access.get_projects()
+        args = projectsGetParser.parse_args()
+        query_args = {}
+        preloaded = args.get('preloaded')
+        if preloaded: query_args['preloaded'] = preloaded
+        return jsonify(format_json({'projects': db_access.get_projects(**query_args)}))
 
     # Create project, initialize directories and collections
     def post(self):
@@ -72,4 +78,4 @@ class Projects(Resource):
         if os.path.isdir(project_dir):
             os.mkdir(project_dir)
 
-        return jsonify(result)
+        return jsonify(format_json(result))
