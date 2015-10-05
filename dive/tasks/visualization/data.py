@@ -14,7 +14,7 @@ from flask import current_app
 from dive.data.access import get_data, get_conditioned_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion.type_detection import detect_time_series
-from dive.tasks.ingestion.analysis import get_bin_edges
+from dive.tasks.ingestion.binning import get_bin_edges
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure
 
 import logging

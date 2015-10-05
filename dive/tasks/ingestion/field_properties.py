@@ -14,7 +14,7 @@ from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.tasks.ingestion import DataType, numeric_types, quantitative_types
 from dive.tasks.ingestion.type_detection import calculate_field_type
-from dive.tasks.ingestion.analysis import get_unique, get_bin_edges
+from dive.tasks.ingestion.utilities import get_unique
 
 from celery import states
 from celery.utils.log import get_task_logger
