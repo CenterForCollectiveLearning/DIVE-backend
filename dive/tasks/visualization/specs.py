@@ -25,6 +25,7 @@ specific_to_general_type = {
     'countryName': 'c',
     'countryCode2': 'c',
     'countryCode3': 'c',
+    'decimal': 'q',
     'datetime': 'q',
 }
 

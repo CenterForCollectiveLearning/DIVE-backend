@@ -16,10 +16,10 @@ class FieldProperties(Resource):
     Args: project_id, dataset_id
     Returns: properties corresponding to that dataset_id
     '''
-    def get(self):
+    def get(self, dataset_id):
         args = fieldPropertiesGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
         dataset_id = args.get('dataset_id')
 
         field_properties = db_access.get_field_properties(project_id, dataset_id)
-        return make_response(jsonify(format_json({"properties": field_properties})))
+        return make_response(jsonify(format_json({"field_properties": field_properties})))
