@@ -5,6 +5,7 @@ class GeneratingProcedure(Enum):
     IND_VAL = 'ind:val'
     VAL_COUNT = 'val:count'
     BIN_AGG = 'bin:agg'
+    BIN_COUNT = 'bin:count'
     VAL_VAL = 'val:val'
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'

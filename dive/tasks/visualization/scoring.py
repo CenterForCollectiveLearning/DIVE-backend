@@ -34,16 +34,16 @@ def _mode(v):
 
 # Uniformity: Chi-Sq test or KL test against uniform distribution?
 univariate_tests = {
-    'gini': gini,
-    'entropy': entropy,  # Shannon entropy, base e
-    # 'normality': normaltest,  # Requires at least n >= 8
-    'median': np.median,
-    'average': np.average,
-    'std': np.std,
-    'variance': np.var,
-    'maximum': np.max,
-    'minimum': np.min,
-    'mode': _mode,
+    # 'gini': gini,
+    # 'entropy': entropy,  # Shannon entropy, base e
+    # # 'normality': normaltest,  # Requires at least n >= 8
+    # 'median': np.median,
+    # 'average': np.average,
+    # 'std': np.std,
+    # 'variance': np.var,
+    # 'maximum': np.max,
+    # 'minimum': np.min,
+    # 'mode': _mode,
     'size': len,
 }
 

@@ -7,6 +7,7 @@ from flask import current_app
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
@@ -30,170 +31,50 @@ specific_to_general_type = {
 }
 
 
-@celery.task(bind=True)
-def enumerate_viz_specs(self, dataset_id, project_id):
-    ''' Enumerated viz specs given data, properties, and ontologies '''
-    self.update_state(state='PROGRESS')
-    logger.info('In enumerate_viz_specs')
-    with task_app.app_context():
-        field_properties = db_access.get_field_properties(project_id, dataset_id)
-
+@celery.task()
+def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
+    '''
+    TODO Move key filtering to the db query
+    TODO Incorporate 0D and 1D data returns
+    TODO Use IDs instead of names for fields
+    '''
+    logger.info('%s %s %s', project_id, dataset_id, field_agg_pairs)
     specs = []
 
-    c_fields = []
-    q_fields = []
-    for f in field_properties:
-        general_type = specific_to_general_type[f['type']]
-        if general_type is 'q':
-            q_fields.append(f)
-        elif general_type is 'c':
-            c_fields.append(f)
+    # Get field properties
+    with task_app.app_context():
+        field_properties = db_access.get_field_properties(project_id, dataset_id)
+        new_field_properties = []
+        for field in field_properties:
+            desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'name', 'id']
+            new_field = { k: field[k] for k in desired_keys }
+            new_field_properties.append(new_field)
+        field_properties = new_field_properties
 
-    c_count = len(c_fields)
-    q_count = len(q_fields)
-
-
-    # Cases A - B
-    # Q > 0, C = 0
-    if q_count and not c_count:
-        # Case A) Q = 1, C = 0
-        if q_count == 1:
-            logger.info("Case A")
-            q_field = q_fields[0]
-            A_specs = A(q_field)
-            specs.extend(A_specs)
-        elif q_count >= 1:
-            logger.info("Case B")
-            for q_field in q_fields:
-                A_specs = A(q_field)
-                specs.extend(A_specs)
-            B_specs = B(q_fields)
-            specs.extend(B_specs)
-
-    # Cases C - E
-    # C = 1
-    elif c_count == 1:
-        # Case C) C = 1, Q = 0
-        if q_count == 0:
-            logger.info("Case C")
-            c_field = c_fields[0]
-            C_specs = C(c_field)
-            specs.extend(C_specs)
-
-        # Case D) C = 1, Q = 1
-        elif q_count == 1:
-            logger.info("Case D")
-
-            # One case of A
-            q_field = q_fields[0]
-            A_specs = A(q_field)
-            specs.extend(A_specs)
-
-            # One case of C
-            c_field = c_fields[0]
-            C_specs = C(c_field)
-            specs.extend(C_specs)
-
-            # One case of D
-            c_field, q_field = c_fields[0], q_fields[0]
-            D_specs = D(c_field, q_field)
-            specs.extend(D_specs)
-
-        # Case E) C = 1, Q >= 1
-        elif q_count > 1:
-            logger.info("Case E")
-
-            for q_field in q_fields:
-                # N_Q cases of A
-                A_specs = A(q_field)
-                specs.extend(A_specs)
-
-                # N_Q cases of D
-                D_specs = D(c_fields[0], q_field)
-                specs.extend(D_specs)
-
-            # N_C cases of C
-            for c_field in c_fields:
-                C_specs = C(c_field)
+    if field_agg_pairs:
+        for field_agg_pair in field_agg_pairs:
+            (field_name, agg) = field_agg_pair
+            field = next((field for field in field_properties if field['name'] == field_name), None)
+            general_type = field['general_type']
+            # Only considering the column
+            if general_type == 'c':
+                C_specs = C(field)
                 specs.extend(C_specs)
-
-            # One case of B
-            B_specs = B(q_fields)
-            specs.extend(B_specs)
-
-            # One case of E
-            E_specs = E(c_field, q_fields)
-            specs.extend(E_specs)
-
-
-    # Cases F - H
-    # C >= 1
-    elif c_count >= 1:
-        # Case F) C >= 1, Q = 0
-        if q_count == 0:
-            logger.info("Case F")
-
-            # N_C cases of C
-            for c_field in c_fields:
-                C_specs = C(c_field)
-                specs.extend(C_specs)
-
-            # One case of F
-            F_specs = F(c_fields)
-            specs.extend(F_specs)
-
-        # Case G) C >= 1, Q = 1
-        elif q_count == 1:
-            logger.info("Case G")
-            q_field = q_fields[0]
-
-            # N_C cases of D
-            for c_field in c_fields:
-                D_specs = D(c_field, q_field)
-                specs.extend(D_specs)
-
-            # One case of F
-            F_specs = F(c_fields)
-            specs.extend(F_specs)
-
-            # One case of G
-            G_specs = G(c_fields, q_field)
-            specs.extend(G_specs)
-
-        # Case H) C >= 1, Q > 1
-        elif q_count > 1:
-            logger.info("Case H")
-
-            # N_C cases of C
-            # N_C cases of E
-            for c_field in c_fields:
-                C_specs = C(c_field)
-                specs.extend(C_specs)
-
-                E_specs = E(c_field, q_fields)
-                specs.extend(E_specs)
-
-                # N_C * N_Q cases of D
-                for q_field in q_fields:
-                    D_specs = D(c_field, q_field)
-                    specs.extend(D_specs)
-
-            # N_Q cases of A
-            # N_Q cases of G
-            for q_field in q_fields:
-                A_specs = A(q_field)
+            elif general_type == 'q':
+                A_specs = A(field)
                 specs.extend(A_specs)
-
-                G_specs = G(c_fields, q_field)
-                specs.extend(G_specs)
-
-            # One case of B
-            B_specs = B(q_fields)
-            specs.extend(B_specs)
-
-            # One case of F
-            F_specs = F(c_fields)
-            specs.extend(F_specs)
+    else:
+        # Return field-wise summary statistics if no arguments
+        for field in field_properties:
+            general_type = field['general_type']
+            if general_type == 'c':
+                C_specs = C(field)
+                specs.extend(C_specs)
+            elif general_type == 'q':
+                A_specs = A(field)
+                specs.extend(A_specs)
+            else:
+                raise ValueError('Not valid general_type', general_type)
 
     all_specs_with_types = []
 
@@ -209,9 +90,192 @@ def enumerate_viz_specs(self, dataset_id, project_id):
                 all_specs_with_types.append(spec_with_viz_type)
     logger.info("Number of specs: %s", len(all_specs_with_types))
 
-    self.update_state(state=states.SUCCESS, meta={'status': 'Enumerated viz specs'})
     return all_specs_with_types
+    return specs
 
+
+# @celery.task(bind=True)
+# def enumerate_viz_specs(self, dataset_id, project_id):
+#     ''' Enumerated viz specs given data, properties, and ontologies '''
+#     self.update_state(state='PROGRESS')
+#     logger.info('In enumerate_viz_specs')
+#     with task_app.app_context():
+#         field_properties = db_access.get_field_properties(project_id, dataset_id)
+#
+#     specs = []
+#
+#     c_fields = []
+#     q_fields = []
+#     for f in field_properties:
+#         general_type = specific_to_general_type[f['type']]
+#         if general_type is 'q':
+#             q_fields.append(f)
+#         elif general_type is 'c':
+#             c_fields.append(f)
+#
+#     c_count = len(c_fields)
+#     q_count = len(q_fields)
+#
+#
+#     # Cases A - B
+#     # Q > 0, C = 0
+#     if q_count and not c_count:
+#         # Case A) Q = 1, C = 0
+#         if q_count == 1:
+#             logger.info("Case A")
+#             q_field = q_fields[0]
+#             A_specs = A(q_field)
+#             specs.extend(A_specs)
+#         elif q_count >= 1:
+#             logger.info("Case B")
+#             for q_field in q_fields:
+#                 A_specs = A(q_field)
+#                 specs.extend(A_specs)
+#             B_specs = B(q_fields)
+#             specs.extend(B_specs)
+#
+#     # Cases C - E
+#     # C = 1
+#     elif c_count == 1:
+#         # Case C) C = 1, Q = 0
+#         if q_count == 0:
+#             logger.info("Case C")
+#             c_field = c_fields[0]
+#             C_specs = C(c_field)
+#             specs.extend(C_specs)
+#
+#         # Case D) C = 1, Q = 1
+#         elif q_count == 1:
+#             logger.info("Case D")
+#
+#             # One case of A
+#             q_field = q_fields[0]
+#             A_specs = A(q_field)
+#             specs.extend(A_specs)
+#
+#             # One case of C
+#             c_field = c_fields[0]
+#             C_specs = C(c_field)
+#             specs.extend(C_specs)
+#
+#             # One case of D
+#             c_field, q_field = c_fields[0], q_fields[0]
+#             D_specs = D(c_field, q_field)
+#             specs.extend(D_specs)
+#
+#         # Case E) C = 1, Q >= 1
+#         elif q_count > 1:
+#             logger.info("Case E")
+#
+#             for q_field in q_fields:
+#                 # N_Q cases of A
+#                 A_specs = A(q_field)
+#                 specs.extend(A_specs)
+#
+#                 # N_Q cases of D
+#                 D_specs = D(c_fields[0], q_field)
+#                 specs.extend(D_specs)
+#
+#             # N_C cases of C
+#             for c_field in c_fields:
+#                 C_specs = C(c_field)
+#                 specs.extend(C_specs)
+#
+#             # One case of B
+#             B_specs = B(q_fields)
+#             specs.extend(B_specs)
+#
+#             # One case of E
+#             E_specs = E(c_field, q_fields)
+#             specs.extend(E_specs)
+#
+#
+#     # Cases F - H
+#     # C >= 1
+#     elif c_count >= 1:
+#         # Case F) C >= 1, Q = 0
+#         if q_count == 0:
+#             logger.info("Case F")
+#
+#             # N_C cases of C
+#             for c_field in c_fields:
+#                 C_specs = C(c_field)
+#                 specs.extend(C_specs)
+#
+#             # One case of F
+#             F_specs = F(c_fields)
+#             specs.extend(F_specs)
+#
+#         # Case G) C >= 1, Q = 1
+#         elif q_count == 1:
+#             logger.info("Case G")
+#             q_field = q_fields[0]
+#
+#             # N_C cases of D
+#             for c_field in c_fields:
+#                 D_specs = D(c_field, q_field)
+#                 specs.extend(D_specs)
+#
+#             # One case of F
+#             F_specs = F(c_fields)
+#             specs.extend(F_specs)
+#
+#             # One case of G
+#             G_specs = G(c_fields, q_field)
+#             specs.extend(G_specs)
+#
+#         # Case H) C >= 1, Q > 1
+#         elif q_count > 1:
+#             logger.info("Case H")
+#
+#             # N_C cases of C
+#             # N_C cases of E
+#             for c_field in c_fields:
+#                 C_specs = C(c_field)
+#                 specs.extend(C_specs)
+#
+#                 E_specs = E(c_field, q_fields)
+#                 specs.extend(E_specs)
+#
+#                 # N_C * N_Q cases of D
+#                 for q_field in q_fields:
+#                     D_specs = D(c_field, q_field)
+#                     specs.extend(D_specs)
+#
+#             # N_Q cases of A
+#             # N_Q cases of G
+#             for q_field in q_fields:
+#                 A_specs = A(q_field)
+#                 specs.extend(A_specs)
+#
+#                 G_specs = G(c_fields, q_field)
+#                 specs.extend(G_specs)
+#
+#             # One case of B
+#             B_specs = B(q_fields)
+#             specs.extend(B_specs)
+#
+#             # One case of F
+#             F_specs = F(c_fields)
+#             specs.extend(F_specs)
+#
+#     all_specs_with_types = []
+#
+#     desired_viz_types = ["hist", "scatter", "bar", "line", "pie"]
+#     # Assign viz types to specs (not 1-1)
+#     for spec in specs:
+#         spec['dataset_id'] = dataset_id
+#         viz_types = get_viz_types_from_spec(spec)
+#         for viz_type in viz_types:
+#             spec_with_viz_type = copy.deepcopy(spec)
+#             if viz_type in desired_viz_types:
+#                 spec_with_viz_type['viz_type'] = viz_type
+#                 all_specs_with_types.append(spec_with_viz_type)
+#     logger.info("Number of specs: %s", len(all_specs_with_types))
+#
+#     self.update_state(state=states.SUCCESS, meta={'status': 'Enumerated viz specs'})
+#     return all_specs_with_types
+#
 
 @celery.task(bind=True)
 def filter_viz_specs(self, enumerated_viz_specs, project_id):
