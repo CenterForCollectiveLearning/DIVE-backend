@@ -12,7 +12,7 @@ from flask import current_app
 from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
-from dive.tasks.ingestion import DataType, numeric_types, quantitative_types
+from dive.tasks.ingestion import DataType, numeric_types, quantitative_types, categorical_types
 from dive.tasks.ingestion.type_detection import calculate_field_type
 from dive.tasks.ingestion.utilities import get_unique
 
@@ -69,6 +69,13 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
         field_type, field_type_scores = \
             calculate_field_type(field_name, field_values)
 
+        if field_type in quantitative_types:
+            general_type = 'q'
+        elif field_type in categorical_types:
+            general_type = 'c'
+        else:
+            raise ValueError(field_type, 'Field type not mappable to general type')
+
         is_unique = detect_unique_list(field_values)
         stats = calculate_field_stats(field_type, field_values)
         field_properties['is_unique'] = is_unique
@@ -82,9 +89,9 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
         else:
             is_id = False
 
-
         field_properties.update({
             'type': field_type,
+            'general_type': general_type,
             'type_scores': field_type_scores,
             'is_id': is_id
         })

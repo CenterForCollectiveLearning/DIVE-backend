@@ -98,6 +98,7 @@ class Field_Properties(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(250))  # Have these here, vs. in dataset_properties?
     type = db.Column(db.Unicode(250))
+    general_type = db.Column(db.Unicode(250))
     type_scores = db.Column(JSONB)
     index = db.Column(db.Integer)  # TODO Tie this down with a foreign key?
     normality = db.Column(JSONB)
