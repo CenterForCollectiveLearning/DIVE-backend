@@ -122,8 +122,18 @@ def C(c_field):
     specs = []
     c_label = c_field['name']
 
-    # TODO Only create if values are non-unique
-    spec = {
+    # 0D
+    most_frequent_spec = {
+        'generating_procedure': GeneratingProcedure.AGG.value,
+        'type_structure': TypeStructure.C.value,
+        'args': {
+            'aggFn': 'mode',
+            'aggFieldA': c_field
+        }
+    }
+
+    # 2D
+    val_count_spec = {
         'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
         'type_structure': TypeStructure.C_Q.value,
         'args': {
@@ -138,7 +148,9 @@ def C(c_field):
             ]
         }
     }
-    specs.append(spec)
+
+    specs.append(most_frequent_spec)
+    specs.append(val_count_spec)
     return specs
 
 def D(c_field, q_field):

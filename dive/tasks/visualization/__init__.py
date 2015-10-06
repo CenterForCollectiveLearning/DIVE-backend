@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class GeneratingProcedure(Enum):
+    AGG = 'agg'
     IND_VAL = 'ind:val'
     VAL_COUNT = 'val:count'
     BIN_AGG = 'bin:agg'
@@ -13,10 +14,15 @@ class GeneratingProcedure(Enum):
 
 
 class TypeStructure(Enum):
+    C = 'c'
+    Q = 'q'
+    liC = '[c]'
+    liQ = '[q]'
     C_C = 'c:c'
     C_Q = 'c:q'
     liC_Q = '[c]:q'
-    liQ_liQ = '[c]:[q]'
+    liQ_liQ = '[q]:[q]'
+    liC_liQ = '[c]:[q]'
     Q_Q = 'q:q'
     Q_liQ = 'q:[q]'
     B_Q = 'b:q'
