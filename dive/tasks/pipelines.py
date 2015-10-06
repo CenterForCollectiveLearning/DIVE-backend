@@ -16,7 +16,7 @@ def full_pipeline(dataset_id, project_id):
     '''
     pipeline = chain([
         ingestion_pipeline(dataset_id, project_id),
-        viz_spec_pipeline(dataset_id, project_id)
+        viz_spec_pipeline(dataset_id, project_id, [])
     ])
     return pipeline
 
@@ -42,17 +42,17 @@ def ingestion_pipeline(dataset_id, project_id):
     return pipeline
 
 
-def viz_spec_pipeline(dataset_id, project_id):
+def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs):
     '''
     Enumerate, filter, score, and format viz specs in sequence
     '''
     logger.info("In viz spec enumeration pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
 
     pipeline = chain([
-        enumerate_viz_specs.si(dataset_id, project_id),
+        enumerate_viz_specs.si(project_id, dataset_id, field_agg_pairs),
         filter_viz_specs.s(project_id),
-        score_viz_specs.s(project_id),
-        format_viz_specs.s(project_id),
-        save_viz_specs.s(dataset_id, project_id)
+        # score_viz_specs.s(project_id),
+        format_viz_specs.s(project_id)
+        # save_viz_specs.s(dataset_id, project_id)
     ])
     return pipeline
