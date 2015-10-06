@@ -10,7 +10,7 @@ from os import listdir, curdir
 from os.path import isfile, join, isdir
 
 from dive.db import db_access
-from dive.tasks.pipelines import ingestion_pipeline
+from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 
 
@@ -40,8 +40,6 @@ def preload_from_metadata(app):
             if not isdir(full_project_dir):
                 raise NameError, ('%s is not a valid project directory' % project_dir)
 
-
-
             for dataset in project.get('datasets'):
                 dataset_title = dataset.get('title')
                 dataset_file_name = dataset.get('filename')
@@ -58,7 +56,11 @@ def preload_from_metadata(app):
                     for dataset_id in dataset_ids:
                         ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
                         ingestion_result.get()
-                print dataset_ids
+
+                        viz_spec_result = viz_spec_pipeline(dataset_id, project_id).apply_async()
+                        viz_spec_result.get()
+
+
 
 
 def preload_from_directory_tree(app):
@@ -121,8 +123,10 @@ def preload_from_directory_tree(app):
                 dataset_ids = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
                 for dataset_id in dataset_ids:
-                    ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
-                    ingestion_result.get()
+                    # ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
+                    # ingestion_result.get()
+                    full_pipeline_result = full_pipeline(dataset_id, project_id).apply_async()
+                    full_pipeline_result.get()
 
 
 # TODO Job triggering?

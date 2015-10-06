@@ -34,6 +34,7 @@ specific_to_general_type = {
 def enumerate_viz_specs(self, dataset_id, project_id):
     ''' Enumerated viz specs given data, properties, and ontologies '''
     self.update_state(state='PROGRESS')
+    logger.info('In enumerate_viz_specs')
     with task_app.app_context():
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
