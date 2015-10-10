@@ -127,11 +127,11 @@ class Spec(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     generating_procedure = db.Column(db.Unicode(250))
     type_structure = db.Column(db.Unicode(250))
-    viz_type = db.Column(db.Unicode(250))  # TODO Enum?
+    viz_types = db.Column(JSONB)
     args = db.Column(JSONB)
     meta = db.Column(JSONB)
     score = db.Column(JSONB)
-    data = db.Column(JSONB)  # TODO Distinguish between data formats?
+    data = db.Column(JSONB)
     fields = db.Column(JSONB)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)

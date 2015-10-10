@@ -88,21 +88,15 @@ def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
             else:
                 raise ValueError('Not valid general_type', general_type)
 
-    all_specs_with_types = []
-
-    desired_viz_types = ["hist", "scatter", "bar", "line", "pie"]
-    # Assign viz types to specs (not 1-1)
+    # Assign viz_types and dataset_id
     for spec in specs:
-        spec['dataset_id'] = dataset_id
         viz_types = get_viz_types_from_spec(spec)
-        for viz_type in viz_types:
-            spec_with_viz_type = copy.deepcopy(spec)
-            if viz_type in desired_viz_types:
-                spec_with_viz_type['viz_type'] = viz_type
-                all_specs_with_types.append(spec_with_viz_type)
-    logger.info("Number of specs: %s", len(all_specs_with_types))
+        spec['viz_types'] = viz_types
+        spec['dataset_id'] = dataset_id
 
-    return all_specs_with_types[2:6]
+    logger.info("Number of specs: %s", len(specs))
+
+    return specs[4:6]
 
 
 @celery.task(bind=True)
