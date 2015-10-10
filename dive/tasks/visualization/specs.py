@@ -56,19 +56,27 @@ def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
             (field_name, agg) = field_agg_pair
             field = next((field for field in field_properties if field['name'] == field_name), None)
             general_type = field['general_type']
-            # Only considering the column
+
+            # Single-column
             if general_type == 'c':
                 C_specs = C(field)
                 specs.extend(C_specs)
             elif general_type == 'q':
                 A_specs = A(field)
                 specs.extend(A_specs)
+
+            # Two-column
+            # C = 1, Q = 1
+            c_field, q_field = c_fields[0], q_fields[0]
+            D_specs = D(c_field, q_field)
+            specs.extend(D_specs)
+
     else:
         # Return field-wise summary statistics if no arguments
         for field in field_properties:
-
-            # Skip IDs
+            # Skip unique fields
             if field['is_id']: continue
+            if field['is_unique']: continue
 
             general_type = field['general_type']
             if general_type == 'c':
@@ -94,23 +102,22 @@ def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
                 all_specs_with_types.append(spec_with_viz_type)
     logger.info("Number of specs: %s", len(all_specs_with_types))
 
-    return all_specs_with_types
-    return specs
+    return all_specs_with_types[2:6]
 
 
 @celery.task(bind=True)
 def filter_viz_specs(self, enumerated_viz_specs, project_id):
     ''' Filtering enumerated viz specs based on interpretability and renderability '''
-    self.update_state(state='PROGRESS')
+    self.update_state(state=states.PENDING)
     filtered_viz_specs = enumerated_viz_specs
-    self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
+    # self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
     return filtered_viz_specs
 
 
 @celery.task(bind=True)
 def score_viz_specs(self, filtered_viz_specs, project_id):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
-    self.update_state(state='PROGRESS')
+    self.update_state(state=states.PENDING)
     scored_viz_specs = []
     for i, spec in enumerate(filtered_viz_specs):
         if ((i + 1) % 100) == 0:
@@ -137,19 +144,19 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
 
         scored_viz_specs.append(spec)
 
-    self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
+    # self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
     return scored_viz_specs
 
 
 @celery.task(bind=True)
 def format_viz_specs(self, scored_viz_specs, project_id):
     ''' Get viz specs into a format usable by front end '''
-    self.update_state(state='PROGRESS')
+    self.update_state(state=states.PENDING)
     field_keys = ['fieldA', 'fieldB', 'binningField', 'aggFieldA', 'aggFieldB']
 
     formatted_viz_specs = []
     for s in scored_viz_specs:
-        properties = {
+        fields = {
             'categorical': [],  # TODO Propagate this
             'quantitative': []
         }
@@ -163,29 +170,30 @@ def format_viz_specs(self, scored_viz_specs, project_id):
                 if field_general_type is 'q': general_type_key = 'quantitative'
                 else: general_type_key = 'categorical'
 
-                properties[general_type_key].append({
+                fields[general_type_key].append({
                     'name': field['name'],
                     'id': field['id'],
                     'fieldType': field['type']
                 })
 
-        s['properties'] = properties
+        s['fields'] = fields
 
         formatted_viz_specs.append(s)
 
-    self.update_state(state=states.SUCCESS, meta={'status': 'Formatted viz specs'})
+    # self.update_state(state=states.SUCCESS, meta={'status': 'Formatted viz specs'})
     return formatted_viz_specs
 
 
-@celery.task(bind=True, ignore_result=True)
+@celery.task(bind=True)
 def save_viz_specs(self, specs, dataset_id, project_id):
     logger.info("Saving viz specs")
-    self.update_state(state='PROGRESS')
+    self.update_state(state=states.PENDING)
     with task_app.app_context():
         # TODO Delete existing specs
         existing_specs = db_access.get_specs(project_id, dataset_id)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
-        db_access.insert_specs(project_id, specs)
-    self.update_state(state=states.SUCCESS, meta={'status': 'Saved viz specs'})
+        inserted_specs = db_access.insert_specs(project_id, specs)
+    return inserted_specs
+    # self.update_state(state=states.SUCCESS, meta={'status': 'Saved viz specs'})

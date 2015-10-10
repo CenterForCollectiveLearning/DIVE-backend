@@ -27,6 +27,31 @@ class TypeStructure(Enum):
     Q_liQ = 'q:[q]'
     B_Q = 'b:q'
 
+class QuantitativeFunction(Enum):
+    AUTO = 'auto'
+    RAW = 'raw'
+    SUM = 'sum'
+    MEAN = 'mean'
+    MEDIAN = 'median'
+    MIN = 'min'
+    MAX = 'min'
+    BIN = 'bin'
+
+class TemporalFunction(Enum):
+    AUTO = 'auto'
+    RAW = 'raw'
+    YEAR = 'year'
+    MONTH = 'month'
+    DAY = 'day'
+    DATE = 'date'
+    HOURS = 'hours'
+    MINUTES = 'minutes'
+    SECONDS = 'seconds'
+    MEAN = 'mean'
+    MEDIAN = 'median'
+    MIN = 'min'
+    MAX = 'max'
+
 class TermType(Enum):
     '''
     List of terms in natural language visualization description

@@ -37,21 +37,21 @@ def A(q_field):
     q_label = q_field['name']
 
     # { Index: value }
-    index_spec = {
-        'generating_procedure': GeneratingProcedure.IND_VAL.value,
-        'type_structure': TypeStructure.Q_Q.value,
-        'args': {
-            'fieldA': q_field
-        },
-        'meta': {
-            'desc': '%s by index' % (q_label),
-            'construction': [
-                { 'string': q_label, 'type': TermType.FIELD.value },
-                { 'string': 'by index', 'type': TermType.PLAIN.value },
-            ]
-        }
-    }
-    specs.append(index_spec)
+    # index_spec = {
+    #     'generating_procedure': GeneratingProcedure.IND_VAL.value,
+    #     'type_structure': TypeStructure.Q_Q.value,
+    #     'args': {
+    #         'fieldA': q_field
+    #     },
+    #     'meta': {
+    #         'desc': '%s by index' % (q_label),
+    #         'construction': [
+    #             { 'string': q_label, 'type': TermType.FIELD.value },
+    #             { 'string': 'by index', 'type': TermType.PLAIN.value },
+    #         ]
+    #     }
+    # }
+    # specs.append(index_spec)
 
     if not q_field['is_unique']:
         # { Value: count }
