@@ -96,7 +96,7 @@ def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
 
     logger.info("Number of specs: %s", len(specs))
 
-    return specs[4:6]
+    return specs[8:15]
 
 
 @celery.task(bind=True)

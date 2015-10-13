@@ -7,8 +7,10 @@ from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, 
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
 from dive.tasks.visualization.specs import enumerate_viz_specs, filter_viz_specs, score_viz_specs, format_viz_specs, save_viz_specs
 
+
 import logging
 logger = logging.getLogger(__name__)
+
 
 def full_pipeline(dataset_id, project_id):
     '''
