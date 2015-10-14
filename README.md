@@ -29,6 +29,10 @@ brew install libmagic
 brew install Caskroom/cask/xquartz
 brew install cairo
 ```
+Install postgres.app
+---------
+Install postgres.app by following the instructions here: (http://postgresapp.com/)
+Download and open the app to start postgres.
 
 Setup postgres
 ---------
@@ -39,21 +43,21 @@ createdb dive
 
 Start RabbitMQ
 ---------
-1. Create a RabbitMQ user and virtual host:
+1. Run the server as a background process
+`sudo rabbitmq-server -detached`
+
+2. Create a RabbitMQ user and virtual host:
 ```
 sudo rabbitmqctl add_user admin password
 sudo rabbitmqctl add_vhost dive
 sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
 ```
-2. Run the server as a background process
-`sudo rabbitmq-server -detached`
 
 
 Install and get into a virtual environment
 ---------
 1. Installation: See [this fine tutorial](http://simononsoftware.com/virtualenv-tutorial/).
-2. Freezing virtual env packages: `pip freeze > requirements.txt`.
-3. Starting virtual env: `source venv/bin/activate`.
+2. Starting virtual env: `source venv/bin/activate`.
 
 
 Install Python Dependencies
