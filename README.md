@@ -31,7 +31,8 @@ brew install cairo
 ```
 Install postgres.app
 ---------
-Install postgres.app by following the instructions here: (http://postgresapp.com/)
+Install postgres.app by following the instructions here: (http://postgresapp.com/).
+
 Download and open the app to start postgres.
 
 Setup postgres
