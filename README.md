@@ -72,7 +72,7 @@ pip install -r requirements.txt
 Start Celery worker
 ---------
 1. Start celery worker: `celery -A dive.task_core worker -l info --autoreload`
-2. Start celery monitor (flower): `celery -A dive.tasks flower`
+2. Start celery monitor (flower): `celery -A dive.task_core flower`
 
 
 Database Migrations
