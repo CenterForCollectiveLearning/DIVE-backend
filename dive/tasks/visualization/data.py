@@ -20,7 +20,7 @@ from dive.tasks.visualization import GeneratingProcedure, TypeStructure
 import logging
 logger = logging.getLogger(__name__)
 
-# TODO just use regular strings?
+
 group_fn_from_string = {
     'sum': np.sum,
     'min': np.min,
@@ -105,6 +105,12 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
                 'columns': df.columns.tolist(),
                 'data': df.values.tolist()
             }
+
+    elif gp == GeneratingProcedure.AGG.value:
+        agg_field_a = args['aggFieldA']['name']
+        agg_fn = group_fn_from_string[args['aggFn']]
+        if agg_fn == 'mode':
+            field_data['display'] = df[agg_field_a].value_counts().idxmax()
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
         binning_field = args['binningField']['name']

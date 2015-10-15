@@ -37,21 +37,21 @@ def A(q_field):
     q_label = q_field['name']
 
     # { Index: value }
-    index_spec = {
-        'generating_procedure': GeneratingProcedure.IND_VAL.value,
-        'type_structure': TypeStructure.Q_Q.value,
-        'args': {
-            'fieldA': q_field
-        },
-        'meta': {
-            'desc': '%s by index' % (q_label),
-            'construction': [
-                { 'string': q_label, 'type': TermType.FIELD.value },
-                { 'string': 'by index', 'type': TermType.PLAIN.value },
-            ]
-        }
-    }
-    specs.append(index_spec)
+    # index_spec = {
+    #     'generating_procedure': GeneratingProcedure.IND_VAL.value,
+    #     'type_structure': TypeStructure.Q_Q.value,
+    #     'args': {
+    #         'fieldA': q_field
+    #     },
+    #     'meta': {
+    #         'desc': '%s by index' % (q_label),
+    #         'construction': [
+    #             { 'string': q_label, 'type': TermType.FIELD.value },
+    #             { 'string': 'by index', 'type': TermType.PLAIN.value },
+    #         ]
+    #     }
+    # }
+    # specs.append(index_spec)
 
     if not q_field['is_unique']:
         # { Value: count }
@@ -122,8 +122,18 @@ def C(c_field):
     specs = []
     c_label = c_field['name']
 
-    # TODO Only create if values are non-unique
-    spec = {
+    # 0D
+    most_frequent_spec = {
+        'generating_procedure': GeneratingProcedure.AGG.value,
+        'type_structure': TypeStructure.C.value,
+        'args': {
+            'aggFn': 'mode',
+            'aggFieldA': c_field
+        }
+    }
+
+    # 2D
+    val_count_spec = {
         'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
         'type_structure': TypeStructure.C_Q.value,
         'args': {
@@ -138,7 +148,9 @@ def C(c_field):
             ]
         }
     }
-    specs.append(spec)
+
+    specs.append(most_frequent_spec)
+    specs.append(val_count_spec)
     return specs
 
 def D(c_field, q_field):
