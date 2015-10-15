@@ -123,11 +123,8 @@ def preload_from_directory_tree(app):
                 dataset_ids = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
                 for dataset_id in dataset_ids:
-                    # ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
-                    # ingestion_result.get()
-                    full_pipeline_result = full_pipeline(dataset_id, project_id).apply_async()
-                    full_pipeline_result.get()
-
+                    ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
+                    ingestion_result.get()
 
 # TODO Job triggering?
 if __name__ == '__main__':

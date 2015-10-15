@@ -36,12 +36,12 @@ class Specs(Resource):
 
         # TODO Put a param for field_agg_pairs in here
         specs = db_access.get_specs(project_id, dataset_id)
-        if specs:
-            specs = specs[:10]
-            return make_response(jsonify(format_json({'specs': specs})))
-        else:
-            specs_task = viz_spec_pipeline(dataset_id, project_id, field_agg_pairs).apply_async()
-            return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
+        # if specs:
+        #     specs = specs[:10]
+        #     return make_response(jsonify(format_json({'specs': specs})))
+        # else:
+        specs_task = viz_spec_pipeline(dataset_id, project_id, field_agg_pairs).apply_async()
+        return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
 
 visualizationGetParser = reqparse.RequestParser()
