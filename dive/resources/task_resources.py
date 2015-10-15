@@ -29,14 +29,18 @@ class TestPipeline(Resource):
         logger.info(getChainIDs(task))
         response = jsonify({'task_ids': getChainIDs(task)})
         response.status_code = 202
-        return response
+        return make_response(jsonify(format_json(response)))
 
 
 class TaskResult(Resource):
+    '''
+    Have consistent status codes
+    '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
 
         logger.info("STATE %s", task.state)
+        # TODO Make sure that these are consistent
         if task.state == states.PENDING:
             state = {
                 'state': task.state,
@@ -52,6 +56,6 @@ class TaskResult(Resource):
                 'state': task.state,
                 'status': str(task.info),
             }
-        response = jsonify(state)
+        response = jsonify(format_json(state))
         response.status_code = 202
         return response

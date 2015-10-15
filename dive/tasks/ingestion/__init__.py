@@ -43,6 +43,18 @@ quantitative_types = [
     DataType.DATE.value,
 ]
 
+categorical_types = [
+    DataType.STRING.value,
+    DataType.BOOLEAN.value,
+    DataType.TEXT.value,
+    DataType.URL.value,
+    DataType.CITY.value,
+    DataType.COUNTRY_CODE_2.value,
+    DataType.COUNTRY_CODE_3.value,
+    DataType.COUNTRY_NAME.value,
+    DataType.CONTINENT_NAME.value,    
+]
+
 class DataTypeWeights(Enum):
     # Fundamental
     INTEGER = 6

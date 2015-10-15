@@ -2,9 +2,11 @@ from enum import Enum
 
 
 class GeneratingProcedure(Enum):
+    AGG = 'agg'
     IND_VAL = 'ind:val'
     VAL_COUNT = 'val:count'
     BIN_AGG = 'bin:agg'
+    BIN_COUNT = 'bin:count'
     VAL_VAL = 'val:val'
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'
@@ -12,13 +14,43 @@ class GeneratingProcedure(Enum):
 
 
 class TypeStructure(Enum):
+    C = 'c'
+    Q = 'q'
+    liC = '[c]'
+    liQ = '[q]'
     C_C = 'c:c'
     C_Q = 'c:q'
     liC_Q = '[c]:q'
-    liQ_liQ = '[c]:[q]'
+    liQ_liQ = '[q]:[q]'
+    liC_liQ = '[c]:[q]'
     Q_Q = 'q:q'
     Q_liQ = 'q:[q]'
     B_Q = 'b:q'
+
+class QuantitativeFunction(Enum):
+    AUTO = 'auto'
+    RAW = 'raw'
+    SUM = 'sum'
+    MEAN = 'mean'
+    MEDIAN = 'median'
+    MIN = 'min'
+    MAX = 'min'
+    BIN = 'bin'
+
+class TemporalFunction(Enum):
+    AUTO = 'auto'
+    RAW = 'raw'
+    YEAR = 'year'
+    MONTH = 'month'
+    DAY = 'day'
+    DATE = 'date'
+    HOURS = 'hours'
+    MINUTES = 'minutes'
+    SECONDS = 'seconds'
+    MEAN = 'mean'
+    MEDIAN = 'median'
+    MIN = 'min'
+    MAX = 'max'
 
 class TermType(Enum):
     '''
