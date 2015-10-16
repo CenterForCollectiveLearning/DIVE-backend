@@ -32,7 +32,7 @@ class Specs(Resource):
         dataset_id = args.get('dataset_id')
         field_agg_pairs = args.get('field_agg_pairs')
 
-        print "FIELD AGG PAIRS", field_agg_pairs
+        logger.info('FIELD-AGG PAIRS: %s', field_agg_pairs)
 
         # TODO Put a param for field_agg_pairs in here
         specs = db_access.get_specs(project_id, dataset_id)

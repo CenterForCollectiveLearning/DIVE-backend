@@ -7,7 +7,7 @@ from flask import current_app
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, specific_to_general_type
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
@@ -16,19 +16,6 @@ from dive.tasks.visualization.scoring import score_spec
 from celery import states
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
-
-
-specific_to_general_type = {
-    'float': 'q',
-    'integer': 'q',
-    'string': 'c',
-    'continent': 'c',
-    'countryName': 'c',
-    'countryCode2': 'c',
-    'countryCode3': 'c',
-    'decimal': 'q',
-    'datetime': 'q',
-}
 
 
 @celery.task()
@@ -120,11 +107,11 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
 
         # TODO Optimize data reads
         with task_app.app_context():
-            try:
-                data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
-            except Exception as e:
-                logger.error(e)
-                continue
+            # try:
+            data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
+            # except Exception as e:
+            #     logger.error(e)
+            #     continue
         if not data:
             continue
         scored_spec['data'] = data
