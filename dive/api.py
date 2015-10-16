@@ -11,8 +11,13 @@ from dive.resources.task_resources import TestPipeline, TaskResult
 
 from flask.ext.restful import Resource
 
+class Test(Resource):
+    def get(self):
+        return "Ping!"
+
 
 def add_resources(api):
+    api.add_resource(Test, '/test')
     api.add_resource(TestPipeline, '/test/<project_id>/<dataset_id>')
     api.add_resource(TaskResult, '/task_result/<task_id>')
 

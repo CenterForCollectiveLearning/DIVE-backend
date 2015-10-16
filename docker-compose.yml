@@ -6,9 +6,8 @@ web:
   volumes:
     - .:/DIVE-backend
   links:
-    - worker
-    - rabbitmq
-    - db
+    - rabbitmq:rabbitmq
+    - db:db
 
 worker:
   build: .
@@ -18,8 +17,8 @@ worker:
   volumes:
     - .:/DIVE-backend
   links:
-    - db
-    - rabbitmq
+    - rabbitmq:rabbitmq
+    - db:db
 
 rabbitmq:
   image: rabbitmq:3-management

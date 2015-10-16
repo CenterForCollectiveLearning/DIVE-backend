@@ -2,6 +2,7 @@ import os
 
 class BaseConfig(object):
     DEBUG = False
+    HOST = '0.0.0.0'
     PORT = 8081
 
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -13,7 +14,7 @@ class BaseConfig(object):
     RECOMPUTE_FIELD_PROPERTIES = True
     RECOMPUTE_VIZ_SPECS = False
 
-    CELERY_BROKER_URL = 'amqp://guest:guest@192.168.99.100:5672/dive'
+    CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/dive'
     CELERY_RESULT_BACKEND = 'amqp://'
     CELERY_ACCEPT_CONTENT = ['json']
 
@@ -32,10 +33,10 @@ class BaseConfig(object):
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://db:5432/dive'
 
 class ProductionConfig(BaseConfig):
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://db:5432/dive'
 
 class TestingConfig(BaseConfig):
     TESTING = True
