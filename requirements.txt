@@ -24,6 +24,8 @@ Flask-Script==2.0.5
 Flask-SQLAlchemy==2.0
 flower==0.8.3
 futures==3.0.3
+gevent==1.1b5
+greenlet==0.4.5
 gunicorn==19.3.0
 html5lib==0.9999999
 itsdangerous==0.24
