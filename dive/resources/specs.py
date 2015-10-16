@@ -33,9 +33,8 @@ class Specs(Resource):
         field_agg_pairs = args.get('field_agg_pairs')
 
         logger.info('FIELD-AGG PAIRS: %s', field_agg_pairs)
-
         # TODO Put a param for field_agg_pairs in here
-        specs = db_access.get_specs(project_id, dataset_id)
+        # specs = db_access.get_specs(project_id, dataset_id, field_agg_pairs)
         # if specs:
         #     specs = specs[:10]
         #     return make_response(jsonify(format_json({'specs': specs})))

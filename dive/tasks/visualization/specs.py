@@ -18,14 +18,33 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
+def enumerate_viz_specs_no_args(field_properties):
+    ''' Return field-wise summary statistics if no arguments '''
+    specs = []
+    for field in field_properties:
+        # Skip unique fields
+        if field['is_id']: continue
+        if field['is_unique']: continue
+
+        general_type = field['general_type']
+        if general_type == 'c':
+            C_specs = C(field)
+            specs.extend(C_specs)
+        elif general_type == 'q':
+            A_specs = A(field)
+            specs.extend(A_specs)
+        else:
+            raise ValueError('Not valid general_type', general_type)
+    return specs
+
 @celery.task()
-def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
+def enumerate_viz_specs(project_id, dataset_id, selected_fields):
     '''
     TODO Move key filtering to the db query
     TODO Incorporate 0D and 1D data returns
     TODO Use IDs instead of names for fields
     '''
-    logger.info('%s %s %s', project_id, dataset_id, field_agg_pairs)
+    logger.info('%s %s %s', project_id, dataset_id, selected_fields)
     specs = []
 
     # Get field properties
@@ -38,42 +57,48 @@ def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
             new_field_properties.append(new_field)
         field_properties = new_field_properties
 
-    if field_agg_pairs:
-        for field_agg_pair in field_agg_pairs:
-            (field_name, agg) = field_agg_pair
-            field = next((field for field in field_properties if field['name'] == field_name), None)
+    if selected_fields:
+        # Getting full field documents (not just id and name from front-end)
+        full_field_docs = []
+        c_fields = []
+        q_fields = []
+        n_c = 0
+        n_q = 0
+        for selected_field in selected_fields:
+            field_id = selected_field['id']
+            field_doc = next((field for field in field_properties if field['id'] == field_id), None)
+            full_field_docs.append(field_doc)
             general_type = field['general_type']
 
-            # Single-column
+            # TODO Make this more concise
             if general_type == 'c':
-                C_specs = C(field)
-                specs.extend(C_specs)
-            elif general_type == 'q':
-                A_specs = A(field)
-                specs.extend(A_specs)
+                n_c = n_c + 1
+                c_fields.append(field_doc)
+            if general_type == 'q':
+                n_q = n_q + 1
+                q_fields.append(field_doc)
 
-            # Two-column
-            # C = 1, Q = 1
-            c_field, q_field = c_fields[0], q_fields[0]
-            D_specs = D(c_field, q_field)
-            specs.extend(D_specs)
-
-    else:
-        # Return field-wise summary statistics if no arguments
-        for field in field_properties:
-            # Skip unique fields
+        # Single-field properties
+        for field in full_field_docs:
             if field['is_id']: continue
             if field['is_unique']: continue
-
-            general_type = field['general_type']
             if general_type == 'c':
                 C_specs = C(field)
                 specs.extend(C_specs)
             elif general_type == 'q':
                 A_specs = A(field)
                 specs.extend(A_specs)
-            else:
-                raise ValueError('Not valid general_type', general_type)
+
+        num_fields = len(selected_fields)
+        # # Two-column
+        # if num_fields >= 2:
+        #     c_field, q_field = c_fields[0], q_fields[0]
+        #     D_specs = D(c_field, q_field)
+        #     specs.extend(D_specs)
+
+    else:
+        no_args_specs = enumerate_viz_specs_no_args(field_properties)
+        specs.extend(no_args_specs)
 
     # Assign viz_types and dataset_id
     for spec in specs:
