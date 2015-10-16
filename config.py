@@ -13,9 +13,9 @@ class BaseConfig(object):
     RECOMPUTE_FIELD_PROPERTIES = True
     RECOMPUTE_VIZ_SPECS = False
 
-    CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
+    CELERY_BROKER_URL = 'amqp://guest:guest@192.168.99.100:5672/dive'
     CELERY_RESULT_BACKEND = 'amqp://'
-    # CELERY_RESULT_BACKEND = 'db+postgresql://localhost:5432/dive'
+    CELERY_ACCEPT_CONTENT = ['json']
 
     ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)

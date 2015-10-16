@@ -1,0 +1,50 @@
+web:
+  build: .
+  dockerfile: ./Dockerfiles/web.dockerfile
+  ports:
+    - "8081:8081"
+  volumes:
+    - .:/DIVE-backend
+  links:
+    - worker
+    - rabbitmq
+    - db
+
+worker:
+  build: .
+  dockerfile: ./Dockerfiles/worker.dockerfile
+  ports:
+    - "5555:5555"
+  volumes:
+    - .:/DIVE-backend
+  links:
+    - db
+    - rabbitmq
+
+rabbitmq:
+  image: rabbitmq:3-management
+  container_name: dive-rabbit
+  hostname: dive-rabbit
+  environment:
+    - RABBITMQ_DEFAULT_VHOST=dive
+  hostname: rabbit
+  ports:
+    - "5672:5672"
+    - "15672:15672"
+
+db:
+  image: sameersbn/postgresql
+  volumes_from:
+    - dbdata
+  environment:
+    - DB_USER=admin
+    - DB_PASS=pass
+    - DB_NAME=dive
+    - PSQL_TRUST_LOCALNET
+  ports:
+    - "5432:5432"
+
+dbdata:
+  image: sameersbn/postgresql
+  volumes:
+    - /var/lib/postgresql
