@@ -170,11 +170,16 @@ class Relationship(db.Model):
     '''
     __tablename__ = ModelName.RELATIONSHIP.value
     id = db.Column(db.Integer, primary_key=True)
+
     source_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
     source_field_id = db.Column(db.Integer, db.ForeignKey('field_properties.id'))
-
     target_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
     target_field_id = db.Column(db.Integer, db.ForeignKey('field_properties.id'))
+
+    source_dataset_name = db.Column(db.Unicode(250))
+    source_field_name = db.Column(db.Unicode(250))
+    target_dataset_name = db.Column(db.Unicode(250))
+    target_field_name = db.Column(db.Unicode(250))
 
     distance = db.Column(db.Float)
     type = db.Column(db.Unicode(250))

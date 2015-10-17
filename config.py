@@ -28,6 +28,7 @@ class BaseConfig(object):
         'dive.tasks.ingestion.type_detection',
         'dive.tasks.ingestion.type_classes',
         'dive.tasks.ingestion.field_properties',
+        'dive.tasks.ingestion.relationships',        
         'dive.tasks.visualization.specs',
         'dive.tasks.statistics.statistics'
     ]

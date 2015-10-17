@@ -13,10 +13,12 @@ from os import listdir, curdir
 from os.path import isfile, join, isdir
 
 from dive.db import db_access
-from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
+from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 
+
 excluded_filetypes = ['json', 'py', 'yaml', 'xls', 'xlsx']
+
 
 def preload_from_directory_tree(app):
     preloaded_dir = app.config['PRELOADED_DIR']
@@ -79,6 +81,8 @@ def preload_from_directory_tree(app):
                 for dataset_id in dataset_ids:
                     ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
                     ingestion_result.get()
+        relationship_result = relationship_pipeline(project_id).apply_async()
+        relationship_result.get()
 
 
 if __name__ == '__main__':

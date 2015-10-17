@@ -208,7 +208,7 @@ def insert_relationships(relationships, project_id):
     relationship_objects = []
     for r in relationships:
         relationship_objects.append(Relationship(
-            project_id = project_id
+            project_id = project_id,
             **r
         ))
     db.session.add_all(relationship_objects)

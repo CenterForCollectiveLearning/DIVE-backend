@@ -76,8 +76,8 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
         # Uniqueness
         is_unique = detect_unique_list(field_values)
 
-        # Unique values
-        if not (field_type in quantitative_types or is_unique):
+        # Unique values for categorical fields
+        if general_type is 'c':
             unique_values = get_unique(field_values)
         else:
             unique_values = None

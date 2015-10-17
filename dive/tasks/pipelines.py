@@ -45,6 +45,15 @@ def ingestion_pipeline(dataset_id, project_id):
     return pipeline
 
 
+def relationship_pipeline(project_id):
+    logger.info("In relationship modelling pipeline with project_id %s", project_id)
+    pipeline = chain([
+        compute_relationships.si(project_id),
+        save_relationships.s(project_id)
+    ])
+    return pipeline
+
+
 def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs):
     '''
     Enumerate, filter, score, and format viz specs in sequence

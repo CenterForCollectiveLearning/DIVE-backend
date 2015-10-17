@@ -40,6 +40,7 @@ class UploadFile(Resource):
         file_obj = request.files.get('file')
 
         if file_obj and allowed_file(file_obj.filename):
+
             # Get dataset_ids corresponding to file if successful upload
             dataset_ids = upload_file(project_id, file_obj)
             result = {
@@ -47,7 +48,7 @@ class UploadFile(Resource):
                 'dataset_ids': dataset_ids
             }
             for dataset_id in dataset_ids:
-                ingestion_result = full_pipeline(dataset_id, project_id).apply_async()
+                ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 
