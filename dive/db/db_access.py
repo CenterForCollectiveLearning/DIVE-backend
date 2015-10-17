@@ -244,6 +244,13 @@ def delete_spec(project_id, exported_spec_id):
 ################
 # Exported Specifications
 ################
+def get_exported_spec(project_id, exported_spec_id):
+    spec = Exported_Spec.query.filter_by(id=exported_spec_id,
+        project_id=project_id).one()
+    if spec is None:
+        abort(404)
+    return row_to_dict(spec)
+
 def get_exported_specs(project_id):
     specs = Exported_Spec.query.filter_by(project_id=project_id).all()
     return [ row_to_dict(spec) for spec in specs ]

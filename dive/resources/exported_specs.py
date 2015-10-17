@@ -8,20 +8,18 @@ from dive.db import db_access
 from dive.resources.utilities import format_json
 
 
+visualizationFromExportedSpecGetParser = reqparse.RequestParser()
+visualizationFromExportedSpecGetParser.add_argument('project_id', type=str, required=True)
 class VisualizationFromExportedSpec(Resource):
-    def post(self):
-        args = request.json
-        # TODO Implement required parameters
-        specID = args.get('specID')
+    def get(self, exported_spec_id):
+        args = visualizationFromExportedSpecGetParser.parse_args()
         project_id = args.get('project_id')
-        dataset_id = args.get('dataset_id')
-        spec = args.get('spec')
-        conditional = args.get('conditional')
 
-        result = get_viz_data_from_enumerated_spec(spec,
-            dataset_id, project_id, data_formats=['visualize', 'table'])
+        exported_spec = db_access.get_exported_spec(project_id, exported_spec_id)
+        spec_id = exported_spec['spec_id']
+        spec = db_access.get_spec(spec_id, project_id)
 
-        return make_response(jsonify(format_json(result)))
+        return make_response(jsonify(format_json(spec)))
 
 
 exportedSpecsGetParser = reqparse.RequestParser()
