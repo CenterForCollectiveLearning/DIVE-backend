@@ -244,17 +244,18 @@ def delete_spec(project_id, exported_spec_id):
 ################
 # Exported Specifications
 ################
-def get_exported_specs(project_id, exported_spec):
+def get_exported_specs(project_id):
     specs = Exported_Spec.query.filter_by(project_id=project_id).all()
     return [ row_to_dict(spec) for spec in specs ]
 
-def insert_exported_spec(project_id, spec_id, conditional, config):
+def insert_exported_spec(project_id, spec_id, conditionals, config):
     exported_spec = Exported_Spec(
+        project_id = project_id,
         spec_id = spec_id,
-        conditional = conditional,
+        conditionals = conditionals,
         config = config
     )
-    db.session.add_all(exported_spec)
+    db.session.add(exported_spec)
     db.session.commit()
     return row_to_dict(exported_spec)
 

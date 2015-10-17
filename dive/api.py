@@ -2,7 +2,7 @@ from dive.resources.datasets import UploadFile, Dataset, Datasets
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, Visualization, GeneratingProcedures
-from dive.resources.statistics_resources import RegressionFromSpec, ComparisonFromSpec, SegmentationFromSpec
+from dive.resources.statistics_resources import RegressionEstimator, RegressionFromSpec, ComparisonFromSpec, SegmentationFromSpec
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.render import Render
 

@@ -18,13 +18,6 @@ class GeneratingProcedures(Resource):
         return make_response(jsonify(format_json(result)))
 
 
-from dive.tasks.visualization.specs import enumerate_viz_specs
-
-specsGetParser = reqparse.RequestParser()
-
-specsGetParser.add_argument('project_id', type=str, required=True, location='json')
-specsGetParser.add_argument('dataset_id', type=str, required=True, location='json')
-specsGetParser.add_argument('field_agg_pairs', type=str, location='json')
 class Specs(Resource):
     def post(self):
         args = request.get_json()
