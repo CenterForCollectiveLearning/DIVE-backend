@@ -169,13 +169,11 @@ def D(c_field, q_field):
                 'fieldB': q_field,
             },
             'meta': {
-                'desc': '%s values vs. %s values' % (c_label, q_label),
+                'desc': '%s vs. %s ' % (c_label, q_label),
                 'construction': [
                     { 'string': c_label, 'type': TermType.FIELD.value },
-                    { 'string': 'values', 'type': TermType.PLAIN.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
-                    { 'string': 'values', 'type': TermType.PLAIN.value },
                 ]
             }
         }
@@ -191,15 +189,13 @@ def D(c_field, q_field):
                     'aggField': q_field,
                 },
                 'meta': {
-                    'desc': 'Group %s and aggregate %s by %s' % (c_label, q_label, agg_fn),
+                    'desc': '%s of %s grouped by %s' % (agg_fn, q_label, c_label),
                     'construction': [
-                        { 'string': 'group', 'type': TermType.OPERATION.value },
-                        { 'string': c_label, 'type': TermType.FIELD.value },
-                        { 'string': 'and', 'type': TermType.PLAIN.value },
-                        { 'string': 'aggregate', 'type': TermType.OPERATION.value },
-                        { 'string': q_label, 'type': TermType.FIELD.value },
-                        { 'string': 'by', 'type': TermType.PLAIN.value },
                         { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'grouped by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label, 'type': TermType.FIELD.value },
                     ]
                 }
             }
@@ -245,27 +241,26 @@ def F(c_fields):
     specs = []
 
     # Two-field val:val
-    for (c_field_a, c_field_b) in combinations(c_fields, 2):
-        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
-        spec = {
-            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
-            'type_structure': TypeStructure.C_C.value,
-            'args': {
-                'fieldA': c_field_a,
-                'fieldB': c_field_b
-            },
-            'meta': {
-                'desc': '%s values vs. %s values' % (c_label_a, c_label_b),
-                'construction': [
-                    { 'string': c_label_a, 'type': TermType.FIELD.value },
-                    { 'string': 'value', 'type': TermType.PLAIN.value },
-                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
-                    { 'string': c_label_b, 'type': TermType.FIELD.value },
-                    { 'string': 'value', 'type': TermType.PLAIN.value },
-                ]
-            }
-        }
-        specs.append(spec)
+    # Not useful...
+    # for (c_field_a, c_field_b) in combinations(c_fields, 2):
+    #     c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+    #     spec = {
+    #         'generating_procedure': GeneratingProcedure.VAL_VAL.value,
+    #         'type_structure': TypeStructure.C_C.value,
+    #         'args': {
+    #             'fieldA': c_field_a,
+    #             'fieldB': c_field_b
+    #         },
+    #         'meta': {
+    #             'desc': '%s vs. %s' % (c_label_a, c_label_b),
+    #             'construction': [
+    #                 { 'string': c_label_a, 'type': TermType.FIELD.value },
+    #                 { 'string': 'vs.', 'type': TermType.PLAIN.value },
+    #                 { 'string': c_label_b, 'type': TermType.FIELD.value },
+    #             ]
+    #         }
+    #     }
+    #     specs.append(spec)
     return specs
 
 def G(c_fields, q_field):

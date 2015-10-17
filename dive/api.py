@@ -2,7 +2,7 @@ from dive.resources.datasets import UploadFile, Dataset, Datasets
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, Visualization, GeneratingProcedures
-from dive.resources.statistics_resources import StatisticsFromSpec, RegressionEstimator
+from dive.resources.statistics_resources import RegressionFromSpec, ComparisonFromSpec, SegmentationFromSpec
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.render import Render
 
@@ -35,7 +35,9 @@ def add_resources(api):
 
     api.add_resource(Render,                        '/render/v1/render')
 
-    api.add_resource(StatisticsFromSpec,            '/statistics/v1/statistics_from_spec')
+    api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
+    api.add_resource(ComparisonFromSpec,            '/statistics/v1/comparison')
+    api.add_resource(SegmentationFromSpec,          '/statistics/v1/segmentation')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
     return api

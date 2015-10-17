@@ -52,3 +52,27 @@ class StatisticsFromSpec(Resource):
         # print format_json(result)
         print time.clock()
         return make_response(jsonify(format_json(result)), status)
+
+
+class RegressionFromSpec(Resource):
+    def post(self):
+        args = request.get_json()
+        project_id = args.get('project_id')
+        spec = args.get('spec')
+        return
+
+
+class ComparisonFromSpec(Resource):
+    def post(self):
+        args = request.get_json()
+        project_id = args.get('project_id')
+        spec = args.get('spec')
+        return
+
+
+class SegmentationFromSpec(Resource):
+    def post(self):
+        args = request.get_json()
+        project_id = args.get('project_id')
+        spec = args.get('spec')
+        return
