@@ -113,6 +113,9 @@ def B(q_fields):
     #         specs.extend(A_specs)
 
 def C(c_field):
+    '''
+    Single categorical field
+    '''
     specs = []
     c_label = c_field['name']
 

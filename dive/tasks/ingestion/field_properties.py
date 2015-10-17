@@ -8,6 +8,7 @@ import pandas as pd
 from time import time
 from scipy import stats as sc_stats
 from flask import current_app
+from itertools import permutations
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
@@ -49,6 +50,7 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
 
     Arguments: project_id + dataset ids
     Returns a mapping from dataset_ids to properties
+
     '''
     self.update_state(state=states.PENDING, meta={'status': 'Computing dataset properties'})
 
@@ -57,100 +59,84 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
 
-    all_field_properties = [{} for i in range(len(df.columns))]
+    num_fields = len(df.columns)
+    all_field_properties = [ {} for i in range(num_fields) ]
 
+    # Single-field types
     for (i, field_name) in enumerate(df):
-        field_properties = {
-            'index': i,
-            'name': field_name
-        }
+
         field_values = df[field_name]
 
-        field_type, field_type_scores = \
-            calculate_field_type(field_name, field_values)
+        # Field types
+        field_type, field_type_scores = calculate_field_type(field_name, field_values)
 
-        if field_type in quantitative_types:
-            general_type = 'q'
-        elif field_type in categorical_types:
-            general_type = 'c'
-        else:
-            raise ValueError(field_type, 'Field type not mappable to general type')
+        # Map to general field types
+        general_type = 'q' if (field_type in quantitative_types) else 'c'
 
+        # Uniqueness
         is_unique = detect_unique_list(field_values)
-        stats = calculate_field_stats(field_type, field_values)
-        field_properties['is_unique'] = is_unique
-        field_properties['stats'] = stats
-        if not (field_type in quantitative_types or is_unique ):
+
+        # Unique values
+        if not (field_type in quantitative_types or is_unique):
             unique_values = get_unique(field_values)
-            field_properties['unique_values'] = unique_values
-
-        if field_type is DataType.INTEGER.value and is_unique:
-            is_id = True
         else:
-            is_id = False
+            unique_values = None
 
-        field_properties.update({
+        # Stats
+        stats = calculate_field_stats(field_type, field_values)
+
+        # ID
+        is_id = True if ((field_type is DataType.INTEGER.value) and is_unique) else False
+
+        # Normality
+        normality = None
+        if general_type is 'q':
+            try:
+                d = field_values.astype(np.float)
+                normality_test_result = sc_stats.normaltest(d)
+                statistic = normality_test_result.statistic
+                pvalue = normality_test_result.pvalue
+                if pvalue < 0.05:
+                    normality = True
+                else:
+                    normality = False
+            except ValueError:
+                normality = None
+
+        all_field_properties[i].update({
+            'index': i,
+            'name': field_name,
             'type': field_type,
             'general_type': general_type,
             'type_scores': field_type_scores,
-            'is_id': is_id
+            'is_id': is_id,
+            'stats': stats,
+            'normality': normality,
+            'is_unique': is_unique,
+            'unique_values': unique_values,
+            'child': None,
+            'is_child': False
         })
-        all_field_properties[i] = field_properties
 
-    # describe_time = time() - start_time
-    # logger.info("Describing dataset took %s seconds", describe_time)
+    # Detect hierarchical relationships
+    # Hierarchical relationships
+    # Given the unique values of current field, are the corresponding values
+    # in another field a complete set of t?
+    MAX_UNIQUE_VALUES_THRESHOLD = 100
+    for field_a, field_b in permutations(all_field_properties, 2):
+        if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
+            continue
 
-    #
-    # ### Determining normality
-    # start_time = time()
-    # for i, col in enumerate(df):
-    #     _type = _types[i]
-    #     if _type in ["int", "float"]:
-    #         try:
-    #             ## Coerce data vector to float
-    #             d = df[col].astype(np.float)
-    #             normality_result = sc_stats.normaltest(d)
-    #         except ValueError:
-    #             normality_result = None
-    #     else:
-    #         normality_result = None
-    #     all_properties[i]['normality'] = normality_result
-    # normality_time = time() - start_time
-    # logger.info("Normality analysis took %s seconds", normality_time)
+        field_b_unique_corresponding_values = []
+        for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
+            if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
+                continue
+            sub_df = df.loc[df[field_a['name']] == unique_value_a]
+            field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
 
-
-    # ### Detect parents
-    # start_time = time()
-    # MAX_ROW_THRESHOLD = 100
-    # for i, col in enumerate(df):
-    #     if i < (len(df.columns) - 1):
-    #         if not all_properties[i]['is_unique'] and all_properties[i]['type'] not in ['float', 'int'] and all_properties[i+1]['type'] not in ['float', 'int']:
-    #             _all_next_col_values = []
-    #
-    #             if len(all_properties[i]['unique_values']) > 1:
-    #                 for j, value in enumerate(all_properties[i]['unique_values']):
-    #                     # TODO: be much smarter about sampling columns rather than just taking the first X rows
-    #                     if j > MAX_ROW_THRESHOLD:
-    #                         break
-    #
-    #                     sub_df = df.loc[df[all_properties[i]['name']] == value]
-    #                     _next_col_values = sub_df[all_properties[i+1]['name']]
-    #
-    #                     _all_next_col_values.extend(set(_next_col_values))
-    #
-    #                 _all_next_col_values = [x for x in _all_next_col_values if x != "#"]
-    #
-    #                 if len(_all_next_col_values) == len(set(_all_next_col_values)):
-    #                     all_properties[i]['child'] = all_properties[i+1]['name']
-    #                     all_properties[i+1]['is_child'] = True
-    #
-    #     if not all_properties[i].get('child'):
-    #         all_properties[i]['child'] = None
-    #
-    #     if not all_properties[i].get('is_child'):
-    #         all_properties[i]['is_child'] = False
-    # get_hierarchies_time = time() - start_time
-    # logger.info("Get hierarchies time took %s seconds", get_hierarchies_time)
+        if detect_unique_list(field_b_unique_corresponding_values):
+            all_field_properties[all_field_properties.index(field_a)]['child'] = field_b['name']
+            all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
 
     self.update_state(state=states.SUCCESS)
     return all_field_properties
