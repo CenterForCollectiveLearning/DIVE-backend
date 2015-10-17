@@ -164,6 +164,25 @@ class Exported_Spec(db.Model):
     project = db.relationship(Project)
 
 
+class Relationship(db.Model):
+    '''
+    Relationships between fields in different datasets
+    '''
+    __tablename__ = ModelName.RELATIONSHIP.value
+    id = db.Column(db.Integer, primary_key=True)
+    source_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    source_field_id = db.Column(db.Integer, db.ForeignKey('field_properties.id'))
+
+    target_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    target_field_id = db.Column(db.Integer, db.ForeignKey('field_properties.id'))
+
+    distance = db.Column(db.Float)
+    type = db.Column(db.Unicode(250))
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project = db.relationship(Project)
+
+
 class Group(db.Model):
     '''
     One-to-many with User
@@ -175,6 +194,7 @@ class Group(db.Model):
         backref="dataset",
         cascade="all, delete-orphan, delete",
         lazy='dynamic')  # Get all field properties
+
 
 class User(db.Model):
     '''

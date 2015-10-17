@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 from dive.core import db
 from dive.db import ModelName
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Group, User
+    Spec, Exported_Spec, Group, User, Relationship
 
 
 import logging
@@ -199,6 +199,21 @@ def delete_field_properties(project_id, dataset_id):
     db.session.delete(dataset_properties)
     db.session.commit()
     return row_to_dict(dataset_properties)
+
+
+################
+# Relationships
+################
+def insert_relationships(relationships, project_id):
+    relationship_objects = []
+    for r in relationships:
+        relationship_objects.append(Relationship(
+            project_id = project_id
+            **r
+        ))
+    db.session.add_all(relationship_objects)
+    db.session.commit()
+    return [ row_to_dict(r) for r in relationship_objects ]
 
 
 ################
