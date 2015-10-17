@@ -73,8 +73,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
         else:
             agg_fn = aggregation_functions[agg_fn_label]
             result = agg_fn(agg_field_data)
-        logger.info(result)
-
+        final_data['visualize'] = result
 
     elif gp == GeneratingProcedure.IND_VAL.value:
         field_a_label = args['fieldA']['name']

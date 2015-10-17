@@ -1,4 +1,4 @@
-from flask import make_response, jsonify, request
+from flask import make_response, jsonify, request, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
@@ -30,17 +30,14 @@ class Specs(Resource):
         args = request.get_json()
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
-        field_agg_pairs = args.get('field_agg_pairs')
+        arguments = args.get('field_agg_pairs')
 
-        logger.info('FIELD-AGG PAIRS: %s', field_agg_pairs)
-        # TODO Put a param for field_agg_pairs in here
-        # specs = db_access.get_specs(project_id, dataset_id, field_agg_pairs)
-        # if specs:
-        #     specs = specs[:10]
-        #     return make_response(jsonify(format_json({'specs': specs})))
-        # else:
-        specs_task = viz_spec_pipeline(dataset_id, project_id, field_agg_pairs).apply_async()
-        return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
+        specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
+        if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
+            return make_response(jsonify(format_json({'specs': specs})))
+        else:
+            specs_task = viz_spec_pipeline(dataset_id, project_id, arguments).apply_async()
+            return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
 
 visualizationGetParser = reqparse.RequestParser()
