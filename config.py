@@ -17,7 +17,8 @@ class BaseConfig(object):
 
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'amqp://'
-    # CELERY_RESULT_BACKEND = 'db+postgresql://localhost:5432/dive'
+
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
 
     ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
@@ -28,17 +29,18 @@ class BaseConfig(object):
         'dive.tasks.ingestion.type_detection',
         'dive.tasks.ingestion.type_classes',
         'dive.tasks.ingestion.field_properties',
-        'dive.tasks.ingestion.relationships',        
+        'dive.tasks.ingestion.relationships',
         'dive.tasks.visualization.specs',
-        'dive.tasks.statistics.statistics'
+        'dive.tasks.statistics.regression',
+        'dive.tasks.statistics.comparison',
+        'dive.tasks.statistics.segmentation',
     ]
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
 
 class ProductionConfig(BaseConfig):
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://localhost:5432/dive'
+    DEBUG = True
 
 class TestingConfig(BaseConfig):
     TESTING = True

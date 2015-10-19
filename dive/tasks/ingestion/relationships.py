@@ -29,7 +29,7 @@ def compute_relationships(self, project_id):
     for dataset_a, dataset_b in combinations(all_datasets, 2):
         with task_app.app_context():
             dataset_a_fields = db_access.get_field_properties(project_id, dataset_a['id'])
-            dataset_b_fields = db_access.get_field_properties(project_id, dataset_a['id'])
+            dataset_b_fields = db_access.get_field_properties(project_id, dataset_b['id'])
 
         for index_a, field_a in enumerate(dataset_a_fields):
             for index_b, field_b in enumerate(dataset_b_fields):
