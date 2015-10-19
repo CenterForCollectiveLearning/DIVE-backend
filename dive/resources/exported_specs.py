@@ -19,7 +19,11 @@ class VisualizationFromExportedSpec(Resource):
         spec_id = exported_spec['spec_id']
         spec = db_access.get_spec(spec_id, project_id)
 
-        return make_response(jsonify(format_json(spec)))
+        result = {
+            'spec': spec,
+            'visualization': spec['data']
+        }
+        return make_response(jsonify(format_json(result)))
 
 
 exportedSpecsGetParser = reqparse.RequestParser()
