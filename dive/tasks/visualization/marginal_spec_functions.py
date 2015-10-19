@@ -31,24 +31,24 @@ def A(q_field):
     q_label = q_field['name']
 
     # 0-D Aggregations
-    for agg_fn_label, agg_fn in aggregation_functions.items():
-        agg_spec = {
-            'generating_procedure': GeneratingProcedure.AGG.value,
-            'type_structure': TypeStructure.Q.value,
-            'args': {
-                'aggFn': agg_fn_label,
-                'aggFieldA': q_field
-            },
-            'meta': {
-                'desc': '%s of %s' % (agg_fn_label, q_label),
-                'construction': [
-                    { 'string': agg_fn_label, 'type': TermType.OPERATION.value },
-                    { 'string': 'of', 'type': TermType.PLAIN.value },
-                    { 'string': q_label, 'type': TermType.FIELD.value },
-                ]
-            }
-        }
-        specs.append(agg_spec)
+    # for agg_fn_label, agg_fn in aggregation_functions.items():
+    #     agg_spec = {
+    #         'generating_procedure': GeneratingProcedure.AGG.value,
+    #         'type_structure': TypeStructure.Q.value,
+    #         'args': {
+    #             'aggFn': agg_fn_label,
+    #             'aggFieldA': q_field
+    #         },
+    #         'meta': {
+    #             'desc': '%s of %s' % (agg_fn_label, q_label),
+    #             'construction': [
+    #                 { 'string': agg_fn_label, 'type': TermType.OPERATION.value },
+    #                 { 'string': 'of', 'type': TermType.PLAIN.value },
+    #                 { 'string': q_label, 'type': TermType.FIELD.value },
+    #             ]
+    #         }
+    #     }
+    #     specs.append(agg_spec)
 
     if not q_field['is_unique']:
         # { Value: count }
@@ -119,23 +119,23 @@ def C(c_field):
     specs = []
     c_label = c_field['name']
 
-    # 0D
-    most_frequent_spec = {
-        'generating_procedure': GeneratingProcedure.AGG.value,
-        'type_structure': TypeStructure.C.value,
-        'args': {
-            'aggFn': 'mode',
-            'aggFieldA': c_field
-        },
-        'meta': {
-            'desc': 'Most frequent value of %s' % (c_field),
-            'construction': [
-                { 'string': 'Most frequent', 'type': TermType.OPERATION.value },
-                { 'string': 'value of', 'type': TermType.PLAIN.value },
-                { 'string': c_label, 'type': TermType.FIELD.value },
-            ]
-        }
-    }
+    # # 0D
+    # most_frequent_spec = {
+    #     'generating_procedure': GeneratingProcedure.AGG.value,
+    #     'type_structure': TypeStructure.C.value,
+    #     'args': {
+    #         'aggFn': 'mode',
+    #         'aggFieldA': c_field
+    #     },
+    #     'meta': {
+    #         'desc': 'Most frequent value of %s' % (c_field),
+    #         'construction': [
+    #             { 'string': 'Most frequent', 'type': TermType.OPERATION.value },
+    #             { 'string': 'value of', 'type': TermType.PLAIN.value },
+    #             { 'string': c_label, 'type': TermType.FIELD.value },
+    #         ]
+    #     }
+    # }
 
     # 2D
     val_count_spec = {
@@ -154,7 +154,7 @@ def C(c_field):
         }
     }
 
-    specs.append(most_frequent_spec)
+    # specs.append(most_frequent_spec)
     specs.append(val_count_spec)
     return specs
 
