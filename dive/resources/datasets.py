@@ -10,7 +10,7 @@ from celery import chain
 from dive.db import db_access
 from dive.resources.utilities import format_json
 from dive.data.access import get_dataset_sample
-from dive.tasks.pipelines import full_pipeline
+from dive.tasks.pipelines import full_pipeline, ingestion_pipeline
 from dive.tasks.ingestion.upload import upload_file
 
 import logging
