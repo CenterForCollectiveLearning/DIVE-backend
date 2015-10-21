@@ -22,6 +22,12 @@ class Project(db.Model):
     users = db.relationship("User")
     # TODO Define relationships for other one-to-manys?
 
+    # One-to-one with datasets
+    datasets = db.relationship('Dataset',
+        uselist=False,
+        cascade="all, delete-orphan",
+        backref="project")
+
     def __repr__(self):
         return "<Project - ID: %s, Title: %s>" % (self.id, self.title)
 
@@ -51,24 +57,24 @@ class Dataset(db.Model):
     # One-to-one with dataset_properties
     dataset_properties = db.relationship('Dataset_Properties',
         uselist=False,
-        cascade="all, delete-orphan, delete",
+        cascade="all, delete-orphan",
         backref="dataset")
 
     # One-to-many with field_properties
     fields_properties = db.relationship('Field_Properties',
         backref="dataset",
-        cascade="all, delete-orphan, delete",
-        lazy='dynamic')  # Get all field properties
+        cascade="all, delete-orphan",
+        lazy='dynamic')
 
     # One-to-many with specs
     specs = db.relationship('Spec',
         backref="dataset",
-        cascade="all, delete-orphan, delete",
-        lazy='dynamic')  # Get all field properties
+        cascade="all, delete-orphan",
+        lazy='dynamic')
 
     # Many-to-one with project
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
-    project = db.relationship(Project)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
 
 
 # TODO Decide between a separate table and more fields on Dataset
@@ -87,8 +93,8 @@ class Dataset_Properties(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
-
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
 
@@ -113,9 +119,11 @@ class Field_Properties(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+
     project = db.relationship(Project)
 
 # TODO Make this not dataset-specific?
@@ -138,7 +146,14 @@ class Spec(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    # One-to-many with exported specs
+    exported_specs = db.relationship('Exported_Spec',
+        backref="spec",
+        cascade="all, delete-orphan",
+        lazy='dynamic')
+
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
@@ -157,8 +172,8 @@ class Exported_Spec(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    spec_id = db.Column(db.Integer, db.ForeignKey('spec.id'))
-    spec = db.relationship(Spec)
+    spec_id = db.Column(db.Integer, db.ForeignKey('spec.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship(Project)
@@ -171,7 +186,7 @@ class Relationship(db.Model):
     __tablename__ = ModelName.RELATIONSHIP.value
     id = db.Column(db.Integer, primary_key=True)
 
-    source_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    source_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'),)
     source_field_id = db.Column(db.Integer, db.ForeignKey('field_properties.id'))
     target_dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
     target_field_id = db.Column(db.Integer, db.ForeignKey('field_properties.id'))
@@ -197,8 +212,8 @@ class Group(db.Model):
     # One-to-many with specs
     users = db.relationship('User',
         backref="dataset",
-        cascade="all, delete-orphan, delete",
-        lazy='dynamic')  # Get all field properties
+        cascade="all, delete-orphan",
+        lazy='dynamic')
 
 
 class User(db.Model):
@@ -216,5 +231,10 @@ class User(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    project_id = db.Column(db.Integer, db.ForeignKey('group.id'))
-    project = db.relationship('Group')
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'))
+    group = db.relationship('Group')
+
+    projects = db.relationship('Project',
+        uselist=False,
+        cascade="all, delete-orphan",
+        backref="user")
