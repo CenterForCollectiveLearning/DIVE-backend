@@ -5,79 +5,68 @@ import statsmodels.api as sm
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
-import time
 from math import log10, floor
 
+from dive.tasks.statistics.utilities import sets_normal
+from dive.db import db_access
 from dive.data.access import get_data
 
-############
-#Note: spec is dictionary with at most keys dataset_id, model, arguments, estimator, weights, degree, funcArray
-#Note: arguments is in this format {'ind':[list of vectors], 'dep':[vector], 'compare':{'indepedent': bool, 'dataLabels':[list of vectors]}}
-######argument has a 'compare' field only when a statistical comparison between vectors are performed.
-######argument has an 'ind' and 'dep' field only when a regression is performed
-def getStatisticsFromSpec(spec, project_id):
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
+
+
+def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
+    model = spec.get('model', 'lr')
+    indep = spec.get('indep', [])
+    dep_name = spec.get('dep')
+    estimator = spec.get('estimator', 'ols')
+    degree = spec.get('degree', 1)
+    weights = spec.get('weights', None)
+    functions = spec.get('functions', [])
     dataset_id = spec.get('dataset_id')
-    #either a regression or comparison
-    model = spec.get('model')
-    #arguments is dict, includes compare and dep and datalabals, dep, indep
-    arguments = spec.get('arguments')
-    estimator = arguments.get('estimator')
-    weights = spec.get('weights')
-    degree = spec.get('degree')
-    funcArray = spec.get('functions')
+    fields = db_access.get_field_properties(project_id, dataset_id)
 
-    if not (dataset_id, model):
-        return "dataset_id not pass required parameters", 400
+    if not (dataset_id, model, indep):
+        return "Not passed required parameters", 400
 
-    # 1) Access dataset
+    # 2) Access dataset
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    # 2) Run test based on test parameters and arguments
-    test_result = run_test(df, arguments, model=model, degree=degree, funcArray=funcArray, estimator=estimator, weights=weights)
+    # 3) Run test based on parameters and arguments
+    regression_result = run_regression(df, fields, indep, dep_name, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
     return {
-        'stats_data': test_result,
-        'params': spec
+        'data': regression_result
     }, 200
 
 
-############
-#Functions that run all tests
-############
-def run_test(df, arguments, model='lr', degree=1, funcArray=None, estimator='ols', weights=None):
-    #if no model, assumes comparison
-    if model == None:
-        return runValidTests_noregress(df, arguments)
-
-    #otherwise, runs a regression
+def run_regression(df, fields, indep, dep_field_name, model='lr', degree=1, functions=[], estimator='ols', weights=None):
+    indep_data = {}
+    if indep:
+        for indep_field_name in indep:
+            indep_data[indep_field_name] = df[indep_field_name]
     else:
-        indep_labels = arguments.get('indep')
-        xDict = {}
-        for label in indep_labels:
-            if label!='birthyear':
-                xDict[label]=df[label]
+        print "else"
+        for field in fields:
+            field_name = field['name']
+            if (field_name is not dep_field_name) and (field['general_type'] == 'q'):
+                indep_data[field_name] = df[field_name]
+    dep_data = df[dep_field_name]
 
-        dep_label = arguments.get('dep')
-        dep_vector = df[dep_label]
-
-        #lr=liner regression, pr=polynomial regression, gr=general regression
-        if model == 'lr':
-            return multiplePolyRegression(xDict, dep_vector, 1, estimator, weights)
-
-        elif model == 'pr':
-            return multiplePolyRegression(xDict, dep_vector, degree, estimator, weights)
-
-        elif model == 'gr':
-            return multipleRegression(funcArray, xDict, dep_vector, estimator, weights)
-
+    if model is 'lr':
+        return multiple_polynomial_regression(indep_data, dep_data, 1, estimator, weights)
+    elif model is 'pr':
+        return multiple_polynomial_regression(indep_data, dep_data, degree, estimator, weights)
+    elif model is 'gr':
+        return general_linear_regression(indep_data, dep_data, estimator, weights)
+    else:
         return
 
 
 ##########
 #Run regression tests
 ##Tests how well the regression line predicts the data
-
 def runValidTests_regress(residuals, yList):
     predictedY = np.array(residuals)+np.array(yList)
 
@@ -90,7 +79,7 @@ def runValidTests_regress(residuals, yList):
     if len(set(residuals))>1:
         validTests['wilcoxon'] = {'testStatistic':wilcoxon[0], 'pValue':wilcoxon[1]}
 
-    if setsNormal(0.2, residuals, yList):
+    if sets_normal(0.2, residuals, yList):
         validTests['ttest'] = {'testStatistic':ttest[0],'pValue':ttest[1]}
 
     return validTests
@@ -99,15 +88,17 @@ def runValidTests_regress(residuals, yList):
 ########################
 #Functions for running linear regression
 ########################
-def applyFunction(ele,func):
+def apply_function(ele, func):
     return func(ele)
 
-def sum2Array(array):
+
+def sum_of_array(array):
     sum=[]
     for arr in array:
         sum+=arr
 
     return sum
+
 
 def chooseN(array, number):
     theSolutions = []
@@ -121,10 +112,11 @@ def chooseN(array, number):
         x=map(list,chooseN(array[i+1:len(array)], number-1))
         return map(add,[[array[i]]]*(len(x)), x)
 
-    return map(tuple,sum2Array(map(mapper,range(len(array)-number+1))))
+    return map(tuple,sum_of_array(map(mapper,range(len(array)-number+1))))
+
 
 # Multivariate linear regression function
-def reg_m(y, x, estimator, weights=None):
+def multivariate_linear_regression(y, x, estimator, weights=None):
     ones = np.ones(len(x[0]))
     X = sm.add_constant(np.column_stack((x[0], ones)))
     for ele in x[1:]:
@@ -146,7 +138,7 @@ def reg_m(y, x, estimator, weights=None):
 ####func array contains the array of functions consdered in the regression
 ####params coefficients are reversed; the first param coefficient corresponds to the last function in func array
 ####notice the independent vectors are given in dictionary format, egs:{'bob':[1,2,3,4,5],'mary':[1,2,3,4,5]}
-def multipleRegression(funcArray,xDict,yList, estimator, weights=None):
+def general_linear_regression(funcArray,xDict,yList, estimator, weights=None):
     regressionDict = {}
     xKeys = xDict.keys()
     regressionDict['keys']=xKeys
@@ -161,7 +153,7 @@ def multipleRegression(funcArray,xDict,yList, estimator, weights=None):
                     consideredData.append(func(np.array(xDict[key])))
 
             consideredData = tuple(consideredData)
-            model = reg_m(yList,consideredData,estimator,weights)
+            model = multivariate_linear_regression(yList,consideredData,estimator,weights)
             consideredKeysString=str(consideredKeys)
             if len(consideredKeys)==1:
                 consideredKeysString=consideredKeysString[0:len(consideredKeysString)-2]+')'
@@ -179,9 +171,10 @@ def multipleRegression(funcArray,xDict,yList, estimator, weights=None):
     regressionDict['sizeList']=list(reversed(regressionDict['sizeList']))
     return regressionDict
 
+
 ###########################
 #Runs polynomial regression
-def multiplePolyRegression(xDict,yList,degree, estimator, weights=None):
+def multiple_polynomial_regression(xDict,yList,degree, estimator, weights=None):
     regressionDict = {}
     xKeys = xDict.keys()
     regressionDict['list']=[]
@@ -199,7 +192,7 @@ def multiplePolyRegression(xDict,yList,degree, estimator, weights=None):
                     for deg in range(1,degree+1):
                         consideredData.append(np.array(xDict[key].tolist())**deg)
 
-            model = reg_m(yList,consideredData, estimator, weights)
+            model = multivariate_linear_regression(yList,consideredData, estimator, weights)
             consideredKeysString=str(consideredKeys)
             if len(consideredKeys)==1:
                 consideredKeysString=consideredKeysString[0:len(consideredKeysString)-2]+')'

@@ -22,11 +22,11 @@ def runValidTests_noregress(df, arguments):
         args.append(df[argument].tolist())
 
     results={}
-    normal = setsNormal(.25,*args)
+    normal = sets_normal(.25,*args)
     numDataSets = len(args)
 
     if numDataSets>1:
-        equalVar = variationsEqual(.25,*args)
+        equalVar = variations_equal(.25,*args)
 
     else:
         equalVar = True

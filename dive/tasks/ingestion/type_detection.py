@@ -122,7 +122,7 @@ def detect_if_list(v):
 # Given a data frame, if a time series is detected then return the start and end indexes
 # Else, return False
 ##########
-def detect_time_series(df):
+def detect_time_series(df, field_types):
     # 1) Check if any headers are dates
     date_headers = []
     col_header_types = []
@@ -148,8 +148,7 @@ def detect_time_series(df):
         return False
 
     # 3) Ensure that the contiguous block are all of the same type and numeric
-    col_types = get_field_types(df)
-    col_types_of_dates = [col_types[i] for (i, is_date) in enumerate(col_header_types) if is_date]
+    col_types_of_dates = [field_types[i] for (i, is_date) in enumerate(col_header_types) if is_date]
     if not (len(set(col_types_of_dates)) == 1):
         logger.info("Not a time series: need contiguous fields to have the same type")
         return False

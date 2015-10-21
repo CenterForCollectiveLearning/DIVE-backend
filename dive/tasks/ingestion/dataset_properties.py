@@ -35,7 +35,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
         field_type, field_type_scores = calculate_field_type(field_name, field_values)
         field_types.append(field_type)
 
-    time_series = detect_time_series(df)
+    time_series = detect_time_series(df, field_types)
     structure = 'wide' if time_series else 'long'
 
     properties = {
