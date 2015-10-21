@@ -7,7 +7,7 @@ from flask import current_app
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, specific_to_general_type
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
@@ -18,27 +18,34 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-specific_to_general_type = {
-    'float': 'q',
-    'integer': 'q',
-    'string': 'c',
-    'continent': 'c',
-    'countryName': 'c',
-    'countryCode2': 'c',
-    'countryCode3': 'c',
-    'decimal': 'q',
-    'datetime': 'q',
-}
+def enumerate_viz_specs_no_args(field_properties):
+    ''' Return field-wise summary statistics if no arguments '''
+    specs = []
+    for field in field_properties:
+        # Skip unique fields
+        if field['is_id']: continue
+        if field['is_unique']: continue
+
+        general_type = field['general_type']
+        if general_type == 'c':
+            C_specs = C(field)
+            specs.extend(C_specs)
+        elif general_type == 'q':
+            A_specs = A(field)
+            specs.extend(A_specs)
+        else:
+            raise ValueError('Not valid general_type', general_type)
+    return specs
 
 
 @celery.task()
-def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
+def enumerate_viz_specs(project_id, dataset_id, selected_fields):
     '''
     TODO Move key filtering to the db query
     TODO Incorporate 0D and 1D data returns
     TODO Use IDs instead of names for fields
     '''
-    logger.info('%s %s %s', project_id, dataset_id, field_agg_pairs)
+    logger.info('%s %s %s', project_id, dataset_id, selected_fields)
     specs = []
 
     # Get field properties
@@ -51,42 +58,100 @@ def enumerate_viz_specs(project_id, dataset_id, field_agg_pairs):
             new_field_properties.append(new_field)
         field_properties = new_field_properties
 
-    if field_agg_pairs:
-        for field_agg_pair in field_agg_pairs:
-            (field_name, agg) = field_agg_pair
-            field = next((field for field in field_properties if field['name'] == field_name), None)
+    if selected_fields:
+        selected_field_docs = []
+        c_fields = []
+        c_fields_not_selected = []
+        q_fields = []
+        q_fields_not_selected = []
+
+        n_c = 0
+        n_q = 0
+        n_c_total = 0
+        n_q_total = 0
+
+        for field in field_properties:
+            is_selected_field = next((selected_field for selected_field in selected_fields if selected_field['id'] == field['id']), None)
+            if is_selected_field:
+                selected_field_docs.append(field)
+
             general_type = field['general_type']
-
-            # Single-column
             if general_type == 'c':
-                C_specs = C(field)
-                specs.extend(C_specs)
-            elif general_type == 'q':
-                A_specs = A(field)
-                specs.extend(A_specs)
+                if is_selected_field:
+                    n_c = n_c + 1
+                    c_fields.append(field)
+                else:
+                    c_fields_not_selected.append(field)
+                n_c_total = n_c_total + 1
 
-            # Two-column
-            # C = 1, Q = 1
-            c_field, q_field = c_fields[0], q_fields[0]
-            D_specs = D(c_field, q_field)
-            specs.extend(D_specs)
+            elif general_type == 'q':
+                if is_selected_field:
+                    n_q = n_q + 1
+                    q_fields.append(field)
+                else:
+                    q_fields_not_selected.append(field)
+                n_q_total = n_q_total + 1
+
+        logger.info('n_c = %s | n_q = %s', n_c, n_q)
+        logger.info('c_fields %s', [f['name'] for f in c_fields])
+        logger.info('q_fields %s', [f['name'] for f in q_fields])
+
+        # Single-field properties
+        no_args_specs = enumerate_viz_specs_no_args(selected_field_docs)
+        specs.extend(no_args_specs)
+
+        # Expanded visualization cases (e.g. including fields not provided in arguments)
+        for c_field_1 in c_fields:
+            # Pairs of C fields
+            for c_field_2 in c_fields_not_selected:
+                F_specs = F([c_field_1, c_field_2])
+                specs.extend(F_specs)
+            # C + Q field
+            for q_field in q_fields_not_selected:
+                D_specs = D(c_field_1, q_field)
+                specs.extend(D_specs)
+        for q_field_1 in q_fields:
+            # Pairs of Q fields
+            for q_field_2 in q_fields_not_selected:
+                B_specs = B([q_field_1, q_field_2])
+                specs.extend(B_specs)
+            for c_field in c_fields_not_selected:
+                D_specs = D(c_field, q_field_1)
+                specs.extend(D_specs)
+
+        # Marginal and cascading visualization cases (excluding single-field cases)
+        # Essentially treating selection like a mini dataset
+        if (n_c == 0):
+            if (n_q > 1):
+                B_specs = B(q_fields)
+                specs.extend(B_specs)
+        elif (n_c == 1):
+            if (n_q == 1):
+                D_specs = D(c_fields[0], q_fields[0])
+                specs.extend(D_specs)
+            elif (n_q > 1):
+                for q_field in q_fields:
+                    D_specs = D(c_fields[0], q_fields[0])
+                    specs.extend(D_specs)
+                E_specs = E(c_fields[0], q_fields)
+                specs.extend(E_specs)
+        elif (n_c > 1):
+            if (n_q == 0):
+                F_specs = F(c_fields)
+                specs.extend(F_specs)
+            elif (n_q == 1):
+                for c_field in c_fields:
+                    D_specs = D(c_fields, q_fields[0])
+                    specs.extend(D_specs)
+                G_specs = G(c_fields, q_fields[0])
+                specs.extend(G_specs)
+            elif (n_q > 1):
+                H_specs = H(c_fields, q_fields)
+                specs.extend(H_specs)
 
     else:
-        # Return field-wise summary statistics if no arguments
-        for field in field_properties:
-            # Skip unique fields
-            if field['is_id']: continue
-            if field['is_unique']: continue
-
-            general_type = field['general_type']
-            if general_type == 'c':
-                C_specs = C(field)
-                specs.extend(C_specs)
-            elif general_type == 'q':
-                A_specs = A(field)
-                specs.extend(A_specs)
-            else:
-                raise ValueError('Not valid general_type', general_type)
+        no_args_specs = enumerate_viz_specs_no_args(field_properties)
+        specs.extend(no_args_specs)
 
     # Assign viz_types and dataset_id
     for spec in specs:
@@ -118,12 +183,12 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
             logger.info('Scored %s out of %s specs', (i + 1), len(filtered_viz_specs))
         scored_spec = spec
 
-        # TODO Optimize data reads
+        # TODO Opt=imize data reads
         with task_app.app_context():
             try:
                 data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
             except Exception as e:
-                logger.error(e)
+                logger.error("Error getting viz data %s", e, exc_info=True)
                 continue
         if not data:
             continue

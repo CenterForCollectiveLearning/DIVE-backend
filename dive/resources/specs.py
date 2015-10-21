@@ -1,4 +1,4 @@
-from flask import make_response, jsonify, request
+from flask import make_response, jsonify, request, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
@@ -17,31 +17,39 @@ class GeneratingProcedures(Resource):
         result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
         return make_response(jsonify(format_json(result)))
 
+# Using reqparse, but not able to load the json object correctly
+# specsPostParser = reqparse.RequestParser()
+# specsPostParser.add_argument('project_id', type=str, required=True, location='json')
+# specsPostParser.add_argument('dataset_id', type=str, required=True, location='json')
+# specsPostParser.add_argument('field_agg_pairs', type=str, required=True, location='json')
+# class Specs(Resource):
+#     def post(self):
+#         args = specsPostParser.parse_args()
+#         project_id = args.get('project_id')
+#         dataset_id = args.get('dataset_id')
+#         logger.info(args.get('field_agg_pairs'))
+#         arguments = json.loads(args.get('field_agg_pairs'))
+#
+#         specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
+#         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
+#             return make_response(jsonify(format_json({'specs': specs})))
+#         else:
+#             specs_task = viz_spec_pipeline(dataset_id, project_id, arguments).apply_async()
+#             return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
-from dive.tasks.visualization.specs import enumerate_viz_specs
-
-specsGetParser = reqparse.RequestParser()
-
-specsGetParser.add_argument('project_id', type=str, required=True, location='json')
-specsGetParser.add_argument('dataset_id', type=str, required=True, location='json')
-specsGetParser.add_argument('field_agg_pairs', type=str, location='json')
 class Specs(Resource):
     def post(self):
         args = request.get_json()
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
-        field_agg_pairs = args.get('field_agg_pairs')
+        arguments = args.get('field_agg_pairs')
 
-        print "FIELD AGG PAIRS", field_agg_pairs
-
-        # TODO Put a param for field_agg_pairs in here
-        specs = db_access.get_specs(project_id, dataset_id)
-        # if specs:
-        #     specs = specs[:10]
-        #     return make_response(jsonify(format_json({'specs': specs})))
-        # else:
-        specs_task = viz_spec_pipeline(dataset_id, project_id, field_agg_pairs).apply_async()
-        return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
+        specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
+        if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
+            return make_response(jsonify(format_json({'specs': specs})))
+        else:
+            specs_task = viz_spec_pipeline(dataset_id, project_id, arguments).apply_async()
+            return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
 
 visualizationGetParser = reqparse.RequestParser()

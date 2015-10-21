@@ -23,9 +23,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
     if not path:
         with task_app.app_context():
             dataset = db_access.get_dataset(project_id, dataset_id)
-
             path = dataset['path']
-
             df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     n_rows, n_cols = df.shape
@@ -38,8 +36,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
         field_types.append(field_type)
 
     time_series = detect_time_series(df)
-    if time_series: structure = 'wide'
-    else: structure = 'long'
+    structure = 'wide' if time_series else 'long'
 
     properties = {
         'n_rows': n_rows,
@@ -55,7 +52,7 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
     return properties
 
 
-@celery.task(bind=True, ignore_result=True, name="save_dataset_properties")
+@celery.task(bind=True, track_started=True, ignore_result=True, name="save_dataset_properties")
 def save_dataset_properties(self, properties, dataset_id, project_id):
     self.update_state(state=states.PENDING)
     with task_app.app_context():

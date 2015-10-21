@@ -1,5 +1,5 @@
 from enum import Enum
-
+import numpy as np
 
 class GeneratingProcedure(Enum):
     AGG = 'agg'
@@ -65,3 +65,23 @@ class TermType(Enum):
     FIELD = 'field'
     TRANSFORMATION = 'transformation'
     OPERATION = 'operation'
+
+specific_to_general_type = {
+    'float': 'q',
+    'integer': 'q',
+    'string': 'c',
+    'continent': 'c',
+    'countryName': 'c',
+    'countryCode2': 'c',
+    'countryCode3': 'c',
+    'decimal': 'q',
+    'datetime': 'q',
+}
+
+aggregation_functions = {
+    'sum': np.sum,
+    'min': np.min,
+    'max': np.max,
+    'mean': np.mean,
+    'count': np.size
+}

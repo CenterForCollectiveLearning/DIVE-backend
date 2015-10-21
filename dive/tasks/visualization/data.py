@@ -15,19 +15,11 @@ from dive.data.access import get_data, get_conditioned_data
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion.type_detection import detect_time_series
 from dive.tasks.ingestion.binning import get_bin_edges
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, aggregation_functions
 
 import logging
 logger = logging.getLogger(__name__)
 
-
-group_fn_from_string = {
-    'sum': np.sum,
-    'min': np.min,
-    'max': np.max,
-    'mean': np.mean,
-    'count': np.size
-}
 
 def makeSafeString(s):
     invalid_chars = '-_.+^$ '
@@ -67,12 +59,23 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
 
     gp = spec['generating_procedure']
     args = spec['args']
-    meta = spec['meta']
     dataset_id = spec['dataset_id']
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
 
-    if gp == GeneratingProcedure.IND_VAL.value:
+    if gp == GeneratingProcedure.AGG.value:
+        agg_field_label = args['aggFieldA']['name']
+        agg_field_data = df[agg_field_label]
+        agg_fn_label = args['aggFn']
+
+        if agg_fn_label == 'mode':
+            result = agg_field_data.value_counts().idxmax()
+        else:
+            agg_fn = aggregation_functions[agg_fn_label]
+            result = agg_fn(agg_field_data)
+        final_data['visualize'] = result
+
+    elif gp == GeneratingProcedure.IND_VAL.value:
         field_a_label = args['fieldA']['name']
 
         # If direct field
@@ -106,17 +109,11 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
                 'data': df.values.tolist()
             }
 
-    elif gp == GeneratingProcedure.AGG.value:
-        agg_field_a = args['aggFieldA']['name']
-        agg_fn = group_fn_from_string[args['aggFn']]
-        if agg_fn == 'mode':
-            field_data['display'] = df[agg_field_a].value_counts().idxmax()
-
     elif gp == GeneratingProcedure.BIN_AGG.value:
         binning_field = args['binningField']['name']
         binning_procedure = args['binningProcedure']
         agg_field_a = args['aggFieldA']['name']
-        agg_fn = group_fn_from_string[args['aggFn']]
+        agg_fn = aggregation_functions[args['aggFn']]
 
         unbinned_field = df[binning_field]
         try:
@@ -179,7 +176,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
         agg_field_label = args['aggField']['name']
 
         grouped_df = df.groupby(grouped_field_label)
-        agg_df = grouped_df.aggregate(group_fn_from_string[args['aggFn']])
+        agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
         grouped_field_list = agg_df.index.tolist()
         agg_field_list = agg_df[agg_field_label].tolist()
 
@@ -251,7 +248,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
         grouped_df = df.groupby(args['groupedField']['name'])
-        agg_df = grouped_df.aggregate(group_fn_from_string[args['aggFn']])
+        agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
         agg_field_a_list = agg_df[args['aggFieldA']['name']].tolist()
         agg_field_b_list = agg_df[args['aggFieldB']['name']].tolist()
         final_viz_data = {
@@ -339,7 +336,7 @@ def get_viz_data_from_builder_spec(spec, conditional, project_id):
         if function == 'count':
             grouped_df = pd.DataFrame({'count': gb.size()})  # 1 col DF
         else:
-            group_operation = group_fn_from_string[function]
+            group_operation = aggregation_functions[function]
             grouped_df = gb.aggregate(group_operation)
             grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
             # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields

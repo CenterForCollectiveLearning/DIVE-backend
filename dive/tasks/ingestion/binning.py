@@ -16,7 +16,7 @@ from dive.data.access import get_data
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
 ###
-MAX_BINS = 20
+MAX_BINS = 10
 def get_bin_edges(v, procedure='freedman'):
     v = v.tolist()
     # if procedure == 'freedman':

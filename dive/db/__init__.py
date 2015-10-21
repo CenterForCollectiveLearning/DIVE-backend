@@ -7,5 +7,6 @@ class ModelName(Enum):
     FIELD_PROPERTIES = 'field_properties'
     SPEC = 'spec'
     EXPORTED_SPEC = 'exported_spec'
+    RELATIONSHIP = 'relationship'
     GROUP = 'group'
     USER = 'user'

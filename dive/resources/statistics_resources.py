@@ -2,9 +2,11 @@ import time
 from flask import make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
-import logging
 from dive.resources.utilities import format_json
-from dive.tasks.statistics.statistics import getStatisticsFromSpec, timeEstimator
+# from dive.tasks.statistics.statistics import getStatisticsFromSpec, timeEstimator
+
+import logging
+logger = logging.getLogger(__name__)
 
 #####################################################################
 # Endpoint returning estimated time for regression
@@ -52,3 +54,31 @@ class StatisticsFromSpec(Resource):
         # print format_json(result)
         print time.clock()
         return make_response(jsonify(format_json(result)), status)
+
+
+regressionPostParser = reqparse.RequestParser()
+regressionPostParser.add_argument('project_id', type=str, location='json')
+regressionPostParser.add_argument('spec', type=str, location='json')
+class RegressionFromSpec(Resource):
+    def post(self):
+        args = regressionPostParser.parse_args()
+        project_id = args.get('project_id')
+        spec = args.get('spec')
+        print project_id, spec
+        return
+
+
+class ComparisonFromSpec(Resource):
+    def post(self):
+        args = request.get_json()
+        project_id = args.get('project_id')
+        spec = args.get('spec')
+        return
+
+
+class SegmentationFromSpec(Resource):
+    def post(self):
+        args = request.get_json()
+        project_id = args.get('project_id')
+        spec = args.get('spec')
+        return

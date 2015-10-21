@@ -10,90 +10,92 @@ from math import log10, floor
 
 from dive.data.access import get_data
 
-############
-#Note: spec is dictionary with at most keys dataset_id, model, arguments, estimator, weights, degree, funcArray
-#Note: arguments is in this format {'ind':[list of vectors], 'dep':[vector], 'compare':{'indepedent': bool, 'dataLabels':[list of vectors]}}
-######argument has a 'compare' field only when a statistical comparison between vectors are performed.
-######argument has an 'ind' and 'dep' field only when a regression is performed
-def getStatisticsFromSpec(spec, project_id):
-    # 1) Parse and validate arguments
-    dataset_id = spec.get('dataset_id')
-    #either a regression or comparison
-    model = spec.get('model')
-    #arguments is dict, includes compare and dep and datalabals, dep, indep
-    arguments = spec.get('arguments')
-    estimator = arguments.get('estimator')
-    weights = spec.get('weights')
-    degree = spec.get('degree')
-    funcArray = spec.get('functions')
+#######################
+##Extra Functions that could curve fit given a set of data
+#######################
 
-    if not (dataset_id, model):
-        return "dataset_id not pass required parameters", 400
+def powerGenerator(degree):
+    def pow(x):
+        return np.power(x,degree)
 
-    # 1) Access dataset
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()  # Remove unclean
+    return pow
 
-    # 2) Run test based on test parameters and arguments
-    test_result = run_test(df, arguments, model=model, degree=degree, funcArray=funcArray, estimator=estimator, weights=weights)
-    return {
-        'stats_data': test_result,
-        'params': spec
-    }, 200
-
+def tupAppend(x,y):
+    return tuple(list(x)+list(y))
 
 ############
-#Functions that run all tests
-############
-def run_test(df, arguments, model='lr', degree=1, funcArray=None, estimator='ols', weights=None):
-    #if no model, assumes comparison
-    if model == None:
-        return runValidTests_noregress(df, arguments)
+##Returns a function that fits the data given a certain threshold
+##The function can only be  simplistic ( a sum of some functions in funcList)
+def automaticFit(xListList,yList,threshold,weights=None):
+    funcList=[(powerGenerator(1),'x'),(powerGenerator(2),'x2'),(powerGenerator(3),'x3'),(powerGenerator(4),'x4'),(powerGenerator(5),'x5'),(powerGenerator(6),'x6'),(powerGenerator(7),'x7'),(powerGenerator(8),'x8')]
+    for i in range(1,len(funcList)):
+        funcs=chooseN(funcList,i)
+        for funcTup in funcs:
+            consideredLists=[]
+            for func in funcTup:
+                for list in xListList:
+                    consideredLists.append(func[0](list))
 
-    #otherwise, runs a regression
-    else:
-        indep_labels = arguments.get('indep')
-        xDict = {}
-        for label in indep_labels:
-            if label!='birthyear':
-                xDict[label]=df[label]
+            if weights==None:
+                model=reg_m(yList,consideredLists,'ols')
 
-        dep_label = arguments.get('dep')
-        dep_vector = df[dep_label]
+            else:
+                model=reg_m(yList,consideredLists,'wls',weights)
 
-        #lr=liner regression, pr=polynomial regression, gr=general regression
-        if model == 'lr':
-            return multiplePolyRegression(xDict, dep_vector, 1, estimator, weights)
+            if model.rsquared>threshold:
+                return [funcTup,model.params]
 
-        elif model == 'pr':
-            return multiplePolyRegression(xDict, dep_vector, degree, estimator, weights)
+    return 'none'
+####Same as automatic fit, but returns an array of all functions that satisfies threshold
+def automaticFitAll(xListList,yList,threshold):
+    arrayPossFuncs=[]
+    funcList=[(np.sin,'sin'),(np.cos,'cos'),(np.tan,'tan'),(powerGenerator(1),'x'),(powerGenerator(2),'x2'),(powerGenerator(3),'x3'),(powerGenerator(4),'x4'),(powerGenerator(5),'x5'),(powerGenerator(6),'x6'),(powerGenerator(7),'x7'),(powerGenerator(8),'x8')]
+    for i in range(1,len(funcList)):
+        funcs=chooseN(funcList,i)
+        for funcTup in funcs:
+            consideredLists=[]
+            for func in funcTup:
+                for list in xListList:
+                    consideredLists.append(func[0](list))
 
-        elif model == 'gr':
-            return multipleRegression(funcArray, xDict, dep_vector, estimator, weights)
+            model=reg_m(yList,consideredLists,'ols')
+            if model.rsquared>threshold:
+                arrayPossFuncs.append([funcTup,model.params])
 
-        return
+    return arrayPossFuncs
 
+####Same as automatic fit, but forces a function to be in the equation
+def forceIncludeFit(xListList, yList, threshold, funcArrayTuples):
+    funcList=[(np.sin,'sin'),(np.cos,'cos'),(np.tan,'tan'),(powerGenerator(1),'x'),(powerGenerator(2),'x2'),(powerGenerator(3),'x3'),(powerGenerator(4),'x4'),(powerGenerator(5),'x5'),(powerGenerator(6),'x6'),(powerGenerator(7),'x7'),(powerGenerator(8),'x8')]
+    names=map(lambda x:x[1],funcList)
+    if funcArrayTuples[-1][-1] in names:
+        funcList=funcList[0:names.index(funcArrayTuples[-1][-1])]
 
-##########
-#Run regression tests
-##Tests how well the regression line predicts the data
+    for i in range(1,len(funcList)):
+        funcs=chooseN(funcList,i)
+        for funcTup in funcs:
+            funcTup=tupAppend(funcTup,funcArrayTuples)
+            consideredLists=[]
+            for func in funcTup:
+                for list in xListList:
+                    consideredLists.append(func[0](list))
 
-def runValidTests_regress(residuals, yList):
-    predictedY = np.array(residuals)+np.array(yList)
+            model=reg_m(yList,consideredLists,'ols')
+            if model.rsquared>threshold:
+                return [funcTup,model.params]
 
-    chisquare = stats.chisquare(predictedY,yList)
-    kstest = stats.ks_2samp(predictedY, yList)
-    wilcoxon = stats.wilcoxon(residuals)
-    ttest = stats.ttest_1samp(residuals,0)
+####Takes the output of automatic fit and turns it into an actual equation
+def formatToEquation(funcTup,params):
+    funcs=[]
+    funcNames=[]
+    for func in funcTup:
+        funcs.append(func[0])
+        funcNames.append(func[1])
 
-    validTests={'chisquare': {'testStatistic':chisquare[0], 'pValue':chisquare[1]}, 'kstest':{'testStatistic':kstest[0], 'pValue':kstest[1]}}
-    if len(set(residuals))>1:
-        validTests['wilcoxon'] = {'testStatistic':wilcoxon[0], 'pValue':wilcoxon[1]}
+    def equation(x):
+        return sum(map(mul, reversed(params[0:-1]), map(applyFunction, [x]*len(funcs), funcs)))+params[-1]
 
-    if setsNormal(0.2, residuals, yList):
-        validTests['ttest'] = {'testStatistic':ttest[0],'pValue':ttest[1]}
-
-    return validTests
+    return equation
 
 
 ########################

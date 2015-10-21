@@ -1,16 +1,10 @@
 import numpy as np
 from itertools import combinations
 
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, aggregation_functions
 
 # TODO How to document defaults?
-aggregation_functions = {
-    'sum': np.sum,
-    'min': np.min,
-    'max': np.max,
-    'mean': np.mean,
-    'count': np.size
-}
+
 
 elementwise_functions = {
     'add': '+',
@@ -36,22 +30,25 @@ def A(q_field):
 
     q_label = q_field['name']
 
-    # { Index: value }
-    # index_spec = {
-    #     'generating_procedure': GeneratingProcedure.IND_VAL.value,
-    #     'type_structure': TypeStructure.Q_Q.value,
-    #     'args': {
-    #         'fieldA': q_field
-    #     },
-    #     'meta': {
-    #         'desc': '%s by index' % (q_label),
-    #         'construction': [
-    #             { 'string': q_label, 'type': TermType.FIELD.value },
-    #             { 'string': 'by index', 'type': TermType.PLAIN.value },
-    #         ]
+    # 0-D Aggregations
+    # for agg_fn_label, agg_fn in aggregation_functions.items():
+    #     agg_spec = {
+    #         'generating_procedure': GeneratingProcedure.AGG.value,
+    #         'type_structure': TypeStructure.Q.value,
+    #         'args': {
+    #             'aggFn': agg_fn_label,
+    #             'aggFieldA': q_field
+    #         },
+    #         'meta': {
+    #             'desc': '%s of %s' % (agg_fn_label, q_label),
+    #             'construction': [
+    #                 { 'string': agg_fn_label, 'type': TermType.OPERATION.value },
+    #                 { 'string': 'of', 'type': TermType.PLAIN.value },
+    #                 { 'string': q_label, 'type': TermType.FIELD.value },
+    #             ]
+    #         }
     #     }
-    # }
-    # specs.append(index_spec)
+    #     specs.append(agg_spec)
 
     if not q_field['is_unique']:
         # { Value: count }
@@ -74,30 +71,28 @@ def A(q_field):
 
     # TODO Implement binning algorithm
     # { Bins: Aggregate(binned values) }
-    for agg_fn in aggregation_functions.keys():
-        for binning_procedure, implemented in binning_procedures.iteritems():
-            if implemented:
-                bin_spec = {
-                    'generating_procedure': GeneratingProcedure.BIN_AGG.value,
-                    'type_structure': TypeStructure.B_Q.value,
-                    'args': {
-                        'aggFn': agg_fn,
-                        'aggFieldA': q_field,
-                        'binningProcedure': binning_procedure,
-                        'binningField': q_field
-                    },
-                    'meta': {
-                        'description': 'Aggregate binned %s by %s' % (q_label, agg_fn),
-                        'construction': [
-                            { 'string': 'aggregate', 'type': TermType.OPERATION.value },
-                            { 'string': 'binned', 'type': TermType.TRANSFORMATION.value },
-                            { 'string': q_label, 'type': TermType.FIELD.value },
-                            { 'string': 'by', 'type': TermType.PLAIN.value},
-                            { 'string': agg_fn, 'type': TermType.OPERATION.value }
-                        ]
-                    }
+    for binning_procedure, implemented in binning_procedures.iteritems():
+        if implemented:
+            bin_spec = {
+                'generating_procedure': GeneratingProcedure.BIN_AGG.value,
+                'type_structure': TypeStructure.B_Q.value,
+                'args': {
+                    'aggFn': 'count',
+                    'aggFieldA': q_field,
+                    'binningProcedure': binning_procedure,
+                    'binningField': q_field
+                },
+                'meta': {
+                    'description': '%s of %s by bin' % ('count', q_label),
+                    'construction': [
+                        { 'string': 'count', 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+                    ]
                 }
-                specs.append(bin_spec)
+            }
+            specs.append(bin_spec)
     return specs
 
 def B(q_fields):
@@ -116,21 +111,31 @@ def B(q_fields):
     #         }
     #         A_specs = A(derived_column_field)
     #         specs.extend(A_specs)
-    return specs
 
 def C(c_field):
+    '''
+    Single categorical field
+    '''
     specs = []
     c_label = c_field['name']
 
-    # 0D
-    most_frequent_spec = {
-        'generating_procedure': GeneratingProcedure.AGG.value,
-        'type_structure': TypeStructure.C.value,
-        'args': {
-            'aggFn': 'mode',
-            'aggFieldA': c_field
-        }
-    }
+    # # 0D
+    # most_frequent_spec = {
+    #     'generating_procedure': GeneratingProcedure.AGG.value,
+    #     'type_structure': TypeStructure.C.value,
+    #     'args': {
+    #         'aggFn': 'mode',
+    #         'aggFieldA': c_field
+    #     },
+    #     'meta': {
+    #         'desc': 'Most frequent value of %s' % (c_field),
+    #         'construction': [
+    #             { 'string': 'Most frequent', 'type': TermType.OPERATION.value },
+    #             { 'string': 'value of', 'type': TermType.PLAIN.value },
+    #             { 'string': c_label, 'type': TermType.FIELD.value },
+    #         ]
+    #     }
+    # }
 
     # 2D
     val_count_spec = {
@@ -149,7 +154,7 @@ def C(c_field):
         }
     }
 
-    specs.append(most_frequent_spec)
+    # specs.append(most_frequent_spec)
     specs.append(val_count_spec)
     return specs
 
@@ -167,13 +172,11 @@ def D(c_field, q_field):
                 'fieldB': q_field,
             },
             'meta': {
-                'desc': '%s values vs. %s values' % (c_label, q_label),
+                'desc': '%s vs. %s ' % (c_label, q_label),
                 'construction': [
                     { 'string': c_label, 'type': TermType.FIELD.value },
-                    { 'string': 'values', 'type': TermType.PLAIN.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
-                    { 'string': 'values', 'type': TermType.PLAIN.value },
                 ]
             }
         }
@@ -189,15 +192,13 @@ def D(c_field, q_field):
                     'aggField': q_field,
                 },
                 'meta': {
-                    'desc': 'Group %s and aggregate %s by %s' % (c_label, q_label, agg_fn),
+                    'desc': '%s of %s grouped by %s' % (agg_fn, q_label, c_label),
                     'construction': [
-                        { 'string': 'group', 'type': TermType.OPERATION.value },
-                        { 'string': c_label, 'type': TermType.FIELD.value },
-                        { 'string': 'and', 'type': TermType.PLAIN.value },
-                        { 'string': 'aggregate', 'type': TermType.OPERATION.value },
-                        { 'string': q_label, 'type': TermType.FIELD.value },
-                        { 'string': 'by', 'type': TermType.PLAIN.value },
                         { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'grouped by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label, 'type': TermType.FIELD.value },
                     ]
                 }
             }
@@ -243,27 +244,26 @@ def F(c_fields):
     specs = []
 
     # Two-field val:val
-    for (c_field_a, c_field_b) in combinations(c_fields, 2):
-        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
-        spec = {
-            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
-            'type_structure': TypeStructure.C_C.value,
-            'args': {
-                'fieldA': c_field_a,
-                'fieldB': c_field_b
-            },
-            'meta': {
-                'desc': '%s values vs. %s values' % (c_label_a, c_label_b),
-                'construction': [
-                    { 'string': c_label_a, 'type': TermType.FIELD.value },
-                    { 'string': 'value', 'type': TermType.PLAIN.value },
-                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
-                    { 'string': c_label_b, 'type': TermType.FIELD.value },
-                    { 'string': 'value', 'type': TermType.PLAIN.value },
-                ]
-            }
-        }
-        specs.append(spec)
+    # Not useful...
+    # for (c_field_a, c_field_b) in combinations(c_fields, 2):
+    #     c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+    #     spec = {
+    #         'generating_procedure': GeneratingProcedure.VAL_VAL.value,
+    #         'type_structure': TypeStructure.C_C.value,
+    #         'args': {
+    #             'fieldA': c_field_a,
+    #             'fieldB': c_field_b
+    #         },
+    #         'meta': {
+    #             'desc': '%s vs. %s' % (c_label_a, c_label_b),
+    #             'construction': [
+    #                 { 'string': c_label_a, 'type': TermType.FIELD.value },
+    #                 { 'string': 'vs.', 'type': TermType.PLAIN.value },
+    #                 { 'string': c_label_b, 'type': TermType.FIELD.value },
+    #             ]
+    #         }
+    #     }
+    #     specs.append(spec)
     return specs
 
 def G(c_fields, q_field):
