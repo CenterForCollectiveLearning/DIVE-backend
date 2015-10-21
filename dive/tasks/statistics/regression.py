@@ -8,38 +8,7 @@ from operator import add, mul
 import time
 from math import log10, floor
 
-
 from dive.data.access import get_data
-############
-#Functions that run all tests
-############
-def run_test(df, arguments, model='lr', degree=1, funcArray=None, estimator='ols', weights=None):
-    #if no model, assumes comparison
-    if model == None:
-        return runValidTests_noregress(df, arguments)
-
-    #otherwise, runs a regression
-    else:
-        indep_labels = arguments.get('indep')
-        xDict = {}
-        for label in indep_labels:
-            if label!='birthyear':
-                xDict[label]=df[label]
-
-        dep_label = arguments.get('dep')
-        dep_vector = df[dep_label]
-
-        #lr=liner regression, pr=polynomial regression, gr=general regression
-        if model == 'lr':
-            return multiplePolyRegression(xDict, dep_vector,1, estimator, weights)
-
-        elif model == 'pr':
-            return multiplePolyRegression(xDict, dep_vector,degree, estimator, weights)
-
-        elif model == 'gr':
-            return multipleRegression(funcArray, xDict, dep_vector, estimator, weights)
-
-        return
 
 ############
 #Note: spec is dictionary with at most keys dataset_id, model, arguments, estimator, weights, degree, funcArray
@@ -71,6 +40,38 @@ def getStatisticsFromSpec(spec, project_id):
         'stats_data': test_result,
         'params': spec
     }, 200
+
+
+############
+#Functions that run all tests
+############
+def run_test(df, arguments, model='lr', degree=1, funcArray=None, estimator='ols', weights=None):
+    #if no model, assumes comparison
+    if model == None:
+        return runValidTests_noregress(df, arguments)
+
+    #otherwise, runs a regression
+    else:
+        indep_labels = arguments.get('indep')
+        xDict = {}
+        for label in indep_labels:
+            if label!='birthyear':
+                xDict[label]=df[label]
+
+        dep_label = arguments.get('dep')
+        dep_vector = df[dep_label]
+
+        #lr=liner regression, pr=polynomial regression, gr=general regression
+        if model == 'lr':
+            return multiplePolyRegression(xDict, dep_vector, 1, estimator, weights)
+
+        elif model == 'pr':
+            return multiplePolyRegression(xDict, dep_vector, degree, estimator, weights)
+
+        elif model == 'gr':
+            return multipleRegression(funcArray, xDict, dep_vector, estimator, weights)
+
+        return
 
 
 ##########
