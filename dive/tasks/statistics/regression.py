@@ -27,7 +27,7 @@ def run_regression_from_spec(spec, project_id):
     dataset_id = spec.get('dataset_id')
     fields = db_access.get_field_properties(project_id, dataset_id)
 
-    if not (dataset_id, model, indep):
+    if not (dataset_id and dep_name):
         return "Not passed required parameters", 400
 
     # 2) Access dataset
@@ -64,25 +64,42 @@ def run_regression(df, fields, indep, dep_field_name, model='lr', degree=1, func
         return
 
 
-##########
-#Run regression tests
-##Tests how well the regression line predicts the data
-def runValidTests_regress(residuals, yList):
-    predictedY = np.array(residuals)+np.array(yList)
+def test_regression_fit(residuals, actual_y):
+    '''
+    Run regression tests
+    Tests how well the regression line predicts the data
+    '''
+    predicted_y = np.array(residuals) + np.array(actual_y)
 
-    chisquare = stats.chisquare(predictedY,yList)
-    kstest = stats.ks_2samp(predictedY, yList)
-    wilcoxon = stats.wilcoxon(residuals)
-    ttest = stats.ttest_1samp(residuals,0)
+    # Non-parametric tests (chi-square and KS)
+    chisquare = stats.chisquare(predicted_y, actual_y)
+    kstest = stats.ks_2samp(predicted_y, actual_y)
+    results = {
+        'chi_square': {
+            'test_statistic': chisquare[0],
+            'p_value': chisquare[1]
+        },
+        'ks_test': {
+            'test_statistic': kstest[0],
+            'p_value': kstest[1]
+        }
+    }
 
-    validTests={'chisquare': {'testStatistic':chisquare[0], 'pValue':chisquare[1]}, 'kstest':{'testStatistic':kstest[0], 'pValue':kstest[1]}}
-    if len(set(residuals))>1:
-        validTests['wilcoxon'] = {'testStatistic':wilcoxon[0], 'pValue':wilcoxon[1]}
+    if len(set(residuals)) > 1:
+        wilcoxon = stats.wilcoxon(residuals)
+        results['wilcoxon'] = {
+            'testStatistic': wilcoxon[0],
+            'pValue': wilcoxon[1]
+        }
 
-    if sets_normal(0.2, residuals, yList):
-        validTests['ttest'] = {'testStatistic':ttest[0],'pValue':ttest[1]}
+    if sets_normal(0.2, residuals, actual_y):
+        t_test_result = stats.ttest_1samp(residuals, 0)
+        results['t_test'] = {
+            'test_statistic':t_test_result[0],
+            'p_value':t_test_result[1]
+        }
 
-    return validTests
+    return results
 
 
 ########################
@@ -133,6 +150,7 @@ def multivariate_linear_regression(y, x, estimator, weights=None):
 
     return None
 
+
 ############################
 #Run general linear regression
 ####func array contains the array of functions consdered in the regression
@@ -141,10 +159,12 @@ def multivariate_linear_regression(y, x, estimator, weights=None):
 def general_linear_regression(funcArray,xDict,yList, estimator, weights=None):
     regressionDict = {}
     xKeys = xDict.keys()
-    regressionDict['keys']=xKeys
-    regressionDict['list']=[]
+
+    regressionDict['keys'] = xKeys
+    regressionDict['list'] = []
     regressionDict['sizeList'] = []
-    for chooseX in range(1,len(xKeys)+1):
+
+    for chooseX in range(1, len(xKeys)+1):
         chooseXKeys = chooseN(xKeys,chooseX)
         for consideredKeys in chooseXKeys:
             consideredData = []
@@ -154,18 +174,20 @@ def general_linear_regression(funcArray,xDict,yList, estimator, weights=None):
 
             consideredData = tuple(consideredData)
             model = multivariate_linear_regression(yList,consideredData,estimator,weights)
-            consideredKeysString=str(consideredKeys)
-            if len(consideredKeys)==1:
-                consideredKeysString=consideredKeysString[0:len(consideredKeysString)-2]+')'
 
-            regressionDict['list'].append(consideredKeysString)
+            consideredKeysString = list(consideredKeys)
+            if len(consideredKeys) == 1:
+                consideredKeysString = consideredKeysString[0]
+
+            regressionDict['list'].append(str(consideredKeysString))
             regressionDict['sizeList'].append(chooseX)
-            regressionDict[consideredKeysString]={}
-            regressionDict[consideredKeysString]['params']= model.params
-            regressionDict[consideredKeysString]['rsquared']= model.rsquared
-            regressionDict[consideredKeysString]['f_test']= model.fvalue
-            regressionDict[consideredKeysString]['std']= model.bse
-            regressionDict[consideredKeysString]['stats']= runValidTests_regress(model.resid, yList)
+            regressionDict[consideredKeysString]= {
+                'params': model.params,
+                'rsquared': model.rsquared,
+                'f_test': model.fvalue,
+                'std': model.bse,
+                'stats': test_regression_fit(model.resid, yList)
+            }
 
     regressionDict['list']=list(reversed(regressionDict['list']))
     regressionDict['sizeList']=list(reversed(regressionDict['sizeList']))
@@ -177,10 +199,10 @@ def general_linear_regression(funcArray,xDict,yList, estimator, weights=None):
 def multiple_polynomial_regression(xDict,yList,degree, estimator, weights=None):
     regressionDict = {}
     xKeys = xDict.keys()
-    regressionDict['list']=[]
-    regressionDict['keys']=xKeys
+    regressionDict['list'] = []
+    regressionDict['keys'] = xKeys
     regressionDict['sizeList'] = []
-    for chooseX in range(1,len(xKeys)+1):
+    for chooseX in range(1, len(xKeys)+1):
         chooseXKeys = chooseN(xKeys,chooseX)
         for consideredKeys in chooseXKeys:
             consideredData = []
@@ -193,18 +215,21 @@ def multiple_polynomial_regression(xDict,yList,degree, estimator, weights=None):
                         consideredData.append(np.array(xDict[key].tolist())**deg)
 
             model = multivariate_linear_regression(yList,consideredData, estimator, weights)
-            consideredKeysString=str(consideredKeys)
-            if len(consideredKeys)==1:
-                consideredKeysString=consideredKeysString[0:len(consideredKeysString)-2]+')'
 
-            regressionDict['list'].append(consideredKeysString)
+            consideredKeysString = list(consideredKeys)
+            if len(consideredKeys) == 1:
+                consideredKeys = list(consideredKeys[0])
+            consideredKeysString = str(consideredKeys)
+
+            regressionDict['list'].append(str(consideredKeysString))
             regressionDict['sizeList'].append(chooseX)
-            regressionDict[consideredKeysString]={}
-            regressionDict[consideredKeysString]['params']= model.params
-            regressionDict[consideredKeysString]['rsquared']= model.rsquared
-            regressionDict[consideredKeysString]['f_test']= model.fvalue
-            regressionDict[consideredKeysString]['std']= model.bse
-            regressionDict[consideredKeysString]['stats']= runValidTests_regress(model.resid, yList)
+            regressionDict[consideredKeysString]= {
+                'params': model.params,
+                'rsquared': model.rsquared,
+                'f_test': model.fvalue,
+                'std': model.bse,
+                'stats': test_regression_fit(model.resid, yList)
+            }
 
     regressionDict['list']=list(reversed(regressionDict['list']))
     regressionDict['sizeList']=list(reversed(regressionDict['sizeList']))

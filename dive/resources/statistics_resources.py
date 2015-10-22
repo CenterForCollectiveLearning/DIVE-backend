@@ -4,6 +4,7 @@ from flask.ext.restful import Resource, reqparse
 
 from dive.resources.utilities import format_json
 from dive.tasks.statistics.regression import run_regression_from_spec
+from dive.tasks.statistics.comparison import run_comparison_from_spec
 
 import logging
 logger = logging.getLogger(__name__)
@@ -57,14 +58,16 @@ class RegressionFromSpec(Resource):
         project_id = args.get('project_id')
         spec = args.get('spec')
         result, status = run_regression_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+        return make_response(jsonify(format_json({"result": result})), status)
+
 
 class ComparisonFromSpec(Resource):
     def post(self):
         args = request.get_json()
         project_id = args.get('project_id')
         spec = args.get('spec')
-        return
+        result, status = run_comparison_from_spec(spec, project_id)
+        return make_response(jsonify(format_json({"result": result})), status)
 
 
 class SegmentationFromSpec(Resource):
