@@ -76,10 +76,10 @@ def preload_from_directory_tree(app):
 
             # If dataset-level config for project
             with app.app_context():
-                dataset_ids = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
+                datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
-                for dataset_id in dataset_ids:
-                    ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
+                for dataset in datasets:
+                    ingestion_result = ingestion_pipeline(dataset['id'], project_id).apply_async()
                     ingestion_result.get()
         relationship_result = relationship_pipeline(project_id).apply_async()
         relationship_result.get()
