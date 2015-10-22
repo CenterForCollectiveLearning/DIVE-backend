@@ -52,8 +52,8 @@ def upload_file(project_id, file):
         except IOError:
             logger.error('Error saving file with path %s', path, exc_info=True)
 
-    dataset_ids = save_dataset(project_id, file_title, file_name, file_type, path)
-    return dataset_ids
+    datasets = save_dataset(project_id, file_title, file_name, file_type, path)
+    return datasets
 
 
 def get_offset_and_headers(f):
@@ -105,7 +105,7 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
         file_doc = save_json_to_csv(project_id, file_title, file_name, path)
         file_docs.append(file_doc)
 
-    dataset_ids = []
+    datasets = []
     for file_doc in file_docs:
         path = file_doc['path']
 
@@ -128,10 +128,9 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
             file_name = file_doc['file_name'],
             type = file_doc['type']
         )
-        dataset_id = dataset['id']
-        dataset_ids.append(dataset_id)
+        datasets.append(dataset)
 
-    return dataset_ids
+    return datasets
 
 
 def save_excel_to_csv(project_id, file_title, file_name, path):
