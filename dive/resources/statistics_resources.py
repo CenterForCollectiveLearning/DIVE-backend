@@ -58,7 +58,7 @@ class RegressionFromSpec(Resource):
         project_id = args.get('project_id')
         spec = args.get('spec')
         result, status = run_regression_from_spec(spec, project_id)
-        return make_response(jsonify(format_json({"result": result})), status)
+        return make_response(jsonify(format_json(result)), status)
 
 
 class ComparisonFromSpec(Resource):
