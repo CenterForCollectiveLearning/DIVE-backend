@@ -94,12 +94,13 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
             try:
                 d = field_values.astype(np.float)
                 normality_test_result = sc_stats.normaltest(d)
-                statistic = normality_test_result.statistic
-                pvalue = normality_test_result.pvalue
-                if pvalue < 0.05:
-                    normality = True
-                else:
-                    normality = False
+                if normality_test_result:
+                    statistic = normality_test_result.statistic
+                    pvalue = normality_test_result.pvalue
+                    if pvalue < 0.05:
+                        normality = True
+                    else:
+                        normality = False
             except ValueError:
                 normality = None
 
