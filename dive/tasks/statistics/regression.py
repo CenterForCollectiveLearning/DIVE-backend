@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -51,7 +52,7 @@ def run_regression_from_spec(spec, project_id):
     regression_data = get_regression_data(df, fields, all_indep_data, dep_data, dep_field_name, regression_result)
     return {
         'result': regression_result,
-        'data': regression_data
+        # 'data': regression_data
     }, 200
 
 
@@ -123,12 +124,21 @@ def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_nam
             regression_results['list'].append(considered_indep_fields_list)
             regression_results['size_list'].append(num_indep)
 
-            print model_result.params
+            conf_int = model_result.conf_int().transpose().to_dict()
+            parsed_conf_int = {}
+            for field, d in conf_int.iteritems():
+                parsed_conf_int[field] = [d[0], d[1]]
+
             regression_result = {
                 'fields': considered_indep_fields_list,
+                'conf_int': parsed_conf_int,
                 'params': model_result.params,
+                't_values': model_result.tvalues,
                 'p_values': model_result.pvalues,
                 'r_squared': model_result.rsquared,
+                'r_squared_adj': model_result.rsquared_adj,
+                'aic': model_result.aic,
+                'bic': model_result.bic,
                 'f_test': model_result.fvalue,
                 'std': model_result.bse,
                 'stats': test_regression_fit(model_result.resid, dep_data)
