@@ -99,24 +99,21 @@ def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_nam
             if len(considered_indep_tuple) == 0:
                 continue
 
-            # TODO Distinguish between regression types in here
+            indep_data_matrix = []
             for considered_indep in considered_indep_tuple:
                 indep_data_vector = np.array(all_indep_data[considered_indep])
 
-            indep_data_matrix = []
-
-            # Field transformation if polynomial regression
-            if model == 'lr':
-                indep_data_matrix.append(indep_data_vector)
-            elif model == 'pr':
-                if degree == 1:
+                if model == 'lr':
                     indep_data_matrix.append(indep_data_vector)
-                else:
-                    for deg in range(1, degree + 1):
-                        indep_data_matrix.append(indep_data_vector**deg)
-            elif model == 'gr':
-                for func in funcArray:
-                    indep_data_matrix.append(func(indep_data_vector))
+                elif model == 'pr':
+                    if degree == 1:
+                        indep_data_matrix.append(indep_data_vector)
+                    else:
+                        for deg in range(1, degree + 1):
+                            indep_data_matrix.append(indep_data_vector**deg)
+                elif model == 'gr':
+                    for func in funcArray:
+                        indep_data_matrix.append(func(indep_data_vector))
 
             # Run regression
             model_result = multivariate_linear_regression(dep_data, indep_data_matrix, estimator, weights)
@@ -126,6 +123,7 @@ def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_nam
             regression_results['list'].append(considered_indep_fields_list)
             regression_results['size_list'].append(num_indep)
 
+            print model_result.params
             regression_result = {
                 'fields': considered_indep_fields_list,
                 'params': model_result.params,
