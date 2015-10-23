@@ -15,40 +15,47 @@ from dive.data.access import get_data
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+def get_full_field_documents_from_names(names):
+    fields = []
+    for name in names:
+        matched_field = next((f for f in all_fields if f['name'] == name), None)
+        if matched_field:
+            fields.append(matched_field)
+    return fields
 
 def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
-    independent_variables = spec.get('independentVariables', [])
-    dependent_variable = spec.get('dependentVariable')
+    independent_variables_names = spec.get('independentVariables', [])
+    dependent_variable_name = spec.get('dependentVariable')
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
+
     all_fields = db_access.get_field_properties(project_id, dataset_id)
+
+    # Map variables to field documents
+    dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
+
+    independent_variables = []
+    if independent_variables_names:
+        independent_variables = get_full_field_documents_from_names(independent_variables_names)
+    else:
+        for field in all_fields:
+            if (field['name'] != dependent_variable_name) and (not field['is_unique']):
+                independent_variables.append(field)
 
     if not (dataset_id and dependent_variable):
         return "Not passed required parameters", 400
 
     # 2) Access dataset
     df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()  # Remove unclean
-
-    all_independent_variable_data = {}
-    if independent_variables:
-        for independent_variable_name in independent_variables:
-            all_independent_variable_data[independent_variable_name] = df[independent_variable_name]
-    else:
-        for field in all_fields:
-            field_name = field['name']
-            if (field_name != dependent_variable) and (field['general_type'] == 'q'):
-                all_independent_variable_data[field_name] = df[field_name]
-    dependent_variable_data = df[dependent_variable]
+    df = df.dropna()
 
     # 3) Run test based on parameters and arguments
-    # TODO Reduce the number of arguments
-    regression_result = run_cascading_regression(df, all_independent_variable_data, dependent_variable_data, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
+    regression_result = run_cascading_regression(df, independent_variables, dependent_variable, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
     return regression_result, 200
 
     # {
@@ -69,45 +76,32 @@ def run_regression_from_spec(spec, project_id):
     #     ]
     # }
 
-def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1, functions=[], estimator='ols', weights=None):
+def run_cascading_regression(df, independent_variables, dependent_variable, model='lr', degree=1, functions=[], estimator='ols', weights=None):
     # Format data structures
-
-    indep_fields = all_indep_data.keys()
+    indep_fields = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressionsByColumn': [],
         'variables': indep_fields
     }
 
-    for num_indep in range(1, len(indep_fields) + 1):
-        considered_indep_fields = combinations(indep_fields, num_indep)
+    for num_indep in range(1, len(independent_variables) + 1):
+        considered_independent_variables = combinations(independent_variables, num_indep)
 
-        for considered_indep_tuple in considered_indep_fields:
+        for considered_independent_variables in considered_independent_variables:
             regression_result = {}
 
-            if len(considered_indep_tuple) == 0:
+            if len(considered_independent_variables) == 0:
                 continue
 
-            indep_data_matrix = []
-            for considered_indep in considered_indep_tuple:
-                indep_data_vector = np.array(all_indep_data[considered_indep])
-
-                if model == 'lr':
-                    indep_data_matrix.append(indep_data_vector)
-                elif model == 'pr':
-                    if degree == 1:
-                        indep_data_matrix.append(indep_data_vector)
-                    else:
-                        for deg in range(1, degree + 1):
-                            indep_data_matrix.append(indep_data_vector**deg)
-                elif model == 'gr':
-                    for func in funcArray:
-                        indep_data_matrix.append(func(indep_data_vector))
-
             # Run regression
-            model_result = multivariate_linear_regression(dep_data, indep_data_matrix, estimator, weights)
+            model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
+
+            # Test regression
+            dep_data = df[dependent_variable['name']]
+            regression_stats = test_regression_fit(model_result.resid, dep_data)
 
             # Format results
-            considered_indep_fields_list = list(considered_indep_tuple)
+            considered_independent_variables_names = [ civ['name'] for civ in considered_independent_variables ]
 
             conf_int = model_result.conf_int().transpose().to_dict()
             parsed_conf_int = {}
@@ -115,11 +109,11 @@ def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1
                 parsed_conf_int[field] = [d[0], d[1]]
 
             regression_result = {
-                'fields': considered_indep_fields_list,
+                'fields': considered_independent_variables_names,
                 'rSquared': model_result.rsquared,
                 'rSquaredAdj': model_result.rsquared_adj,
                 'fTest': model_result.fvalue,
-                'stats': test_regression_fit(model_result.resid, dep_data),
+                'stats': regression_stats,
                 'conf_int': parsed_conf_int,
                 'params': model_result.params,
                 't_values': model_result.tvalues,
@@ -132,23 +126,28 @@ def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1
 
     return regression_results
 
-# Multivariate linear regression function
-def multivariate_linear_regression(y, x, estimator, weights=None):
-    ones = np.ones(len(x[0]))
-    X = sm.add_constant(np.column_stack((x[0], ones)))
-    for ele in x[1:]:
-        X = sm.add_constant(np.column_stack((ele, X)))
 
-    if estimator == 'ols':
-        return sm.OLS(y, X).fit()
+def create_regression_formula(independent_variables, dependent_variable):
+    formula = '%s ~ ' % (dependent_variable['name'])
+    terms = []
+    for independent_variable in independent_variables:
+        if independent_variable['general_type'] == 'q':
+            term = independent_variable['name']
+        else:
+            term = 'C(%s)' % (independent_variable['name'])
+        terms.append(term)
+    concatenated_terms = ' + '.join(terms)
+    formula = formula + concatenated_terms
+    formula = formula.encode('ascii')
 
-    elif estimator == 'wls':
-        return sm.WLS(y, X, weights).fit()
+    logger.info("Regression formula %s:", formula)
+    return formula
 
-    elif estimator == 'gls':
-        return sm.GLS(y, X).fit()
 
-    return None
+def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
+    formula = create_regression_formula(independent_variables, dependent_variable)
+
+    return smf.ols(formula=formula, data=df).fit()
 
 
 def test_regression_fit(residuals, actual_y):
