@@ -38,24 +38,24 @@ class RegressionEstimator(Resource):
 # OUTPUT: {stat data}
 #####################################################################
 regressionPostParser = reqparse.RequestParser()
-regressionPostParser.add_argument('project_id', type=str, location='json')
+regressionPostParser.add_argument('projectId', type=str, location='json')
 regressionPostParser.add_argument('spec', type=str, location='json')
 class RegressionFromSpec(Resource):
     def post(self):
         '''
         spec: {
-            indep
-            dep_name
+            independentVariables
+            dependentVariable
             model
             estimator
             degree
             weights
             functions
-            dataset_id
+            datasetId
         }
         '''
         args = request.get_json()
-        project_id = args.get('project_id')
+        project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_regression_from_spec(spec, project_id)
         return make_response(jsonify(format_json(result)), status)
