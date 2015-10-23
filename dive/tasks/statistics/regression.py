@@ -36,9 +36,16 @@ def run_regression_from_spec(spec, project_id):
 
     # 3) Run test based on parameters and arguments
     regression_result = run_cascading_regression(df, fields, indep, dep_name, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
+    regression_data = get_regression_data(df, regression_result)
     return {
-        'data': regression_result
+        'result': regression_result,
+        'data': regression_data
     }, 200
+
+
+def get_regression_data(df, regression_result):
+
+    return
 
 
 def run_cascading_regression(df, fields, indep, dep_field_name, model='lr', degree=1, functions=[], estimator='ols', weights=None):
@@ -50,7 +57,7 @@ def run_cascading_regression(df, fields, indep, dep_field_name, model='lr', degr
     else:
         for field in fields:
             field_name = field['name']
-            if (field_name is not dep_field_name) and (field['general_type'] == 'q'):
+            if (field_name != dep_field_name) and (field['general_type'] == 'q'):
                 all_indep_data[field_name] = df[field_name]
     dep_data = df[dep_field_name]
 
