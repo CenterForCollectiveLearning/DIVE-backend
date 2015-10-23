@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -71,7 +72,6 @@ def run_regression_from_spec(spec, project_id):
 def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1, functions=[], estimator='ols', weights=None):
     # Format data structures
 
-
     indep_fields = all_indep_data.keys()
     regression_results = {
         'regressionsByColumn': [],
@@ -87,45 +87,46 @@ def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1
             if len(considered_indep_tuple) == 0:
                 continue
 
-            # TODO Distinguish between regression types in here
+            indep_data_matrix = []
             for considered_indep in considered_indep_tuple:
                 indep_data_vector = np.array(all_indep_data[considered_indep])
 
-            indep_data_matrix = []
-
-            # Field transformation if polynomial regression
-            if model == 'lr':
-                indep_data_matrix.append(indep_data_vector)
-            elif model == 'pr':
-                if degree == 1:
+                if model == 'lr':
                     indep_data_matrix.append(indep_data_vector)
-                else:
-                    for deg in range(1, degree + 1):
-                        indep_data_matrix.append(indep_data_vector**deg)
-            elif model == 'gr':
-                for func in funcArray:
-                    indep_data_matrix.append(func(indep_data_vector))
+                elif model == 'pr':
+                    if degree == 1:
+                        indep_data_matrix.append(indep_data_vector)
+                    else:
+                        for deg in range(1, degree + 1):
+                            indep_data_matrix.append(indep_data_vector**deg)
+                elif model == 'gr':
+                    for func in funcArray:
+                        indep_data_matrix.append(func(indep_data_vector))
 
             # Run regression
             model_result = multivariate_linear_regression(dep_data, indep_data_matrix, estimator, weights)
 
             # Format results
             considered_indep_fields_list = list(considered_indep_tuple)
-            if len(considered_indep_fields_list) == 1:
-                considered_indep_fields_list = considered_indep_fields_list[0]
-            considered_indep_fields_string = str(considered_indep_fields_list)
+
+            conf_int = model_result.conf_int().transpose().to_dict()
+            parsed_conf_int = {}
+            for field, d in conf_int.iteritems():
+                parsed_conf_int[field] = [d[0], d[1]]
 
             regression_result = {
-                'fields': considered_indep_fields_string,
+                'fields': considered_indep_fields_list,
                 'rSquared': model_result.rsquared,
+                'rSquaredAdj': model_result.rsquared_adj,
                 'fTest': model_result.fvalue,
                 'stats': test_regression_fit(model_result.resid, dep_data),
-                'regressions': [{
-                    'variable': "",
-                    'coefficient': model_result.params,
-                    'standardError': model_result.bse,
-                    'pValue': model_result.pvalues
-                }]
+                'conf_int': parsed_conf_int,
+                'params': model_result.params,
+                't_values': model_result.tvalues,
+                'p_values': model_result.pvalues,
+                'aic': model_result.aic,
+                'bic': model_result.bic,
+                'std': model_result.bse
             }
             regression_results['regressionsByColumn'].append(regression_result)
 
