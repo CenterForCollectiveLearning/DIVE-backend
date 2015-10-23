@@ -81,7 +81,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
     indep_fields = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressionsByColumn': [],
-        'variables': indep_fields
+        'fields': indep_fields
     }
 
     for num_indep in range(1, len(independent_variables) + 1):
@@ -101,31 +101,78 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
             regression_stats = test_regression_fit(model_result.resid, dep_data)
 
             # Format results
-            considered_independent_variables_names = [ civ['name'] for civ in considered_independent_variables ]
+            fields = [ civ['name'] for civ in considered_independent_variables ]
 
-            conf_int = model_result.conf_int().transpose().to_dict()
-            parsed_conf_int = {}
-            for field, d in conf_int.iteritems():
-                parsed_conf_int[field] = [d[0], d[1]]
+            confidence_intervals = model_result.conf_int().transpose().to_dict()
+            parsed_confidence_intervals = {}
+            for field, d in confidence_intervals.iteritems():
+                parsed_confidence_intervals[field] = [d[0], d[1]]
+
+            properties = [
+                {
+                    'type': 'coefficient',
+                    'data': model_result.params.to_dict()
+                },
+                {
+                    'type': 'standardError',
+                    'data': model_result.bse.to_dict()
+                },
+                {
+                    'type': 'pValue',
+                    'data': model_result.pvalues.to_dict()
+                },
+                {
+                    'type': 'tValue',
+                    'data': model_result.tvalues.to_dict()
+                },
+                {
+                    'type': 'confidenceIntervals',
+                    'data': parsed_confidence_intervals
+                },
+            ]
+
+            constants = {
+                'coefficient': model_result.params.to_dict().get('Intercept'),
+                'standardError': model_result.bse.to_dict().get('Intercept'),
+                'pValue': model_result.pvalues.to_dict().get('Intercept'),
+                'tValue': model_result.tvalues.to_dict().get('Intercept'),
+                'confidenceIntervals': parsed_confidence_intervals.get('Intercept')
+            }
 
             regression_result = {
-                'fields': considered_independent_variables_names,
-                'rSquared': model_result.rsquared,
-                'rSquaredAdj': model_result.rsquared_adj,
-                'fTest': model_result.fvalue,
-                'stats': regression_stats,
-                'conf_int': parsed_conf_int,
-                'params': model_result.params,
-                't_values': model_result.tvalues,
-                'p_values': model_result.pvalues,
-                'aic': model_result.aic,
-                'bic': model_result.bic,
-                'std': model_result.bse
+                'regressedFields': fields,
+                'regression': {
+                    'constants': constants,
+                    'propertiesByField': formatPropertiesByField(fields, properties)
+                },
+                'columnProperties': {
+                    'rSquared': model_result.rsquared,
+                    'rSquaredAdj': model_result.rsquared_adj,
+                    'fTest': model_result.fvalue,
+                    'stats': test_regression_fit(model_result.resid, dep_data),
+                    'aic': model_result.aic,
+                    'bic': model_result.bic,
+                    'std': model_result.bse
+                }
             }
             regression_results['regressionsByColumn'].append(regression_result)
 
     return regression_results
 
+def formatPropertiesByField(fields, properties):
+    propertiesByField = []
+
+    for (i, field) in enumerate(fields):
+        formattedProperty = {
+            'field': field
+        }
+
+        for _property in properties:
+            formattedProperty[_property.get('type')] = _property.get('data').get(field)
+
+        propertiesByField.append(formattedProperty)
+
+    return propertiesByField
 
 def create_regression_formula(independent_variables, dependent_variable):
     formula = '%s ~ ' % (dependent_variable['name'])
