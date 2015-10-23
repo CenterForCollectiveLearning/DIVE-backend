@@ -20,7 +20,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_full_field_documents_from_names(names):
+def get_full_field_documents_from_names(all_fields, names):
     fields = []
     for name in names:
         matched_field = next((f for f in all_fields if f['name'] == name), None)
@@ -50,10 +50,10 @@ def run_regression_from_spec(spec, project_id):
 
     independent_variables = []
     if independent_variables_names:
-        independent_variables = get_full_field_documents_from_names(independent_variables_names)
+        independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
     else:
         for field in all_fields:
-            if (field['name'] != dependent_variable_name) and (not field['is_unique']):
+            if (field['general_type'] == 'q' and field['name'] != dependent_variable_name) and (not field['is_unique']):
                 independent_variables.append(field)
 
     # Determine regression model based on number of type of variables
@@ -92,39 +92,71 @@ def run_regression_from_spec(spec, project_id):
     #     ]
     # }
 
+
 def run_cascading_regression(df, independent_variables, dependent_variable, model='lr', degree=1, functions=[], estimator='ols', weights=None):
     # Format data structures
     indep_fields = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressionsByColumn': [],
-        'variables': indep_fields
+        'fields': indep_fields,
     }
+
+    num_columns = 0
 
     for num_indep in range(1, len(independent_variables) + 1):
         considered_independent_variables = combinations(independent_variables, num_indep)
 
         for considered_independent_variables in considered_independent_variables:
-            regression_result = {}
-
             if len(considered_independent_variables) == 0:
                 continue
 
+            regression_result = {}
+            num_columns += 1
+
             # Run regression
-            regression_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
+            model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
 
             # Test regression
-            if regression_result.get('resid'):
+            regression_stats = None
+            if model_result['total_regression_properties'].get('resid'):
                 dep_data = df[dependent_variable['name']]
-                regression_stats = test_regression_fit(regression_result['resid'], dep_data)
+                regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
+                del model_result['total_regression_properties']['resid']
 
             # Format results
-            considered_independent_variables_names = [ civ['name'] for civ in considered_independent_variables ]
+            field_names = [ civ['name'] for civ in considered_independent_variables ]
 
-            regression_result['fields'] = considered_independent_variables_names
-            regression_results['columnParams'] = regression_result
+            regression_result = {
+                'regressed_fields': field_names,
+                'regression': {
+                    'constants': model_result['constants'],
+                    'properties_by_field': model_result['properties_by_field']
+                },
+                'column_properties': model_result['total_regression_properties']
+            }
             regression_results['regressionsByColumn'].append(regression_result)
+            if regression_stats:
+                regression_result['regression']['stats'] = regression_stats
+
+    regression_results['num_columns'] = num_columns
 
     return regression_results
+
+
+def format_properties_by_field(fields, properties):
+    propertiesByField = []
+
+    for (i, field) in enumerate(fields):
+        formattedProperty = {
+            'field': field
+        }
+
+        for _property in properties:
+            formattedProperty[_property.get('type')] = _property.get('data').get(field)
+
+        propertiesByField.append(formattedProperty)
+
+    return propertiesByField
 
 
 def _parse_confidence_intervals(model_result):
@@ -153,42 +185,87 @@ def create_regression_formula(independent_variables, dependent_variable):
     return formula
 
 
-def replace_nan_in_numpy(m):
-    return np.where(np.isnan(x), None, m)
-
-
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
     formula = create_regression_formula(independent_variables, dependent_variable)
     y, X = patsy.dmatrices(formula, df, return_type='dataframe')
 
     if dependent_variable['general_type'] == 'q':
         model_result = sm.OLS(y, X).fit()
-        parsed_result = {
+
+        p_values = model_result.pvalues.to_dict()
+        t_values = model_result.tvalues.to_dict()
+        params = model_result.params.to_dict()
+        ste = model_result.bse.to_dict()
+        conf_ints = _parse_confidence_intervals(model_result)
+
+        constants = {
+            'p_value': p_values.get('Intercept'),
+            't_value': t_values.get('Intercept'),
+            'coefficient': params.get('Intercept'),
+            'standard_error': ste.get('Intercept'),
+            # 'conf_int': conf_ints.get('Intercept')
+        }
+
+        regression_field_properties = {
+            'p_value': p_values,
+            't_value': t_values,
+            'coefficient': params,
+            'standard_error': ste,
+            # 'conf_int': conf_ints
+        }
+
+        total_regression_properties = {
+            'aic': model_result.aic,
+            'bic': model_result.bic,
             'rSquared': model_result.rsquared,
             'rSquaredAdj': model_result.rsquared_adj,
             'fTest': model_result.fvalue,
-            'stats': regression_stats,
-            'conf_int': _parse_confidence_intervals(model_result),
-            'params': model_result.params,
-            't_values': model_result.tvalues,
-            'p_values': model_result.pvalues,
-            'aic': model_result.aic,
-            'bic': model_result.bic,
-            'ste': model_result.bse
+            'resid': model_result.resid.tolist()
         }
 
     elif dependent_variable['general_type'] == 'c':
         model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
-        parsed_result = {
-            'aic': model_result.aic,
-            'bic': model_result.bic,
-            'p_values': model_result.pvalues[0],
-            't_values': model_result.tvalues[0],
-            'params': model_result.params[0],
-            'ste': model_result.bse[0],
+
+        p_values = model_result.pvalues[0].to_dict()
+        t_values = model_result.tvalues[0].to_dict()
+        params = model_result.params[0].to_dict()
+        ste = model_result.bse[0].to_dict()
+
+        constants = {
+            'p_value': p_values.get('Intercept'),
+            't_value': t_values.get('Intercept'),
+            'coefficient': params.get('Intercept'),
+            'standard_error': ste.get('Intercept')
         }
 
-    return parsed_result
+        regression_field_properties = {
+            'p_value': p_values,
+            't_value': t_values,
+            'coefficient': params,
+            'standard_error': ste
+        }
+
+        total_regression_properties = {
+            'aic': model_result.aic,
+            'bic': model_result.bic,
+        }
+
+    # Restructure field properties dict from
+    # { property: { field: value }} -> { field: { property: value } }
+    properties_by_field = {}
+    for prop_type, field_names_and_values in regression_field_properties.iteritems():
+        for field_name, value in field_names_and_values.iteritems():
+            if field_name == 'Intercept':
+                continue
+            if field_name in properties_by_field:
+                properties_by_field[field_name][prop_type] = value
+            else:
+                properties_by_field[field_name] = { prop_type: value }
+    return {
+        'constants': constants,
+        'properties_by_field': properties_by_field,
+        'total_regression_properties': total_regression_properties
+    }
 
 
 def test_regression_fit(residuals, actual_y):
