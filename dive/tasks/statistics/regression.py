@@ -15,7 +15,7 @@ from dive.data.access import get_data
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-def get_full_field_documents_from_names(names):
+def get_full_field_documents_from_names(all_fields, names):
     fields = []
     for name in names:
         matched_field = next((f for f in all_fields if f['name'] == name), None)
@@ -41,10 +41,10 @@ def run_regression_from_spec(spec, project_id):
 
     independent_variables = []
     if independent_variables_names:
-        independent_variables = get_full_field_documents_from_names(independent_variables_names)
+        independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
     else:
         for field in all_fields:
-            if (field['name'] != dependent_variable_name) and (not field['is_unique']):
+            if (field['general_type'] == 'q' and field['name'] != dependent_variable_name) and (not field['is_unique']):
                 independent_variables.append(field)
 
     if not (dataset_id and dependent_variable):
@@ -81,8 +81,10 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
     indep_fields = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressionsByColumn': [],
-        'fields': indep_fields
+        'fields': indep_fields,
     }
+
+    numColumns = 0
 
     for num_indep in range(1, len(independent_variables) + 1):
         considered_independent_variables = combinations(independent_variables, num_indep)
@@ -92,6 +94,9 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
 
             if len(considered_independent_variables) == 0:
                 continue
+
+            numColumns += 1
+
 
             # Run regression
             model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
@@ -156,6 +161,8 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
                 }
             }
             regression_results['regressionsByColumn'].append(regression_result)
+
+    regression_results['numColumns'] = numColumns
 
     return regression_results
 
