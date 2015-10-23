@@ -1,8 +1,11 @@
+import patsy
 import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from statsmodels.discrete import discrete_model
+
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -147,7 +150,20 @@ def create_regression_formula(independent_variables, dependent_variable):
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
     formula = create_regression_formula(independent_variables, dependent_variable)
 
-    return smf.ols(formula=formula, data=df).fit()
+    if dependent_variable['general_type'] == 'q':
+        regression_result = smf.ols(formula=formula, data=df).fit()
+
+    elif dependent_variable['general_type'] == 'c':
+        # TODO Move this out of here!
+        logger.info('Categorical dependent_variable')
+        y, X = patsy.dmatrices(formula, df, return_type='dataframe')
+        regression_result = discrete_model.MNLogit(y, X).fit()
+        print regression_result.summary()
+
+    return regression_result
+
+
+
 
 
 def test_regression_fit(residuals, actual_y):
