@@ -95,7 +95,8 @@ class Dataset_Properties(db.Model):
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate="CASCADE", ondelete="CASCADE"))
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
 
@@ -122,7 +123,8 @@ class Field_Properties(db.Model):
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate="CASCADE", ondelete="CASCADE"))
 
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
 
     project = db.relationship(Project)
 
@@ -155,7 +157,8 @@ class Spec(db.Model):
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate="CASCADE", ondelete="CASCADE"))
 
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
 
@@ -175,7 +178,8 @@ class Exported_Spec(db.Model):
     spec_id = db.Column(db.Integer, db.ForeignKey('spec.id',
         onupdate="CASCADE", ondelete="CASCADE"))
 
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
 
@@ -199,7 +203,8 @@ class Relationship(db.Model):
     distance = db.Column(db.Float)
     type = db.Column(db.Unicode(250))
 
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
 
