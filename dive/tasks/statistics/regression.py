@@ -75,7 +75,7 @@ def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1
     indep_fields = all_indep_data.keys()
     regression_results = {
         'regressionsByColumn': [],
-        'variables': indep_fields
+        'fields': indep_fields
     }
 
     for num_indep in range(1, len(indep_fields) + 1):
@@ -107,30 +107,78 @@ def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1
             model_result = multivariate_linear_regression(dep_data, indep_data_matrix, estimator, weights)
 
             # Format results
-            considered_indep_fields_list = list(considered_indep_tuple)
+            fields = list(considered_indep_tuple)
 
-            conf_int = model_result.conf_int().transpose().to_dict()
-            parsed_conf_int = {}
-            for field, d in conf_int.iteritems():
-                parsed_conf_int[field] = [d[0], d[1]]
+            confidence_intervals = model_result.conf_int().transpose().to_dict()
+            parsed_confidence_intervals = {}
+            for field, d in confidence_intervals.iteritems():
+                parsed_confidence_intervals[field] = [d[0], d[1]]
+
+            properties = [
+                {
+                    'type': 'coefficient',
+                    'data': model_result.params
+                },
+                {
+                    'type': 'standardError',
+                    'data': model_result.bse
+                },
+                {
+                    'type': 'pValue',
+                    'data': model_result.pvalues
+                },
+                {
+                    'type': 'tValue',
+                    'data': model_result.tvalues
+                },
+                {
+                    'type': 'confidenceIntervals',
+                    'data': parsed_confidence_intervals
+                },
+            ]
+
+            constants = {
+                'coefficient': model_result.params.const,
+                'standardError': model_result.bse.const,
+                'pValue': model_result.pvalues.const,
+                'tValue': model_result.tvalues.const,
+                'confidenceIntervals': parsed_confidence_intervals.get('const')
+            }
 
             regression_result = {
-                'fields': considered_indep_fields_list,
-                'rSquared': model_result.rsquared,
-                'rSquaredAdj': model_result.rsquared_adj,
-                'fTest': model_result.fvalue,
-                'stats': test_regression_fit(model_result.resid, dep_data),
-                'conf_int': parsed_conf_int,
-                'params': model_result.params,
-                't_values': model_result.tvalues,
-                'p_values': model_result.pvalues,
-                'aic': model_result.aic,
-                'bic': model_result.bic,
-                'std': model_result.bse
+                'regressedFields': fields,
+                'regression': {
+                    'constants': constants,
+                    'propertiesByField': formatPropertiesByField(fields, properties)
+                },
+                'columnProperties': {
+                    'rSquared': model_result.rsquared,
+                    'rSquaredAdj': model_result.rsquared_adj,
+                    'fTest': model_result.fvalue,
+                    'stats': test_regression_fit(model_result.resid, dep_data),
+                    'aic': model_result.aic,
+                    'bic': model_result.bic,
+                    'std': model_result.bse
+                }
             }
             regression_results['regressionsByColumn'].append(regression_result)
 
     return regression_results
+
+def formatPropertiesByField(fields, properties):
+    propertiesByField = []
+
+    for (i, field) in enumerate(fields):
+        formattedProperty = {
+            'field': field
+        }
+
+        for _property in properties:
+            formattedProperty[_property.get('type')] = _property.get('data').get('x' + str(i + 1))
+
+        propertiesByField.append(formattedProperty)
+
+    return propertiesByField
 
 # Multivariate linear regression function
 def multivariate_linear_regression(y, x, estimator, weights=None):
