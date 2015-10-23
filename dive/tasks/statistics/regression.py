@@ -123,15 +123,11 @@ def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_nam
 
             # Format results
             considered_indep_fields_list = list(considered_indep_tuple)
-            if len(considered_indep_fields_list) == 1:
-                considered_indep_fields_list = considered_indep_fields_list[0]
-            considered_indep_fields_string = str(considered_indep_fields_list)
-
-            regression_results['list'].append(considered_indep_fields_string)
+            regression_results['list'].append(considered_indep_fields_list)
             regression_results['size_list'].append(num_indep)
 
             regression_result = {
-                'fields': considered_indep_fields_string,
+                'fields': considered_indep_fields_list,
                 'params': model_result.params,
                 'p_values': model_result.pvalues,
                 'r_squared': model_result.rsquared,
