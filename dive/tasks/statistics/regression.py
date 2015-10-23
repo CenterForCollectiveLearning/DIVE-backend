@@ -50,23 +50,23 @@ def run_regression_from_spec(spec, project_id):
     regression_result = run_cascading_regression(df, all_independent_variable_data, dependent_variable_data, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
     return regression_result, 200
 
-    {
-        'variables': [],
-        'regressionsByColumn': [
-            {
-                'fields': [],
-                'rSquared': "",
-                'regressions': [
-                    {
-                        'variable': "",
-                        'coefficient': {'x1': "", 'const': ""},
-                        'standardError': {'x1': "", 'const': ""},
-                        'pValue': {'x1': "", 'const': ""}
-                    }
-                ]
-            }
-        ]
-    }
+    # {
+    #     'variables': [],
+    #     'regressionsByColumn': [
+    #         {
+    #             'fields': [],
+    #             'rSquared': "",
+    #             'regressions': [
+    #                 {
+    #                     'variable': "",
+    #                     'coefficient': {'x1': "", 'const': ""},
+    #                     'standardError': {'x1': "", 'const': ""},
+    #                     'pValue': {'x1': "", 'const': ""}
+    #                 }
+    #             ]
+    #         }
+    #     ]
+    # }
 
 def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1, functions=[], estimator='ols', weights=None):
     # Format data structures
