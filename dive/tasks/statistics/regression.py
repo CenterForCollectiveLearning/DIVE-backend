@@ -19,7 +19,7 @@ def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
     indep = spec.get('indep', [])
-    dep_name = spec.get('dep')
+    dep_field_name = spec.get('dep')
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)
     weights = spec.get('weights', None)
@@ -27,29 +27,13 @@ def run_regression_from_spec(spec, project_id):
     dataset_id = spec.get('dataset_id')
     fields = db_access.get_field_properties(project_id, dataset_id)
 
-    if not (dataset_id and dep_name):
+    if not (dataset_id and dep_field_name):
         return "Not passed required parameters", 400
 
     # 2) Access dataset
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    # 3) Run test based on parameters and arguments
-    regression_result = run_cascading_regression(df, fields, indep, dep_name, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
-    regression_data = get_regression_data(df, regression_result)
-    return {
-        'result': regression_result,
-        'data': regression_data
-    }, 200
-
-
-def get_regression_data(df, regression_result):
-
-    return
-
-
-def run_cascading_regression(df, fields, indep, dep_field_name, model='lr', degree=1, functions=[], estimator='ols', weights=None):
-    # Format data structures
     all_indep_data = {}
     if indep:
         for indep_field_name in indep:
@@ -60,6 +44,41 @@ def run_cascading_regression(df, fields, indep, dep_field_name, model='lr', degr
             if (field_name != dep_field_name) and (field['general_type'] == 'q'):
                 all_indep_data[field_name] = df[field_name]
     dep_data = df[dep_field_name]
+
+    # 3) Run test based on parameters and arguments
+    # TODO Reduce the number of arguments
+    regression_result = run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_name, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
+    regression_data = get_regression_data(df, fields, all_indep_data, dep_data, dep_field_name, regression_result)
+    return {
+        'result': regression_result,
+        'data': regression_data
+    }, 200
+
+
+def get_regression_data(df, fields, all_indep_data, dep_data, dep_field_name, regression_result):
+    '''
+    Show plot of dependent field against all others
+    '''
+    specs = []
+
+    for indep_field_name, indep_data in all_indep_data.iteritems():
+        spec = {
+            'viz_type': ['scatterplot'],
+            'args': {}
+        }
+        regression_data_array = [[indep_field_name, dep_field_name]]
+        regression_data_array.append(zip(dep_data, indep_data))
+        spec['data'] = regression_data_array
+        spec['args']['x'] = indep_field_name
+        spec['args']['y'] = dep_field_name
+        specs.append(spec)
+
+    return specs
+
+
+def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_name, model='lr', degree=1, functions=[], estimator='ols', weights=None):
+    # Format data structures
+
 
     indep_fields = all_indep_data.keys()
     regression_results = {
