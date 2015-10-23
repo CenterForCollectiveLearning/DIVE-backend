@@ -154,7 +154,7 @@ def create_regression_formula(independent_variables, dependent_variable):
 
 
 def replace_nan_in_numpy(m):
-    return np.where(np.isnan(m), None, m)
+    return np.where(np.isnan(x), None, m)
 
 
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
@@ -182,10 +182,10 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
         parsed_result = {
             'aic': model_result.aic,
             'bic': model_result.bic,
-            'p_values': replace_nan_in_numpy(model_result.pvalues[0]),
-            't_values': replace_nan_in_numpy(model_result.tvalues[0]),
-            'params': replace_nan_in_numpy(model_result.params[0]),
-            'ste':replace_nan_in_numpy(model_result.bse[0]),
+            'p_values': model_result.pvalues[0],
+            't_values': model_result.tvalues[0],
+            'params': model_result.params[0],
+            'ste': model_result.bse[0],
         }
 
     return parsed_result
