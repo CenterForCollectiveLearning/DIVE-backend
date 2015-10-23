@@ -19,77 +19,64 @@ logger = get_task_logger(__name__)
 def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
-    indep = spec.get('indep', [])
-    dep_field_name = spec.get('dep')
+    independent_variables = spec.get('independentVariables', [])
+    dependent_variable = spec.get('dependentVariable')
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
-    dataset_id = spec.get('dataset_id')
-    fields = db_access.get_field_properties(project_id, dataset_id)
+    dataset_id = spec.get('datasetId')
+    all_fields = db_access.get_field_properties(project_id, dataset_id)
 
-    if not (dataset_id and dep_field_name):
+    if not (dataset_id and dependent_variable):
         return "Not passed required parameters", 400
 
     # 2) Access dataset
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    all_indep_data = {}
-    if indep:
-        for indep_field_name in indep:
-            all_indep_data[indep_field_name] = df[indep_field_name]
+    all_independent_variable_data = {}
+    if independent_variables:
+        for independent_variable_name in independent_variables:
+            all_independent_variable_data[independent_variable_name] = df[independent_variable_name]
     else:
-        for field in fields:
+        for field in all_fields:
             field_name = field['name']
-            if (field_name != dep_field_name) and (field['general_type'] == 'q'):
-                all_indep_data[field_name] = df[field_name]
-    dep_data = df[dep_field_name]
+            if (field_name != dependent_variable) and (field['general_type'] == 'q'):
+                all_independent_variable_data[field_name] = df[field_name]
+    dependent_variable_data = df[dependent_variable]
 
     # 3) Run test based on parameters and arguments
     # TODO Reduce the number of arguments
-    regression_result = run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_name, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
-    regression_data = get_regression_data(df, fields, all_indep_data, dep_data, dep_field_name, regression_result)
-    return {
-        'result': regression_result,
-        # 'data': regression_data
-    }, 200
+    regression_result = run_cascading_regression(df, all_independent_variable_data, dependent_variable_data, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
+    return regression_result, 200
 
+    # {
+    #     'variables': [],
+    #     'regressionsByColumn': [
+    #         {
+    #             'fields': [],
+    #             'rSquared': "",
+    #             'regressions': [
+    #                 {
+    #                     'variable': "",
+    #                     'coefficient': {'x1': "", 'const': ""},
+    #                     'standardError': {'x1': "", 'const': ""},
+    #                     'pValue': {'x1': "", 'const': ""}
+    #                 }
+    #             ]
+    #         }
+    #     ]
+    # }
 
-def get_regression_data(df, fields, all_indep_data, dep_data, dep_field_name, regression_result):
-    '''
-    Show plot of dependent field against all others
-    '''
-    specs = []
-
-    for indep_field_name, indep_data in all_indep_data.iteritems():
-        spec = {
-            'viz_type': ['scatterplot'],
-            'args': {}
-        }
-        regression_data_array = [[indep_field_name, dep_field_name]]
-        regression_data_array.append(zip(dep_data, indep_data))
-        spec['data'] = regression_data_array
-        spec['args']['x'] = indep_field_name
-        spec['args']['y'] = dep_field_name
-        specs.append(spec)
-
-    return specs
-
-
-def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_name, model='lr', degree=1, functions=[], estimator='ols', weights=None):
+def run_cascading_regression(df, all_indep_data, dep_data,  model='lr', degree=1, functions=[], estimator='ols', weights=None):
     # Format data structures
-
 
     indep_fields = all_indep_data.keys()
     regression_results = {
-        'results': [],
-        'indep_fields': indep_fields,
-        'list': [],
-        'size_list': []
+        'regressionsByColumn': [],
+        'variables': indep_fields
     }
-
-    regression_results['indep_fields'] = indep_fields
 
     for num_indep in range(1, len(indep_fields) + 1):
         considered_indep_fields = combinations(indep_fields, num_indep)
@@ -121,8 +108,6 @@ def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_nam
 
             # Format results
             considered_indep_fields_list = list(considered_indep_tuple)
-            regression_results['list'].append(considered_indep_fields_list)
-            regression_results['size_list'].append(num_indep)
 
             conf_int = model_result.conf_int().transpose().to_dict()
             parsed_conf_int = {}
@@ -131,25 +116,21 @@ def run_cascading_regression(df, fields, all_indep_data, dep_data, dep_field_nam
 
             regression_result = {
                 'fields': considered_indep_fields_list,
+                'rSquared': model_result.rsquared,
+                'rSquaredAdj': model_result.rsquared_adj,
+                'fTest': model_result.fvalue,
+                'stats': test_regression_fit(model_result.resid, dep_data),
                 'conf_int': parsed_conf_int,
                 'params': model_result.params,
                 't_values': model_result.tvalues,
                 'p_values': model_result.pvalues,
-                'r_squared': model_result.rsquared,
-                'r_squared_adj': model_result.rsquared_adj,
                 'aic': model_result.aic,
                 'bic': model_result.bic,
-                'f_test': model_result.fvalue,
-                'std': model_result.bse,
-                'stats': test_regression_fit(model_result.resid, dep_data)
+                'std': model_result.bse
             }
-            regression_results['results'].append(regression_result)
+            regression_results['regressionsByColumn'].append(regression_result)
 
-    regression_results['list'] = regression_results['list'][:-1]
-    regression_results['size_list'] = regression_results['size_list'][:-1]
-    regression_results['results'] = regression_results['results'][:-1]
     return regression_results
-
 
 # Multivariate linear regression function
 def multivariate_linear_regression(y, x, estimator, weights=None):
