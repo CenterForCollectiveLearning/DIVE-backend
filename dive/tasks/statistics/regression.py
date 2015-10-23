@@ -6,6 +6,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.discrete import discrete_model
 
+from collections import Counter
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -18,6 +19,7 @@ from dive.data.access import get_data
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+
 def get_full_field_documents_from_names(names):
     fields = []
     for name in names:
@@ -26,20 +28,24 @@ def get_full_field_documents_from_names(names):
             fields.append(matched_field)
     return fields
 
+
 def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
     independent_variables_names = spec.get('independentVariables', [])
-    dependent_variable_name = spec.get('dependentVariable')
+    dependent_variable_name = spec.get('dependentVariable', [])
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
 
-    all_fields = db_access.get_field_properties(project_id, dataset_id)
+    if not (dataset_id and dependent_variable_name):
+        return "Not passed required parameters", 400
+
 
     # Map variables to field documents
+    all_fields = db_access.get_field_properties(project_id, dataset_id)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
     independent_variables = []
@@ -50,8 +56,15 @@ def run_regression_from_spec(spec, project_id):
             if (field['name'] != dependent_variable_name) and (not field['is_unique']):
                 independent_variables.append(field)
 
-    if not (dataset_id and dependent_variable):
-        return "Not passed required parameters", 400
+    # Determine regression model based on number of type of variables
+    variable_types = Counter({
+        'independent': { 'q': 0, 'c': 0 },
+        'dependent': { 'q': 0, 'c': 0}
+    })
+
+    for independent_variable in independent_variables:
+        variable_type = independent_variable['general_type']
+        variable_types['independent'][variable_type] += 1
 
     # 2) Access dataset
     df = get_data(project_id=project_id, dataset_id=dataset_id)
@@ -97,37 +110,30 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
                 continue
 
             # Run regression
-            model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
+            regression_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
 
             # Test regression
-            dep_data = df[dependent_variable['name']]
-            regression_stats = test_regression_fit(model_result.resid, dep_data)
+            if regression_result.get('resid'):
+                dep_data = df[dependent_variable['name']]
+                regression_stats = test_regression_fit(regression_result['resid'], dep_data)
 
             # Format results
             considered_independent_variables_names = [ civ['name'] for civ in considered_independent_variables ]
 
-            conf_int = model_result.conf_int().transpose().to_dict()
-            parsed_conf_int = {}
-            for field, d in conf_int.iteritems():
-                parsed_conf_int[field] = [d[0], d[1]]
-
-            regression_result = {
-                'fields': considered_independent_variables_names,
-                'rSquared': model_result.rsquared,
-                'rSquaredAdj': model_result.rsquared_adj,
-                'fTest': model_result.fvalue,
-                'stats': regression_stats,
-                'conf_int': parsed_conf_int,
-                'params': model_result.params,
-                't_values': model_result.tvalues,
-                'p_values': model_result.pvalues,
-                'aic': model_result.aic,
-                'bic': model_result.bic,
-                'std': model_result.bse
-            }
+            regression_result['fields'] = considered_independent_variables_names
+            regression_results['columnParams'] = regression_result
             regression_results['regressionsByColumn'].append(regression_result)
 
     return regression_results
+
+
+def _parse_confidence_intervals(model_result):
+    conf_int = model_result.conf_int()
+    parsed_conf_int = {}
+    for field, d in conf_int.iteritems():
+        parsed_conf_int[field] = [d[0], d[1]]
+    logger.info(parsed_conf_int)
+    return parsed_conf_int
 
 
 def create_regression_formula(independent_variables, dependent_variable):
@@ -147,23 +153,42 @@ def create_regression_formula(independent_variables, dependent_variable):
     return formula
 
 
+def replace_nan_in_numpy(m):
+    return np.where(np.isnan(m), None, m)
+
+
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
     formula = create_regression_formula(independent_variables, dependent_variable)
+    y, X = patsy.dmatrices(formula, df, return_type='dataframe')
 
     if dependent_variable['general_type'] == 'q':
-        regression_result = smf.ols(formula=formula, data=df).fit()
+        model_result = sm.OLS(y, X).fit()
+        parsed_result = {
+            'rSquared': model_result.rsquared,
+            'rSquaredAdj': model_result.rsquared_adj,
+            'fTest': model_result.fvalue,
+            'stats': regression_stats,
+            'conf_int': _parse_confidence_intervals(model_result),
+            'params': model_result.params,
+            't_values': model_result.tvalues,
+            'p_values': model_result.pvalues,
+            'aic': model_result.aic,
+            'bic': model_result.bic,
+            'ste': model_result.bse
+        }
 
     elif dependent_variable['general_type'] == 'c':
-        # TODO Move this out of here!
-        logger.info('Categorical dependent_variable')
-        y, X = patsy.dmatrices(formula, df, return_type='dataframe')
-        regression_result = discrete_model.MNLogit(y, X).fit()
-        print regression_result.summary()
+        model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
+        parsed_result = {
+            'aic': model_result.aic,
+            'bic': model_result.bic,
+            'p_values': replace_nan_in_numpy(model_result.pvalues[0]),
+            't_values': replace_nan_in_numpy(model_result.tvalues[0]),
+            'params': replace_nan_in_numpy(model_result.params[0]),
+            'ste':replace_nan_in_numpy(model_result.bse[0]),
+        }
 
-    return regression_result
-
-
-
+    return parsed_result
 
 
 def test_regression_fit(residuals, actual_y):
@@ -197,8 +222,8 @@ def test_regression_fit(residuals, actual_y):
     if sets_normal(0.2, residuals, actual_y):
         t_test_result = stats.ttest_1samp(residuals, 0)
         results['t_test'] = {
-            'test_statistic':t_test_result[0],
-            'p_value':t_test_result[1]
+            'test_statistic': t_test_result[0],
+            'p_value': t_test_result[1]
         }
 
     return results
