@@ -91,6 +91,5 @@ aggregation_functions = {
     'sum': np.sum,
     'min': np.min,
     'max': np.max,
-    'mean': np.mean,
-    'count': np.size
+    'mean': np.mean
 }
