@@ -265,11 +265,13 @@ def F(c_fields):
     # E.g. count of position by gender
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+        if (c_field_a['is_unique'] or c_field_b['is_unique']):
+            continue
         spec = {
             'generating_procedure': GeneratingProcedure.MULTIGROUP_COUNT.value,
             'type_structure': TypeStructure.liC_Q.value,
             'viz_types': [ VizType.STACKED_BAR.value ],
-            'fields': [ c_field_a, c_field_b ],
+            'fields': [ c_label_a, c_label_b ],
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,

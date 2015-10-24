@@ -35,22 +35,44 @@ def _get_derived_field(df, label_descriptor):
 
 
 def get_multigroup_count_data(df, args, data_formats):
+    '''
+    For google charts, need in form of:
+    [
+        [group_a_value_1, group_b_value_1, group_b_value_2, count],
+        [group_a_value_2, group_b_value_1, group_b_value_2, count]
+    ]
+    '''
     group_a_field_label = args['fieldA']['name']
     group_b_field_label = args['fieldB']['name']
     grouped_df = df.groupby([group_a_field_label, group_b_field_label]).size()
-    results_as_data_array = []
-    results_as_collection = []
-    for k, v in grouped_df.to_dict().iteritems():
-        results_as_data_array.append([
-            k[0], k[1], v
-        ])
-        results_as_collection.append({
-            'groupA': k[0],
-            'groupB': k[1],
-            'count': v
-        })
 
-    results_as_data_array = sorted(results_as_data_array, key=lambda k: (k[0], k[1]))
+    results_as_data_array = []
+    secondary_field_values = []
+
+    results_grouped_by_highest_level_value = {}
+
+    for k, v in grouped_df.to_dict().iteritems():
+        # Structure: {(highest_level_value, secondary_level_value): value}
+        highest_level_value = k[0]
+        secondary_level_value = k[1]
+
+        if highest_level_value in results_grouped_by_highest_level_value:
+            results_grouped_by_highest_level_value[highest_level_value][secondary_level_value] = v
+        else:
+            results_grouped_by_highest_level_value[highest_level_value] = { secondary_level_value: v }
+
+        if secondary_level_value not in secondary_field_values:
+            secondary_field_values.append(secondary_level_value)
+
+    secondary_field_values = sorted(secondary_field_values)
+
+    header_row = [ group_a_field_label ] + secondary_field_values
+    results_as_data_array.append(header_row)
+    for k, v in results_grouped_by_highest_level_value.iteritems():
+        data_array_element = [ k ]
+        for secondary_field_value in secondary_field_values:
+            data_array_element.append( v[secondary_field_value] )
+        results_as_data_array.append(data_array_element)
 
     final_data = {}
     if 'score' in data_formats:
@@ -59,13 +81,13 @@ def get_multigroup_count_data(df, args, data_formats):
         }
         final_data['score'] = score_data
     if 'visualize' in data_formats:
-        visualization_data = results_as_collection
+        visualization_data = results_as_data_array
         final_data['visualize'] = visualization_data
 
     if 'table' in data_formats:
         table_data = {
-            'columns': [ group_a_field_label, group_b_field_label, 'count' ],
-            'data': results_as_data_array
+            'columns': results_as_data_array[0],
+            'data': results_as_data_array[1:]
         }
         final_data['table'] = table_data
     return final_data
