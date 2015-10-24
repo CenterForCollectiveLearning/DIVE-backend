@@ -160,10 +160,11 @@ def format_properties_by_field(fields, properties):
 
 
 def _parse_confidence_intervals(model_result):
-    conf_int = model_result.conf_int()
+    conf_int = model_result.conf_int().transpose().to_dict()
+
     parsed_conf_int = {}
     for field, d in conf_int.iteritems():
-        parsed_conf_int[field] = [d[0], d[1]]
+        parsed_conf_int[field] = [ d[0], d[1] ]
     logger.info(parsed_conf_int)
     return parsed_conf_int
 
@@ -203,7 +204,7 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
             't_value': t_values.get('Intercept'),
             'coefficient': params.get('Intercept'),
             'standard_error': ste.get('Intercept'),
-            # 'conf_int': conf_ints.get('Intercept')
+            'conf_int': conf_ints.get('Intercept')
         }
 
         regression_field_properties = {
@@ -211,7 +212,7 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
             't_value': t_values,
             'coefficient': params,
             'standard_error': ste,
-            # 'conf_int': conf_ints
+            'conf_int': conf_ints
         }
 
         total_regression_properties = {
@@ -250,17 +251,17 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
             'bic': model_result.bic,
         }
 
+    independent_variable_names = [ iv['name'] for iv in independent_variables ]
     # Restructure field properties dict from
-    # { property: { field: value }} -> { field: { property: value } }
-    properties_by_field = {}
-    for prop_type, field_names_and_values in regression_field_properties.iteritems():
-        for field_name, value in field_names_and_values.iteritems():
-            if field_name == 'Intercept':
-                continue
-            if field_name in properties_by_field:
-                properties_by_field[field_name][prop_type] = value
-            else:
-                properties_by_field[field_name] = { prop_type: value }
+    # { property: { field: value }} -> [ field: field, properties: { property: value } ]
+    properties_by_field = []
+    for field in independent_variable_names:
+        properties = { 'field': field, 'properties': {} }
+        for prop_type, field_names_and_values in regression_field_properties.iteritems():
+            if field in field_names_and_values:
+                properties['properties'][prop_type] = field_names_and_values[field]
+        properties_by_field.append(properties)
+
     return {
         'constants': constants,
         'properties_by_field': properties_by_field,
