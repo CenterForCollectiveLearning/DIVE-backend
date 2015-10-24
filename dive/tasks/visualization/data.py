@@ -34,6 +34,44 @@ def _get_derived_field(df, label_descriptor):
     return result
 
 
+def get_multigroup_count_data(df, args, data_formats):
+    group_a_field_label = args['fieldA']['name']
+    group_b_field_label = args['fieldB']['name']
+    grouped_df = df.groupby([group_a_field_label, group_b_field_label]).size()
+    results_as_data_array = []
+    results_as_collection = []
+    for k, v in grouped_df.to_dict().iteritems():
+        results_as_data_array.append([
+            k[0], k[1], v
+        ])
+        results_as_collection.append({
+            'groupA': k[0],
+            'groupB': k[1],
+            'count': v
+        })
+
+    results_as_data_array = sorted(results_as_data_array, key=lambda k: (k[0], k[1]))
+
+    final_data = {}
+    if 'score' in data_formats:
+        score_data = {
+            'agg': grouped_df.values
+        }
+        final_data['score'] = score_data
+    if 'visualize' in data_formats:
+        visualization_data = results_as_collection
+        final_data['visualize'] = visualization_data
+
+    if 'table' in data_formats:
+        table_data = {
+            'columns': [ group_a_field_label, group_b_field_label, 'count' ],
+            'data': results_as_data_array
+        }
+        final_data['table'] = table_data
+    return final_data
+
+
+
 def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
@@ -169,6 +207,8 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
                 'columns': columns,
                 'data': table_data
             }
+    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+        final_data = get_multigroup_count_data(df, args, data_formats)
 
     # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
@@ -326,8 +366,6 @@ def get_viz_data_from_builder_spec(spec, conditional, project_id):
 
     ### 3) Query based on operation
     # a) Group
-    # TODO Chain with agg?
-    # TODO Deal with multiple aggregations?
     if operation == 'group':
         function = arguments.get('function')
         field_b = arguments.get('field_b')

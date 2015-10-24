@@ -11,6 +11,7 @@ class GeneratingProcedure(Enum):
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'
     VAL_VAL_Q = 'val:val:q'
+    MULTIGROUP_COUNT = 'multigroup:count'
 
 
 class TypeStructure(Enum):
@@ -60,6 +61,7 @@ class VizType(Enum):
     NETWORK = 'network'
     HIST = 'hist'
     BAR = 'bar'
+    STACKED_BAR = 'stackedbar'
 
 class TermType(Enum):
     '''

@@ -3,8 +3,8 @@ from itertools import combinations
 
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, aggregation_functions, VizType
 
-# TODO How to document defaults?
-
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
 elementwise_functions = {
     'add': '+',
@@ -193,6 +193,8 @@ def D(c_field, q_field):
         for agg_fn in aggregation_functions.keys():
             if agg_fn == 'count':
                 continue
+
+
             spec = {
                 'generating_procedure': GeneratingProcedure.VAL_AGG.value,
                 'type_structure': TypeStructure.C_Q.value,
@@ -218,6 +220,7 @@ def D(c_field, q_field):
     return specs
 
 def E(c_field, q_fields):
+    logger.info("E")
     specs = []
 
     # Two-field agg:agg
@@ -255,7 +258,34 @@ def E(c_field, q_fields):
     return specs
 
 def F(c_fields):
+    logger.info("F")
     specs = []
+
+    # Count of one field given another
+    # E.g. count of position by gender
+    for (c_field_a, c_field_b) in combinations(c_fields, 2):
+        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+        spec = {
+            'generating_procedure': GeneratingProcedure.MULTIGROUP_COUNT.value,
+            'type_structure': TypeStructure.liC_Q.value,
+            'viz_types': [ VizType.STACKED_BAR.value ],
+            'fields': [ c_field_a, c_field_b ],
+            'args': {
+                'fieldA': c_field_a,
+                'fieldB': c_field_b,
+            },
+            'meta': {
+                'desc': 'Count by %s then %s' % (c_label_a, c_label_b),
+                'construction': [
+                    { 'string': 'Count', 'type': TermType.OPERATION.value },
+                    { 'string': 'by', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_a, 'type': TermType.FIELD.value },
+                    { 'string': 'then', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_b, 'type': TermType.FIELD.value },
+                ]
+            }
+        }
+        specs.append(spec)
 
     # Two-field val:val
     # Not useful...

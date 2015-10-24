@@ -66,6 +66,8 @@ def get_statistical_properties(data, gp, ts):
             v = data.get('val')
         if gp == GeneratingProcedure.BIN_AGG.value:
             v = data.get('agg')
+        if gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+            v = data.get('agg')
 
         if v:
             for test_name, test_fn in univariate_tests.iteritems():
