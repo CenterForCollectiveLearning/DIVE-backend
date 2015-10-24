@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import combinations
 
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, aggregation_functions
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, aggregation_functions, VizType
 
 # TODO How to document defaults?
 
@@ -55,6 +55,7 @@ def A(q_field):
         count_spec = {
             'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
             'type_structure': TypeStructure.C_Q.value,
+            'viz_types': [ VizType.TREE.value, VizType.PIE.value, VizType.BAR.value ],
             'args': {
                 'fieldA': q_field  # TODO How to deal with dervied fields?
             },
@@ -76,6 +77,7 @@ def A(q_field):
             bin_spec = {
                 'generating_procedure': GeneratingProcedure.BIN_AGG.value,
                 'type_structure': TypeStructure.B_Q.value,
+                'viz_types': [ VizType.HIST.value ],
                 'args': {
                     'aggFn': 'count',
                     'aggFieldA': q_field,
@@ -141,6 +143,7 @@ def C(c_field):
     val_count_spec = {
         'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
         'type_structure': TypeStructure.C_Q.value,
+        'viz_types': [ VizType.TREE.value, VizType.PIE.value ],
         'args': {
             'fieldA': c_field
         },
@@ -167,6 +170,7 @@ def D(c_field, q_field):
         spec = {
             'generating_procedure': GeneratingProcedure.VAL_VAL.value,
             'type_structure': TypeStructure.C_Q.value,
+            'viz_types': [ VizType.BAR.value, VizType.TREE.value, VizType.PIE.value ],
             'args': {
                 'fieldA': c_field,
                 'fieldB': q_field,
@@ -186,6 +190,7 @@ def D(c_field, q_field):
             spec = {
                 'generating_procedure': GeneratingProcedure.VAL_AGG.value,
                 'type_structure': TypeStructure.C_Q.value,
+                'viz_types': [ VizType.BAR.value ],
                 'args': {
                     'aggFn': agg_fn,
                     'groupedField': c_field,
@@ -217,6 +222,7 @@ def E(c_field, q_fields):
                 spec = {
                     'generating_procedure': GeneratingProcedure.AGG_AGG.value,
                     'type_structure': TypeStructure.Q_Q.value,
+                    'viz_types': [ VizType.SCATTER.value ],
                     'args': {
                         'aggFn': agg_fn,
                         'aggFieldA': q_field_a,
@@ -276,6 +282,7 @@ def G(c_fields, q_field):
         spec = {
             'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
             'type_structure': TypeStructure.liC_Q.value,
+            'viz_types': [ VizType.NETWORK.value ],
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
@@ -306,6 +313,7 @@ def H(c_fields, q_fields):
         spec = {
             'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
             'type_structure': TypeStructure.liC_Q.value,
+            'viz_types': [ VizType.NETWORK.value ],
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,

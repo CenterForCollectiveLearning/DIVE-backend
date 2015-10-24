@@ -155,8 +155,8 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
 
     # Assign viz_types and dataset_id
     for spec in specs:
-        viz_types = get_viz_types_from_spec(spec)
-        spec['viz_types'] = viz_types
+        # viz_types = get_viz_types_from_spec(spec)
+        # spec['viz_types'] = viz_types
         spec['dataset_id'] = dataset_id
 
     logger.info("Number of specs: %s", len(specs))

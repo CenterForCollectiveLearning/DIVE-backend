@@ -17,25 +17,6 @@ class GeneratingProcedures(Resource):
         result = dict([(gp.name, gp.value) for gp in GeneratingProcedure])
         return make_response(jsonify(format_json(result)))
 
-# Using reqparse, but not able to load the json object correctly
-# specsPostParser = reqparse.RequestParser()
-# specsPostParser.add_argument('project_id', type=str, required=True, location='json')
-# specsPostParser.add_argument('dataset_id', type=str, required=True, location='json')
-# specsPostParser.add_argument('field_agg_pairs', type=str, required=True, location='json')
-# class Specs(Resource):
-#     def post(self):
-#         args = specsPostParser.parse_args()
-#         project_id = args.get('project_id')
-#         dataset_id = args.get('dataset_id')
-#         logger.info(args.get('field_agg_pairs'))
-#         arguments = json.loads(args.get('field_agg_pairs'))
-#
-#         specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
-#         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
-#             return make_response(jsonify(format_json({'specs': specs})))
-#         else:
-#             specs_task = viz_spec_pipeline(dataset_id, project_id, arguments).apply_async()
-#             return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
 class Specs(Resource):
     def post(self):
@@ -61,7 +42,6 @@ class Visualization(Resource):
 
         args = visualizationGetParser.parse_args()
         projectTitle = args.get('projectTitle').strip().strip('"')
-        # visualizations = MI.getExportedSpecs(find_doc, project_id)
 
         if visualizations:
             spec = visualizations[0]['spec'][0]
