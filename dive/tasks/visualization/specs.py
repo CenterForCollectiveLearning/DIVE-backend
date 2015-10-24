@@ -174,7 +174,7 @@ def filter_viz_specs(self, enumerated_viz_specs, project_id):
 
 
 @celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields):
+def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields, sort_key='relevance'):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
     self.update_state(state=states.PENDING)
     scored_viz_specs = []
@@ -183,7 +183,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields):
             logger.info('Scored %s out of %s specs', (i + 1), len(filtered_viz_specs))
         scored_spec = spec
 
-        # TODO Opt=imize data reads
+        # TODO Optimize data reads
         with task_app.app_context():
             try:
                 data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
@@ -194,7 +194,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields):
             continue
         scored_spec['data'] = data
 
-        score_doc = score_spec(spec)
+        score_doc = score_spec(spec, selected_fields)
         if not score_doc:
             continue
         scored_spec['score'] = score_doc
@@ -203,8 +203,10 @@ def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields):
 
         scored_viz_specs.append(spec)
 
+    sorted_viz_specs = sorted(scored_viz_specs, key=lambda k: k['score'][sort_key], reverse=True)
+
     # self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
-    return scored_viz_specs
+    return sorted_viz_specs
 
 
 @celery.task(bind=True)

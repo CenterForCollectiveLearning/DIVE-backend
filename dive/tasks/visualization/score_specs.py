@@ -14,7 +14,6 @@ def get_effectiveness(spec):
     return result
 
 
-# http://planspace.org/2013/06/21/how-to-calculate-gini-coefficient-from-raw-data-in-python/
 def gini(list_of_values):
   sorted_list = sorted(list_of_values)
   height, area = 0, 0
@@ -89,13 +88,28 @@ def get_statistical_properties(data, gp, ts):
 
     return stats
 
-def score_spec(spec):
+
+def get_relevance_score(spec, visualization_fields, selected_fields):
+    ''' Increase by number specified fields that are included '''
+    score = 0
+    for field in selected_fields:
+        if field['name'] in visualization_fields:
+            score = score + 10
+    return score
+
+
+def score_spec(spec, selected_fields):
     score_doc = {
-        'stats': {}
+        'stats': {},
+        'relevance': 0,
     }
     data = spec['data']['score']
+    visualization_fields = spec['fields']
     gp = spec['generating_procedure']
     ts = spec['type_structure']
+
+    if selected_fields:
+        score_doc['relevance'] = get_relevance_score(spec, visualization_fields, selected_fields)
 
     score_doc['stats'] = get_statistical_properties(data, gp, ts)
 

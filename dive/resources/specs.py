@@ -23,7 +23,7 @@ class Specs(Resource):
         args = request.get_json()
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
-        arguments = args.get('field_agg_pairs')
+        arguments = args.get('field_agg_pairs', [])
 
         specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
