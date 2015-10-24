@@ -34,6 +34,34 @@ def _get_derived_field(df, label_descriptor):
     return result
 
 
+def get_raw_comparison_data(df, args, data_formats):
+    final_data = {}
+    fieldA_label = args['fieldA']['name']
+    fieldB_label = args['fieldB']['name']
+
+    fieldA_list = df[fieldA_label].tolist()
+    fieldB_list = df[fieldB_label].tolist()
+
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'fieldA': fieldA_list,
+            'fieldB': fieldB_list
+        }
+    if 'visualize' in data_formats:
+        data_array = []
+        data_array.append([ fieldA_label, fieldB_label ])
+        for (a, b) in zip(fieldA_list, fieldB_list):
+            data_array.append([a, b])
+        final_data['visualize'] = data_array
+    if 'table' in data_formats:
+        final_data['table'] = {
+            'columns': df.columns.tolist(),
+            'data': df.values.tolist()
+        }
+
+    return final_data
+
+
 def get_multigroup_count_data(df, args, data_formats):
     '''
     For google charts, need in form of:
@@ -263,30 +291,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
             }
 
     elif gp == GeneratingProcedure.VAL_VAL.value:
-        fieldA_label = args['fieldA']['name']
-        fieldB_label = args['fieldB']['name']
-
-        fieldA_list = df[fieldA_label].tolist()
-        fieldB_list = df[fieldB_label].tolist()
-
-        if 'score' in data_formats:
-            final_data['score'] = {
-                'fieldA': fieldA_list,
-                'fieldB': fieldB_list
-            }
-        if 'visualize' in data_formats:
-            data = []
-            for (a, b) in zip(fieldA_list, fieldB_list):
-                data.append({
-                    'x': a,
-                    'y': b
-                })
-            final_data['visualize'] = data
-        if 'table' in data_formats:
-            final_data['table'] = {
-                'columns': df.columns.tolist(),
-                'data': df.values.tolist()
-            }
+        final_data = get_raw_comparison_data(df, args, data_formats)
 
     elif gp == GeneratingProcedure.VAL_COUNT.value:
         fieldA_label = args['fieldA']['name']

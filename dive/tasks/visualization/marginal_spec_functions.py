@@ -100,21 +100,44 @@ def A(q_field):
     return specs
 
 def B(q_fields):
+    logger.info("B")
     specs = []
-    return specs
 
-    # Function on pairs of columns
-    # for (field_a, field_b) in combinations(q_fields, 2):
-    #     label_a = field_a['name']
-    #     label_b = field_b['name']
-    #     for ew_fn, ew_op in elementwise_functions.iteritems():
-    #         derived_column_field = {
-    #             'transform': '2:1',
-    #             'name': "%s %s %s" % (label_a, ew_op, label_b),
-    #             'is_unique': False  # TODO Run property detection again?
-    #         }
-    #         A_specs = A(derived_column_field)
-    #         specs.extend(A_specs)
+    #Function on pairs of columns
+    for (q_field_a, q_field_b) in combinations(q_fields, 2):
+        q_label_a = q_field_a['name']
+        q_label_b = q_field_b['name']
+
+        # Raw comparison
+        raw_comparison_spec = {
+            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
+            'type_structure': TypeStructure.Q_Q.value,
+            'fields': [ q_label_a, q_label_b ],
+            'viz_types': [ VizType.SCATTER.value ],
+            'args': {
+                'fieldA': q_field_a,
+                'fieldB': q_field_b
+            },
+            'meta': {
+                'desc': '%s vs. %s' % (q_label_a, q_label_b),
+                'construction': [
+                    { 'string': q_label_a, 'type': TermType.FIELD.value },
+                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
+                    { 'string': q_label_b, 'type': TermType.FIELD.value },
+                ]
+            }
+        }
+        specs.append(raw_comparison_spec)
+
+        # for ew_fn, ew_op in elementwise_functions.iteritems():
+        #     derived_column_field = {
+        #         'transform': '2:1',
+        #         'name': "%s %s %s" % (label_a, ew_op, label_b),
+        #         'is_unique': False  # TODO Run property detection again?
+        #     }
+        #     A_specs = A(derived_column_field)
+        #     specs.extend(A_specs)
+    return specs
 
 def C(c_field):
     '''
