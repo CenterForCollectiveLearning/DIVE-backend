@@ -58,7 +58,7 @@ def A(q_field):
             'viz_types': [ VizType.TREE.value, VizType.PIE.value, VizType.BAR.value ],
             'fields': [ q_label ],
             'args': {
-                'fieldA': q_field  # TODO How to deal with dervied fields?
+                'fieldA': q_field
             },
             'meta': {
                 'desc': 'Count of %s' % q_label,
@@ -71,7 +71,6 @@ def A(q_field):
         }
         specs.append(count_spec)
 
-    # TODO Implement binning algorithm
     # { Bins: Aggregate(binned values) }
     for binning_procedure, implemented in binning_procedures.iteritems():
         if implemented:
@@ -261,12 +260,12 @@ def E(c_field, q_fields):
                         'aggFn': agg_fn,
                         'aggFieldA': q_field_a,
                         'aggFieldB': q_field_b,
-                        'groupedField': c_label
+                        'groupedField': c_field
                     },
                     'meta': {
                         'desc': 'Group by %s and aggregate %s and %s by %s' % (c_label, q_label_a, q_label_b, agg_fn),
                         'construction': [
-                            { 'string': 'Group by', 'type': TermType.OPERATION.value },
+                            { 'string': 'Group', 'type': TermType.OPERATION.value },
                             { 'string': c_label, 'type': TermType.FIELD.value },
                             { 'string': 'and', 'type': TermType.PLAIN.value },
                             { 'string': 'aggregate', 'type': TermType.OPERATION.value },
@@ -278,6 +277,7 @@ def E(c_field, q_fields):
                         ]
                     }
                 }
+                specs.append(spec)
     return specs
 
 def F(c_fields):

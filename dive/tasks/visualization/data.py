@@ -64,6 +64,8 @@ def get_raw_comparison_data(df, args, data_formats):
 
 def get_multigroup_count_data(df, args, data_formats):
     '''
+    Group by one field, then by another
+
     For google charts, need in form of:
     [
         [group_a_value_1, group_b_value_1, group_b_value_2, count],
@@ -120,6 +122,45 @@ def get_multigroup_count_data(df, args, data_formats):
         final_data['table'] = table_data
     return final_data
 
+
+def get_agg_agg_data(df, args, data_formats):
+    '''
+    1) Group by a categorical field
+    2) Aggregate two other quantitative fields
+    '''
+    final_data = {}
+
+    group_field_name = args['groupedField']['name']
+    agg_field_a_name = args['aggFieldA']['name']
+    agg_field_b_name = args['aggFieldB']['name']
+    agg_fn = args['aggFn']
+
+    grouped_df = df.groupby(group_field_name)
+    agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])
+    agg_field_a_list = agg_df[agg_field_a_name].tolist()
+    agg_field_b_list = agg_df[agg_field_b_name].tolist()
+    final_viz_data = {
+        'fieldA': agg_field_a_list,
+        'fieldB': agg_field_b_list
+    }
+
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'fieldA': agg_field_a_list,
+            'fieldB': agg_field_b_list,
+        }
+    if 'visualize' in data_formats:
+        data_array = []
+        data_array.append([ agg_field_a_name, agg_field_b_name ])
+        for (a, b) in zip(agg_field_a_list, agg_field_b_list):
+            data_array.append([a, b])
+        final_data['visualize'] = data_array
+    if 'table' in data_formats:
+        final_data['table'] = {
+            'columns': agg_df.columns.tolist(),
+            'data': agg_df.values.tolist()
+        }
+    return final_data
 
 
 def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
@@ -314,33 +355,8 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
             }
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
-        grouped_df = df.groupby(args['groupedField']['name'])
-        agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
-        agg_field_a_list = agg_df[args['aggFieldA']['name']].tolist()
-        agg_field_b_list = agg_df[args['aggFieldB']['name']].tolist()
-        final_viz_data = {
-            'fieldA': agg_field_a_list,
-            'fieldB': agg_field_b_list
-        }
+        final_data = get_agg_agg_data(df, args, data_formats)
 
-        if 'score' in data_formats:
-            final_data['score'] = {
-                'fieldA': agg_field_a_list,
-                'fieldB': agg_field_b_list,
-            }
-        if 'visualize' in data_formats:
-            data = []
-            for (a, b) in zip(agg_field_a_list, agg_field_b_list):
-                data.append({
-                    'x': a,
-                    'y': b
-                })
-            final_data['visualize'] = data
-        if 'table' in data_formats:
-            final_data['table'] = {
-                'columns': agg_df.columns.tolist(),
-                'data': agg_df.values.tolist()
-            }
 
     return final_data
 
