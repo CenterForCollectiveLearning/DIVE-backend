@@ -187,6 +187,8 @@ def D(c_field, q_field):
         specs.append(spec)
     else:
         for agg_fn in aggregation_functions.keys():
+            if agg_fn == 'count':
+                continue
             spec = {
                 'generating_procedure': GeneratingProcedure.VAL_AGG.value,
                 'type_structure': TypeStructure.C_Q.value,

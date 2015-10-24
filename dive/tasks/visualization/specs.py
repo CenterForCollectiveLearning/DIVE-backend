@@ -11,7 +11,7 @@ from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermTyp
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
-from dive.tasks.visualization.scoring import score_spec
+from dive.tasks.visualization.score_specs import score_spec
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -174,7 +174,7 @@ def filter_viz_specs(self, enumerated_viz_specs, project_id):
 
 
 @celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs, project_id):
+def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
     self.update_state(state=states.PENDING)
     scored_viz_specs = []

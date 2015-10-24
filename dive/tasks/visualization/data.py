@@ -339,14 +339,12 @@ def get_viz_data_from_builder_spec(spec, conditional, project_id):
             group_operation = aggregation_functions[function]
             grouped_df = gb.aggregate(group_operation)
             grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
-            # grouped_df = grouped_df[[field_b]]  # Just returning all aggregated fields
 
         field_a_loc = conditioned_df.columns.get_loc(field_a)
         grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
 
         # Table Data: Dict of matrices
         grouped_df_copy = grouped_df
-        # grouped_df_copy.insert(0, field_a, grouped_df_copy.index)
 
         table_result = {
             'columns': grouped_df_copy.columns.tolist(),
