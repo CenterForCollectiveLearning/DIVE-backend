@@ -11,7 +11,7 @@ from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermTyp
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
-from dive.tasks.visualization.scoring import score_spec
+from dive.tasks.visualization.score_specs import score_spec
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -155,8 +155,8 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
 
     # Assign viz_types and dataset_id
     for spec in specs:
-        viz_types = get_viz_types_from_spec(spec)
-        spec['viz_types'] = viz_types
+        # viz_types = get_viz_types_from_spec(spec)
+        # spec['viz_types'] = viz_types
         spec['dataset_id'] = dataset_id
 
     logger.info("Number of specs: %s", len(specs))
@@ -174,7 +174,7 @@ def filter_viz_specs(self, enumerated_viz_specs, project_id):
 
 
 @celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs, project_id):
+def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields, sort_key='relevance'):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
     self.update_state(state=states.PENDING)
     scored_viz_specs = []
@@ -183,7 +183,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
             logger.info('Scored %s out of %s specs', (i + 1), len(filtered_viz_specs))
         scored_spec = spec
 
-        # TODO Opt=imize data reads
+        # TODO Optimize data reads
         with task_app.app_context():
             try:
                 data = get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score', 'visualize'])
@@ -194,7 +194,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
             continue
         scored_spec['data'] = data
 
-        score_doc = score_spec(spec)
+        score_doc = score_spec(spec, selected_fields)
         if not score_doc:
             continue
         scored_spec['score'] = score_doc
@@ -203,8 +203,10 @@ def score_viz_specs(self, filtered_viz_specs, project_id):
 
         scored_viz_specs.append(spec)
 
+    sorted_viz_specs = sorted(scored_viz_specs, key=lambda k: k['score'][sort_key], reverse=True)
+
     # self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
-    return scored_viz_specs
+    return sorted_viz_specs
 
 
 @celery.task(bind=True)

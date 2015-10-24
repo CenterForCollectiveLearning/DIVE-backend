@@ -52,6 +52,15 @@ class TemporalFunction(Enum):
     MIN = 'min'
     MAX = 'max'
 
+class VizType(Enum):
+    TREE = 'tree'
+    PIE = 'pie'
+    SCATTER = 'scatter'
+    LINE = 'line'
+    NETWORK = 'network'
+    HIST = 'hist'
+    BAR = 'bar'
+
 class TermType(Enum):
     '''
     List of terms in natural language visualization description
