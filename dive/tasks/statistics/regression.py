@@ -43,7 +43,6 @@ def run_regression_from_spec(spec, project_id):
     if not (dataset_id and dependent_variable_name):
         return "Not passed required parameters", 400
 
-
     # Map variables to field documents
     all_fields = db_access.get_field_properties(project_id, dataset_id)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
@@ -53,7 +52,7 @@ def run_regression_from_spec(spec, project_id):
         independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
     else:
         for field in all_fields:
-            if (field['general_type'] == 'q' and field['name'] != dependent_variable_name) and (not field['is_unique']):
+            if (field['general_type'] == 'q' and field['name'] != dependent_variable_name):
                 independent_variables.append(field)
 
     # Determine regression model based on number of type of variables
