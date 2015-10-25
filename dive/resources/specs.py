@@ -24,15 +24,17 @@ class Specs(Resource):
         args = request.get_json()
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
-        arguments = args.get('field_agg_pairs', [])
+        selected_fields = args.get('field_agg_pairs', [])
+        if not selected_fields:
+            selected_fields = []
         conditionals = args.get('conditionals', {})
         full_conditionals = get_full_fields_for_conditionals(conditionals, dataset_id, project_id)
 
-        specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
+        specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
             return make_response(jsonify(format_json({'specs': specs})))
         else:
-            specs_task = viz_spec_pipeline(dataset_id, project_id, arguments, full_conditionals).apply_async()
+            specs_task = viz_spec_pipeline(dataset_id, project_id, selected_fields, conditionals).apply_async()
             return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
 

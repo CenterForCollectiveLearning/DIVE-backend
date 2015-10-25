@@ -258,15 +258,16 @@ def format_viz_specs(self, scored_viz_specs, project_id):
 
 
 @celery.task(bind=True)
-def save_viz_specs(self, specs, dataset_id, project_id):
-    logger.info("Saving viz specs")
+def save_viz_specs(self, specs, dataset_id, project_id, selected_fields, conditionals):
     self.update_state(state=states.PENDING)
+
     with task_app.app_context():
-        # TODO Delete existing specs
-        existing_specs = db_access.get_specs(project_id, dataset_id)
+        # Delete existing specs with same parameters
+        existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
+        logger.info("EXISTING_SPECS: %s", existing_specs)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
-        inserted_specs = db_access.insert_specs(project_id, specs)
+        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals)
     return inserted_specs
     # self.update_state(state=states.SUCCESS, meta={'status': 'Saved viz specs'})

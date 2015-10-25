@@ -143,6 +143,8 @@ class Spec(db.Model):
     score = db.Column(JSONB)
     data = db.Column(JSONB)
     fields = db.Column(JSONB)
+    selected_fields = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
