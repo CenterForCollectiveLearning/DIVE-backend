@@ -329,12 +329,18 @@ def get_bin_agg_data(df, args, data_formats):
             })
         final_data['visualize'] = viz_data
     if 'table' in data_formats:
-        columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
-
         table_data = []
-        for i, row in enumerate(agg_df.values.tolist()):
-            new_row = [bin_num_to_formatted_edges[i]] + row
-            table_data.append(new_row)
+        if args['aggFn'] == 'count':
+            columns = columns = [ 'bins of %s' % binning_field, 'count' ]
+            for i, count in enumerate(agg_df.ix[:, 0].tolist()):
+                new_row = [bin_num_to_formatted_edges[i], count]
+                table_data.append(new_row)
+
+        else:
+            columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
+            for i, row in enumerate(agg_df.values.tolist()):
+                new_row = [bin_num_to_formatted_edges[i]] + row
+                table_data.append(new_row)
 
         final_data['table'] = {
             'columns': columns,
@@ -391,7 +397,7 @@ def get_val_count_data(df, args, data_formats):
             [{'value': v, 'count': c} for (v, c) in zip(value_list, counts)]
     if 'table' in data_formats:
         final_data['table'] = {
-            'columns': ['value', 'count'],
+            'columns': [fieldA_label, 'count'],
             'data': [[v, c] for (v, c) in zip(value_list, counts)]
         }
     return final_data

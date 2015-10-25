@@ -264,7 +264,6 @@ def save_viz_specs(self, specs, dataset_id, project_id, selected_fields, conditi
     with task_app.app_context():
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
-        logger.info("EXISTING_SPECS: %s", existing_specs)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
