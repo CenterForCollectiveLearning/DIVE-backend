@@ -29,6 +29,12 @@ def get_full_field_documents_from_names(all_fields, names):
     return fields
 
 
+def save_regression(spec, result, project_id):
+    logger.info("Saving regression")
+    inserted_regression = db_access.insert_regression(project_id, spec, result)
+    return inserted_regression
+
+
 def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
@@ -72,24 +78,6 @@ def run_regression_from_spec(spec, project_id):
     # 3) Run test based on parameters and arguments
     regression_result = run_cascading_regression(df, independent_variables, dependent_variable, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
     return regression_result, 200
-
-    # {
-    #     'variables': [],
-    #     'regressionsByColumn': [
-    #         {
-    #             'fields': [],
-    #             'rSquared': "",
-    #             'regressions': [
-    #                 {
-    #                     'variable': "",
-    #                     'coefficient': {'x1': "", 'const': ""},
-    #                     'standardError': {'x1': "", 'const': ""},
-    #                     'pValue': {'x1': "", 'const': ""}
-    #                 }
-    #             ]
-    #         }
-    #     ]
-    # }
 
 
 def run_cascading_regression(df, independent_variables, dependent_variable, model='lr', degree=1, functions=[], estimator='ols', weights=None):

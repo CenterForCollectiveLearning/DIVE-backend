@@ -185,6 +185,51 @@ class Exported_Spec(db.Model):
     project = db.relationship(Project)
 
 
+class Regression(db.Model):
+    '''
+    Many-to-one with Dataset
+    '''
+    __tablename__ = ModelName.REGRESSION.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    spec = db.Column(JSONB)
+    data = db.Column(JSONB)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+    # One-to-many with exported specs
+    exported_regression = db.relationship('Exported_Regression',
+        backref="regression",
+        cascade="all, delete-orphan",
+        lazy='dynamic')
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
+    project = db.relationship(Project)
+
+
+class Exported_Regression(db.Model):
+    '''
+    Many-to-one with Analysis
+    '''
+    __tablename__ = ModelName.EXPORTED_REGRESSION.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+    regression_id = db.Column(db.Integer, db.ForeignKey('regression.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
+    project = db.relationship(Project)
+
+
+
 class Relationship(db.Model):
     '''
     Relationships between fields in different datasets
