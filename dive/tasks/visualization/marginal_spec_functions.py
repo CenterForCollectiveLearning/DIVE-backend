@@ -58,7 +58,7 @@ def A(q_field):
             'viz_types': [ VizType.TREE.value, VizType.PIE.value, VizType.BAR.value ],
             'fields': [ q_label ],
             'args': {
-                'fieldA': q_field  # TODO How to deal with dervied fields?
+                'fieldA': q_field
             },
             'meta': {
                 'desc': 'Count of %s' % q_label,
@@ -71,7 +71,6 @@ def A(q_field):
         }
         specs.append(count_spec)
 
-    # TODO Implement binning algorithm
     # { Bins: Aggregate(binned values) }
     for binning_procedure, implemented in binning_procedures.iteritems():
         if implemented:
@@ -100,21 +99,44 @@ def A(q_field):
     return specs
 
 def B(q_fields):
+    logger.info("B")
     specs = []
-    return specs
 
-    # Function on pairs of columns
-    # for (field_a, field_b) in combinations(q_fields, 2):
-    #     label_a = field_a['name']
-    #     label_b = field_b['name']
-    #     for ew_fn, ew_op in elementwise_functions.iteritems():
-    #         derived_column_field = {
-    #             'transform': '2:1',
-    #             'name': "%s %s %s" % (label_a, ew_op, label_b),
-    #             'is_unique': False  # TODO Run property detection again?
-    #         }
-    #         A_specs = A(derived_column_field)
-    #         specs.extend(A_specs)
+    #Function on pairs of columns
+    for (q_field_a, q_field_b) in combinations(q_fields, 2):
+        q_label_a = q_field_a['name']
+        q_label_b = q_field_b['name']
+
+        # Raw comparison
+        raw_comparison_spec = {
+            'generating_procedure': GeneratingProcedure.VAL_VAL.value,
+            'type_structure': TypeStructure.Q_Q.value,
+            'fields': [ q_label_a, q_label_b ],
+            'viz_types': [ VizType.SCATTER.value ],
+            'args': {
+                'fieldA': q_field_a,
+                'fieldB': q_field_b
+            },
+            'meta': {
+                'desc': '%s vs. %s' % (q_label_a, q_label_b),
+                'construction': [
+                    { 'string': q_label_a, 'type': TermType.FIELD.value },
+                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
+                    { 'string': q_label_b, 'type': TermType.FIELD.value },
+                ]
+            }
+        }
+        specs.append(raw_comparison_spec)
+
+        # for ew_fn, ew_op in elementwise_functions.iteritems():
+        #     derived_column_field = {
+        #         'transform': '2:1',
+        #         'name': "%s %s %s" % (label_a, ew_op, label_b),
+        #         'is_unique': False  # TODO Run property detection again?
+        #     }
+        #     A_specs = A(derived_column_field)
+        #     specs.extend(A_specs)
+    return specs
 
 def C(c_field):
     '''
@@ -166,6 +188,7 @@ def C(c_field):
 
 def D(c_field, q_field):
     specs = []
+    logger.info(c_field, q_field)
     c_label = c_field['name']
     q_label = q_field['name']
 
@@ -229,6 +252,8 @@ def E(c_field, q_fields):
         for (q_field_a, q_field_b) in combinations(q_fields, 2):
             q_label_a, q_label_b = q_field_a['name'], q_field_b['name']
             for agg_fn in aggregation_functions.keys():
+                if agg_fn == 'count':
+                    continue
                 spec = {
                     'generating_procedure': GeneratingProcedure.AGG_AGG.value,
                     'type_structure': TypeStructure.Q_Q.value,
@@ -238,12 +263,12 @@ def E(c_field, q_fields):
                         'aggFn': agg_fn,
                         'aggFieldA': q_field_a,
                         'aggFieldB': q_field_b,
-                        'groupedField': c_label
+                        'groupedField': c_field
                     },
                     'meta': {
                         'desc': 'Group by %s and aggregate %s and %s by %s' % (c_label, q_label_a, q_label_b, agg_fn),
                         'construction': [
-                            { 'string': 'Group by', 'type': TermType.OPERATION.value },
+                            { 'string': 'Group', 'type': TermType.OPERATION.value },
                             { 'string': c_label, 'type': TermType.FIELD.value },
                             { 'string': 'and', 'type': TermType.PLAIN.value },
                             { 'string': 'aggregate', 'type': TermType.OPERATION.value },
@@ -255,6 +280,7 @@ def E(c_field, q_fields):
                         ]
                     }
                 }
+                specs.append(spec)
     return specs
 
 def F(c_fields):
@@ -355,7 +381,7 @@ def H(c_fields, q_fields):
             'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
             'type_structure': TypeStructure.liC_Q.value,
             'viz_types': [ VizType.NETWORK.value ],
-            'fields': [ c_label_a, c_label_b, q_label ],
+            'fields': [ c_label_a, c_label_b ] + q_labels,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
