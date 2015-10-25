@@ -7,6 +7,8 @@ class ModelName(Enum):
     FIELD_PROPERTIES = 'field_properties'
     SPEC = 'spec'
     EXPORTED_SPEC = 'exported_spec'
+    REGRESSION = 'regression'
+    EXPORTED_REGRESSION = 'exported_regression'
     RELATIONSHIP = 'relationship'
     GROUP = 'group'
     USER = 'user'

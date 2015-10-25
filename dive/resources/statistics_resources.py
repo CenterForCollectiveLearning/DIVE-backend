@@ -1,9 +1,11 @@
 import time
-from flask import request, make_response, jsonify
+from flask import current_app, request, make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
+
+from dive.db import db_access
 from dive.resources.utilities import format_json
-from dive.tasks.statistics.regression import run_regression_from_spec
+from dive.tasks.statistics.regression import run_regression_from_spec, save_regression
 from dive.tasks.statistics.comparison import run_comparison_from_spec
 
 import logging
@@ -57,8 +59,14 @@ class RegressionFromSpec(Resource):
         args = request.get_json()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = run_regression_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+
+        regression = db_access.get_regression_from_spec(project_id, spec)
+        if regression and not current_app.config['RECOMPUTE_STATISTICS']:
+            return make_response(jsonify(format_json(regression['data'])))
+        else:
+            result, status = run_regression_from_spec(spec, project_id)
+            save_regression(spec, format_json(result), project_id)
+            return make_response(jsonify(format_json(result)), status)
 
 
 class ComparisonFromSpec(Resource):
