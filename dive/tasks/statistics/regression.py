@@ -19,6 +19,48 @@ from dive.data.access import get_data
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+def _difference_of_two_lists(l1, l2):
+    return [ x for x in l2 if x not in set(l1) ]
+
+def get_marginal_r_squared_data(regression_result):
+    regressions_by_column = regression_result['regressions_by_column']
+
+    considered_fields_length_to_names = {}
+    fields_to_r_squared_adj = {}
+
+    for regression_by_column in regressions_by_column:
+        column_properties = regression_by_column['column_properties']
+        r_squared_adj = column_properties['r_squared_adj']
+        fields = regression_by_column['regressed_fields']
+
+        if len(fields) not in considered_fields_length_to_names:
+            considered_fields_length_to_names[len(fields)] = [ fields ]
+        else:
+            considered_fields_length_to_names[len(fields)].append(fields)
+        fields_to_r_squared_adj[str(fields)] = r_squared_adj
+
+    max_fields_length = max(considered_fields_length_to_names.keys())
+    all_fields = considered_fields_length_to_names[max_fields_length][0]
+    all_fields_r_squared_adj = fields_to_r_squared_adj[str(all_fields)]
+
+    if max_fields_length <= 1:
+        return
+
+    maximum_r_squared_adj = max(fields_to_r_squared_adj.values())
+
+    data_array = [['Field', 'Marginal R-squared']]
+
+    all_except_one_regression_fields = considered_fields_length_to_names[max_fields_length - 1]
+    for all_except_one_regression_fields in all_except_one_regression_fields:
+        regression_r_squared_adj = fields_to_r_squared_adj[str(all_except_one_regression_fields)]
+
+        marginal_field = _difference_of_two_lists(all_except_one_regression_fields, all_fields)
+        marginal_r_squared_adj = all_fields_r_squared_adj - regression_r_squared_adj
+        data_array.append([ marginal_field, marginal_r_squared_adj])
+
+    print data_array
+    return data_array
+
 
 def get_full_field_documents_from_names(all_fields, names):
     fields = []
@@ -84,7 +126,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
     # Format data structures
     indep_fields = [ iv['name'] for iv in independent_variables ]
     regression_results = {
-        'regressionsByColumn': [],
+        'regressions_by_column': [],
         'fields': indep_fields,
     }
 
@@ -121,7 +163,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
                 },
                 'column_properties': model_result['total_regression_properties']
             }
-            regression_results['regressionsByColumn'].append(regression_result)
+            regression_results['regressions_by_column'].append(regression_result)
             if regression_stats:
                 regression_result['regression']['stats'] = regression_stats
 
@@ -152,7 +194,6 @@ def _parse_confidence_intervals(model_result):
     parsed_conf_int = {}
     for field, d in conf_int.iteritems():
         parsed_conf_int[field] = [ d[0], d[1] ]
-    logger.info(parsed_conf_int)
     return parsed_conf_int
 
 
@@ -205,8 +246,8 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
         total_regression_properties = {
             'aic': model_result.aic,
             'bic': model_result.bic,
-            'rSquared': model_result.rsquared,
-            'rSquaredAdj': model_result.rsquared_adj,
+            'r_squared': model_result.rsquared,
+            'r_squared_adj': model_result.rsquared_adj,
             'fTest': model_result.fvalue,
             'resid': model_result.resid.tolist()
         }

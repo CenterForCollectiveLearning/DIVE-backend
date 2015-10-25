@@ -4,8 +4,8 @@ from flask.ext.restful import Resource, reqparse
 
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
-from dive.tasks.statistics.regression import run_regression_from_spec, save_regression
+from dive.resources.utilities import format_json, replace_unserializable_numpy
+from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_marginal_r_squared_data
 from dive.tasks.statistics.comparison import run_comparison_from_spec
 
 import logging
@@ -60,17 +60,17 @@ class RegressionFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
 
-        regression = db_access.get_regression_from_spec(project_id, spec)
-        if regression and not current_app.config['RECOMPUTE_STATISTICS']:
-            result = regression['data']
-            result['id'] = regression['id']
-            return make_response(jsonify(format_json(result)))
+        regression_doc = db_access.get_regression_from_spec(project_id, spec)
+        if regression_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            regression_data = regression_doc['data']
+            regression_data['id'] = regression_doc['id']
         else:
-            regression, status = run_regression_from_spec(spec, project_id)
-            saved_regression = save_regression(spec, format_json(regression), project_id)
-            result = saved_regression['data']
-            result['id'] = saved_regression['id']
-            return make_response(jsonify(format_json(result)), status)
+            regression_data, status = run_regression_from_spec(spec, project_id)
+            serializable_regression_data = replace_unserializable_numpy(regression_data)
+            regression_doc = save_regression(spec, serializable_regression_data, project_id)
+            regression_data['id'] = regression_doc['id']
+        get_marginal_r_squared_data(regression_data)
+        return make_response(jsonify(format_json(regression_data)))
 
 
 class ComparisonFromSpec(Resource):
