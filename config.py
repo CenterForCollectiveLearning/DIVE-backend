@@ -14,7 +14,7 @@ class BaseConfig(object):
 
     RECOMPUTE_FIELD_PROPERTIES = True
     RECOMPUTE_VIZ_SPECS = True
-    RECOMPUTE_STATISTICS = False
+    RECOMPUTE_STATISTICS = True
 
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'amqp://'

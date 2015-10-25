@@ -5,7 +5,7 @@ from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
 from dive.resources.utilities import format_json, replace_unserializable_numpy
-from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_marginal_r_squared_data
+from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
 from dive.tasks.statistics.comparison import run_comparison_from_spec
 
 import logging
@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 # INPUT: numInputs, sizeArray, funcArraySize
 # OUTPUT: time
 #####################################################################
-
 # For inferred visualizations
 timeFromParamsPostParser = reqparse.RequestParser()
 timeFromParamsPostParser.add_argument('numInputs', type=int, location='json')
@@ -69,8 +68,21 @@ class RegressionFromSpec(Resource):
             serializable_regression_data = replace_unserializable_numpy(regression_data)
             regression_doc = save_regression(spec, serializable_regression_data, project_id)
             regression_data['id'] = regression_doc['id']
-        get_marginal_r_squared_data(regression_data)
+
         return make_response(jsonify(format_json(regression_data)))
+
+
+contributionToRSquaredGetParser = reqparse.RequestParser()
+contributionToRSquaredGetParser.add_argument('projectId', type=str)
+class ContributionToRSquared(Resource):
+    def get(self, regression_id):
+        args = contributionToRSquaredGetParser.parse_args()
+        project_id = args.get('projectId')
+        regression_doc = db_access.get_regression_by_id(regression_id, project_id)
+        regression_data = regression_doc['data']
+        data = get_contribution_to_r_squared_data(regression_data)
+        logger.info(data)
+        return make_response(jsonify(format_json({'data': data})))
 
 
 class ComparisonFromSpec(Resource):

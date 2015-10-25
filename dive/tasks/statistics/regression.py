@@ -22,7 +22,13 @@ logger = get_task_logger(__name__)
 def _difference_of_two_lists(l1, l2):
     return [ x for x in l2 if x not in set(l1) ]
 
-def get_marginal_r_squared_data(regression_result):
+# def get_residual_data_array(regression_result):
+#     regressions_by_column = regression_result['regressions_by_column']['column_properties']
+#     resid =
+#     df = get_data(project_id=project_id, dataset_id=dataset_id)
+#     df = df.dropna()
+
+def get_contribution_to_r_squared_data(regression_result):
     regressions_by_column = regression_result['regressions_by_column']
 
     considered_fields_length_to_names = {}
@@ -150,7 +156,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
             if model_result['total_regression_properties'].get('resid'):
                 dep_data = df[dependent_variable['name']]
                 regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
-                del model_result['total_regression_properties']['resid']
+                model_result['total_regression_properties']['resid']
 
             # Format results
             field_names = [ civ['name'] for civ in considered_independent_variables ]
