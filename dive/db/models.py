@@ -14,9 +14,6 @@ class Project(db.Model):
     topics = db.Column(JSONB)
     preloaded = db.Column(db.Boolean())
     directory = db.Column(db.Unicode(2000))
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     users = db.relationship("User")
@@ -28,8 +25,9 @@ class Project(db.Model):
         cascade="all, delete-orphan",
         backref="project")
 
-    def __repr__(self):
-        return "<Project - ID: %s, Title: %s>" % (self.id, self.title)
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 # TODO Use mixins and custom base classes to support dataset -> postgres?
 class Dataset(db.Model):
@@ -43,9 +41,6 @@ class Dataset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Unicode(250))
     description = db.Column(db.Unicode())
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
 
     offset = db.Column(db.Integer)
     dialect = db.Column(JSONB)
@@ -76,6 +71,11 @@ class Dataset(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate="CASCADE", ondelete="CASCADE"))
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
 
 # TODO Decide between a separate table and more fields on Dataset
 class Dataset_Properties(db.Model):
@@ -89,15 +89,15 @@ class Dataset_Properties(db.Model):
     structure = db.Enum(['wide', 'long'])
     is_time_series = db.Column(db.Boolean())
 
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate="CASCADE", ondelete="CASCADE"))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 
 class Field_Properties(db.Model):
@@ -116,10 +116,6 @@ class Field_Properties(db.Model):
     is_child = db.Column(db.Boolean())
     stats = db.Column(JSONB)
 
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate="CASCADE", ondelete="CASCADE"))
 
@@ -127,6 +123,11 @@ class Field_Properties(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
 
     project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 
 # TODO Make this not dataset-specific?
 class Spec(db.Model):
@@ -146,10 +147,6 @@ class Spec(db.Model):
     selected_fields = db.Column(JSONB)
     conditionals = db.Column(JSONB)
 
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
     # One-to-many with exported specs
     exported_specs = db.relationship('Exported_Spec',
         backref="spec",
@@ -163,6 +160,9 @@ class Spec(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 class Exported_Spec(db.Model):
     '''
@@ -173,10 +173,6 @@ class Exported_Spec(db.Model):
     conditionals = db.Column(JSONB)
     config = db.Column(JSONB)
 
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
     spec_id = db.Column(db.Integer, db.ForeignKey('spec.id',
         onupdate="CASCADE", ondelete="CASCADE"))
 
@@ -184,6 +180,9 @@ class Exported_Spec(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 class Regression(db.Model):
     '''
@@ -195,10 +194,6 @@ class Regression(db.Model):
     spec = db.Column(JSONB)
     data = db.Column(JSONB)
 
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
     # One-to-many with exported specs
     exported_regression = db.relationship('Exported_Regression',
         backref="regression",
@@ -209,17 +204,19 @@ class Regression(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 
 class Exported_Regression(db.Model):
     '''
-    Many-to-one with Analysis
+    Many-to-one with Regression
     '''
     __tablename__ = ModelName.EXPORTED_REGRESSION.value
     id = db.Column(db.Integer, primary_key=True)
 
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
+
 
     regression_id = db.Column(db.Integer, db.ForeignKey('regression.id',
         onupdate="CASCADE", ondelete="CASCADE"))
@@ -228,7 +225,9 @@ class Exported_Regression(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
-
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 class Relationship(db.Model):
     '''
@@ -254,6 +253,10 @@ class Relationship(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
     project = db.relationship(Project)
 
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 
 class Group(db.Model):
     '''
@@ -266,6 +269,10 @@ class Group(db.Model):
         backref="dataset",
         cascade="all, delete-orphan",
         lazy='dynamic')
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
 
 class User(db.Model):
@@ -290,3 +297,7 @@ class User(db.Model):
         uselist=False,
         cascade="all, delete-orphan",
         backref="user")
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)

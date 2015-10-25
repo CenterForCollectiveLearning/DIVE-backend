@@ -292,9 +292,10 @@ def get_regression_by_id(regression_id, project_id, **kwargs):
 
 
 def get_regression_from_spec(project_id, spec):
-    regression = Regression.query.filter_by(project_id=project_id, spec=spec).one()
-    if regression is None:
-        abort(404)
+    try:
+        regression = Regression.query.filter_by(project_id=project_id, spec=spec).one()
+    except NoResultFound:
+        return None
     return row_to_dict(regression)
 
 
@@ -307,7 +308,6 @@ def insert_regression(project_id, spec, data):
     db.session.add(regression)
     db.session.commit()
     return row_to_dict(regression)
-
 
 def delete_regression(project_id, regression_id):
     try:
@@ -323,33 +323,33 @@ def delete_regression(project_id, regression_id):
 ################
 # Exported Analayses
 ################
-def get_exported_regression(project_id, exported_regression_id):
-    spec = Exported_Regression.query.filter_by(id=exported_regression_id,
+def get_exported_regression_by_id(project_id, exported_regression_id):
+    exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
         project_id=project_id).one()
-    if spec is None:
+    if exported_regression is None:
         abort(404)
-    return row_to_dict(spec)
+    return row_to_dict(exported_regression)
 
 def get_exported_regressions(project_id):
-    specs = Exported_Regression.query.filter_by(project_id=project_id).all()
-    return [ row_to_dict(spec) for spec in specs ]
+    exported_regressions = Exported_Regression.query.filter_by(project_id=project_id).all()
+    return [ row_to_dict(exported_regression) for exported_regression in exported_regressions ]
 
-def insert_exported_regression(project_id, spec_id, conditionals, config):
-    exported_regression = Exported_Spec(
+def insert_exported_regression(project_id, regression_id):
+    exported_regression = Exported_Regression(
         project_id = project_id,
-        spec_id = spec_id,
-        conditionals = conditionals,
-        config = config
+        regression_id = regression_id
     )
     db.session.add(exported_regression)
     db.session.commit()
     return row_to_dict(exported_regression)
 
 def delete_exported_regression(project_id, exported_regression_id):
-    exported_regression = Exported_Regression.query.filter_by(project_id=project_id, id=exported_regression_id).one()
-
-    if exported_regression is None:
-        abort(404)
+    try:
+        exported_regression = Exported_Regression.query.filter_by(project_id=project_id, id=exported_regression_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
 
     db.session.delete(exported_regression)
     db.session.commit()

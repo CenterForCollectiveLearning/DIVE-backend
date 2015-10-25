@@ -62,7 +62,6 @@ class RegressionFromSpec(Resource):
 
         regression = db_access.get_regression_from_spec(project_id, spec)
         if regression and not current_app.config['RECOMPUTE_STATISTICS']:
-            logger.info("Returning persisted result %s", regression)
             return make_response(jsonify(format_json(regression['data'])))
         else:
             result, status = run_regression_from_spec(spec, project_id)
