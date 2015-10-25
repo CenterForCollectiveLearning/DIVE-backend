@@ -64,7 +64,7 @@ bivariate_tests = {
 
 # Statistical
 def get_statistical_properties(data, gp, ts):
-    stats = {}
+    stat_docs = []
     # Single quantitative field:
     if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.Q_Q.value]:
         v = None
@@ -79,34 +79,49 @@ def get_statistical_properties(data, gp, ts):
 
         if v:
             for test_name, test_fn in univariate_tests.iteritems():
+                test_value = None
                 try:
                     test_value = test_fn(v)
                     if np.isnan(test_value) or np.isinf(test_value):
                         test_value = None
-                    stats[test_name] = test_value
                 except:
-                    stats[test_name] = None
                     logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
                     continue
+                stat_docs.append({
+                    'type': test_name,
+                    'score': test_value
+                })
+            for test_name, test_fn in bivariate_tests.iteritems():
+                stat_docs.append({
+                    'type': test_name,
+                    'score': None
+                })
 
-    logger.info(ts)
+
     if ts in [TypeStructure.Q_Q.value]:
-        logger.info('Conducting bivariate test')
-        logger.info(data)
+        stat_docs = []
         v1 = data.get('fieldA')
         v2 = data.get('fieldB')
         if v1 and v2:
             for test_name, test_fn in bivariate_tests.iteritems():
+                test_value = None
                 try:
                     test_value = test_fn(v1, v2)
                     if np.isnan(test_value) or np.isinf(test_value):
                         test_value = None
-                    stats[test_name] = test_value
                 except:
-                    stats[test_name] = None
                     logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
                     continue
-    return stats
+                stat_docs.append({
+                    'type': test_name,
+                    'score': test_value
+                })
+            for test_name, test_fn in univariate_tests.iteritems():
+                stat_docs.append({
+                    'type': test_name,
+                    'score': None
+                })
+    return stat_docs
 
 
 def get_relevance_score(spec, visualization_field_ids, selected_fields):
@@ -120,18 +135,26 @@ def get_relevance_score(spec, visualization_field_ids, selected_fields):
 
 
 def score_spec(spec, selected_fields):
-    score_doc = {
-        'stats': {},
-        'relevance': 0,
-    }
+    '''
+    Entry point for getting relevance and statistical scores
+
+    Returns a list in the format [ {type, score}, ...]
+    '''
+    score_docs = []
+
     data = spec['data']['score']
     visualization_field_ids = spec['field_ids']
     gp = spec['generating_procedure']
     ts = spec['type_structure']
 
-    if selected_fields:
-        score_doc['relevance'] = get_relevance_score(spec, visualization_field_ids, selected_fields)
+    relevance_score_doc = {
+        'type': 'relevance',
+        'score': get_relevance_score(spec, visualization_field_ids, selected_fields)
+    }
+    score_docs.append(relevance_score_doc)
 
-    score_doc['stats'] = get_statistical_properties(data, gp, ts)
+    stat_score_docs = get_statistical_properties(data, gp, ts)
+    score_docs.extend(stat_score_docs)
 
-    return score_doc
+    logger.info(score_docs)
+    return score_docs

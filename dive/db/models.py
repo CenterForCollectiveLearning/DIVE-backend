@@ -141,7 +141,7 @@ class Spec(db.Model):
     viz_types = db.Column(JSONB)
     args = db.Column(JSONB)
     meta = db.Column(JSONB)
-    score = db.Column(JSONB)
+    scores = db.Column(JSONB)
     data = db.Column(JSONB)
     field_ids = db.Column(JSONB)
     selected_fields = db.Column(JSONB)
