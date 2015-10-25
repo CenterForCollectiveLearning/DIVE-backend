@@ -18,6 +18,27 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
+def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
+    conditionals_with_full_docs = {'and': [], 'or': []}
+    with task_app.app_context():
+        field_properties = db_access.get_field_properties(project_id, dataset_id)
+
+    for clause, conditional_list in conditionals.iteritems():
+        for conditional in conditional_list:
+            new_conditional = {
+                'operation': conditional['operation'],
+                'criteria': conditional['criteria']
+            }
+            matched_field_doc = next((f for f in field_properties if f['id'] == conditional['field_id']), None)
+            new_conditional['field'] = {
+                'general_type': matched_field_doc['general_type'],
+                'name': matched_field_doc['name']
+            }
+            conditionals_with_full_docs[clause].append(new_conditional)
+
+    return conditionals_with_full_docs
+
+
 def enumerate_viz_specs_no_args(field_properties):
     ''' Return field-wise summary statistics if no arguments '''
     specs = []
@@ -36,17 +57,6 @@ def enumerate_viz_specs_no_args(field_properties):
         else:
             raise ValueError('Not valid general_type', general_type)
     return specs
-
-
-def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
-    conditionals_with_full_docs = {'and': [], 'or': []}
-    with task_app.app_context():
-        field_properties = db_access.get_field_properties(project_id, dataset_id)
-
-    for clause, conditional in conditionals.iteritems():
-        conditional_field_id = conditional['field_id']
-        conditionals_with_full_docs[clause] = next((f for f in field_properties if f['id'] == conditional_field_id), None)
-    return conditionals_with_full_docs
 
 
 @celery.task()
@@ -185,9 +195,11 @@ def filter_viz_specs(self, enumerated_viz_specs, project_id):
 
 
 @celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields, conditionals, sort_key='relevance'):
+def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_fields, conditionals, sort_key='relevance'):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
     self.update_state(state=states.PENDING)
+
+    full_conditionals = get_full_fields_for_conditionals(conditionals, dataset_id, project_id)
 
     scored_viz_specs = []
     for i, spec in enumerate(filtered_viz_specs):
@@ -198,7 +210,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields, condi
         # TODO Optimize data reads
         with task_app.app_context():
             try:
-                data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['score', 'visualize'])
+                data = get_viz_data_from_enumerated_spec(spec, project_id, full_conditionals, data_formats=['score', 'visualize'])
             except Exception as e:
                 logger.error("Error getting viz data %s", e, exc_info=True)
                 continue

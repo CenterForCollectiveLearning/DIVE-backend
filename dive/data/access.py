@@ -25,20 +25,6 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     return result
 
 
-def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
-    conditionals_with_full_docs = {'and': [], 'or': []}
-    field_properties = db_access.get_field_properties(project_id, dataset_id)
-
-    for clause, conditional_list in conditionals.iteritems():
-        for conditional in conditional_list:
-            conditional_copy = conditional
-            conditional_field_name = conditional['field']
-            matched_field_doc = next((f for f in field_properties if f['name'] == conditional_field_name), None)
-            conditional_copy['field'] = matched_field_doc
-            conditionals_with_full_docs[clause].append(conditional_copy)
-    return conditionals_with_full_docs
-
-
 def get_data(project_id=None, dataset_id=None, nrows=None):
     '''
     Generally return data in different formats
