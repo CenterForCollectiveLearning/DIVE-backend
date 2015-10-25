@@ -149,11 +149,6 @@ def get_agg_agg_data(df, args, data_formats):
         data_table.append([a, b, c])
         data_array.append([b, c])
 
-    final_viz_data = {
-        'fieldA': agg_field_a_list,
-        'fieldB': agg_field_b_list
-    }
-
     if 'score' in data_formats:
         final_data['score'] = {
             'fieldA': agg_field_a_list,
@@ -265,13 +260,13 @@ def get_ind_val_data(df, args, data_formats):
             'val': field_a_series.tolist()
         }
     if 'visualize' in data_formats:
-        viz_data = []
+        data_array = []
         for (i, val) in enumerate(field_a_series.tolist()):
-            viz_data.append({
-                'index': i,
-                'value': val
-            })
-        final_data['visualize'] = viz_data
+            data_array.append([
+                i,
+                val
+            ])
+        final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
             'columns': df.columns.tolist(),
@@ -321,13 +316,13 @@ def get_bin_agg_data(df, args, data_formats):
             'agg': agg_values
         }
     if 'visualize' in data_formats:
-        viz_data = []
+        data_array = [['Bin', 'Value']]
         for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
-            viz_data.append({
-                'bin': formatted_bin_edges,
-                'value': agg_val
-            })
-        final_data['visualize'] = viz_data
+            data_array.append([
+                formatted_bin_edges,
+                agg_val
+            ])
+        final_data['visualize'] = data_array
     if 'table' in data_formats:
         table_data = []
         if args['aggFn'] == 'count':
@@ -370,9 +365,9 @@ def get_val_agg_data(df, args, data_formats):
             'aggField': agg_field_list
         }
     if 'visualize' in data_formats:
-        final_data['visualize'] = \
-            [{'value': g, 'agg': a} for (g, a) in \
-            zip(grouped_field_list, agg_field_list)]
+        data_array = [ [grouped_field_label, agg_field_label] ] + \
+            [[g, a] for (g, a) in zip(grouped_field_list, agg_field_list)]
+        final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
             'columns': agg_df.columns.tolist(),
@@ -393,8 +388,9 @@ def get_val_count_data(df, args, data_formats):
             'count': counts
         }
     if 'visualize' in data_formats:
-        final_data['visualize'] = \
-            [{'value': v, 'count': c} for (v, c) in zip(value_list, counts)]
+        data_array = [ [fieldA_label, 'count'] ] + [[v, c] for (v, c) in zip(value_list, counts)]
+
+        final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
             'columns': [fieldA_label, 'count'],

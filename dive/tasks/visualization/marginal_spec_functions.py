@@ -188,7 +188,6 @@ def C(c_field):
 
 def D(c_field, q_field):
     specs = []
-    logger.info(c_field, q_field)
     c_label = c_field['name']
     q_label = q_field['name']
 
@@ -216,7 +215,6 @@ def D(c_field, q_field):
         for agg_fn in aggregation_functions.keys():
             if agg_fn == 'count':
                 continue
-
 
             spec = {
                 'generating_procedure': GeneratingProcedure.VAL_AGG.value,
