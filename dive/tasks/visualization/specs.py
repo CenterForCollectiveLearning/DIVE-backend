@@ -141,7 +141,7 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
                 specs.extend(F_specs)
             elif (n_q == 1):
                 for c_field in c_fields:
-                    D_specs = D(c_fields, q_fields[0])
+                    D_specs = D(c_fields[0], q_fields[0])
                     specs.extend(D_specs)
                 G_specs = G(c_fields, q_fields[0])
                 specs.extend(G_specs)

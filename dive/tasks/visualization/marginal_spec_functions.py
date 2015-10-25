@@ -188,6 +188,7 @@ def C(c_field):
 
 def D(c_field, q_field):
     specs = []
+    logger.info(c_field, q_field)
     c_label = c_field['name']
     q_label = q_field['name']
 
@@ -251,6 +252,8 @@ def E(c_field, q_fields):
         for (q_field_a, q_field_b) in combinations(q_fields, 2):
             q_label_a, q_label_b = q_field_a['name'], q_field_b['name']
             for agg_fn in aggregation_functions.keys():
+                if agg_fn == 'count':
+                    continue
                 spec = {
                     'generating_procedure': GeneratingProcedure.AGG_AGG.value,
                     'type_structure': TypeStructure.Q_Q.value,

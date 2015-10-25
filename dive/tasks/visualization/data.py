@@ -157,8 +157,8 @@ def get_agg_agg_data(df, args, data_formats):
         final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
-            'columns': agg_df.columns.tolist(),
-            'data': agg_df.values.tolist()
+            'columns': data_array[0],
+            'data': data_array[1:]
         }
     return final_data
 
