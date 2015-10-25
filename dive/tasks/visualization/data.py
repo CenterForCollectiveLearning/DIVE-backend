@@ -172,7 +172,21 @@ def get_agg_agg_data(df, args, data_formats):
     return final_data
 
 
-def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
+def get_agg_data(df, args, data_formats):
+    final_data = {}
+    agg_field_label = args['aggFieldA']['name']
+    agg_field_data = df[agg_field_label]
+    agg_fn_label = args['aggFn']
+
+    if agg_fn_label == 'mode':
+        result = agg_field_data.value_counts().idxmax()
+    else:
+        agg_fn = aggregation_functions[agg_fn_label]
+        result = agg_fn(agg_field_data)
+    final_data['visualize'] = result
+    return final_data
+
+def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
     structure), and all necessary information to interpret data.
@@ -200,173 +214,186 @@ def get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['score']):
     dataset_id = spec['dataset_id']
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
+    conditioned_df = get_conditioned_data(df, conditionals)
 
     if gp == GeneratingProcedure.AGG.value:
-        agg_field_label = args['aggFieldA']['name']
-        agg_field_data = df[agg_field_label]
-        agg_fn_label = args['aggFn']
-
-        if agg_fn_label == 'mode':
-            result = agg_field_data.value_counts().idxmax()
-        else:
-            agg_fn = aggregation_functions[agg_fn_label]
-            result = agg_fn(agg_field_data)
-        final_data['visualize'] = result
+        final_data = get_agg_data(conditioned_df, args, data_formats)
 
     elif gp == GeneratingProcedure.IND_VAL.value:
-        field_a_label = args['fieldA']['name']
-
-        # If direct field
-        if isinstance(field_a_label, basestring):
-            data = df[field_a_label]
-        # If derived field
-        # TODO Deal with this later
-        elif isinstance(field_a_label, dict):
-            data = _get_derived_field(df, field_a_label)
-        else:
-            print "Ill-formed field_a_label %s" % (field_a)
-
-        field_a_series = df[field_a_label]
-
-        if 'score' in data_formats:
-            final_data['score'] = {
-                'ind': [ i for i in range(0, len(data)) ],
-                'val': field_a_series.tolist()
-            }
-        if 'visualize' in data_formats:
-            viz_data = []
-            for (i, val) in enumerate(field_a_series.tolist()):
-                viz_data.append({
-                    'index': i,
-                    'value': val
-                })
-            final_data['visualize'] = viz_data
-        if 'table' in data_formats:
-            final_data['table'] = {
-                'columns': df.columns.tolist(),
-                'data': df.values.tolist()
-            }
+        final_data = get_ind_val_data(conditioned_df, args, data_formats)
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
-        binning_field = args['binningField']['name']
-        binning_procedure = args['binningProcedure']
-        agg_field_a = args['aggFieldA']['name']
-        agg_fn = aggregation_functions[args['aggFn']]
+        final_data = get_bin_agg_data(conditioned_df, args, data_formats)
 
-        unbinned_field = df[binning_field]
-        try:
-            bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
-        except Exception, e:
-            # Skip this spec
-            return None
-
-        bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
-        bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
-        formatted_bin_edges_list = []  # ['left_edge-right_edge']
-        for bin_num in range(0, len(bin_edges_list) - 1):
-            left_bin_edge, right_bin_edge = \
-                bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
-            bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
-
-            rounded_left_bin_edge = '%.3f' % left_bin_edge
-            rounded_right_bin_edge = '%.3f' % right_bin_edge
-            formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
-            formatted_bin_edges_list.append(formatted_bin_edge)
-
-            bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
-
-
-        # TODO Ensure that order is preserved here
-        grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list)) # Right edge open
-        agg_df = grouped_df.aggregate(agg_fn)
-        agg_values = agg_df[agg_field_a].tolist()
-
-        if 'score' in data_formats:
-            final_data['score'] = {
-                'bins': bin_num_to_edges,
-                'binEdges': bin_edges_list,
-                'agg': agg_values
-            }
-        if 'visualize' in data_formats:
-            viz_data = []
-            for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
-                viz_data.append({
-                    'bin': formatted_bin_edges,
-                    'value': agg_val
-                })
-            final_data['visualize'] = viz_data
-        if 'table' in data_formats:
-            columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
-
-            table_data = []
-            for i, row in enumerate(agg_df.values.tolist()):
-                new_row = [bin_num_to_formatted_edges[i]] + row
-                table_data.append(new_row)
-
-            final_data['table'] = {
-                'columns': columns,
-                'data': table_data
-            }
     elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-        final_data = get_multigroup_count_data(df, args, data_formats)
+        final_data = get_multigroup_count_data(conditioned_df, args, data_formats)
 
-    # TODO Don't aggregate across numeric columns
     elif gp == GeneratingProcedure.VAL_AGG.value:
-        grouped_field_label = args['groupedField']['name']
-        agg_field_label = args['aggField']['name']
-
-        grouped_df = df.groupby(grouped_field_label)
-        agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
-        grouped_field_list = agg_df.index.tolist()
-        agg_field_list = agg_df[agg_field_label].tolist()
-
-        final_viz_data = {
-            'groupedField': agg_df.index.tolist(),
-            'aggField': agg_df[agg_field_label].tolist()
-        }
-
-        if 'score' in data_formats:
-            final_data['score'] = {
-                'groupedField': grouped_field_list,
-                'aggField': agg_field_list
-            }
-        if 'visualize' in data_formats:
-            final_data['visualize'] = \
-                [{'value': g, 'agg': a} for (g, a) in \
-                zip(grouped_field_list, agg_field_list)]
-        if 'table' in data_formats:
-            final_data['table'] = {
-                'columns': agg_df.columns.tolist(),
-                'data': agg_df.values.tolist()
-            }
+        final_data = get_val_agg_data(conditioned_df, args, data_formats)
 
     elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_data = get_raw_comparison_data(df, args, data_formats)
+        final_data = get_raw_comparison_data(conditioned_df, args, data_formats)
 
     elif gp == GeneratingProcedure.VAL_COUNT.value:
-        fieldA_label = args['fieldA']['name']
-        vc = df[fieldA_label].value_counts()
-        value_list = list(vc.index.values)
-        counts = vc.tolist()
-
-        if 'score' in data_formats:
-            final_data['score'] = {
-                'value': value_list,
-                'count': counts
-            }
-        if 'visualize' in data_formats:
-            final_data['visualize'] = \
-                [{'value': v, 'count': c} for (v, c) in zip(value_list, counts)]
-        if 'table' in data_formats:
-            final_data['table'] = {
-                'columns': ['value', 'count'],
-                'data': [[v, c] for (v, c) in zip(value_list, counts)]
-            }
+        final_data = get_val_count_data(conditioned_df, args, data_formats)
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
-        final_data = get_agg_agg_data(df, args, data_formats)
+        final_data = get_agg_agg_data(conditioned_df, args, data_formats)
+
+    return final_data
 
 
+def get_ind_val_data(df, args, data_formats):
+    final_data = {}
+    field_a_label = args['fieldA']['name']
+
+    # If direct field
+    if isinstance(field_a_label, basestring):
+        data = df[field_a_label]
+    # If derived field
+    # TODO Deal with this later
+    elif isinstance(field_a_label, dict):
+        data = _get_derived_field(df, field_a_label)
+    else:
+        print "Ill-formed field_a_label %s" % (field_a)
+
+    field_a_series = df[field_a_label]
+
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'ind': [ i for i in range(0, len(data)) ],
+            'val': field_a_series.tolist()
+        }
+    if 'visualize' in data_formats:
+        viz_data = []
+        for (i, val) in enumerate(field_a_series.tolist()):
+            viz_data.append({
+                'index': i,
+                'value': val
+            })
+        final_data['visualize'] = viz_data
+    if 'table' in data_formats:
+        final_data['table'] = {
+            'columns': df.columns.tolist(),
+            'data': df.values.tolist()
+        }
+    return final_data
+
+def get_bin_agg_data(df, args, data_formats):
+    final_data = {}
+    binning_field = args['binningField']['name']
+    binning_procedure = args['binningProcedure']
+    agg_field_a = args['aggFieldA']['name']
+    agg_fn = aggregation_functions[args['aggFn']]
+
+    unbinned_field = df[binning_field]
+    try:
+        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
+    except Exception, e:
+        # Skip this spec
+        return None
+
+    bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
+    bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
+    formatted_bin_edges_list = []  # ['left_edge-right_edge']
+    for bin_num in range(0, len(bin_edges_list) - 1):
+        left_bin_edge, right_bin_edge = \
+            bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
+        bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
+
+        rounded_left_bin_edge = '%.3f' % left_bin_edge
+        rounded_right_bin_edge = '%.3f' % right_bin_edge
+        formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
+        formatted_bin_edges_list.append(formatted_bin_edge)
+
+        bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
+
+
+    # TODO Ensure that order is preserved here
+    grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list)) # Right edge open
+    agg_df = grouped_df.aggregate(agg_fn)
+    agg_values = agg_df[agg_field_a].tolist()
+
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'bins': bin_num_to_edges,
+            'binEdges': bin_edges_list,
+            'agg': agg_values
+        }
+    if 'visualize' in data_formats:
+        viz_data = []
+        for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
+            viz_data.append({
+                'bin': formatted_bin_edges,
+                'value': agg_val
+            })
+        final_data['visualize'] = viz_data
+    if 'table' in data_formats:
+        columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
+
+        table_data = []
+        for i, row in enumerate(agg_df.values.tolist()):
+            new_row = [bin_num_to_formatted_edges[i]] + row
+            table_data.append(new_row)
+
+        final_data['table'] = {
+            'columns': columns,
+            'data': table_data
+        }
+    return final_data
+
+
+def get_val_agg_data(df, args, data_formats):
+    final_data = {}
+    grouped_field_label = args['groupedField']['name']
+    agg_field_label = args['aggField']['name']
+
+    grouped_df = df.groupby(grouped_field_label)
+    agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
+    grouped_field_list = agg_df.index.tolist()
+    agg_field_list = agg_df[agg_field_label].tolist()
+
+    final_viz_data = {
+        'groupedField': agg_df.index.tolist(),
+        'aggField': agg_df[agg_field_label].tolist()
+    }
+
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'groupedField': grouped_field_list,
+            'aggField': agg_field_list
+        }
+    if 'visualize' in data_formats:
+        final_data['visualize'] = \
+            [{'value': g, 'agg': a} for (g, a) in \
+            zip(grouped_field_list, agg_field_list)]
+    if 'table' in data_formats:
+        final_data['table'] = {
+            'columns': agg_df.columns.tolist(),
+            'data': agg_df.values.tolist()
+        }
+    return final_data
+
+def get_val_count_data(df, args, data_formats):
+    final_data = {}
+    fieldA_label = args['fieldA']['name']
+    vc = df[fieldA_label].value_counts()
+    value_list = list(vc.index.values)
+    counts = vc.tolist()
+
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'value': value_list,
+            'count': counts
+        }
+    if 'visualize' in data_formats:
+        final_data['visualize'] = \
+            [{'value': v, 'count': c} for (v, c) in zip(value_list, counts)]
+    if 'table' in data_formats:
+        final_data['table'] = {
+            'columns': ['value', 'count'],
+            'data': [[v, c] for (v, c) in zip(value_list, counts)]
+        }
     return final_data
 
 

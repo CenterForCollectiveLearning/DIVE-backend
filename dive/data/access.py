@@ -25,6 +25,20 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     return result
 
 
+def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
+    conditionals_with_full_docs = {'and': [], 'or': []}
+    field_properties = db_access.get_field_properties(project_id, dataset_id)
+
+    for clause, conditional_list in conditionals.iteritems():
+        for conditional in conditional_list:
+            conditional_copy = conditional
+            conditional_field_name = conditional['field']
+            matched_field_doc = next((f for f in field_properties if f['name'] == conditional_field_name), None)
+            conditional_copy['field'] = matched_field_doc
+            conditionals_with_full_docs[clause].append(conditional_copy)
+    return conditionals_with_full_docs
+
+
 def get_data(project_id=None, dataset_id=None, nrows=None):
     '''
     Generally return data in different formats
@@ -58,6 +72,15 @@ def get_data(project_id=None, dataset_id=None, nrows=None):
     return df
 
 
+def make_safe_string(s):
+    invalid_chars = '-_.+^$ '
+    if not s.startswith('temp_name_'):
+        for invalid_char in invalid_chars:
+            s = s.replace(invalid_char, '_')
+        s = 'temp_name_' + s
+    return s
+
+
 def get_conditioned_data(df, conditional_arg):
     '''
     Given a data frame and a conditional dict ({ and: [{field, operation,
@@ -68,48 +91,46 @@ def get_conditioned_data(df, conditional_arg):
     TODO Turn this into an argument of the get_data function
     '''
     # Replace spaces in column names with underscore
-    # cols = df.columns
-    # cols = cols.map(lambda x: x.replace(' ', '_') if isinstance(x, (str, unicode)) else x)
-    # df.columns = cols
-    # print "DF", df.columns
+
     query_strings = {
         'and': '',
         'or': ''
     }
     orig_cols = df.columns.tolist()
-    df.rename(columns=makeSafeString, inplace=True)
+    logger.info(orig_cols)
+    safe_df = df.rename(columns=make_safe_string)
+
     if conditional_arg.get('and'):
         for c in conditional_arg['and']:
-            field = makeSafeString(c['field'])
+            field_general_type = c['field']['general_type']
+            field_name = make_safe_string(c['field']['name'])
             operation = c['operation']
             criteria = c['criteria']
-            criteria_type = get_variable_type(criteria)
 
-            print criteria_type
-            if criteria_type in ["integer", "float"]:
-                query_string = '%s %s %s' % (field, operation, criteria)
+            if field_general_type == 'q':
+                query_string = '%s %s %s' % (field_name, operation, criteria)
             else:
-                query_string = '%s %s "%s"' % (field, operation, criteria)
+                query_string = '%s %s "%s"' % (field_name, operation, criteria)
             query_strings['and'] = query_strings['and'] + ' & ' + query_string
 
     if conditional_arg.get('or'):
         for c in conditional_arg['or']:
-            field = makeSafeString(c['field'])
+            field_general_type = c['field']['general_type']
+            field_name = make_safe_string(c['field']['name'])
             operation = c['operation']
             criteria = c['criteria']
-            criteria_type = get_variable_type(c['criteria'])
 
-            if criteria_type in ["integer", "float"]:
-                query_string = '%s %s %s' % (field, operation, criteria)
+            if field_general_type == 'q':
+                query_string = '%s %s %s' % (field_name, operation, criteria)
             else:
-                query_string = '%s %s "%s"' % (field, operation, criteria)
+                query_string = '%s %s "%s"' % (field_name, operation, criteria)
             query_strings['or'] = query_strings['or'] + ' | ' + query_string
     query_strings['and'] = query_strings['and'].strip(' & ')
     query_strings['or'] = query_strings['or'].strip(' | ')
 
     # Concatenate
     if not (query_strings['and'] or query_strings['or']):
-        conditioned_df = df
+        conditioned_df = safe_df
     else:
         final_query_string = ''
         if query_strings['and'] and query_strings['or']:
@@ -118,8 +139,6 @@ def get_conditioned_data(df, conditional_arg):
             final_query_string = query_strings['and']
         elif query_strings['or'] and not query_strings['and']:
             final_query_string = query_strings['or']
-        print "FINAL_QUERY_STRING:", final_query_string
-        conditioned_df = df.query(final_query_string)
-    df.columns = orig_cols
+        conditioned_df = safe_df.query(final_query_string)
     conditioned_df.columns = orig_cols
     return conditioned_df
