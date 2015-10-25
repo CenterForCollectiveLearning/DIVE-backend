@@ -62,10 +62,14 @@ class RegressionFromSpec(Resource):
 
         regression = db_access.get_regression_from_spec(project_id, spec)
         if regression and not current_app.config['RECOMPUTE_STATISTICS']:
-            return make_response(jsonify(format_json(regression['data'])))
+            result = regression['data']
+            result['id'] = regression['id']
+            return make_response(jsonify(format_json(result)))
         else:
-            result, status = run_regression_from_spec(spec, project_id)
-            save_regression(spec, format_json(result), project_id)
+            regression, status = run_regression_from_spec(spec, project_id)
+            saved_regression = save_regression(spec, format_json(regression), project_id)
+            result = saved_regression['data']
+            result['id'] = saved_regression['id']
             return make_response(jsonify(format_json(result)), status)
 
 
