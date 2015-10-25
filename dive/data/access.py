@@ -97,7 +97,6 @@ def get_conditioned_data(df, conditional_arg):
         'or': ''
     }
     orig_cols = df.columns.tolist()
-    logger.info(orig_cols)
     safe_df = df.rename(columns=make_safe_string)
 
     if conditional_arg.get('and'):

@@ -221,23 +221,25 @@ def insert_relationships(relationships, project_id):
 ################
 def get_spec(spec_id, project_id, **kwargs):
     # TODO Add in field for kwargs name
-    spec = Spec.query.filter_by(id=spec_id, project_id=project_id).one()
+    spec = Spec.query.filter_by(id=spec_id, project_id=project_id, **kwargs).one()
     if spec is None:
         abort(404)
     return row_to_dict(spec)
 
 def get_specs(project_id, dataset_id, **kwargs):
     # TODO filter by JSON rows?
-    specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
+    specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
     if specs is None:
         abort(404)
     return [ row_to_dict(spec) for spec in specs ]
 
-def insert_specs(project_id, specs):
+def insert_specs(project_id, specs, selected_fields, conditionals):
     spec_objects = []
     for s in specs:
         spec_objects.append(Spec(
             project_id = project_id,
+            selected_fields = selected_fields,
+            conditionals = conditionals,
             **s
         ))
     db.session.add_all(spec_objects)

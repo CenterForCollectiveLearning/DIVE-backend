@@ -13,7 +13,7 @@ class BaseConfig(object):
     PRELOADED_DIR = os.path.abspath(PRELOADED_DIR)
 
     RECOMPUTE_FIELD_PROPERTIES = True
-    RECOMPUTE_VIZ_SPECS = True
+    RECOMPUTE_VIZ_SPECS = False
 
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'amqp://'
