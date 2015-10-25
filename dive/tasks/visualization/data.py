@@ -137,8 +137,18 @@ def get_agg_agg_data(df, args, data_formats):
 
     grouped_df = df.groupby(group_field_name)
     agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])
+    grouped_field_list = agg_df.index.tolist()
     agg_field_a_list = agg_df[agg_field_a_name].tolist()
     agg_field_b_list = agg_df[agg_field_b_name].tolist()
+
+    data_table = []
+    data_array = []
+    data_table.append([ group_field_name, agg_field_a_name, agg_field_b_name ])
+    data_array.append([ agg_field_a_name, agg_field_b_name ])
+    for (a, b, c) in zip(grouped_field_list, agg_field_a_list, agg_field_b_list):
+        data_table.append([a, b, c])
+        data_array.append([b, c])
+
     final_viz_data = {
         'fieldA': agg_field_a_list,
         'fieldB': agg_field_b_list
@@ -149,16 +159,15 @@ def get_agg_agg_data(df, args, data_formats):
             'fieldA': agg_field_a_list,
             'fieldB': agg_field_b_list,
         }
+
     if 'visualize' in data_formats:
-        data_array = []
-        data_array.append([ agg_field_a_name, agg_field_b_name ])
-        for (a, b) in zip(agg_field_a_list, agg_field_b_list):
-            data_array.append([a, b])
+
         final_data['visualize'] = data_array
+
     if 'table' in data_formats:
         final_data['table'] = {
-            'columns': data_array[0],
-            'data': data_array[1:]
+            'columns': data_table[0],
+            'data': data_table[1:]
         }
     return final_data
 

@@ -381,7 +381,7 @@ def H(c_fields, q_fields):
             'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
             'type_structure': TypeStructure.liC_Q.value,
             'viz_types': [ VizType.NETWORK.value ],
-            'fields': [ c_label_a, c_label_b, q_label ],
+            'fields': [ c_label_a, c_label_b ] + q_labels,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
