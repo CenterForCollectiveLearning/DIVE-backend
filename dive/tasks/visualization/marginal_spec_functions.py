@@ -56,7 +56,7 @@ def A(q_field):
             'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
             'type_structure': TypeStructure.C_Q.value,
             'viz_types': [ VizType.TREE.value, VizType.PIE.value, VizType.BAR.value ],
-            'fields': [ q_label ],
+            'field_ids': [ q_field['id'] ],
             'args': {
                 'fieldA': q_field
             },
@@ -78,7 +78,7 @@ def A(q_field):
                 'generating_procedure': GeneratingProcedure.BIN_AGG.value,
                 'type_structure': TypeStructure.B_Q.value,
                 'viz_types': [ VizType.HIST.value ],
-                'fields': [ q_label ],
+                'field_ids': [ q_field['id'] ],
                 'args': {
                     'aggFn': 'count',
                     'aggFieldA': q_field,
@@ -111,7 +111,7 @@ def B(q_fields):
         raw_comparison_spec = {
             'generating_procedure': GeneratingProcedure.VAL_VAL.value,
             'type_structure': TypeStructure.Q_Q.value,
-            'fields': [ q_label_a, q_label_b ],
+            'field_ids': [ q_field_a['id'], q_field_b['id'] ],
             'viz_types': [ VizType.SCATTER.value ],
             'args': {
                 'fieldA': q_field_a,
@@ -168,7 +168,7 @@ def C(c_field):
         'generating_procedure': GeneratingProcedure.VAL_COUNT.value,
         'type_structure': TypeStructure.C_Q.value,
         'viz_types': [ VizType.TREE.value, VizType.PIE.value ],
-        'fields': [ c_label ],
+        'field_ids': [ c_field['id'] ],
         'args': {
             'fieldA': c_field
         },
@@ -197,7 +197,7 @@ def D(c_field, q_field):
             'generating_procedure': GeneratingProcedure.VAL_VAL.value,
             'type_structure': TypeStructure.C_Q.value,
             'viz_types': [ VizType.BAR.value, VizType.TREE.value, VizType.PIE.value ],
-            'fields': [ c_label, q_label ],
+            'field_ids': [ c_field['id'], q_field['id'] ],
             'args': {
                 'fieldA': c_field,
                 'fieldB': q_field,
@@ -222,7 +222,7 @@ def D(c_field, q_field):
                 'generating_procedure': GeneratingProcedure.VAL_AGG.value,
                 'type_structure': TypeStructure.C_Q.value,
                 'viz_types': [ VizType.BAR.value ],
-                'fields': [ c_label, q_label ],
+                'field_ids': [ c_field['id'], q_field['id'] ],
                 'args': {
                     'aggFn': agg_fn,
                     'groupedField': c_field,
@@ -258,7 +258,7 @@ def E(c_field, q_fields):
                     'generating_procedure': GeneratingProcedure.AGG_AGG.value,
                     'type_structure': TypeStructure.Q_Q.value,
                     'viz_types': [ VizType.SCATTER.value ],
-                    'fields': [ q_label_a, q_label_b, c_label ],
+                    'field_ids': [ q_field_a['id'], q_field_b['id'], c_field['id'] ],
                     'args': {
                         'aggFn': agg_fn,
                         'aggFieldA': q_field_a,
@@ -297,7 +297,7 @@ def F(c_fields):
             'generating_procedure': GeneratingProcedure.MULTIGROUP_COUNT.value,
             'type_structure': TypeStructure.liC_Q.value,
             'viz_types': [ VizType.STACKED_BAR.value ],
-            'fields': [ c_label_a, c_label_b ],
+            'field_ids': [ c_field_a['id'], c_field_b['id'] ],
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
@@ -349,7 +349,7 @@ def G(c_fields, q_field):
             'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
             'type_structure': TypeStructure.liC_Q.value,
             'viz_types': [ VizType.NETWORK.value ],
-            'fields': [ c_label_a, c_label_b, q_label ],
+            'field_ids': [ c_field_a['id'], c_field_b['id'], q_field['id'] ],
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
@@ -377,18 +377,19 @@ def H(c_fields, q_fields):
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
         q_labels = [ f['name'] for f in q_fields ]
+        q_field_ids = [ f['id'] for f in q_fields ]
         spec = {
             'generating_procedure': GeneratingProcedure.VAL_VAL_Q.value,
             'type_structure': TypeStructure.liC_Q.value,
             'viz_types': [ VizType.NETWORK.value ],
-            'fields': [ c_label_a, c_label_b ] + q_labels,
+            'field_ids': [ c_field_a['id'], c_field_b['id'] ] + q_field_ids,
             'args': {
                 'fieldA': c_field_a,
                 'fieldB': c_field_b,
                 'dataFields': q_labels
             },
             'meta': {
-                'desc': 'Connect %s with %s, with attributes %s' % (c_label_a, c_label_b, q_labels),
+                'desc': 'Connect %s with %s, with attributes %s' % (c_label_a, c_label_b, ', '.join(q_labels)),
                 'construction': [
                     { 'string': 'connect', 'type': TermType.PLAIN.value },
                     { 'string': c_label_a, 'type': TermType.FIELD.value },

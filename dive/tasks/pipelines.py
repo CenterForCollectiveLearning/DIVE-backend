@@ -63,7 +63,7 @@ def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs, conditionals):
     pipeline = chain([
         enumerate_viz_specs.si(project_id, dataset_id, field_agg_pairs),
         filter_viz_specs.s(project_id),
-        score_viz_specs.s(project_id, field_agg_pairs, conditionals),
+        score_viz_specs.s(project_id, dataset_id, field_agg_pairs, conditionals),
         format_viz_specs.s(project_id),
         save_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals)
     ])
