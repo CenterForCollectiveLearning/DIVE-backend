@@ -221,13 +221,13 @@ def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_f
         score_doc = score_spec(spec, selected_fields)
         if not score_doc:
             continue
-        scored_spec['score'] = score_doc
+        scored_spec['scores'] = score_doc
 
         del scored_spec['data']['score']
 
         scored_viz_specs.append(spec)
 
-    sorted_viz_specs = sorted(scored_viz_specs, key=lambda k: k['score'][sort_key], reverse=True)
+    sorted_viz_specs = sorted(scored_viz_specs, key=lambda k: next(s for s in k['scores'] if s['type'] == 'relevance')['score'], reverse=True)
 
     # self.update_state(state=states.SUCCESS, meta={'status': 'Scored viz specs'})
     return sorted_viz_specs
