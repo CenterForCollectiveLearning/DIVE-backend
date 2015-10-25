@@ -2,6 +2,7 @@ from flask import make_response, jsonify, request, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
+from dive.data.access import get_full_fields_for_conditionals
 from dive.resources.utilities import format_json
 from dive.tasks.visualization import GeneratingProcedure
 from dive.tasks.visualization.data import get_viz_data_from_builder_spec, get_viz_data_from_enumerated_spec
@@ -24,40 +25,15 @@ class Specs(Resource):
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
         arguments = args.get('field_agg_pairs', [])
+        conditionals = args.get('conditionals', {})
+        full_conditionals = get_full_fields_for_conditionals(conditionals, dataset_id, project_id)
 
         specs = db_access.get_specs(project_id, dataset_id, arguments=arguments)
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
             return make_response(jsonify(format_json({'specs': specs})))
         else:
-            specs_task = viz_spec_pipeline(dataset_id, project_id, arguments).apply_async()
+            specs_task = viz_spec_pipeline(dataset_id, project_id, arguments, full_conditionals).apply_async()
             return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
-
-
-visualizationGetParser = reqparse.RequestParser()
-visualizationGetParser.add_argument('project_id', type=str, required=True)
-class Visualization(Resource):
-    ''' Returns visualization and table data for a given spec'''
-    def get(self, vID):
-        result = {}
-
-        args = visualizationGetParser.parse_args()
-        projectTitle = args.get('projectTitle').strip().strip('"')
-
-        if visualizations:
-            spec = visualizations[0]['spec'][0]
-            dataset_id = spec['dataset_id']
-            formatted_spec = spec
-
-            viz_data = get_viz_data_from_enumerated_spec(spec,
-                project_id,
-                data_formats=['visualize', 'table']
-            )
-            result = {
-                'spec': spec,
-                'visualization': viz_data
-            }
-
-        return make_response(jsonify(format_json(result)))
 
 
 # TODO What's the difference from the previous function?
@@ -73,7 +49,7 @@ class VisualizationFromSpec(Resource):
 
         result = {
             'spec': spec,
-            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, data_formats=['visualize', 'table'])
+            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, {}, data_formats=['visualize', 'table'])
         }
 
         return make_response(jsonify(format_json(result)))
