@@ -44,8 +44,8 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
     for clause, conditional in conditionals.iteritems():
-        conditional_field_name = conditional['field']['name']
-        conditionals_with_full_docs[clause] = next((f for f in field_properties if f['name'] == conditional_field_name), None)
+        conditional_field_id = conditional['field_id']
+        conditionals_with_full_docs[clause] = next((f for f in field_properties if f['id'] == conditional_field_id), None)
     return conditionals_with_full_docs
 
 
@@ -82,7 +82,7 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
         n_q_total = 0
 
         for field in field_properties:
-            is_selected_field = next((selected_field for selected_field in selected_fields if selected_field['id'] == field['id']), None)
+            is_selected_field = next((selected_field for selected_field in selected_fields if selected_field['field_id'] == field['id']), None)
             if is_selected_field:
                 selected_field_docs.append(field)
 
@@ -225,33 +225,7 @@ def score_viz_specs(self, filtered_viz_specs, project_id, selected_fields, condi
 def format_viz_specs(self, scored_viz_specs, project_id):
     ''' Get viz specs into a format usable by front end '''
     self.update_state(state=states.PENDING)
-    field_keys = ['fieldA', 'fieldB', 'binningField', 'aggFieldA', 'aggFieldB']
-
-    formatted_viz_specs = []
-    for s in scored_viz_specs:
-        fields = {
-            'categorical': [],  # TODO Propagate this
-            'quantitative': []
-        }
-        args = s['args']
-
-        # Extract all fields
-        for field_key in field_keys:
-            if field_key in args:
-                field = args[field_key]
-                field_general_type = specific_to_general_type[field['type']]
-                if field_general_type is 'q': general_type_key = 'quantitative'
-                else: general_type_key = 'categorical'
-
-                fields[general_type_key].append({
-                    'name': field['name'],
-                    'id': field['id'],
-                    'fieldType': field['type']
-                })
-
-        s['fields'] = fields
-
-        formatted_viz_specs.append(s)
+    formatted_viz_specs = scored_viz_specs
 
     # self.update_state(state=states.SUCCESS, meta={'status': 'Formatted viz specs'})
     return formatted_viz_specs
@@ -264,7 +238,6 @@ def save_viz_specs(self, specs, dataset_id, project_id, selected_fields, conditi
     with task_app.app_context():
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
-        logger.info("EXISTING_SPECS: %s", existing_specs)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])

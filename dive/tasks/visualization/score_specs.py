@@ -91,11 +91,12 @@ def get_statistical_properties(data, gp, ts):
     return stats
 
 
-def get_relevance_score(spec, visualization_fields, selected_fields):
+def get_relevance_score(spec, visualization_field_ids, selected_fields):
     ''' Increase by number specified fields that are included '''
     score = 0
+    print visualization_field_ids, selected_fields
     for field in selected_fields:
-        if field['name'] in visualization_fields:
+        if field['field_id'] in visualization_field_ids:
             score = score + 10
     return score
 
@@ -106,12 +107,12 @@ def score_spec(spec, selected_fields):
         'relevance': 0,
     }
     data = spec['data']['score']
-    visualization_fields = spec['fields']
+    visualization_field_ids = spec['field_ids']
     gp = spec['generating_procedure']
     ts = spec['type_structure']
 
     if selected_fields:
-        score_doc['relevance'] = get_relevance_score(spec, visualization_fields, selected_fields)
+        score_doc['relevance'] = get_relevance_score(spec, visualization_field_ids, selected_fields)
 
     score_doc['stats'] = get_statistical_properties(data, gp, ts)
 

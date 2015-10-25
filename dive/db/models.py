@@ -142,7 +142,7 @@ class Spec(db.Model):
     meta = db.Column(JSONB)
     score = db.Column(JSONB)
     data = db.Column(JSONB)
-    fields = db.Column(JSONB)
+    field_ids = db.Column(JSONB)
     selected_fields = db.Column(JSONB)
     conditionals = db.Column(JSONB)
 
