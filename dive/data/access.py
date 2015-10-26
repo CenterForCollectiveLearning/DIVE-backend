@@ -20,7 +20,6 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=1000):
     sample = map(list, df.iloc[start:end].values)
 
     result = db_access.get_dataset_properties(project_id, dataset_id)
-    logger.info("Result, %s", result)
     result['sample'] = sample
     return result
 

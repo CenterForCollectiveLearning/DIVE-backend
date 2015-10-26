@@ -87,7 +87,6 @@ def get_statistical_properties(data, gp, ts):
                     test_value = None
             except:
                 logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
-                continue
 
             stat_docs.append({
                 'type': test_name,
@@ -112,7 +111,6 @@ def get_statistical_properties(data, gp, ts):
                     test_value = None
             except:
                 logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
-                continue
 
         for test_name, test_fn in bivariate_tests.iteritems():
             test_value = None
@@ -122,7 +120,6 @@ def get_statistical_properties(data, gp, ts):
                     test_value = None
             except:
                 logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
-                continue
             stat_docs.append({
                 'type': test_name,
                 'score': test_value
