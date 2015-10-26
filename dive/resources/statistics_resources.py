@@ -82,7 +82,7 @@ class ContributionToRSquared(Resource):
         regression_data = regression_doc['data']
         data = get_contribution_to_r_squared_data(regression_data)
         logger.info(data)
-        return make_response(jsonify(format_json({'data': data})))
+        return make_response(jsonify(format_json({ 'data': data })))
 
 
 class ComparisonFromSpec(Resource):
