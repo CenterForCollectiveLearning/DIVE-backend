@@ -284,8 +284,8 @@ def delete_exported_spec(project_id, exported_spec_id):
 ################
 # Analyses
 ################
-def get_regression_by_id(regression_id, project_id, **kwargs):
-    regression = Regression.query.filter_by(id=regression_id, project_id=project_id, **kwargs).one()
+def get_regression_by_id(regression_id, project_id):
+    regression = Regression.query.filter_by(id=regression_id, project_id=project_id).one()
     if regression is None:
         abort(404)
     return row_to_dict(regression)
