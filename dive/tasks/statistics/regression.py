@@ -60,7 +60,7 @@ def get_contribution_to_r_squared_data(regression_result):
     for all_except_one_regression_fields in all_except_one_regression_fields:
         regression_r_squared_adj = fields_to_r_squared_adj[str(all_except_one_regression_fields)]
 
-        marginal_field = _difference_of_two_lists(all_except_one_regression_fields, all_fields)
+        marginal_field = _difference_of_two_lists(all_except_one_regression_fields, all_fields)[0]
         marginal_r_squared_adj = all_fields_r_squared_adj - regression_r_squared_adj
         data_array.append([ marginal_field, marginal_r_squared_adj])
 

@@ -36,9 +36,9 @@ def format_json(obj):
     if isinstance(obj, np.float32) or isinstance(obj, np.float64):
         if np.isnan(obj) or np.isinf(obj):
             return None
-        return RoundedFloat(obj.item())
+        return obj.item()
     elif isinstance(obj, float):
-        return RoundedFloat(obj)
+        return obj
     elif isinstance(obj, (np.ndarray, list, tuple)):
         return map(format_json, obj)
     elif isinstance(obj,(pd.DataFrame, pd.Series)):
