@@ -35,13 +35,15 @@ def _mode(v):
 def _normaltest(v):
     return normaltest(v).pvalue
 
+def _z_score(v):
+    return np.var(v) / np.max(v)
 
 # Uniformity: Chi-Sq test or KL test against uniform distribution?
 univariate_tests = {
     'gini': gini,
     'entropy': entropy,  # Shannon entropy, base e
     'normality': _normaltest,  # Requires at least n >= 8
-    'variance': np.var,
+    'variance': _z_score,
     'size': len,
     # 'median': np.median,
     # 'average': np.average,
@@ -65,62 +67,66 @@ bivariate_tests = {
 # Statistical
 def get_statistical_properties(data, gp, ts):
     stat_docs = []
+    logger.info('gp: %s, ts: %s', gp, ts)
     # Single quantitative field:
-    if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.Q_Q.value]:
-        v = None
-        if gp == GeneratingProcedure.VAL_AGG.value:
+    if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.liC_Q.value]:
+        if gp in [ GeneratingProcedure.VAL_AGG.value ]:
             v = data.get('aggField')
-        if gp == GeneratingProcedure.IND_VAL.value:
+        elif gp in [ GeneratingProcedure.IND_VAL.value ]:
             v = data.get('val')
-        if gp == GeneratingProcedure.BIN_AGG.value:
+        elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
             v = data.get('agg')
-        if gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-            v = data.get('agg')
+        elif gp in [ GeneratingProcedure.VAL_COUNT.value ]:
+            v = data.get('count')
 
-        if v:
-            for test_name, test_fn in univariate_tests.iteritems():
-                test_value = None
-                try:
-                    test_value = test_fn(v)
-                    if np.isnan(test_value) or np.isinf(test_value):
-                        test_value = None
-                except:
-                    logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
-                    continue
-                stat_docs.append({
-                    'type': test_name,
-                    'score': test_value
-                })
-            for test_name, test_fn in bivariate_tests.iteritems():
-                stat_docs.append({
-                    'type': test_name,
-                    'score': None
-                })
+        for test_name, test_fn in univariate_tests.iteritems():
+            test_value = None
+            try:
+                test_value = test_fn(v)
+                if np.isnan(test_value) or np.isinf(test_value):
+                    test_value = None
+            except:
+                logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
+                continue
+
+            stat_docs.append({
+                'type': test_name,
+                'score': test_value
+            })
+        for test_name, test_fn in bivariate_tests.iteritems():
+            stat_docs.append({
+                'type': test_name,
+                'score': None
+            })
 
 
-    if ts in [TypeStructure.Q_Q.value]:
+    elif ts in [TypeStructure.Q_Q.value]:
         stat_docs = []
         v1 = data.get('fieldA')
         v2 = data.get('fieldB')
-        if v1 and v2:
-            for test_name, test_fn in bivariate_tests.iteritems():
-                test_value = None
-                try:
-                    test_value = test_fn(v1, v2)
-                    if np.isnan(test_value) or np.isinf(test_value):
-                        test_value = None
-                except:
-                    logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
-                    continue
-                stat_docs.append({
-                    'type': test_name,
-                    'score': test_value
-                })
-            for test_name, test_fn in univariate_tests.iteritems():
-                stat_docs.append({
-                    'type': test_name,
-                    'score': None
-                })
+        for test_name, test_fn in univariate_tests.iteritems():
+            test_value = None
+            try:
+                test_value = test_fn(v2)
+                if np.isnan(test_value) or np.isinf(test_value):
+                    test_value = None
+            except:
+                logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
+                continue
+
+        for test_name, test_fn in bivariate_tests.iteritems():
+            test_value = None
+            try:
+                test_value = test_fn(v1, v2)
+                if np.isnan(test_value) or np.isinf(test_value):
+                    test_value = None
+            except:
+                logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
+                continue
+            stat_docs.append({
+                'type': test_name,
+                'score': test_value
+            })
     return stat_docs
 
 
@@ -156,5 +162,6 @@ def score_spec(spec, selected_fields):
     stat_score_docs = get_statistical_properties(data, gp, ts)
     score_docs.extend(stat_score_docs)
 
+    logger.info(len(score_docs))
     logger.info(score_docs)
     return score_docs
