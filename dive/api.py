@@ -5,7 +5,6 @@ from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedu
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.statistics_resources import RegressionEstimator, RegressionFromSpec, ComparisonFromSpec, SegmentationFromSpec, ContributionToRSquared
 from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
-from dive.resources.render import Render
 
 from dive.resources.task_resources import TestPipeline, TaskResult
 # from dive.resources.auth import Register, Login
@@ -33,8 +32,6 @@ def add_resources(api):
 
     api.add_resource(ExportedSpecs,                 '/exported_specs/v1/exported_specs')
     api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<string:exported_spec_id>/visualization')
-
-    api.add_resource(Render,                        '/render/v1/render')
 
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
     api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
