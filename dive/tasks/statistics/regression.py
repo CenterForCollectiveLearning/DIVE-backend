@@ -140,7 +140,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
         'regressions_by_column': [],
     }
 
-    regression_fields_dict = { ivn: None for ivn in independent_variable_names }
+    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
 
     num_columns = 0
 
