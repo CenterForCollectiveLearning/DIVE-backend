@@ -105,7 +105,6 @@ def run_regression_from_spec(spec, project_id):
     all_fields = db_access.get_field_properties(project_id, dataset_id)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
-    print independent_variables_names
     independent_variables = []
     if independent_variables_names:
         independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
@@ -151,6 +150,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
         for i, considered_field in enumerate(independent_variables):
             regression_variable_combinations.append([ considered_field ])
 
+        for i, considered_field in enumerate(independent_variables):
             all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
             regression_variable_combinations.append(all_fields_except_considered_field)
 
