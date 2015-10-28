@@ -40,9 +40,9 @@ def _z_score(v):
 
 # Uniformity: Chi-Sq test or KL test against uniform distribution?
 univariate_tests = {
-    'gini': gini,
+    # 'gini': gini,
     'entropy': entropy,  # Shannon entropy, base e
-    'normality': _normaltest,  # Requires at least n >= 8
+    # 'normality': _normaltest,  # Requires at least n >= 8
     'variance': _z_score,
     'size': len,
     # 'median': np.median,
