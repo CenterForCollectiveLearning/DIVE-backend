@@ -6,7 +6,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.discrete import discrete_model
 
-from collections import Counter
+from collections import Counter, OrderedDict
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -18,6 +18,8 @@ from dive.data.access import get_data
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+
+from pprint import pprint
 
 def _difference_of_two_lists(l1, l2):
     return [ x for x in l2 if x not in set(l1) ]
@@ -137,8 +139,9 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
     independent_variable_names = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressions_by_column': [],
-        'fields': independent_variable_names,
     }
+
+    regression_fields_dict = { ivn: None for ivn in independent_variable_names }
 
     num_columns = 0
 
@@ -159,6 +162,10 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
 
         # Run regression
         model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
+
+        # Move categorical field values to higher level
+        for field_name, field_values in model_result['categorical_field_values'].iteritems():
+            regression_fields_dict[field_name] = field_values
 
         # Test regression
         regression_stats = None
@@ -183,23 +190,16 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
 
     regression_results['num_columns'] = num_columns
 
+    # Convert regression fields dict into collection
+    regression_fields_collection = []
+    for field, values in regression_fields_dict.iteritems():
+        regression_fields_collection.append({
+            'name': field,
+            'values': values
+        })
+    regression_results['fields'] = regression_fields_collection
+
     return regression_results
-
-
-def format_properties_by_field(fields, properties):
-    propertiesByField = []
-
-    for (i, field) in enumerate(fields):
-        formattedProperty = {
-            'field': field
-        }
-
-        for _property in properties:
-            formattedProperty[_property.get('type')] = _property.get('data').get(field)
-
-        propertiesByField.append(formattedProperty)
-
-    return propertiesByField
 
 
 def _parse_confidence_intervals(model_result):
@@ -262,8 +262,8 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
             'bic': model_result.bic,
             'r_squared': model_result.rsquared,
             'r_squared_adj': model_result.rsquared_adj,
-            'fTest': model_result.fvalue,
-            'resid': model_result.resid.tolist()
+            'f_test': model_result.fvalue,
+            # 'resid': model_result.resid.tolist()
         }
 
     elif dependent_variable['general_type'] == 'c':
@@ -294,22 +294,58 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
         }
 
     independent_variable_names = [ iv['name'] for iv in independent_variables ]
+
+    categorical_field_values = {}
+
     # Restructure field properties dict from
     # { property: { field: value }} -> [ field: field, properties: { property: value } ]
-    properties_by_field = []
-    for field in independent_variable_names:
-        properties = { 'field': field, 'properties': {} }
-        for prop_type, field_names_and_values in regression_field_properties.iteritems():
-            if field in field_names_and_values:
-                properties['properties'][prop_type] = field_names_and_values[field]
-        properties_by_field.append(properties)
+    properties_by_field_dict = {}
+
+    for prop_type, field_names_and_values in regression_field_properties.iteritems():
+        for field_name, value in field_names_and_values.iteritems():
+            if field_name in properties_by_field_dict:
+                properties_by_field_dict[field_name][prop_type] = value
+            else:
+                properties_by_field_dict[field_name] = { prop_type: value }
+
+    properties_by_field_collection = []
+    for field_name, properties in properties_by_field_dict.iteritems():
+        new_doc = {
+            'field': field_name
+        }
+        base_field, value_field = _get_fields_categorical_variable(field_name)
+        new_doc['base_field'] = base_field
+        new_doc['value_field'] = value_field
+        new_doc.update(properties)
+
+        # Update list mapping categorical fields to values
+        if value_field:
+            if base_field not in categorical_field_values:
+                categorical_field_values[base_field] = [ value_field ]
+            else:
+                categorical_field_values[base_field].append(value_field)
+
+        properties_by_field_collection.append(new_doc)
 
     return {
         'constants': constants,
-        'properties_by_field': properties_by_field,
+        'categorical_field_values': categorical_field_values,
+        'properties_by_field': properties_by_field_collection,
         'total_regression_properties': total_regression_properties
     }
 
+
+def _get_fields_categorical_variable(s):
+    '''
+    Parse base and value fields out of statsmodels categorical encoding
+    e.g. 'C(department)[T.Engineering]' -> [ department, Engineering ]
+    '''
+    base_field = s
+    value_field = None
+    if ')[T.' in s:
+        base_field = s.split(')[T')[0].strip('C(')
+        value_field = s.split('[T.')[1].strip(']')
+    return base_field, value_field
 
 def test_regression_fit(residuals, actual_y):
     '''
