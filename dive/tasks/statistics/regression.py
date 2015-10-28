@@ -109,7 +109,7 @@ def run_regression_from_spec(spec, project_id):
         independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
     else:
         for field in all_fields:
-            if (field['name'] != dependent_variable_name):
+            if (field['general_type'] == 'q' and field['name'] != dependent_variable_name):
                 independent_variables.append(field)
 
     # Determine regression model based on number of type of variables
