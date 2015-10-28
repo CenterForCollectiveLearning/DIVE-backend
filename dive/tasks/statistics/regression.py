@@ -64,7 +64,6 @@ def get_contribution_to_r_squared_data(regression_result):
         marginal_r_squared_adj = all_fields_r_squared_adj - regression_r_squared_adj
         data_array.append([ marginal_field, marginal_r_squared_adj])
 
-    print data_array
     return data_array
 
 
@@ -104,12 +103,14 @@ def run_regression_from_spec(spec, project_id):
     all_fields = db_access.get_field_properties(project_id, dataset_id)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
+    print independent_variables_names
     independent_variables = []
     if independent_variables_names:
         independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
     else:
         for field in all_fields:
-            if (field['name'] != dependent_variable_name):
+            if (not (field['general_type'] == 'c' and field['is_unique']) \
+                and field['name'] != dependent_variable_name):
                 independent_variables.append(field)
 
     # Determine regression model based on number of type of variables
@@ -133,48 +134,52 @@ def run_regression_from_spec(spec, project_id):
 
 def run_cascading_regression(df, independent_variables, dependent_variable, model='lr', degree=1, functions=[], estimator='ols', weights=None):
     # Format data structures
-    indep_fields = [ iv['name'] for iv in independent_variables ]
+    independent_variable_names = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressions_by_column': [],
-        'fields': indep_fields,
+        'fields': independent_variable_names,
     }
 
     num_columns = 0
 
-    for num_indep in range(1, len(independent_variables) + 1):
-        considered_independent_variables = combinations(independent_variables, num_indep)
+    # Create list of independent variables, one per regerssion
+    regression_variable_combinations = []
+    if len(independent_variable_names) > 1:
+        for i, considered_field in enumerate(independent_variables):
+            regression_variable_combinations.append([ considered_field ])
 
-        for considered_independent_variables in considered_independent_variables:
-            if len(considered_independent_variables) == 0:
-                continue
+            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
+            regression_variable_combinations.append(all_fields_except_considered_field)
 
-            regression_result = {}
-            num_columns += 1
+    regression_variable_combinations.append(independent_variables)
 
-            # Run regression
-            model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
+    for considered_independent_variables in regression_variable_combinations:
+        regression_result = {}
+        num_columns += 1
 
-            # Test regression
-            regression_stats = None
-            if model_result['total_regression_properties'].get('resid'):
-                dep_data = df[dependent_variable['name']]
-                regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
-                model_result['total_regression_properties']['resid']
+        # Run regression
+        model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
 
-            # Format results
-            field_names = [ civ['name'] for civ in considered_independent_variables ]
+        # Test regression
+        regression_stats = None
+        if model_result['total_regression_properties'].get('resid'):
+            dep_data = df[dependent_variable['name']]
+            regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
 
-            regression_result = {
-                'regressed_fields': field_names,
-                'regression': {
-                    'constants': model_result['constants'],
-                    'properties_by_field': model_result['properties_by_field']
-                },
-                'column_properties': model_result['total_regression_properties']
-            }
-            regression_results['regressions_by_column'].append(regression_result)
-            if regression_stats:
-                regression_result['regression']['stats'] = regression_stats
+        # Format results
+        field_names = [ civ['name'] for civ in considered_independent_variables ]
+
+        regression_result = {
+            'regressed_fields': field_names,
+            'regression': {
+                'constants': model_result['constants'],
+                'properties_by_field': model_result['properties_by_field']
+            },
+            'column_properties': model_result['total_regression_properties']
+        }
+        regression_results['regressions_by_column'].append(regression_result)
+        if regression_stats:
+            regression_result['regression']['stats'] = regression_stats
 
     regression_results['num_columns'] = num_columns
 
