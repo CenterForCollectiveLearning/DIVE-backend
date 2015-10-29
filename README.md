@@ -96,3 +96,10 @@ Run API
 ---------
 1. To run development Flask server, run `python run.py`.
 2. To run production Gunicorn server, run `./run.sh`.
+
+Deployment
+--------
+1. Set environment variable before running any command:
+```bash
+$ export ENV=production
+```
