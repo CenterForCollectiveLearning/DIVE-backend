@@ -167,6 +167,7 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
         for field_name, field_values in model_result['categorical_field_values'].iteritems():
             regression_fields_dict[field_name] = field_values
 
+
         # Test regression
         regression_stats = None
         if model_result['total_regression_properties'].get('resid'):
@@ -215,7 +216,7 @@ def create_regression_formula(independent_variables, dependent_variable):
     formula = '%s ~ ' % (dependent_variable['name'])
     terms = []
     for independent_variable in independent_variables:
-        if independent_variable['general_type'] == 'q':
+        if (independent_variable['general_type'] == 'q') and (not independent_variable['type'] == 'datetime'):
             term = independent_variable['name']
         else:
             term = 'C(%s)' % (independent_variable['name'])

@@ -78,6 +78,7 @@ def compute_relationships(self, project_id):
 @celery.task(bind=True, ignore_result=True)
 def save_relationships(self, relationships, project_id):
     self.update_state(state=states.PENDING, meta={'status': 'Saving relationships'})
-    with task_app.app_context():
-        db_access.insert_relationships(relationships, project_id)
+    if relationships:
+        with task_app.app_context():
+            db_access.insert_relationships(relationships, project_id)
     self.update_state(state=states.SUCCESS, meta={'status': 'Saved relationships'})
