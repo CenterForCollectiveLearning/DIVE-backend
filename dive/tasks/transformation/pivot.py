@@ -12,7 +12,25 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def pivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_name):
+def difference_of_lists(li1, li2):
+    # Returns difference of two shallow lists in order
+    s1 = set(li1)
+    diff1 = [x for x in li2 if x not in s1]
+    s2 = set(li2)
+    diff2 = [x for x in li1 if x not in s2]
+    if len(diff1) > len(diff2):
+        return diff1
+    elif len(diff1) == len(diff2):
+        return diff1
+    else:
+        return diff2
+
+
+def list_elements_from_indices(li, indices):
+    return [ li[i] for i in indices ]
+
+
+def unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_name, new_dataset_name_suffix):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     with task_app.app_context():
@@ -25,13 +43,17 @@ def pivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_nam
     else:
         project_dir = os.path.join(current_app.config['UPLOAD_DIR'], str(project_id))
 
+
     original_dataset_title = original_dataset['title']
     new_dataset_title = original_dataset_title + new_dataset_name_suffix
     new_dataset_name = new_dataset_title + '.tsv'
     new_dataset_path = os.path.join(project_dir, new_dataset_name)
 
-    df_reduced = df.iloc[:, column_ids_to_keep]
-    df_reduced.to_csv(new_dataset_path, sep='\t', index=False)
+    columns = df.columns.values
+    pivot_fields = list_elements_from_indices(columns, pivot_fields)
+    preserved_fields = difference_of_lists(columns, pivot_fields)
+    df_unpivoted = pd.melt(df, id_vars=preserved_fields, value_vars=pivot_fields, var_name=variable_name, value_name=value_name)
+    df_unpivoted.to_csv(new_dataset_path, sep='\t', index=False)
 
     dataset_docs = save_dataset(project_id, new_dataset_title, new_dataset_name, 'tsv', new_dataset_path)
     dataset_doc = dataset_docs[0]

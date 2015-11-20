@@ -5,7 +5,7 @@ from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedu
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.statistics_resources import RegressionEstimator, RegressionFromSpec, ComparisonFromSpec, SegmentationFromSpec, ContributionToRSquared
 from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
-from dive.resources.transform import Reduce
+from dive.resources.transform import Reduce, Unpivot
 
 from dive.resources.task_resources import TestPipeline, TaskResult
 # from dive.resources.auth import Register, Login
@@ -26,6 +26,7 @@ def add_resources(api):
     api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dataset_id>')
 
     api.add_resource(Reduce,                        '/datasets/v1/reduce')
+    api.add_resource(Unpivot,                       '/datasets/v1/unpivot')    
 
     api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')
 
