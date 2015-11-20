@@ -31,7 +31,7 @@ def reduce_dataset(project_id, dataset_id, column_ids_to_keep, new_dataset_name_
     new_dataset_path = os.path.join(project_dir, new_dataset_name)
 
     df_reduced = df.iloc[:, column_ids_to_keep]
-    df_reduced.to_csv(new_dataset_path, sep='\t')
+    df_reduced.to_csv(new_dataset_path, sep='\t', index=False)
 
     dataset_docs = save_dataset(project_id, new_dataset_title, new_dataset_name, 'tsv', new_dataset_path)
     dataset_doc = dataset_docs[0]
