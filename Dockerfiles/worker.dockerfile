@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y \
   python-sklearn \
   lib32z1-dev \
   libxml2-dev \
-  libxslt1-dev
+  libxslt1-dev \
+  lib32ncurses5-dev
 
 # Install dependencies
 ADD requirements.txt /

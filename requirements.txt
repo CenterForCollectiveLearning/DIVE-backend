@@ -6,11 +6,8 @@ appnope==0.1.0
 Babel==2.1.1
 backports.ssl-match-hostname==3.4.0.2
 billiard==3.3.0.21
-cairocffi==0.7.2
-CairoSVG==1.0.17
 celery==3.1.19
 certifi==2015.9.6.2
-cffi==1.2.1
 chardet==2.3.0
 colorlog==2.6.0
 csvkit==0.9.1
@@ -31,8 +28,6 @@ gnureadline==6.3.3
 greenlet==0.4.5
 gunicorn==19.3.0
 html5lib==0.9999999
-ipython==4.0.0
-ipython-genutils==0.1.0
 itsdangerous==0.24
 jdcal==1.2
 Jinja2==2.8

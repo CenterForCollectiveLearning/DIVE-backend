@@ -37,7 +37,7 @@ db:
     - dbdata
   environment:
     - DB_USER=admin
-    - DB_PASS=pass
+    - DB_PASS=password
     - DB_NAME=dive
     - PSQL_TRUST_LOCALNET
   ports:
