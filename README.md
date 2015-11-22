@@ -25,6 +25,7 @@ Install System Dependencies (Mac / brew)
 Install [Homebrew](http://brew.sh/) if you don't already have it. Then, run the following code:
 ```
 brew install postgres
+brew install rabbitmq
 brew install libmagic
 brew install Caskroom/cask/xquartz
 brew install cairo
@@ -39,15 +40,18 @@ Setup postgres
 ---------
 Make sure that you have a postgres server instance running. Create the dive database by running:
 ```
-createdb dive
+sudo -u postgres -i
+createuser admin -P
+createdb dive -O admin
 ```
 
 Start RabbitMQ
 ---------
-1. Run the server as a background process
+1. Add rabbitmq-server executable to path (add `PATH=$PATH:/usr/local/sbin` to ~/.bash_profile or ~/.profile)
+2. Run the server as a background process
 `sudo rabbitmq-server -detached`
 
-2. Create a RabbitMQ user and virtual host:
+3. Create a RabbitMQ user and virtual host:
 ```
 sudo rabbitmqctl add_user admin password
 sudo rabbitmqctl add_vhost dive
@@ -71,7 +75,7 @@ pip install -r requirements.txt
 
 Start Celery worker
 ---------
-1. Start celery worker: `celery -A dive.task_core worker -l info --autoreload`
+1. Start celery worker: `./worker.sh`
 2. Start celery monitor (flower): `celery -A dive.task_core flower`
 
 
@@ -82,7 +86,7 @@ Follow [the docs](https://flask-migrate.readthedocs.org/en/latest/). The first t
 python migrate.py db init
 ```
 
-Then, review and edit the migration script. Finally, each time models ar echanged, run the following:
+Then, review and edit the migration script. Finally, each time models are changed, run the following:
 ```
 python migrate.py db migrate
 python migrate.py db upgrade
@@ -92,3 +96,10 @@ Run API
 ---------
 1. To run development Flask server, run `python run.py`.
 2. To run production Gunicorn server, run `./run.sh`.
+
+Deployment
+--------
+1. Set environment variable before running any command:
+```bash
+$ export ENV=production
+```

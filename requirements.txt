@@ -29,7 +29,6 @@ greenlet==0.4.5
 gunicorn==19.3.0
 html5lib==0.9999999
 itsdangerous==0.24
-jdcal==1.0
 Jinja2==2.8
 json-table-schema==0.2.1
 kombu==3.0.28

@@ -10,7 +10,7 @@ from celery import chain
 from dive.db import db_access
 from dive.resources.utilities import format_json
 from dive.data.access import get_dataset_sample
-from dive.tasks.pipelines import full_pipeline
+from dive.tasks.pipelines import full_pipeline, ingestion_pipeline
 from dive.tasks.ingestion.upload import upload_file
 
 import logging
@@ -40,14 +40,16 @@ class UploadFile(Resource):
         file_obj = request.files.get('file')
 
         if file_obj and allowed_file(file_obj.filename):
+
             # Get dataset_ids corresponding to file if successful upload
-            dataset_ids = upload_file(project_id, file_obj)
+            datasets = upload_file(project_id, file_obj)
             result = {
                 'status': 'success',
-                'dataset_ids': dataset_ids
+                'datasets': datasets
             }
-            for dataset_id in dataset_ids:
-                ingestion_result = full_pipeline(dataset_id, project_id).apply_async()
+            for dataset in datasets:
+                ingestion_task = ingestion_pipeline(dataset['id'], project_id).apply_async()
+                result['task_id'] = ingestion_task.task_id
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 

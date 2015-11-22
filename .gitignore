@@ -12,7 +12,11 @@ venv/
 # Logs
 *.log
 
+# Editor-specific
+.idea/
+
 uploads/
 
 migrations/
 preloaded/
+.idea

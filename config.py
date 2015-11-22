@@ -5,6 +5,8 @@ class BaseConfig(object):
     HOST = '0.0.0.0'
     PORT = 8081
 
+    FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
+
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
     UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)
 
@@ -12,11 +14,12 @@ class BaseConfig(object):
     PRELOADED_DIR = os.path.abspath(PRELOADED_DIR)
 
     RECOMPUTE_FIELD_PROPERTIES = True
-    RECOMPUTE_VIZ_SPECS = False
+    RECOMPUTE_VIZ_SPECS = True
+    RECOMPUTE_STATISTICS = True
 
     CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/dive'
     CELERY_RESULT_BACKEND = 'amqp://'
-    CELERY_ACCEPT_CONTENT = ['json']
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@localhost:5432/dive'
 
     ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
@@ -27,16 +30,22 @@ class BaseConfig(object):
         'dive.tasks.ingestion.type_detection',
         'dive.tasks.ingestion.type_classes',
         'dive.tasks.ingestion.field_properties',
+        'dive.tasks.ingestion.relationships',
+        'dive.tasks.transformation.reduce',
         'dive.tasks.visualization.specs',
-        'dive.tasks.statistics.statistics'
+        'dive.tasks.statistics.regression',
+        'dive.tasks.statistics.comparison',
+        'dive.tasks.statistics.segmentation',
     ]
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://db:5432/dive'
 
 class ProductionConfig(BaseConfig):
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://db:5432/dive'
+    RECOMPUTE_FIELD_PROPERTIES = False
+    RECOMPUTE_VIZ_SPECS = False
+    RECOMPUTE_STATISTICS = False
+    DEBUG = True
 
 class TestingConfig(BaseConfig):
     TESTING = True

@@ -1,5 +1,5 @@
 from enum import Enum
-
+import numpy as np
 
 class GeneratingProcedure(Enum):
     AGG = 'agg'
@@ -11,6 +11,7 @@ class GeneratingProcedure(Enum):
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'
     VAL_VAL_Q = 'val:val:q'
+    MULTIGROUP_COUNT = 'multigroup:count'
 
 
 class TypeStructure(Enum):
@@ -52,6 +53,16 @@ class TemporalFunction(Enum):
     MIN = 'min'
     MAX = 'max'
 
+class VizType(Enum):
+    TREE = 'tree'
+    PIE = 'pie'
+    SCATTER = 'scatter'
+    LINE = 'line'
+    NETWORK = 'network'
+    HIST = 'hist'
+    BAR = 'bar'
+    STACKED_BAR = 'stackedbar'
+
 class TermType(Enum):
     '''
     List of terms in natural language visualization description
@@ -65,3 +76,23 @@ class TermType(Enum):
     FIELD = 'field'
     TRANSFORMATION = 'transformation'
     OPERATION = 'operation'
+
+specific_to_general_type = {
+    'float': 'q',
+    'integer': 'q',
+    'string': 'c',
+    'continent': 'c',
+    'countryName': 'c',
+    'countryCode2': 'c',
+    'countryCode3': 'c',
+    'decimal': 'q',
+    'datetime': 'q',
+}
+
+aggregation_functions = {
+    'sum': np.sum,
+    'min': np.min,
+    'max': np.max,
+    'mean': np.mean,
+    'count': np.size
+}

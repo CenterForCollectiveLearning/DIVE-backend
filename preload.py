@@ -1,76 +1,37 @@
 '''
-Script to preload projects
+Script to preload projects given a directory tree with the following structure:
 
-TODO Decentralize config file?
-TODO Start from config or from directory structure?
-TODO Turn this into a celery task?
+/PRELOADED_DIR
+    metadata.yml (active: [])
+    /project
+        metadata.yml (OPTIONAL; title: str, description: str, permissions: [], topics: [], source: str, datasets: [])
+        dataset
+
 '''
 import yaml
 from os import listdir, curdir
 from os.path import isfile, join, isdir
 
 from dive.db import db_access
-from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
+from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 
 
-def preload_from_metadata(app):
-    '''
-    Populate preloaded project tree
-    '''
-    preloaded_dir = app.config['PRELOADED_DIR']
-
-    config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
-    config = yaml.load(config_file.read())
-
-    for topic in config:
-        topic_title = topic.get('title')
-        topic_dir = topic.get('directory')
-        full_topic_dir = join(preloaded_dir, topic_dir)
-        if not isdir(full_topic_dir):
-            raise NameError, ('%s is not a valid topic directory' % topic_dir)
-
-        for project in topic.get('projects'):
-            project_title = project.get('title')
-            project_dir = project.get('directory')
-            project_desc = project.get('description')
-            project_permissions = project.get('permissions')
-            full_project_dir = join(full_topic_dir, project_dir)
-
-            if not isdir(full_project_dir):
-                raise NameError, ('%s is not a valid project directory' % project_dir)
-
-            for dataset in project.get('datasets'):
-                dataset_title = dataset.get('title')
-                dataset_file_name = dataset.get('filename')
-                dataset_type = dataset_file_name.rsplit('.', 1)[1]
-
-                full_dataset_path = join(full_project_dir, dataset_file_name)
-
-                if not isfile(full_dataset_path):
-                    raise NameError, ('%s is not a valid dataset file' % dataset_file_name)
-
-                with app.app_context():
-                    dataset_ids = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
-
-                    for dataset_id in dataset_ids:
-                        ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
-                        ingestion_result.get()
-
-                        viz_spec_result = viz_spec_pipeline(dataset_id, project_id).apply_async()
-                        viz_spec_result.get()
-
-
+excluded_filetypes = ['json', 'py', 'yaml', 'xls', 'xlsx']
 
 
 def preload_from_directory_tree(app):
     preloaded_dir = app.config['PRELOADED_DIR']
-
     top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
     top_level_config = yaml.load(top_level_config_file.read())
-    active_projects = top_level_config['active']
 
-    for project_dir in listdir(preloaded_dir):
+    # If 'active' flag present, read only those projects. Else iterate through all.
+    active_projects = top_level_config.get('active')
+    if active_projects:
+        project_dirs = active_projects
+
+    # Iterate through project directories
+    for project_dir in project_dirs:
         full_project_dir = join(preloaded_dir, project_dir)
 
         # Validate dir
@@ -86,12 +47,8 @@ def preload_from_directory_tree(app):
         project_title = project_config.get('title', project_dir)
         project_datasets = project_config.get('datasets')
 
-        # Only continue on active projects
-        if project_title not in active_projects:
-            continue
-
         # Insert projects
-        print 'Project:', project_dir
+        app.logger.info('Preloading project: %s', project_dir)
         with app.app_context():
             project_dict = db_access.insert_project(
                 title = project_title,
@@ -102,31 +59,32 @@ def preload_from_directory_tree(app):
             )
         project_id = project_dict['id']
 
-
         # Iterate through datasets
-        for dataset_file_name in listdir(full_project_dir):
+        dataset_file_names = listdir(full_project_dir)
+        if project_datasets:
+            dataset_file_names = project_datasets
+
+        for dataset_file_name in dataset_file_names:
+            app.logger.info('Ingesting dataset: %s', dataset_file_name)
             full_dataset_path = join(full_project_dir, dataset_file_name)
-            if not isfile(full_dataset_path) or dataset_file_name.startswith('.') or dataset_file_name.endswith('.yaml'):
+            if not isfile(full_dataset_path) \
+                or dataset_file_name.startswith('.') \
+                or dataset_file_name.split('.')[1] in excluded_filetypes:
                 continue
 
             dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
 
             # If dataset-level config for project
-            if project_datasets:
-                for d in project_datasets:
-                    if d['filename'] is dataset_file_name:
-                        dataset_title = d.get('title')
-                        dataset_description = d.get('description')
-                        dataset_type = d.get('description', dataset_type)
-
             with app.app_context():
-                dataset_ids = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
+                datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
-                for dataset_id in dataset_ids:
-                    ingestion_result = ingestion_pipeline(dataset_id, project_id).apply_async()
+                for dataset in datasets:
+                    ingestion_result = ingestion_pipeline(dataset['id'], project_id).apply_async()
                     ingestion_result.get()
+        relationship_result = relationship_pipeline(project_id).apply_async()
+        relationship_result.get()
 
-# TODO Job triggering?
+
 if __name__ == '__main__':
     from dive.core import create_app
     app = create_app()
