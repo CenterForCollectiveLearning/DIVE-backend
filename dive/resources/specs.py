@@ -37,19 +37,16 @@ class Specs(Resource):
 
 
 # TODO What's the difference from the previous function?
-visualizationFromSpecGetParser = reqparse.RequestParser()
-visualizationFromSpecGetParser.add_argument('project_id', type=str, required=True)
+# visualizationFromSpecGetParser = reqparse.RequestParser()
+# visualizationFromSpecGetParser.add_argument('project_id', type=str, required=True)
 class VisualizationFromSpec(Resource):
-    def get(self, spec_id):
-        args = visualizationFromSpecGetParser.parse_args()
-        # TODO Implement required parameters
-        project_id = args.get('project_id').strip().strip('"')
-
+    def post(self, spec_id):
+        args = request.get_json()
+        project_id = args.get('project_id')
         spec = db_access.get_spec(spec_id, project_id)
-
+        conditionals = args.get('conditionals', {})
         result = {
             'spec': spec,
-            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, {}, data_formats=['visualize', 'table'])
+            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['visualize', 'table'])
         }
-
         return make_response(jsonify(format_json(result)))
