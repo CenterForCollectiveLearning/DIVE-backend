@@ -43,8 +43,8 @@ class VisualizationFromSpec(Resource):
     def post(self, spec_id):
         args = visualizationFromSpecPostParser.parse_args()
         project_id = args.get('project_id')
-        spec = db_access.get_spec(spec_id, project_id)
         conditionals = args.get('conditionals', {})
+        spec = db_access.get_spec(spec_id, project_id)
         result = {
             'spec': spec,
             'visualization': get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['visualize', 'table'])
