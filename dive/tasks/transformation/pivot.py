@@ -7,14 +7,14 @@ from dive.data.access import get_data
 from dive.task_core import celery, task_app
 from dive.tasks.pipelines import ingestion_pipeline
 from dive.tasks.ingestion.upload import save_dataset
-from dive.tasks.transformation.utilities import list_elements_from_indices, difference_of_lists
+from dive.tasks.transformation.utilities import list_elements_from_indices, difference_of_lists, get_transformed_file_name
 
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_name, new_dataset_name_suffix):
+def unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_name, new_dataset_name_prefix):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     with task_app.app_context():
@@ -27,11 +27,11 @@ def unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_n
     else:
         project_dir = os.path.join(current_app.config['UPLOAD_DIR'], str(project_id))
 
-
     original_dataset_title = original_dataset['title']
-    new_dataset_title = original_dataset_title + new_dataset_name_suffix
-    new_dataset_name = new_dataset_title + '.tsv'
-    new_dataset_path = os.path.join(project_dir, new_dataset_name)
+    fallback_title = original_dataset_title[:20]
+    dataset_type = '.tsv'
+    new_dataset_title, new_dataset_name, new_dataset_path = \
+        get_transformed_file_name(project_dir, new_dataset_name_prefix, fallback_title, original_dataset_title, dataset_type)
 
     columns = df.columns.values
     pivot_fields = list_elements_from_indices(columns, pivot_fields)
