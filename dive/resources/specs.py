@@ -36,20 +36,17 @@ class Specs(Resource):
             return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
 
 
-# TODO What's the difference from the previous function?
-visualizationFromSpecGetParser = reqparse.RequestParser()
-visualizationFromSpecGetParser.add_argument('project_id', type=str, required=True)
+visualizationFromSpecPostParser = reqparse.RequestParser()
+visualizationFromSpecPostParser.add_argument('project_id', type=str, required=True, location='json')
+visualizationFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class VisualizationFromSpec(Resource):
-    def get(self, spec_id):
-        args = visualizationFromSpecGetParser.parse_args()
-        # TODO Implement required parameters
-        project_id = args.get('project_id').strip().strip('"')
-
+    def post(self, spec_id):
+        args = visualizationFromSpecPostParser.parse_args()
+        project_id = args.get('project_id')
+        conditionals = args.get('conditionals', {})
         spec = db_access.get_spec(spec_id, project_id)
-
         result = {
             'spec': spec,
-            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, {}, data_formats=['visualize', 'table'])
+            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['visualize', 'table'])
         }
-
         return make_response(jsonify(format_json(result)))
