@@ -7,13 +7,13 @@ from dive.data.access import get_data
 from dive.task_core import celery, task_app
 from dive.tasks.pipelines import ingestion_pipeline
 from dive.tasks.ingestion.upload import save_dataset
-from dive.tasks.transformation.utilities import list_elements_from_indices
+from dive.tasks.transformation.utilities import list_elements_from_indices, get_transformed_file_name
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, right_on, how, left_suffix, right_suffix, new_dataset_name_suffix):
+def join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, right_on, how, left_suffix, right_suffix, new_dataset_name_prefix):
     left_df = get_data(project_id=project_id, dataset_id=left_dataset_id)
     right_df = get_data(project_id=project_id, dataset_id=right_dataset_id)
 
@@ -30,9 +30,12 @@ def join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, ri
 
     original_left_dataset_title = original_left_dataset['title']
     original_right_dataset_title = original_right_dataset['title']
-    new_dataset_title = '%s_%s%s' % (original_left_dataset_title, original_right_dataset_title, new_dataset_name_suffix)
-    new_dataset_name = new_dataset_title + '.tsv'
-    new_dataset_path = os.path.join(project_dir, new_dataset_name)
+
+    fallback_title = original_left_dataset_title[:20] + original_left_dataset_title[:20]
+    original_dataset_title = original_left_dataset_title + original_right_dataset_title
+    dataset_type = '.tsv'
+    new_dataset_title, new_dataset_name, new_dataset_path = \
+        get_transformed_file_name(project_dir, new_dataset_name_prefix, fallback_title, original_dataset_title, dataset_type)
 
     left_columns = left_df.columns.values
     right_columns = right_df.columns.values
