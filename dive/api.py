@@ -1,4 +1,5 @@
 from dive.resources.datasets import UploadFile, Dataset, Datasets
+from dive.resources.fields import Field
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
@@ -28,6 +29,8 @@ def add_resources(api):
     api.add_resource(Reduce,                        '/datasets/v1/reduce')
     api.add_resource(Unpivot,                       '/datasets/v1/unpivot')
     api.add_resource(Join,                          '/datasets/v1/join')
+
+    api.add_resource(Field,                         '/datasets/v1/fields/<string:field_id>')
 
     api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')
 
