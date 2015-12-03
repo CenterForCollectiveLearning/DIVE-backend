@@ -17,6 +17,42 @@ from dive.tasks.ingestion.utilities import get_unique
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+def run_numerical_comparison_from_spec(spec, project_id):
+    variable_names = spec.get('variable_names', [])
+    independence = spec.get('independence', True)
+    dataset_id = spec.get('dataset_id')
+    if not (len(variable_names) >= 2 and dataset_id):
+        return 'Not passed required parameters', 400
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result = run_valid_comparison_tests(df, variable_names, independence)
+    return {
+        'data': comparison_result
+    }, 200
+
+# args must be a list of lists
+def run_valid_comparison_tests(df, variable_names, independence):
+    '''
+    Run non-regression tests
+    Performs comparisons between different data sets
+    Requires more than one data set to be sent
+    '''
+    args = []
+    for name in variable_names:
+        args.append(df[name])
+
+    results = {}
+    normal = sets_normal(.25,*args)
+    numDataSets = len(args)
+    equalVar = variations_equal(.25,*args)
+
+    ################we are assuming independence right now
+    valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
+    for test in valid_tests:
+        results[test] = valid_tests[test](*args)
+    return results
 def run_comparison_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     indep = spec.get('indep', [])
@@ -57,7 +93,6 @@ def run_comparison(df, fields, indep, dep, test):
         return ttest(df, fields, indep, dep)
     return 'here!'
 
-
 def ttest(df, fields, indep, dep):
     # Ensure single field
     dep_field_name = dep[0]
@@ -79,35 +114,36 @@ def ttest(df, fields, indep, dep):
     return result
 
 
-def run_valid_tests(df, arguments):
-    '''
-    Run non-regression tests
-    Performs comparisons between different data sets
-    If only one data set is sent, it requires user input for the null hypothesis/expected values
-    '''
-    independent = arguments.get('compare').get('independent')
-    args = []
-    for argument in arguments.get('compare').get('dataLabels'):
-        args.append(df[argument].tolist())
+    # averageValuesInCategory = len(df[indep_field_name])/len(unique_indep_values)
+    #
+    # if !(dep):
+    #     results = run_valid_comparison_tests(count.values())
+    #
+    # else:
+    #     dep_field_name = dep[0]
+    #     for v in unique_indep_values:
+    #         subsets[v] = np.array(df[df[indep_field_name] == v][dep_field_name])
 
-    results = {}
-    normal = sets_normal(.25,*args)
-    numDataSets = len(args)
+##################
+#Functions to determine which tests could be run
+##################
 
-    if numDataSets > 1:
-        equalVar = variations_equal(.25,*args)
+#return a boolean, if p-value less than threshold, returns false
+def variations_equal(THRESHOLD, *args):
+    return stats.levene(*args)[1]>THRESHOLD
 
-    else:
-        equalVar = True
+#if normalP is less than threshold, not considered normal
+def sets_normal(THRESHOLD, *args):
+    normal = True;
+    for arg in args:
+        if len(arg) < 8:
+            return False
+        if stats.normaltest(arg)[1] < THRESHOLD:
+            normal = False;
 
-    valid_tests = get_valid_tests(equalVar, independent, normal, numDataSets)
-    for test in valid_tests:
-        if numDataSets == 1:
-            results[test] = valid_tests[test](args[0], arguments.get('userInput'))
+    return normal
 
-        else:
-            results[test] = valid_tests[test](*args)
-    return results
+
 
 
 def get_valid_tests(equal_var, independent, normal, num_samples):
@@ -123,10 +159,10 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
         valid_tests = {
             'chisquare': stats.chisquare,
             'power_divergence': stats.power_divergence,
-            'kstest': stats.kstest
+            # 'kstest': stats.kstest
         }
         if normal:
-            valid_tests['one_sample_ttest'] = stats.ttest_1samp
+            valid_tests['input']['one_sample_ttest'] = stats.ttest_1samp
 
     elif num_samples == 2:
         if independent:
@@ -157,3 +193,41 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
         else:
             valid_tests['friedmanchisquare'] = stats.friedmanchisquare
     return valid_tests
+
+def run_comparison_oneCategorical(df, indep, dep):
+    # Runs if indep consists of just one categorical variable name
+
+    #if there is only a categorical variable, we run tests on count
+    indep_field_name = indep[0]
+    unique_indep_values = ["male", "female"]
+    results = {}
+    categoryInformation = {}
+
+
+    if not dep:
+        for v in unique_indep_values:
+            categoryInformation[v] = 0
+        for value in df[indep_field_name]:
+            categoryInformation[value] = categoryInformation[value] + 1
+        return run_valid_comparison_tests([categoryInformation.values()])
+    elif dep:
+        dep_field_name = dep[0]
+        categoryInformation["count"] = {}
+        categoryInformation["values"] = {}
+        for v in unique_indep_values:
+            categoryInformation["count"][v] = 0
+            categoryInformation["values"][v] = []
+        for index in range(len(df[indep_field_name])):
+            indepField = df.get_value(index, indep_field_name)
+            categoryInformation["count"][indepField] = categoryInformation["count"][indepField] + 1
+            categoryInformation["values"][indepField].append(df.get_value(index, dep_field_name))
+        results["count"] = run_valid_comparison_tests([categoryInformation["count"].values()])
+        for v in unique_indep_values:
+            results[v] = stats.ttest_1samp(categoryInformation['values'][v], float(df[dep_field_name].sum())/len(unique_indep_values))
+        return results
+
+    return categoryInformation
+
+# dict = {"gender": ["male", "female", "female", "male"], "weight": [300, 90, 80, 95]}
+# df = pd.DataFrame(data = dict)
+# print run_comparison_oneCategorical(df, ["gender"], ["weight"])
