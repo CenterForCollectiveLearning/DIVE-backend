@@ -186,11 +186,12 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
 def update_field_properties_type_by_id(project_id, field_id, field_type, general_type):
     field_properties = Field_Properties.query.filter_by(
         id=field_id,
-        project_id=project_id
+        project_id=project_id,
         ).one()
 
     field_properties.type = field_type
     field_properties.general_type = general_type
+    field_properties.manual = True    
 
     db.session.commit()
     return row_to_dict(field_properties)
