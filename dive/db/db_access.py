@@ -183,11 +183,18 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
     return row_to_dict(field_properties)
 
 
-def delete_field_properties(project_id, dataset_id):
-    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).one()
-    db.session.delete(dataset_properties)
+def update_field_properties_type_by_id(project_id, field_id, field_type, general_type):
+    field_properties = Field_Properties.query.filter_by(
+        id=field_id,
+        project_id=project_id,
+        ).one()
+
+    field_properties.type = field_type
+    field_properties.general_type = general_type
+    field_properties.manual = True    
+
     db.session.commit()
-    return row_to_dict(dataset_properties)
+    return row_to_dict(field_properties)
 
 
 ################

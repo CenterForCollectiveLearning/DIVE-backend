@@ -116,7 +116,8 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
             'is_unique': is_unique,
             'unique_values': unique_values,
             'child': None,
-            'is_child': False
+            'is_child': False,
+            'manual': False
         })
 
     # Detect hierarchical relationships
