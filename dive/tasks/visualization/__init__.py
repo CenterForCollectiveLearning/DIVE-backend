@@ -1,4 +1,5 @@
 from enum import Enum
+from dive.tasks.ingestion import DataType
 import numpy as np
 
 class GeneratingProcedure(Enum):
@@ -78,15 +79,19 @@ class TermType(Enum):
     OPERATION = 'operation'
 
 specific_to_general_type = {
-    'float': 'q',
-    'integer': 'q',
-    'string': 'c',
-    'continent': 'c',
-    'countryName': 'c',
-    'countryCode2': 'c',
-    'countryCode3': 'c',
-    'decimal': 'q',
-    'datetime': 'q',
+    DataType.STRING.value: 'q',
+    DataType.BOOLEAN.value: 'q',
+    DataType.TEXT.value: 'q',
+    DataType.URL.value: 'q',
+    DataType.CITY.value: 'q',
+    DataType.COUNTRY_CODE_2.value: 'q',
+    DataType.COUNTRY_CODE_3.value: 'q',
+    DataType.COUNTRY_NAME.value: 'q',
+    DataType.CONTINENT_NAME.value: 'q',
+    DataType.INTEGER.value: 'q',
+    DataType.DECIMAL.value: 'q',
+    DataType.DATETIME.value: 'q',
+    DataType.DATE.value: 'q',
 }
 
 aggregation_functions = {
