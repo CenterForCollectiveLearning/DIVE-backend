@@ -1,7 +1,5 @@
 from enum import Enum
 
-
-
 class DataType(Enum):
 
     # Fundamental
@@ -52,7 +50,7 @@ categorical_types = [
     DataType.COUNTRY_CODE_2.value,
     DataType.COUNTRY_CODE_3.value,
     DataType.COUNTRY_NAME.value,
-    DataType.CONTINENT_NAME.value,    
+    DataType.CONTINENT_NAME.value,
 ]
 
 class DataTypeWeights(Enum):

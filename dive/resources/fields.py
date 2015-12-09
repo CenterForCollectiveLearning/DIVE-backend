@@ -7,6 +7,7 @@ from flask import request, make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
+from dive.tasks.ingestion import quantitative_types, categorical_types
 from dive.tasks.visualization import specific_to_general_type
 from dive.resources.utilities import format_json
 
@@ -26,6 +27,8 @@ class Field(Resource):
         args = fieldPostParser.parse_args()
         project_id = args.get('project_id')
         field_type = args.get('type')
+        if (field_type not in quantitative_types) and (field_type not in categorical_types):
+            return make_response(jsonify(format_json({'status': 'Invalid field type.'})))
         if field_type:
             general_type = specific_to_general_type[field_type]
 
