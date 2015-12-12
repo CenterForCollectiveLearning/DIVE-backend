@@ -36,6 +36,9 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
         field_types.append(field_type)
 
     time_series = detect_time_series(df, field_types)
+    if time_series:
+        time_series = True
+    
     structure = 'wide' if time_series else 'long'
 
     properties = {
