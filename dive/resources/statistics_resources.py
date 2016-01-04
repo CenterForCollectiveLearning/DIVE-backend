@@ -6,7 +6,7 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.utilities import format_json, replace_unserializable_numpy
 from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
-from dive.tasks.statistics.comparison import run_comparison_from_spec, run_numerical_comparison_from_spec
+from dive.tasks.statistics.comparison import run_comparison_from_spec, run_numerical_comparison_from_spec, create_contingency_table_from_spec
 
 import logging
 logger = logging.getLogger(__name__)
@@ -97,6 +97,20 @@ class NumericalComparisonFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
+        return make_response(jsonify(format_json({"result": result})), status)
+class ContingencyTableFromSpec(Resource):
+    def post(self):
+        '''
+        dataset_id
+        ind_num_variables
+        ind_cat_variables
+        dep_num_variable
+        dep_cat_variable
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = create_contingency_table_from_spec(spec, project_id)
         return make_response(jsonify(format_json({"result": result})), status)
 
 class ComparisonFromSpec(Resource):

@@ -32,15 +32,20 @@ def replace_unserializable_numpy(obj):
 
 def format_json(obj):
     if isinstance(obj, dict):
-        return dict((to_camel_case(k), format_json(v)) for k, v in obj.items())
+        if isinstance(obj.keys()[0], str):
+            return dict((to_camel_case(k), format_json(v)) for k, v in obj.items())
+        elif isinstance(obj.keys()[0], tuple):
+            return dict((str(k), format_json(v)) for k, v in obj.items())
     if isinstance(obj, np.float32) or isinstance(obj, np.float64):
         if np.isnan(obj) or np.isinf(obj):
             return None
         return obj.item()
     elif isinstance(obj, float):
         return obj
-    elif isinstance(obj, (np.ndarray, list, tuple)):
+    elif isinstance(obj, (np.ndarray, list)):
         return map(format_json, obj)
+    elif isinstance(obj, tuple):
+        return tuple(map(format_json, obj))
     elif isinstance(obj,(pd.DataFrame, pd.Series)):
         return format_json(obj.to_dict())
     elif isinstance(obj, str):

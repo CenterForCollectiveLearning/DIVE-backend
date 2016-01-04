@@ -17,6 +17,135 @@ from dive.tasks.ingestion.utilities import get_unique
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+#let's just do count by two categorical variables right now
+def create_contingency_table_from_spec(spec, project_id):
+    ind_cat_variables = spec.get("ind_cat_variables", [])
+    ind_num_variables = spec.get("ind_num_variables", [])
+    dataset_id = spec.get("dataset_id")
+    dep_num_variable = spec.get("dep_num_variable")
+    dep_cat_variable = spec.get("dep_cat_variable")
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result = create_contingency_table_categorical(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
+    return {
+        'data': comparison_result
+    }, 200
+
+def parse_aggregation_function(string_function):
+    if string_function == "MEAN":
+        return np.mean
+    if string_function == "SUM":
+        return np.sum
+
+def parse_string_mapping_function(list_function):
+    if list_function[0] == "FILTER":
+        return (lambda x: x == list_function[1])
+
+def create_contingency_table_categorical(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
+    #a list of lists
+    contingencyDict = {}
+    unique_dep_values = []
+    typeVariables = []
+
+    for var in ind_cat_variables:
+        unique_dep_values.append(get_unique(df[var]))
+        typeVariables.append(('cat', var))
+    for var in ind_num_variables:
+        (names, binningEdges) = find_binning_edges_equal_spaced(df[var[0]], var[1])
+        unique_dep_values.append(names)
+        typeVariables.append(('num', var, binningEdges, names))
+
+    def parse_type_variable(num, index):
+        if typeVariables[num][0] == 'cat':
+            return df.get_value(index, typeVariables[num][1])
+        elif typeVariables[num][0] == 'num':
+            return find_bin(df.get_value(index, typeVariables[num][1][0]), typeVariables[num][2], typeVariables[num][3], typeVariables[num][1][1])
+
+    if dep_num_variable:
+        numVarDict = {}
+        for index in range(len(df)):
+            indepField1 = parse_type_variable(0, index)
+            indepField2 = parse_type_variable(1, index)
+            if numVarDict.get((indepField1, indepField2)):
+                numVarDict[(indepField1, indepField2)].append(df.get_value(index, dep_num_variable[0]))
+            else:
+                numVarDict[(indepField1, indepField2)] = [df.get_value(index, dep_num_variable[0])]
+
+        for var1 in unique_dep_values[0]:
+            for var2 in unique_dep_values[1]:
+                contingencyDict[(var1, var2)] = parse_aggregation_function(dep_num_variable[1])(numVarDict.get((var1, var2)))
+
+        return contingencyDict
+
+    elif dep_cat_variable:
+        catVarDict = {}
+        for index in range(len(df)):
+            indepField1 = parse_type_variable(0, index)
+            indepField2 = parse_type_variable(1, index)
+            if catVarDict.get((indepField1, indepField2)):
+                catVarDict[(indepField1, indepField2)].append(df.get_value(index, dep_cat_variable[0]))
+            else:
+                catVarDict[(indepField1, indepField2)] = [df.get_value(index, dep_cat_variable[0])]
+
+        for var1 in unique_dep_values[0]:
+            for var2 in unique_dep_values[1]:
+                contingencyDict[(var1, var2)] = parse_aggregation_function(dep_cat_variable[2])(map(parse_string_mapping_function(dep_cat_variable[1]),catVarDict.get((var1, var2))))
+
+        return contingencyDict
+    else:
+        countDict = {}
+        for index in range(len(df)):
+            indepField1 = parse_type_variable(0, index)
+            indepField2 = parse_type_variable(1, index)
+            if countDict.get((indepField1, indepField2)):
+                countDict[(indepField1, indepField2)] += 1
+            else:
+                countDict[(indepField1, indepField2)] = 1
+
+        for var1 in unique_dep_values[0]:
+            for var2 in unique_dep_values[1]:
+                contingencyDict[(var1, var2)] = countDict.get((var1, var2))
+
+    return contingencyDict
+#binning functions
+##################
+##binning is hard
+##we want to round to three floats
+##right edge is open
+def find_binning_edges_equal_spaced(array, num_bins):
+    theMin = min(array)
+    theMax = max(array)
+
+    edges = np.linspace(theMin, theMax, num_bins+1)
+
+    roundedEdges = []
+    for i in range(len(edges)-1):
+        roundedEdges.append( float('%.3f' % edges[i]))
+    roundedEdges.append(float('%.3f' % edges[-1])+0.001)
+
+    names = []
+    for i in range(len(edges)-1):
+        names.append('%s-%s' % (str(roundedEdges[i]), str(roundedEdges[i+1])))
+
+    return (names, roundedEdges)
+
+def find_bin(target, binningEdges, binningNames, num_bins):
+    def searchIndex(nums, target, length, index):
+        mid = length/2
+        if length == 1:
+            if target <= nums[0]:
+                return index
+            else:
+                return index + 1
+        elif target < nums[mid]:
+            return searchIndex(nums[:mid], target, mid, index)
+        else:
+            return searchIndex(nums[mid:], target, length-mid, index+mid)
+    return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
+
+
 def run_numerical_comparison_from_spec(spec, project_id):
     variable_names = spec.get('variable_names', [])
     independence = spec.get('independence', True)
