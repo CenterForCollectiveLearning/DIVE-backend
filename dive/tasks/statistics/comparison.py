@@ -23,6 +23,7 @@ def create_contingency_table_from_spec(spec, project_id):
     ind_num_variables = spec.get("ind_num_variables", [])
     dataset_id = spec.get("dataset_id")
     dep_num_variable = spec.get("dep_num_variable")
+    print dep_num_variable
     dep_cat_variable = spec.get("dep_cat_variable")
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
@@ -46,15 +47,16 @@ def parse_string_mapping_function(list_function):
 def create_contingency_table_categorical(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
     #a list of lists
     contingencyDict = {}
-    unique_dep_values = []
+    formattedContingencyDict = {}
+    unique_indep_values = []
     typeVariables = []
 
     for var in ind_cat_variables:
-        unique_dep_values.append(get_unique(df[var]))
+        unique_indep_values.append(get_unique(df[var]))
         typeVariables.append(('cat', var))
     for var in ind_num_variables:
         (names, binningEdges) = find_binning_edges_equal_spaced(df[var[0]], var[1])
-        unique_dep_values.append(names)
+        unique_indep_values.append(names)
         typeVariables.append(('num', var, binningEdges, names))
 
     def parse_type_variable(num, index):
@@ -66,49 +68,89 @@ def create_contingency_table_categorical(df, ind_cat_variables, ind_num_variable
     if dep_num_variable:
         numVarDict = {}
         for index in range(len(df)):
+
             indepField1 = parse_type_variable(0, index)
             indepField2 = parse_type_variable(1, index)
-            if numVarDict.get((indepField1, indepField2)):
-                numVarDict[(indepField1, indepField2)].append(df.get_value(index, dep_num_variable[0]))
+            print "didn't break"
+            if numVarDict.get(indepField2):
+                if numVarDict[indepField2].get(indepField1):
+                    numVarDict[indepField2][indepField1].append(df.get_value(index, dep_num_variable[0]))
+                else:
+                    numVarDict[indepField2][indepField1] = [df.get_value(index, dep_num_variable[0])]
             else:
-                numVarDict[(indepField1, indepField2)] = [df.get_value(index, dep_num_variable[0])]
+                numVarDict[indepField2] = {}
+                numVarDict[indepField2][indepField1] = [df.get_value(index, dep_num_variable[0])]
 
-        for var1 in unique_dep_values[0]:
-            for var2 in unique_dep_values[1]:
-                contingencyDict[(var1, var2)] = parse_aggregation_function(dep_num_variable[1])(numVarDict.get((var1, var2)))
+        for var2 in unique_indep_values[1]:
+            contingencyDict[var2] = {}
+            if numVarDict.get(var2):
+                for var1 in unique_indep_values[0]:
+                    if numVarDict[var2].get(var1) != None:
+                        contingencyDict[var2][var1] = parse_aggregation_function(dep_num_variable[1])(numVarDict[var2][var1])
+                    else:
+                        contingencyDict[var2][var1] = 0
+            else:
+                for var1 in unique_indep_values[0]:
+                    contingencyDict[var2][var1] = 0
 
-        return contingencyDict
 
     elif dep_cat_variable:
         catVarDict = {}
         for index in range(len(df)):
             indepField1 = parse_type_variable(0, index)
             indepField2 = parse_type_variable(1, index)
-            if catVarDict.get((indepField1, indepField2)):
-                catVarDict[(indepField1, indepField2)].append(df.get_value(index, dep_cat_variable[0]))
+            if catVarDict.get(indepField2):
+                if catVarDict[indepField2].get(indepField1):
+                    catVarDict[indepField2][indepField1].append(df.get_value(index, dep_cat_variable[0]))
+                else:
+                    catVarDict[indepField2][indepField1] = [df.get_value(index, dep_cat_variable[0])]
             else:
-                catVarDict[(indepField1, indepField2)] = [df.get_value(index, dep_cat_variable[0])]
+                catVarDict[indepField2] = {}
+                catVarDict[indepField2][indepField1] = [df.get_value(index, dep_cat_variable[0])]
 
-        for var1 in unique_dep_values[0]:
-            for var2 in unique_dep_values[1]:
-                contingencyDict[(var1, var2)] = parse_aggregation_function(dep_cat_variable[2])(map(parse_string_mapping_function(dep_cat_variable[1]),catVarDict.get((var1, var2))))
-
-        return contingencyDict
+        for var2 in unique_indep_values[1]:
+            contingencyDict[var2] = {}
+            if catVarDict.get(var2):
+                for var1 in unique_indep_values[0]:
+                    if catVarDict[var2].get(var1):
+                        contingencyDict[var2][var1] = parse_aggregation_function(dep_cat_variable[2])(map(parse_string_mapping_function(dep_cat_variable[1]),catVarDict[var2][var1]))
+                    else:
+                        contingencyDict[var2][var1] = 0
+            else:
+                for var1 in unique_indep_values[0]:
+                    contingencyDict[var2][var1] = 0
     else:
         countDict = {}
         for index in range(len(df)):
             indepField1 = parse_type_variable(0, index)
             indepField2 = parse_type_variable(1, index)
-            if countDict.get((indepField1, indepField2)):
-                countDict[(indepField1, indepField2)] += 1
+            if countDict.get(indepField2):
+                if countDict[indepField2].get(indepField1):
+                    countDict[indepField2][indepField1]+= 1
+                else:
+                    countDict[indepField2][indepField1] = 1
             else:
-                countDict[(indepField1, indepField2)] = 1
+                countDict[indepField2] = {}
+                countDict[indepField2][indepField1] = 1
 
-        for var1 in unique_dep_values[0]:
-            for var2 in unique_dep_values[1]:
-                contingencyDict[(var1, var2)] = countDict.get((var1, var2))
-
-    return contingencyDict
+        for var2 in unique_indep_values[1]:
+            contingencyDict[var2] = {}
+            if countDict.get(var2):
+                for var1 in unique_indep_values[0]:
+                    if countDict[var2].get(var1):
+                        contingencyDict[var2][var1] = countDict[var2][var1]
+                    else:
+                        contingencyDict[var2][var1] = 0
+            else:
+                for var1 in unique_indep_values[0]:
+                    contingencyDict[var2][var1] = 0
+    formattedContingencyDict["column_headers"] = unique_indep_values[0]
+    formattedContingencyDict["row_headers"] = unique_indep_values[1]
+    for row in unique_indep_values[1]:
+        formattedContingencyDict[row] = []
+        for col in unique_indep_values[0]:
+            formattedContingencyDict[row].append(contingencyDict[row][col])
+    return formattedContingencyDict
 #binning functions
 ##################
 ##binning is hard
