@@ -17,7 +17,6 @@ from dive.tasks.ingestion.utilities import get_unique
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-#let's just do count by two categorical variables right now
 def create_contingency_table_from_spec(spec, project_id):
     ind_cat_variables = spec.get("ind_cat_variables", [])
     ind_num_variables = spec.get("ind_num_variables", [])
@@ -29,7 +28,7 @@ def create_contingency_table_from_spec(spec, project_id):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    comparison_result = create_contingency_table_categorical(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
+    comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
     return {
         'data': comparison_result
     }, 200
@@ -44,118 +43,201 @@ def parse_string_mapping_function(list_function):
     if list_function[0] == "FILTER":
         return (lambda x: x == list_function[1])
 
-def create_contingency_table_categorical(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
+'''
+helper function to return the appropriate independent variable value from the dataframe
+num: 0 represents parsing the column, 1 represents parsing the row
+index: represents the index of the dataframe we are extracting the value from
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+df : dataframe
+'''
+
+def parse_variable(num, index, variable_type_summary, df):
+    type_variable = variable_type_summary[num][0]
+    passed_variable = variable_type_summary[num][1]
+    if type_variable == 'cat':
+        return df.get_value(index, passed_variable)
+    elif type_variable == 'num':
+        binning_edges = variable_type_summary[num][2]
+        binning_names = variable_type_summary[num][3]
+        return find_bin(df.get_value(index, passed_variable[0]), binning_edges, binning_names, passed_variable[1])
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+dep_num_variable : [numerical variable name, aggregation function name]
+unique_indep_values : [[unique values for columns], [unique values for rows]]
+'''
+
+def create_contingency_table_with_dep_num_var(df, variable_type_summary, dep_num_variable, unique_indep_values):
+    result_dict = {}
+    num_var_dict = {}
+    dep_variable_name = dep_num_variable[0]
+    aggregation_function_name = dep_num_variable[1]
+    for index in range(len(df)):
+        col = parse_variable(0, index, variable_type_summary, df)
+        row = parse_variable(1, index, variable_type_summary, df)
+        if num_var_dict.get(row):
+            if num_var_dict[row].get(col):
+                num_var_dict[row][col].append(df.get_value(index, dep_variable_name))
+
+            else:
+                num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+        else:
+            num_var_dict[row] = {}
+            num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+
+    for row in unique_indep_values[1]:
+        result_dict[row] = {}
+        if num_var_dict.get(row):
+            for col in unique_indep_values[0]:
+                if num_var_dict[row].get(col) != None:
+                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name)(num_var_dict[row][col])
+
+                else:
+                    result_dict[row][col] = 0
+
+        else:
+            for col in unique_indep_values[0]:
+                result_dict[row][col] = 0
+
+    return result_dict
+
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+dep_cat_variable : [categorical variable name, mapping function name, aggregation function name]
+unique_indep_values : [[unique values for columns], [unique values for rows]]
+'''
+def create_contingency_table_with_dep_cat_var(df, variable_type_summary, dep_cat_variable, unique_indep_values):
+    result_dict = {}
+    cat_var_dict = {}
+    dep_variable_name = dep_cat_variable[0]
+    mapping_function_name = dep_cat_variable[1]
+    aggregation_function_name = dep_cat_variable[2]
+
+    for index in range(len(df)):
+        col = parse_variable(0, index, variable_type_summary, df)
+        row = parse_variable(1, index, variable_type_summary, df)
+        if cat_var_dict.get(row):
+            if cat_var_dict[row].get(col):
+                cat_var_dict[row][col].append(df.get_value(index, dep_variable_name))
+
+            else:
+                cat_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+        else:
+            cat_var_dict[row] = {}
+            cat_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+
+    for row in unique_indep_values[1]:
+        result_dict[row] = {}
+        if cat_var_dict.get(col):
+            for col in unique_indep_values[0]:
+                if cat_var_dict[row].get(col):
+                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name)(map(parse_string_mapping_function(mapping_function_name),cat_var_dict[row][col]))
+
+                else:
+                    result_dict[row][col] = 0
+        else:
+            for col in unique_indep_values[0]:
+                result_dict[row][col] = 0
+
+    return result_dict
+
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+unique_indep_values : [[unique values for columns], [unique values for rows]]
+'''
+def create_contingency_table_with_no_dep_var(df, variable_type_summary, unique_indep_values):
+    result_dict = {}
+    count_dict = {}
+
+    for index in range(len(df)):
+        col = parse_variable(0, index, variable_type_summary, df)
+        row = parse_variable(1, index, variable_type_summary, df)
+        if count_dict.get(row):
+            if count_dict[row].get(col):
+                count_dict[row][col]+= 1
+
+            else:
+                count_dict[row][col] = 1
+
+        else:
+            count_dict[row] = {}
+            count_dict[row][col] = 1
+
+    for row in unique_indep_values[1]:
+        result_dict[row] = {}
+        if count_dict.get(row):
+            for col in unique_indep_values[0]:
+                if count_dict[row].get(col):
+                    result_dict[row][col] = count_dict[row][col]
+
+                else:
+                    result_dict[row][col] = 0
+        else:
+            for col in unique_indep_values[0]:
+                result_dict[row][col] = 0
+
+    return result_dict
+
+'''
+ind_num_variables : represents independent numerical variables. It is a list of lists, where each list is of form [numerical variable name, number of bins]
+ind_cat_variables: represents independent categorical variable names. It is a list of names
+dep_num_variable : represents the dependent numerical variable name.  [numerical variable name, aggregation function name]
+dep_cat_variable : represents the dependent categorical variable. It is a list of form [categorical variable name, mapping function (string-> number), aggregation function]
+
+supported mapping functions:
+    (FILTER, target) -> returns 1 if value == target, 0 otherwise
+supported aggregation functions:
+    SUM, MEAN
+'''
+
+def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
     #a list of lists
-    contingencyDict = {}
-    formattedContingencyDict = {}
+    results_dict = {}
+    formatted_results_dict = {}
     unique_indep_values = []
-    typeVariables = []
+    variable_type_summary = []
 
     for var in ind_cat_variables:
         unique_indep_values.append(get_unique(df[var]))
-        typeVariables.append(('cat', var))
+        variable_type_summary.append(('cat', var))
+
     for var in ind_num_variables:
         (names, binningEdges) = find_binning_edges_equal_spaced(df[var[0]], var[1])
         unique_indep_values.append(names)
-        typeVariables.append(('num', var, binningEdges, names))
-
-    def parse_type_variable(num, index):
-        if typeVariables[num][0] == 'cat':
-            return df.get_value(index, typeVariables[num][1])
-        elif typeVariables[num][0] == 'num':
-            return find_bin(df.get_value(index, typeVariables[num][1][0]), typeVariables[num][2], typeVariables[num][3], typeVariables[num][1][1])
+        variable_type_summary.append(('num', var, binningEdges, names))
 
     if dep_num_variable:
-        numVarDict = {}
-        for index in range(len(df)):
-
-            indepField1 = parse_type_variable(0, index)
-            indepField2 = parse_type_variable(1, index)
-            print "didn't break"
-            if numVarDict.get(indepField2):
-                if numVarDict[indepField2].get(indepField1):
-                    numVarDict[indepField2][indepField1].append(df.get_value(index, dep_num_variable[0]))
-                else:
-                    numVarDict[indepField2][indepField1] = [df.get_value(index, dep_num_variable[0])]
-            else:
-                numVarDict[indepField2] = {}
-                numVarDict[indepField2][indepField1] = [df.get_value(index, dep_num_variable[0])]
-
-        for var2 in unique_indep_values[1]:
-            contingencyDict[var2] = {}
-            if numVarDict.get(var2):
-                for var1 in unique_indep_values[0]:
-                    if numVarDict[var2].get(var1) != None:
-                        contingencyDict[var2][var1] = parse_aggregation_function(dep_num_variable[1])(numVarDict[var2][var1])
-                    else:
-                        contingencyDict[var2][var1] = 0
-            else:
-                for var1 in unique_indep_values[0]:
-                    contingencyDict[var2][var1] = 0
-
+        results_dict = create_contingency_table_with_dep_num_var(df, variable_type_summary, dep_num_variable, unique_indep_values)
 
     elif dep_cat_variable:
-        catVarDict = {}
-        for index in range(len(df)):
-            indepField1 = parse_type_variable(0, index)
-            indepField2 = parse_type_variable(1, index)
-            if catVarDict.get(indepField2):
-                if catVarDict[indepField2].get(indepField1):
-                    catVarDict[indepField2][indepField1].append(df.get_value(index, dep_cat_variable[0]))
-                else:
-                    catVarDict[indepField2][indepField1] = [df.get_value(index, dep_cat_variable[0])]
-            else:
-                catVarDict[indepField2] = {}
-                catVarDict[indepField2][indepField1] = [df.get_value(index, dep_cat_variable[0])]
+        results_dict = create_contingency_table_with_dep_cat_var(df, variable_type_summary, dep_cat_variable, unique_indep_values)
 
-        for var2 in unique_indep_values[1]:
-            contingencyDict[var2] = {}
-            if catVarDict.get(var2):
-                for var1 in unique_indep_values[0]:
-                    if catVarDict[var2].get(var1):
-                        contingencyDict[var2][var1] = parse_aggregation_function(dep_cat_variable[2])(map(parse_string_mapping_function(dep_cat_variable[1]),catVarDict[var2][var1]))
-                    else:
-                        contingencyDict[var2][var1] = 0
-            else:
-                for var1 in unique_indep_values[0]:
-                    contingencyDict[var2][var1] = 0
     else:
-        countDict = {}
-        for index in range(len(df)):
-            indepField1 = parse_type_variable(0, index)
-            indepField2 = parse_type_variable(1, index)
-            if countDict.get(indepField2):
-                if countDict[indepField2].get(indepField1):
-                    countDict[indepField2][indepField1]+= 1
-                else:
-                    countDict[indepField2][indepField1] = 1
-            else:
-                countDict[indepField2] = {}
-                countDict[indepField2][indepField1] = 1
+        results_dict = create_contingency_table_with_no_dep_var(df, variable_type_summary, unique_indep_values)
 
-        for var2 in unique_indep_values[1]:
-            contingencyDict[var2] = {}
-            if countDict.get(var2):
-                for var1 in unique_indep_values[0]:
-                    if countDict[var2].get(var1):
-                        contingencyDict[var2][var1] = countDict[var2][var1]
-                    else:
-                        contingencyDict[var2][var1] = 0
-            else:
-                for var1 in unique_indep_values[0]:
-                    contingencyDict[var2][var1] = 0
-    formattedContingencyDict["column_headers"] = unique_indep_values[0]
-    formattedContingencyDict["row_headers"] = unique_indep_values[1]
+    formatted_results_dict["column_headers"] = unique_indep_values[0]
+    formatted_results_dict["row_headers"] = unique_indep_values[1]
     for row in unique_indep_values[1]:
-        formattedContingencyDict[row] = []
+        formatted_results_dict[row] = []
         for col in unique_indep_values[0]:
-            formattedContingencyDict[row].append(contingencyDict[row][col])
-    return formattedContingencyDict
+            formatted_results_dict[row].append(results_dict[row][col])
+
+    return formatted_results_dict
+
 #binning functions
 ##################
-##binning is hard
 ##we want to round to three floats
-##right edge is open
+##right edge is open for the binning edges
 def find_binning_edges_equal_spaced(array, num_bins):
     theMin = min(array)
     theMax = max(array)
@@ -173,18 +255,24 @@ def find_binning_edges_equal_spaced(array, num_bins):
 
     return (names, roundedEdges)
 
+#finds the bin the target number is in given the binning edges and binning names
 def find_bin(target, binningEdges, binningNames, num_bins):
     def searchIndex(nums, target, length, index):
         mid = length/2
         if length == 1:
             if target <= nums[0]:
                 return index
+
             else:
                 return index + 1
+
         elif target < nums[mid]:
             return searchIndex(nums[:mid], target, mid, index)
+
         else:
             return searchIndex(nums[mid:], target, length-mid, index+mid)
+
+    #subtraction of 1 since indexing starts at 0
     return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
 
 
@@ -223,7 +311,9 @@ def run_valid_comparison_tests(df, variable_names, independence):
     valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
     for test in valid_tests:
         results[test] = valid_tests[test](*args)
+
     return results
+
 def run_comparison_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     indep = spec.get('indep', [])
@@ -250,19 +340,19 @@ def run_comparison(df, fields, indep, dep, test):
     if indep:
         for indep_field_name in indep:
             indep_data[indep_field_name] = df[indep_field_name]
+
     else:
-        print "else"
         for field in fields:
             field_name = field['name']
             if (field_name is not dep_field_name) and (field['general_type'] == 'q'):
                 indep_data[field_name] = df[field_name]
+
     dep_data = {}
     for dep_field_name in dep:
         dep_data[dep_field_name] = df[dep_field_name]
 
     if test is 'ttest':
         return ttest(df, fields, indep, dep)
-    return 'here!'
 
 def ttest(df, fields, indep, dep):
     # Ensure single field
@@ -285,15 +375,6 @@ def ttest(df, fields, indep, dep):
     return result
 
 
-    # averageValuesInCategory = len(df[indep_field_name])/len(unique_indep_values)
-    #
-    # if !(dep):
-    #     results = run_valid_comparison_tests(count.values())
-    #
-    # else:
-    #     dep_field_name = dep[0]
-    #     for v in unique_indep_values:
-    #         subsets[v] = np.array(df[df[indep_field_name] == v][dep_field_name])
 
 ##################
 #Functions to determine which tests could be run
@@ -314,9 +395,6 @@ def sets_normal(THRESHOLD, *args):
 
     return normal
 
-
-
-
 def get_valid_tests(equal_var, independent, normal, num_samples):
     '''
     Get valid tests given number of samples and statistical characterization of
@@ -330,7 +408,7 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
         valid_tests = {
             'chisquare': stats.chisquare,
             'power_divergence': stats.power_divergence,
-            # 'kstest': stats.kstest
+            'kstest': stats.kstest
         }
         if normal:
             valid_tests['input']['one_sample_ttest'] = stats.ttest_1samp
@@ -361,44 +439,8 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
             }
             if normal and equal_var:
                 valid_tests['f_oneway'] = stats.f_oneway
+
         else:
             valid_tests['friedmanchisquare'] = stats.friedmanchisquare
+
     return valid_tests
-
-def run_comparison_oneCategorical(df, indep, dep):
-    # Runs if indep consists of just one categorical variable name
-
-    #if there is only a categorical variable, we run tests on count
-    indep_field_name = indep[0]
-    unique_indep_values = ["male", "female"]
-    results = {}
-    categoryInformation = {}
-
-
-    if not dep:
-        for v in unique_indep_values:
-            categoryInformation[v] = 0
-        for value in df[indep_field_name]:
-            categoryInformation[value] = categoryInformation[value] + 1
-        return run_valid_comparison_tests([categoryInformation.values()])
-    elif dep:
-        dep_field_name = dep[0]
-        categoryInformation["count"] = {}
-        categoryInformation["values"] = {}
-        for v in unique_indep_values:
-            categoryInformation["count"][v] = 0
-            categoryInformation["values"][v] = []
-        for index in range(len(df[indep_field_name])):
-            indepField = df.get_value(index, indep_field_name)
-            categoryInformation["count"][indepField] = categoryInformation["count"][indepField] + 1
-            categoryInformation["values"][indepField].append(df.get_value(index, dep_field_name))
-        results["count"] = run_valid_comparison_tests([categoryInformation["count"].values()])
-        for v in unique_indep_values:
-            results[v] = stats.ttest_1samp(categoryInformation['values'][v], float(df[dep_field_name].sum())/len(unique_indep_values))
-        return results
-
-    return categoryInformation
-
-# dict = {"gender": ["male", "female", "female", "male"], "weight": [300, 90, 80, 95]}
-# df = pd.DataFrame(data = dict)
-# print run_comparison_oneCategorical(df, ["gender"], ["weight"])

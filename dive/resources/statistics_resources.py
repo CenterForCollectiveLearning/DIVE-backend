@@ -101,11 +101,13 @@ class NumericalComparisonFromSpec(Resource):
 class ContingencyTableFromSpec(Resource):
     def post(self):
         '''
-        dataset_id
-        ind_num_variables
-        ind_cat_variables
-        dep_num_variable
-        dep_cat_variable
+        spec: {
+            dataset_id
+            ind_num_variables
+            ind_cat_variables
+            dep_num_variable
+            dep_cat_variable
+        }
         '''
         args = request.get_json()
         project_id = args.get('projectId')

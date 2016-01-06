@@ -34,4 +34,3 @@ def get_bin_edges(v, procedure='freedman'):
 
     bin_edges = np.histogram(v, bins=num_bins)[1]
     return bin_edges
-print get_bin_edges([1,2,3,4,5])
