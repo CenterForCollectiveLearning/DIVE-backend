@@ -22,7 +22,6 @@ def create_contingency_table_from_spec(spec, project_id):
     ind_num_variables = spec.get("ind_num_variables", [])
     dataset_id = spec.get("dataset_id")
     dep_num_variable = spec.get("dep_num_variable")
-    print dep_num_variable
     dep_cat_variable = spec.get("dep_cat_variable")
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
@@ -71,7 +70,7 @@ dep_num_variable : [numerical variable name, aggregation function name]
 unique_indep_values : [[unique values for columns], [unique values for rows]]
 '''
 
-def create_contingency_table_with_dep_num_var(df, variable_type_summary, dep_num_variable, unique_indep_values):
+def create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values):
     result_dict = {}
     num_var_dict = {}
     dep_variable_name = dep_num_variable[0]
@@ -113,7 +112,7 @@ variable_type_summary:
 dep_cat_variable : [categorical variable name, mapping function name, aggregation function name]
 unique_indep_values : [[unique values for columns], [unique values for rows]]
 '''
-def create_contingency_table_with_dep_cat_var(df, variable_type_summary, dep_cat_variable, unique_indep_values):
+def create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values):
     result_dict = {}
     cat_var_dict = {}
     dep_variable_name = dep_cat_variable[0]
@@ -155,7 +154,7 @@ variable_type_summary:
    for num variables: ['num', [field, num_bins], binning_edges, binning_names]
 unique_indep_values : [[unique values for columns], [unique values for rows]]
 '''
-def create_contingency_table_with_no_dep_var(df, variable_type_summary, unique_indep_values):
+def create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
     result_dict = {}
     count_dict = {}
 
@@ -217,13 +216,13 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
         variable_type_summary.append(('num', var, binningEdges, names))
 
     if dep_num_variable:
-        results_dict = create_contingency_table_with_dep_num_var(df, variable_type_summary, dep_num_variable, unique_indep_values)
+        results_dict = create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values)
 
     elif dep_cat_variable:
-        results_dict = create_contingency_table_with_dep_cat_var(df, variable_type_summary, dep_cat_variable, unique_indep_values)
+        results_dict = create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values)
 
     else:
-        results_dict = create_contingency_table_with_no_dep_var(df, variable_type_summary, unique_indep_values)
+        results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
 
     formatted_results_dict["column_headers"] = unique_indep_values[0]
     formatted_results_dict["row_headers"] = unique_indep_values[1]

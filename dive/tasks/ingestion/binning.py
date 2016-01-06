@@ -10,7 +10,7 @@ import numpy as np
 import scipy.stats as stats
 import math
 
-# from dive.data.access import get_data
+from dive.data.access import get_data
 
 
 ###
@@ -18,7 +18,7 @@ import math
 ###
 MAX_BINS = 10
 def get_bin_edges(v, procedure='freedman'):
-    # v = v.tolist()
+    v = v.tolist()
     # if procedure == 'freedman':
     IQR = np.subtract(*np.percentile(v, [75, 25]))
     bin_width = 2 * IQR * len(v)**(-1/3)
