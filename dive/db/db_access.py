@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 from dive.core import db
 from dive.db import ModelName
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship
+    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document
 
 
 import logging
@@ -191,7 +191,7 @@ def update_field_properties_type_by_id(project_id, field_id, field_type, general
 
     field_properties.type = field_type
     field_properties.general_type = general_type
-    field_properties.manual = True    
+    field_properties.manual = True
 
     db.session.commit()
     return row_to_dict(field_properties)
