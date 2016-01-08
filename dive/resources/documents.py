@@ -10,8 +10,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def object_type(j):
+    return j
+
+
+documentGetParser = reqparse.RequestParser()
+documentGetParser.add_argument('project_id', type=str, required=True)
+
 documentPutParser = reqparse.RequestParser()
-documentPutParser.add_argument('content', type=str, required=True)
+documentPutParser.add_argument('project_id', type=str, required=True, location='json')
+documentPutParser.add_argument('content', type=object_type, required=True, location='json')
+
+documentDeleteParser = reqparse.RequestParser()
+documentDeleteParser.add_argument('project_id', type=str, required=True)
 class Document(Resource):
     '''
     Single document endpoints given a document_id of an existing document
@@ -20,29 +31,39 @@ class Document(Resource):
     DELETE one document
     '''
     def get(self, document_id):
-        result = db_access.get_document(document_id)
+        logger.info('In get endpoint %s', document_id)
+        # print 'about to parse args'
+        args = documentGetParser.parse_args()
+        project_id = args.get('project_id')
+        print 'past args', project_id
+        result = db_access.get_document(project_id, document_id)
         return jsonify(format_json(result))
 
     def put(self, document_id):
-        args = projectPutParser.parse_args()
+        args = documentPutParser.parse_args()
         content = args.get('content')
-        result = db_access.update_document(document_id, content)
+        project_id = args.get('project_id')
+        result = db_access.update_document(project_id, document_id, content)
         return jsonify(format_json(result))
 
     def delete(self, document_id):
-        result = db_access.delete_document(document_id)
+        args = documentDeleteParser.parse_args()
+        project_id = args.get('project_id')
+        result = db_access.delete_document(project_id, document_id)
         return jsonify(format_json({"message": "Successfully deleted project.",
                             "id": int(result['id'])}))
 
 
 documentPostParser = reqparse.RequestParser()
-documentPostParser.add_argument('content', type=str, required=True)
+documentPostParser.add_argument('project_id', type=str, required=True, location='json')
+documentPostParser.add_argument('content', type=object_type, required=True, location='json')
 class NewDocument(Resource):
     '''
     POST to add one new document
     '''
-    def put(self, document_id):
-        args = projectPutParser.parse_args()
+    def post(self):
+        args = documentPostParser.parse_args()
         content = args.get('content')
-        result = db_access.create_document(document_id, content)
+        project_id = args.get('project_id')
+        result = db_access.create_document(project_id, content)
         return jsonify(format_json(result))

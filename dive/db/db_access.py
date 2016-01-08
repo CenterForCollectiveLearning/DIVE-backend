@@ -367,6 +367,7 @@ def delete_exported_regression(project_id, exported_regression_id):
 # Documents
 ################
 def get_document(project_id, document_id):
+    logger.info('In get_document')
     try:
         document = Document.query.filter_by(project_id=project_id, id=document_id).one()
         return row_to_dict(document)
@@ -377,7 +378,7 @@ def get_document(project_id, document_id):
         logger.error(e)
         raise e
 
-def create_document(project_id, document_id, content):
+def create_document(project_id, content):
     document = Document(
         project_id=project_id,
         content=content
@@ -388,7 +389,7 @@ def create_document(project_id, document_id, content):
 
 def update_document(project_id, document_id, content):
     document = Document.query.filter_by(project_id=project_id, id=document_id).one()
-    document['content'] = content
+    document.content = content
     db.session.add(document)
     db.session.commit()
     return row_to_dict(document)
