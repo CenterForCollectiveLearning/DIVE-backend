@@ -42,7 +42,7 @@ def add_resources(api):
     api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
     api.add_resource(ComparisonFromSpec,            '/statistics/v1/comparison')
     api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
-    api.add_resource(ContingencyTableFromSpec,     '/statistics/v1/contingency_table')
+    api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
     api.add_resource(SegmentationFromSpec,          '/statistics/v1/segmentation')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 

@@ -18,23 +18,19 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 def create_contingency_table_from_spec(spec, project_id):
-    ind_cat_variables = spec.get("ind_cat_variables", [])
-    ind_num_variables = spec.get("ind_num_variables", [])
-    dataset_id = spec.get("dataset_id")
-    dep_num_variable = spec.get("dep_num_variable")
-    dep_cat_variable = spec.get("dep_cat_variable")
+    ind_cat_variables = spec.get("categoricalIndependentVariableNames", [])
+    ind_num_variables = spec.get("numericalIndependentVariableNames", [])
+    dataset_id = spec.get("datasetId")
+    dep_num_variable = spec.get("numericalDependentVariable")
+    dep_cat_variable = spec.get("categoricalDependentVariable")
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
-    return {
-        'data': comparison_result
-    }, 200
+    return comparison_result, 200
 
 def parse_aggregation_function(string_function):
-    if string_function == "MEAN":
-        return np.mean
     if string_function == "SUM":
         return np.sum
 
@@ -196,7 +192,7 @@ dep_cat_variable : represents the dependent categorical variable. It is a list o
 supported mapping functions:
     (FILTER, target) -> returns 1 if value == target, 0 otherwise
 supported aggregation functions:
-    SUM, MEAN
+    SUM
 '''
 
 def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
@@ -224,12 +220,16 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
     else:
         results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
 
-    formatted_results_dict["column_headers"] = unique_indep_values[0]
+    formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Total']
     formatted_results_dict["row_headers"] = unique_indep_values[1]
+    formatted_results_dict['row'] = {}
+    formatted_results_dict['Total'] = np.zeros(len(unique_indep_values[0])+1)
     for row in unique_indep_values[1]:
-        formatted_results_dict[row] = []
+        formatted_results_dict['row'][row] = []
         for col in unique_indep_values[0]:
-            formatted_results_dict[row].append(results_dict[row][col])
+            formatted_results_dict['row'][row].append(results_dict[row][col])
+        formatted_results_dict['row'][row].append(sum(formatted_results_dict['row'][row]))
+        formatted_results_dict['Total'] += formatted_results_dict['row'][row]
 
     return formatted_results_dict
 
@@ -276,9 +276,9 @@ def find_bin(target, binningEdges, binningNames, num_bins):
 
 
 def run_numerical_comparison_from_spec(spec, project_id):
-    variable_names = spec.get('variable_names', [])
+    variable_names = spec.get('variableNames', [])
     independence = spec.get('independence', True)
-    dataset_id = spec.get('dataset_id')
+    dataset_id = spec.get('datasetId')
     if not (len(variable_names) >= 2 and dataset_id):
         return 'Not passed required parameters', 400
 
@@ -286,9 +286,7 @@ def run_numerical_comparison_from_spec(spec, project_id):
     df = df.dropna()  # Remove unclean
 
     comparison_result = run_valid_comparison_tests(df, variable_names, independence)
-    return {
-        'data': comparison_result
-    }, 200
+    return comparison_result, 200
 
 # args must be a list of lists
 def run_valid_comparison_tests(df, variable_names, independence):
