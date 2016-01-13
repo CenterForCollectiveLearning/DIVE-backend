@@ -53,29 +53,6 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
     return specs
 
 
-def get_baseline_viz_specs(field_properties):
-    '''
-    Single-field summary visualizations
-    '''
-    specs = []
-    for field in field_properties:
-        # Skip unique fields
-        if field['is_id']: continue
-        if field['is_unique']: continue
-
-        general_type = field['general_type']
-        if general_type == 'c':
-            C_specs = C(field)
-            specs.extend(C_specs)
-        elif general_type == 'q':
-            A_specs = A(field)
-            specs.extend(A_specs)
-        else:
-            raise ValueError('Not valid general_type', general_type)
-    logger.info('Got %s baseline specs', len(specs))
-    return specs
-
-
 def get_selected_fields(field_properties, selected_fields):
     '''
     Get selected fields, selected Q and C fields, and non-selected Q and C fields
@@ -85,7 +62,6 @@ def get_selected_fields(field_properties, selected_fields):
     c_fields_not_selected = []
     q_fields = []
     q_fields_not_selected = []
-
 
     for field in field_properties:
         is_selected_field = next((selected_field for selected_field in selected_fields if selected_field['field_id'] == field['id']), None)
@@ -109,6 +85,29 @@ def get_selected_fields(field_properties, selected_fields):
     logger.info('c_fields %s', [f['name'] for f in c_fields])
     logger.info('q_fields %s', [f['name'] for f in q_fields])
     return selected_field_docs, c_fields, c_fields_not_selected, q_fields, q_fields_not_selected
+
+
+def get_baseline_viz_specs(field_properties):
+    '''
+    Single-field summary visualizations
+    '''
+    specs = []
+    for field in field_properties:
+        # Skip unique and ID fields
+        if field['is_id']: continue
+        if field['is_unique']: continue
+
+        general_type = field['general_type']
+        if general_type == 'c':
+            C_specs = C(field)
+            specs.extend(C_specs)
+        elif general_type == 'q':
+            A_specs = A(field)
+            specs.extend(A_specs)
+        else:
+            raise ValueError('Not valid general_type', general_type)
+    logger.info('Got %s baseline specs', len(specs))
+    return specs
 
 
 def get_cascading_viz_specs(c_fields, q_fields, c_fields_not_selected, q_fields_not_selected):
