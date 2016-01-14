@@ -9,6 +9,7 @@ class ModelName(Enum):
     EXPORTED_SPEC = 'exported_spec'
     REGRESSION = 'regression'
     EXPORTED_REGRESSION = 'exported_regression'
+    DOCUMENT = 'document'
     RELATIONSHIP = 'relationship'
     GROUP = 'group'
     USER = 'user'
