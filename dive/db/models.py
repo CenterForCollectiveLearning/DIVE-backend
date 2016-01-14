@@ -115,6 +115,7 @@ class Field_Properties(db.Model):
     child = db.Column(db.Unicode(250))
     is_child = db.Column(db.Boolean())
     stats = db.Column(JSONB)
+    manual = db.Column(db.Boolean())
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate="CASCADE", ondelete="CASCADE"))
@@ -183,6 +184,21 @@ class Exported_Spec(db.Model):
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
+
+
+class Document(db.Model):
+    __tablename__ = ModelName.DOCUMENT.value
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(JSONB)
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate="CASCADE", ondelete="CASCADE"))
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 
 class Regression(db.Model):
     '''

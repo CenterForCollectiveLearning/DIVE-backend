@@ -6,7 +6,8 @@ from dive.task_core import celery, task_app
 from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
 from dive.tasks.ingestion.relationships import compute_relationships, save_relationships
-from dive.tasks.visualization.specs import enumerate_viz_specs, filter_viz_specs, score_viz_specs, format_viz_specs, save_viz_specs
+from dive.tasks.visualization.specs import filter_viz_specs, score_viz_specs, format_viz_specs, save_viz_specs
+from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
 
 import logging

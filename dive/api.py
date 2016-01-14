@@ -1,4 +1,6 @@
 from dive.resources.datasets import UploadFile, Dataset, Datasets
+from dive.resources.documents import NewDocument, Document
+from dive.resources.fields import Field
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
@@ -29,6 +31,8 @@ def add_resources(api):
     api.add_resource(Unpivot,                       '/datasets/v1/unpivot')
     api.add_resource(Join,                          '/datasets/v1/join')
 
+    api.add_resource(Field,                         '/datasets/v1/fields/<string:field_id>')
+
     api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')
 
     api.add_resource(Specs,                         '/specs/v1/specs')
@@ -48,6 +52,9 @@ def add_resources(api):
 
     api.add_resource(ExportedRegressions,           '/exported_regressions/v1/exported_regressions')
     api.add_resource(DataFromExportedRegression,    '/exported_regressions/v1/exported_regressions/<string:exported_spec_id>/data')
+
+    api.add_resource(NewDocument,                   '/compose/v1/document')
+    api.add_resource(Document,                      '/compose/v1/document/<string:document_id>')
 
 
     return api

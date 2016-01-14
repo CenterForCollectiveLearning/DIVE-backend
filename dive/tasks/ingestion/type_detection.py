@@ -51,9 +51,17 @@ def calculate_field_type(field_name, field_values, field_types=FIELD_TYPES, num_
 
     # Detection from field names
     for datatype, strings in header_strings.iteritems():
-        for s in strings:
-            if s in field_name:
-                field_type_scores[datatype] += 20
+        # Only look at beginning of string for certain field types
+        if datatype in [ DataType.BOOLEAN.value ]:
+            for s in strings:
+                if field_name.startswith(s):
+                    field_type_scores[datatype] += 20
+
+        # Look anywhere for other field types
+        else:
+            for s in strings:
+                if s in field_name:
+                    field_type_scores[datatype] += 20
 
     # Detection from values
     for field_value in field_sample:

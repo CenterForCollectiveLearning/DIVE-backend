@@ -1,7 +1,5 @@
 from enum import Enum
 
-
-
 class DataType(Enum):
 
     # Fundamental
@@ -52,7 +50,7 @@ categorical_types = [
     DataType.COUNTRY_CODE_2.value,
     DataType.COUNTRY_CODE_3.value,
     DataType.COUNTRY_NAME.value,
-    DataType.CONTINENT_NAME.value,    
+    DataType.CONTINENT_NAME.value,
 ]
 
 class DataTypeWeights(Enum):
@@ -76,12 +74,12 @@ class DataTypeWeights(Enum):
     CONTINENT_NAME = 10
 
     # Temporal
-    DATETIME = 10
-    DATE = 10
-    TIME = 10
-    YEAR = 10
-    MONTH = 10
-    DAY = 10
+    DATETIME = 5
+    DATE = 5
+    TIME = 5
+    YEAR = 5
+    MONTH = 5
+    DAY = 5
 
 
 class PseudoType(Enum):
