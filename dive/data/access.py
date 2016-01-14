@@ -52,7 +52,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None):
             parse_dates = True,
             nrows = nrows
         )
-        df = df.fillna('')
         IMD.insertData(dataset_id, df)
     return df
 
