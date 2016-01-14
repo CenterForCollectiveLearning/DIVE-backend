@@ -33,6 +33,8 @@ def create_contingency_table_from_spec(spec, project_id):
 def parse_aggregation_function(string_function):
     if string_function == "SUM":
         return np.sum
+    if string_function == 'MEAN':
+        return np.mean
 
 def parse_string_mapping_function(list_function):
     if list_function[0] == "FILTER":
@@ -71,6 +73,7 @@ def create_contingency_table_with_dependent_numerical_variable(df, variable_type
     num_var_dict = {}
     dep_variable_name = dep_num_variable[0]
     aggregation_function_name = dep_num_variable[1]
+    aggregationMean = aggregation_function_name == 'MEAN';
     for index in range(len(df)):
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
@@ -98,7 +101,7 @@ def create_contingency_table_with_dependent_numerical_variable(df, variable_type
             for col in unique_indep_values[0]:
                 result_dict[row][col] = 0
 
-    return result_dict
+    return (result_dict, aggregationMean)
 
 '''
 df : dataframe
@@ -202,17 +205,19 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
     unique_indep_values = []
     variable_type_summary = []
 
+    aggregationMean = False
+
     for var in ind_cat_variables:
         unique_indep_values.append(get_unique(df[var]))
         variable_type_summary.append(('cat', var))
-
+    print variable_type_summary
     for var in ind_num_variables:
         (names, binningEdges) = find_binning_edges_equal_spaced(df[var[0]], var[1])
         unique_indep_values.append(names)
         variable_type_summary.append(('num', var, binningEdges, names))
 
     if dep_num_variable:
-        results_dict = create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values)
+        (results_dict, aggregationMean) = create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values)
 
     elif dep_cat_variable:
         results_dict = create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values)
@@ -220,16 +225,21 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
     else:
         results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
 
-    formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Total']
+    if not aggregationMean:
+        formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Total']
+    else:
+        formatted_results_dict['column_headers'] = unique_indep_values[0]
     formatted_results_dict["row_headers"] = unique_indep_values[1]
     formatted_results_dict['row'] = {}
-    formatted_results_dict['Total'] = np.zeros(len(unique_indep_values[0])+1)
+    if not aggregationMean:
+        formatted_results_dict['Total'] = np.zeros(len(unique_indep_values[0])+1)
     for row in unique_indep_values[1]:
         formatted_results_dict['row'][row] = []
         for col in unique_indep_values[0]:
             formatted_results_dict['row'][row].append(results_dict[row][col])
-        formatted_results_dict['row'][row].append(sum(formatted_results_dict['row'][row]))
-        formatted_results_dict['Total'] += formatted_results_dict['row'][row]
+        if not aggregationMean:
+            formatted_results_dict['row'][row].append(sum(formatted_results_dict['row'][row]))
+            formatted_results_dict['Total'] += formatted_results_dict['row'][row]
 
     return formatted_results_dict
 
