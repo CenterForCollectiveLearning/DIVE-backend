@@ -13,7 +13,7 @@ from itertools import permutations
 from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
-from dive.tasks.ingestion import DataType, numeric_types, quantitative_types, categorical_types
+from dive.tasks.ingestion import DataType, specific_to_general_type
 from dive.tasks.ingestion.type_detection import calculate_field_type
 from dive.tasks.ingestion.utilities import get_unique
 
@@ -71,7 +71,7 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
         field_type, field_type_scores = calculate_field_type(field_name, field_values)
 
         # Map to general field types
-        general_type = 'q' if (field_type in quantitative_types) else 'c'
+        general_type = specific_to_general_type[field_type]
 
         # Uniqueness
         is_unique = detect_unique_list(field_values)

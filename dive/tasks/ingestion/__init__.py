@@ -61,21 +61,14 @@ categorical_types = [
 ]
 
 
-specific_to_general_type = {
-    DataType.STRING.value: 'c',
-    DataType.BOOLEAN.value: 'c',
-    DataType.TEXT.value: 'c',
-    DataType.URL.value: 'c',
-    DataType.CITY.value: 'c',
-    DataType.COUNTRY_CODE_2.value: 'c',
-    DataType.COUNTRY_CODE_3.value: 'c',
-    DataType.COUNTRY_NAME.value: 'c',
-    DataType.CONTINENT_NAME.value: 'c',
-    DataType.INTEGER.value: 'q',
-    DataType.DECIMAL.value: 'q',
-    DataType.DATETIME.value: 't',
-    DataType.DATE.value: 't',
-}
+specific_to_general_type = {}
+for data_type in quantitative_types:
+    specific_to_general_type[data_type] = 'q'
+for data_type in temporal_types:
+    specific_to_general_type[data_type] = 't'
+for data_type in categorical_types:
+    specific_to_general_type[data_type] = 'c'
+
 
 class DataTypeWeights(Enum):
     # Fundamental

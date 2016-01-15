@@ -7,7 +7,7 @@ from flask import request, make_response, jsonify
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
-from dive.tasks.ingestion import quantitative_types, categorical_types, specific_to_general_type
+from dive.tasks.ingestion import quantitative_types, categorical_types, temporal_types, specific_to_general_type
 from dive.resources.utilities import format_json
 
 import logging
