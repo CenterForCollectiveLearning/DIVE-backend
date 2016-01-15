@@ -6,6 +6,7 @@ from scipy import stats as sc_stats
 from flask import current_app
 
 from dive.db import db_access
+from dive.data.access import get_data, get_conditioned_data
 from dive.task_core import celery, task_app
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, specific_to_general_type
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
@@ -47,6 +48,12 @@ def attach_data_to_viz_specs(self, enumerated_viz_specs, dataset_id, project_id,
 
     full_conditionals = get_full_fields_for_conditionals(conditionals, dataset_id, project_id)
 
+    # Get dataframe
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+        df = df.dropna()
+        conditioned_df = get_conditioned_data(df, conditionals)
+
     for i, spec in enumerate(enumerated_viz_specs):
         if ((i + 1) % 100) == 0:
             logger.info('Attached data to %s out of %s specs', i, len(viz_specs_with_data))
@@ -55,7 +62,7 @@ def attach_data_to_viz_specs(self, enumerated_viz_specs, dataset_id, project_id,
         # TODO Optimize data reads
         with task_app.app_context():
             try:
-                data = get_viz_data_from_enumerated_spec(spec, project_id, full_conditionals, data_formats=['score', 'visualize'])
+                data = get_viz_data_from_enumerated_spec(conditioned_df, spec, project_id, full_conditionals, df=conditioned_df, data_formats=['score', 'visualize'])
             except Exception as e:
                 logger.error("Error getting viz data %s", e, exc_info=True)
                 continue
