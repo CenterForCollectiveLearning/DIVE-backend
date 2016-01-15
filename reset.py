@@ -41,3 +41,5 @@ if __name__ == '__main__':
 
     # Handled by flask-migrate
     create_tables(db)
+
+    remove_uploads(app)
