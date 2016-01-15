@@ -59,7 +59,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
     args = spec['args']
     dataset_id = spec['dataset_id']
 
-    if not df:
+    if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = df.dropna()
         conditioned_df = get_conditioned_data(df, conditionals)
