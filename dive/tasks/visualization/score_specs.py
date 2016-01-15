@@ -129,7 +129,6 @@ def get_statistical_properties(data, gp, ts):
 def get_relevance_score(spec, visualization_field_ids, selected_fields):
     ''' Increase by number specified fields that are included '''
     score = 0
-    print visualization_field_ids, selected_fields
     for field in selected_fields:
         if field['field_id'] in visualization_field_ids:
             score = score + 10

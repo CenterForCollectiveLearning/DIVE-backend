@@ -181,6 +181,7 @@ def get_agg_data(df, args, data_formats):
     final_data['visualize'] = result
     return final_data
 
+
 def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz

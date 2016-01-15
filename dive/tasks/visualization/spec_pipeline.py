@@ -38,27 +38,20 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
 
 
 @celery.task(bind=True)
-def filter_viz_specs(self, enumerated_viz_specs, project_id):
-    ''' Filtering enumerated viz specs based on interpretability and renderability '''
+def attach_data_to_viz_specs(self, enumerated_viz_specs, dataset_id, project_id, conditionals):
+    '''
+    Get data corresponding to each viz spec (before filtering and scoring)
+    '''
     self.update_state(state=states.PENDING)
-    filtered_viz_specs = enumerated_viz_specs
-    # self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
-    return filtered_viz_specs
-
-
-@celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_fields, conditionals, sort_key='relevance'):
-    ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
-    self.update_state(state=states.PENDING)
+    viz_specs_with_data = []
 
     full_conditionals = get_full_fields_for_conditionals(conditionals, dataset_id, project_id)
 
-    scored_viz_specs = []
-    for i, spec in enumerate(filtered_viz_specs):
+    for i, spec in enumerate(enumerated_viz_specs):
         if ((i + 1) % 100) == 0:
-            logger.info('Scored %s out of %s specs', (i + 1), len(filtered_viz_specs))
-        scored_spec = spec
+            logger.info('Attached data to %s out of %s specs', i, len(viz_specs_with_data))
 
+        viz_spec_with_data = spec
         # TODO Optimize data reads
         with task_app.app_context():
             try:
@@ -68,7 +61,41 @@ def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_f
                 continue
         if not data:
             continue
-        scored_spec['data'] = data
+        viz_spec_with_data['data'] = data
+        viz_specs_with_data.append(viz_spec_with_data)
+
+    # self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
+    return viz_specs_with_data
+
+
+@celery.task(bind=True)
+def filter_viz_specs(self, viz_specs_with_data, project_id):
+    '''
+    Filtering enumerated viz specs based on interpretability, usability, and renderability
+    '''
+    self.update_state(state=states.PENDING)
+    filtered_viz_specs = []
+
+    for s in viz_specs_with_data:
+        # Don't show aggregations with only one element
+        if s['generating_procedure'] == GeneratingProcedure.VAL_COUNT.value:
+            if (len(s['data']['visualize']) == 2):
+                continue
+        filtered_viz_specs.append(s)
+    # self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
+    return filtered_viz_specs
+
+
+@celery.task(bind=True)
+def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_fields, sort_key='relevance'):
+    ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
+    self.update_state(state=states.PENDING)
+
+    scored_viz_specs = []
+    for i, spec in enumerate(filtered_viz_specs):
+        if ((i + 1) % 100) == 0:
+            logger.info('Scored %s out of %s specs', i, len(filtered_viz_specs))
+        scored_spec = spec
 
         score_doc = score_spec(spec, selected_fields)
         if not score_doc:

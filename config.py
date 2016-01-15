@@ -34,7 +34,7 @@ class BaseConfig(object):
         'dive.tasks.transformation.reduce',
         'dive.tasks.visualization.enumerate_specs',
         'dive.tasks.visualization.marginal_spec_functions',
-        'dive.tasks.visualization.specs',
+        'dive.tasks.visualization.spec_pipeline',
         'dive.tasks.statistics.regression',
         'dive.tasks.statistics.comparison',
         'dive.tasks.statistics.segmentation',
