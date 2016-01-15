@@ -22,6 +22,10 @@ def replace_unserializable_numpy(obj):
         if np.isnan(obj) or np.isinf(obj):
             return None
         return obj.item()
+    elif isinstance(obj, float):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+        return obj
     elif isinstance(obj, (np.ndarray, list, tuple)):
         return map(replace_unserializable_numpy, obj)
     elif isinstance(obj,(pd.DataFrame, pd.Series)):
@@ -38,6 +42,8 @@ def format_json(obj):
             return None
         return obj.item()
     elif isinstance(obj, float):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
         return obj
     elif isinstance(obj, (np.ndarray, list, tuple)):
         return map(format_json, obj)

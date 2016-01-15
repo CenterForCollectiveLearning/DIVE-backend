@@ -1,3 +1,6 @@
+'''
+Functions providing only the new specs for each case (subsumed cases are taken care of elsewhere)
+'''
 import numpy as np
 from itertools import combinations
 
@@ -5,6 +8,7 @@ from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermTyp
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+
 
 elementwise_functions = {
     'add': '+',
@@ -22,13 +26,12 @@ binning_procedures = {
     'bayesian': False
 }
 
-###
-# Functions providing only the new specs for each case (subsumed cases are taken care of elsewhere)
-###
+
 def A(q_field):
     specs = []
 
     q_label = q_field['name']
+    logger.info('In A(), %s', q_field)
 
     # 0-D Aggregations
     # for agg_fn_label, agg_fn in aggregation_functions.items():
