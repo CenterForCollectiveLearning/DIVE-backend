@@ -8,7 +8,8 @@ from flask import current_app
 from dive.db import db_access
 from dive.data.access import get_data, get_conditioned_data
 from dive.task_core import celery, task_app
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, specific_to_general_type
+from dive.tasks.ingestion import specific_to_general_type
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.score_specs import score_spec
 

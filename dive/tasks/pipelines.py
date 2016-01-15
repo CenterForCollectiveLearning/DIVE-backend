@@ -66,7 +66,7 @@ def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs, conditionals):
         attach_data_to_viz_specs.s(dataset_id, project_id, conditionals),
         filter_viz_specs.s(project_id),
         score_viz_specs.s(dataset_id, project_id, field_agg_pairs),
-        format_viz_specs.s(project_id),
+        # format_viz_specs.s(project_id),
         save_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals)
     ])
     return pipeline

@@ -275,6 +275,7 @@ def get_ind_val_data(df, args, data_formats):
         }
     return final_data
 
+
 def get_bin_agg_data(df, args, data_formats):
     final_data = {}
     binning_field = args['binningField']['name']
@@ -398,22 +399,3 @@ def get_val_count_data(df, args, data_formats):
             'data': [[v, c] for (v, c) in zip(value_list, counts)]
         }
     return final_data
-
-
-### TODO Move these to some utility functions location
-def dict_to_collection(d):
-    result = []
-    for k, v in d.iteritems():
-        result.append({k: v})
-    return result
-
-
-def lists_to_collection(li_a, li_b):
-    if len(li_a) != len(li_b):
-        raise ValueError("Lists not equal size", len(li_a), len(li_b))
-    else:
-        result = []
-        num_elements = len(li_a)
-        for i in num_elements:
-            result.append({li_a[i]: li_b[i]})
-        return result

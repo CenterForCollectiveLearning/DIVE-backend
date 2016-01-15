@@ -25,6 +25,7 @@ class BaseConfig(object):
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
 
     CELERY_IMPORTS = [
+        'dive.tasks.pipelines',
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
         'dive.tasks.ingestion.type_detection',
