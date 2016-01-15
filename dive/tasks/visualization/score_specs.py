@@ -67,7 +67,6 @@ bivariate_tests = {
 # Statistical
 def get_statistical_properties(data, gp, ts):
     stat_docs = []
-    logger.info('gp: %s, ts: %s', gp, ts)
     # Single quantitative field:
     if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.liC_Q.value]:
         if gp in [ GeneratingProcedure.VAL_AGG.value ]:
@@ -130,7 +129,6 @@ def get_statistical_properties(data, gp, ts):
 def get_relevance_score(spec, visualization_field_ids, selected_fields):
     ''' Increase by number specified fields that are included '''
     score = 0
-    print visualization_field_ids, selected_fields
     for field in selected_fields:
         if field['field_id'] in visualization_field_ids:
             score = score + 10
@@ -159,6 +157,4 @@ def score_spec(spec, selected_fields):
     stat_score_docs = get_statistical_properties(data, gp, ts)
     score_docs.extend(stat_score_docs)
 
-    logger.info(len(score_docs))
-    logger.info(score_docs)
     return score_docs

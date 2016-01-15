@@ -28,10 +28,15 @@ binning_procedures = {
 
 
 def A(q_field):
+    '''
+    Single numeric field
+
+    - For non-unique fields, aggregate on count
+    - For all, count on bin
+    '''
     specs = []
 
     q_label = q_field['name']
-    logger.info('In A(), %s', q_field)
 
     # 0-D Aggregations
     # for agg_fn_label, agg_fn in aggregation_functions.items():

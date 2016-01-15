@@ -1,6 +1,7 @@
 from dive.db import db_access
 from dive.task_core import celery, task_app
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType, specific_to_general_type
+from dive.tasks.ingestion import specific_to_general_type
+from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
 from dive.tasks.visualization.marginal_spec_functions import A, B, C, D, E, F, G, H
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
@@ -104,6 +105,8 @@ def get_baseline_viz_specs(field_properties):
         elif general_type == 'q':
             A_specs = A(field)
             specs.extend(A_specs)
+        elif general_type == 't':
+            continue
         else:
             raise ValueError('Not valid general_type', general_type)
     logger.info('Got %s baseline specs', len(specs))

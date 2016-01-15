@@ -11,8 +11,8 @@ import scipy as sp
 from itertools import combinations
 from flask import current_app
 
-from dive.data.access import get_data, get_conditioned_data
 from dive.data.in_memory_data import InMemoryData as IMD
+from dive.data.access import get_data, get_conditioned_data
 from dive.tasks.ingestion.type_detection import detect_time_series
 from dive.tasks.ingestion.binning import get_bin_edges
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, aggregation_functions
@@ -32,6 +32,63 @@ def makeSafeString(s):
 def _get_derived_field(df, label_descriptor):
     label_a, op, label_b = label.split(' ')
     return result
+
+
+def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, data_formats=['score']):
+    '''
+    Returns a dictionary containing data corresponding to spec (in automated-viz
+    structure), and all necessary information to interpret data.
+
+    There are three types of formats:
+        Score: a dict of lists for scoring
+        Visualize: a list of dicts (collection)
+        Table: {columns: list, data: matrix}
+
+    Args:
+    spec, dataset_id, project_id, format (list of 'score', 'visualize', or 'table')
+    Returns:
+        data specified by spec, in specified format
+
+    '''
+    for f in data_formats:
+        if f not in ['score', 'visualize', 'table']:
+            raise ValueError('Passed incorrect data format', f)
+    final_data = dict([(f, {}) for f in data_formats])
+
+    gp = spec['generating_procedure']
+    args = spec['args']
+    dataset_id = spec['dataset_id']
+
+    if df is None:
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+        df = df.dropna()
+        conditioned_df = get_conditioned_data(df, conditionals)
+
+    if gp == GeneratingProcedure.AGG.value:
+        final_data = get_agg_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.IND_VAL.value:
+        final_data = get_ind_val_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.BIN_AGG.value:
+        final_data = get_bin_agg_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+        final_data = get_multigroup_count_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.VAL_AGG.value:
+        final_data = get_val_agg_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.VAL_VAL.value:
+        final_data = get_raw_comparison_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.VAL_COUNT.value:
+        final_data = get_val_count_data(df, args, data_formats)
+
+    elif gp == GeneratingProcedure.AGG_AGG.value:
+        final_data = get_agg_agg_data(df, args, data_formats)
+
+    return final_data
 
 
 def get_raw_comparison_data(df, args, data_formats):
@@ -181,63 +238,6 @@ def get_agg_data(df, args, data_formats):
     final_data['visualize'] = result
     return final_data
 
-def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['score']):
-    '''
-    Returns a dictionary containing data corresponding to spec (in automated-viz
-    structure), and all necessary information to interpret data.
-
-    There are three types of formats:
-        Score: a dict of lists for scoring
-        Visualize: a list of dicts (collection)
-        Table: {columns: list, data: matrix}
-
-    Args:
-    spec, dataset_id, project_id, format (list of 'score', 'visualize', or 'table')
-    Returns:
-        data specified by spec, in specified format
-    Raises:
-
-    TODO Don't do so much in this function
-    '''
-    for f in data_formats:
-        if f not in ['score', 'visualize', 'table']:
-            raise ValueError('Passed incorrect data format', f)
-    final_data = dict([(f, {}) for f in data_formats])
-
-    gp = spec['generating_procedure']
-    args = spec['args']
-    dataset_id = spec['dataset_id']
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()
-    conditioned_df = get_conditioned_data(df, conditionals)
-
-    if gp == GeneratingProcedure.AGG.value:
-        final_data = get_agg_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.IND_VAL.value:
-        final_data = get_ind_val_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.BIN_AGG.value:
-        final_data = get_bin_agg_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-        final_data = get_multigroup_count_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_AGG.value:
-        final_data = get_val_agg_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_data = get_raw_comparison_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_COUNT.value:
-        final_data = get_val_count_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.AGG_AGG.value:
-        final_data = get_agg_agg_data(conditioned_df, args, data_formats)
-
-    return final_data
-
 
 def get_ind_val_data(df, args, data_formats):
     final_data = {}
@@ -251,7 +251,7 @@ def get_ind_val_data(df, args, data_formats):
     elif isinstance(field_a_label, dict):
         data = _get_derived_field(df, field_a_label)
     else:
-        print "Ill-formed field_a_label %s" % (field_a)
+        logger.error("Ill-formed field_a_label %s" % (field_a))
 
     field_a_series = df[field_a_label]
 
@@ -274,6 +274,7 @@ def get_ind_val_data(df, args, data_formats):
             'data': df.values.tolist()
         }
     return final_data
+
 
 def get_bin_agg_data(df, args, data_formats):
     final_data = {}
@@ -398,111 +399,3 @@ def get_val_count_data(df, args, data_formats):
             'data': [[v, c] for (v, c) in zip(value_list, counts)]
         }
     return final_data
-
-
-### TODO Move these to some utility functions location
-def dict_to_collection(d):
-    result = []
-    for k, v in d.iteritems():
-        result.append({k: v})
-    return result
-
-
-def lists_to_collection(li_a, li_b):
-    if len(li_a) != len(li_b):
-        raise ValueError("Lists not equal size", len(li_a), len(li_b))
-    else:
-        result = []
-        num_elements = len(li_a)
-        for i in num_elements:
-            result.append({li_a[i]: li_b[i]})
-        return result
-
-
-# df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
-# spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
-def get_viz_data_from_builder_spec(spec, conditional, project_id):
-    '''
-    Deprecated function used to return viz data for a spec constructed by
-    old builder
-    '''
-    ### 0) Parse and validate arguments
-    # TODO Ensure well-formed spec
-    dataset_id = spec.get('dataset_id')
-    field_a = spec.get('field_a')
-    operation = spec.get('operation')
-    arguments = spec.get('arguments')
-
-    if not (dataset_id, field_a, operation):
-        return "dataset_id not pass required parameters", 400
-
-    ### Returned data structures
-    viz_result = {}
-    table_result = {}
-
-    ### 1) Access dataset
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-
-    ### 2) Apply all conditionals
-    conditioned_df = get_conditioned_data(df, conditional)
-
-    ### 3) Query based on operation
-    # a) Group
-    if operation == 'group':
-        function = arguments.get('function')
-        field_b = arguments.get('field_b')
-        gb = conditioned_df.groupby(field_a)
-
-        if function == 'count':
-            grouped_df = pd.DataFrame({'count': gb.size()})  # 1 col DF
-        else:
-            group_operation = aggregation_functions[function]
-            grouped_df = gb.aggregate(group_operation)
-            grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
-
-        field_a_loc = conditioned_df.columns.get_loc(field_a)
-        grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
-
-        # Table Data: Dict of matrices
-        grouped_df_copy = grouped_df
-
-        table_result = {
-            'columns': grouped_df_copy.columns.tolist(),
-            'data': grouped_df_copy.values.tolist(),
-        }
-
-        grouped_dict = grouped_df.to_dict()
-
-        for k, obj in grouped_dict.iteritems():
-            collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
-            viz_result[k] = collection
-
-    # b) Vs. (raw comparison of one unique field against another)
-    elif operation == 'vs':
-        # TODO Get viz_data
-        df.index = conditioned_df[field_a]
-        df = df.drop(field_a, 1)
-        final_dict = df.to_dict()
-        # If taking field_b into account
-        # final_dict = final_dict[field_b]
-
-        for k, obj in final_dict.iteritems():
-            viz_result[k] = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
-
-        table_result = conditioned_df.to_dict(orient='split')
-
-    # c) Comparison
-    elif operation == 'compare':
-        function = arguments.get('function')
-        element_x = arguments.get('element_x')
-        element_y = arguments.get('element_y')
-        field_b = arguments.get('field_b')
-        field_c = arguments.get('field_c')
-
-        # TODO Implement
-        return
-
-    return {
-        'viz_data': viz_result,
-        'table_result': table_result
-    }, 200
