@@ -25,8 +25,6 @@ class TestPipeline(Resource):
         task = full_pipeline(dataset_id, project_id).apply_async()
 
         task_id = task.id
-        logger.info(task_id)
-        logger.info(getChainIDs(task))
         response = jsonify({'task_ids': getChainIDs(task)})
         response.status_code = 202
         return make_response(jsonify(format_json(response)))
@@ -39,7 +37,6 @@ class TaskResult(Resource):
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
 
-        logger.info("STATE %s", task.state)
         # TODO Make sure that these are consistent
         if task.state == states.PENDING:
             state = {

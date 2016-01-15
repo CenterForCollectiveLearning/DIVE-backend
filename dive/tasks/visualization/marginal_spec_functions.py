@@ -28,6 +28,12 @@ binning_procedures = {
 
 
 def A(q_field):
+    '''
+    Single numeric field
+
+    - For non-unique fields, aggregate on count
+    - For all, count on bin 
+    '''
     specs = []
 
     q_label = q_field['name']
