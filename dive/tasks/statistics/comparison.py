@@ -28,13 +28,25 @@ def create_contingency_table_from_spec(spec, project_id):
     df = df.dropna()  # Remove unclean
 
     comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
+    print comparison_result
     return comparison_result, 200
 
-def parse_aggregation_function(string_function):
+def parse_aggregation_function(string_function, list_weights):
+    print list_weights
     if string_function == "SUM":
         return np.sum
     if string_function == 'MEAN':
-        return np.mean
+        if not list_weights:
+            return np.mean
+        else:
+            def weight_sum(list):
+                sum = 0
+                counter = 0.0
+                for index in range(len(list)):
+                    sum += list[index]*list_weights[index]
+                    counter += list_weights[index]
+                return sum/counter
+            return weight_sum
 
 def parse_string_mapping_function(list_function):
     if list_function[0] == "FILTER":
@@ -68,31 +80,45 @@ dep_num_variable : [numerical variable name, aggregation function name]
 unique_indep_values : [[unique values for columns], [unique values for rows]]
 '''
 
+
 def create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values):
     result_dict = {}
     num_var_dict = {}
     dep_variable_name = dep_num_variable[0]
-    aggregation_function_name = dep_num_variable[1]
-    aggregationMean = aggregation_function_name == 'MEAN';
+    aggregation_function_name = dep_num_variable[1][0]
+    aggregationMean = aggregation_function_name == 'MEAN'
+    weight_variable_name = dep_num_variable[1][1]
+    weight_dict = {}
+
+
     for index in range(len(df)):
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
         if num_var_dict.get(row):
             if num_var_dict[row].get(col):
                 num_var_dict[row][col].append(df.get_value(index, dep_variable_name))
+                if weight_variable_name != 'UNIFORM':
+                    weight_dict[row][col].append(df.get_value(index, weight_variable_name))
 
             else:
                 num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+                weight_dict[row][col] = None
+                if weight_variable_name != 'UNIFORM':
+                    weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
         else:
             num_var_dict[row] = {}
             num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+            weight_dict[row] = {}
+            weight_dict[row][col] = None
+            if weight_variable_name != 'UNIFORM':
+                weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
 
     for row in unique_indep_values[1]:
         result_dict[row] = {}
         if num_var_dict.get(row):
             for col in unique_indep_values[0]:
                 if num_var_dict[row].get(col) != None:
-                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name)(num_var_dict[row][col])
+                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(num_var_dict[row][col])
 
                 else:
                     result_dict[row][col] = 0
@@ -116,7 +142,7 @@ def create_contingency_table_with_dependent_categorical_variable(df, variable_ty
     cat_var_dict = {}
     dep_variable_name = dep_cat_variable[0]
     mapping_function_name = dep_cat_variable[1]
-    aggregation_function_name = dep_cat_variable[2]
+    aggregation_function_name = dep_cat_variable[2][0]
 
     for index in range(len(df)):
         col = parse_variable(0, index, variable_type_summary, df)
@@ -136,7 +162,7 @@ def create_contingency_table_with_dependent_categorical_variable(df, variable_ty
         if cat_var_dict.get(col):
             for col in unique_indep_values[0]:
                 if cat_var_dict[row].get(col):
-                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name)(map(parse_string_mapping_function(mapping_function_name),cat_var_dict[row][col]))
+                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name, None)(map(parse_string_mapping_function(mapping_function_name),cat_var_dict[row][col]))
 
                 else:
                     result_dict[row][col] = 0
