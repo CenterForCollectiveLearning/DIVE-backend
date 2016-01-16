@@ -252,7 +252,7 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
         results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
 
     if not aggregationMean:
-        formatted_results_dict["column_headers"] = unique_indep_values[0] + ['column_totals']
+        formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Row Totals']
     else:
         formatted_results_dict['column_headers'] = unique_indep_values[0]
     formatted_results_dict["row_headers"] = unique_indep_values[1]
