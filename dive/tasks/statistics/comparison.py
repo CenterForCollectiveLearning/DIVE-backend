@@ -252,20 +252,25 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
         results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
 
     if not aggregationMean:
-        formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Total']
+        formatted_results_dict["column_headers"] = unique_indep_values[0] + ['column_totals']
     else:
         formatted_results_dict['column_headers'] = unique_indep_values[0]
     formatted_results_dict["row_headers"] = unique_indep_values[1]
-    formatted_results_dict['row'] = {}
+    formatted_results_dict["rows"] = []
     if not aggregationMean:
-        formatted_results_dict['Total'] = np.zeros(len(unique_indep_values[0])+1)
+        formatted_results_dict['column_totals'] = np.zeros(len(unique_indep_values[0]) + 1)
+
     for row in unique_indep_values[1]:
-        formatted_results_dict['row'][row] = []
-        for col in unique_indep_values[0]:
-            formatted_results_dict['row'][row].append(results_dict[row][col])
+        values = [ results_dict[row][col] for col in unique_indep_values[0] ]
+
         if not aggregationMean:
-            formatted_results_dict['row'][row].append(sum(formatted_results_dict['row'][row]))
-            formatted_results_dict['Total'] += formatted_results_dict['row'][row]
+            values.append(sum(values))
+            formatted_results_dict['column_totals'] += values
+
+        formatted_results_dict["rows"].append({
+            "field": row,
+            "values": values
+        })
 
     return formatted_results_dict
 

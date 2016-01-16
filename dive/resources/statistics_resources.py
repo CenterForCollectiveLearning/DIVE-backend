@@ -84,6 +84,7 @@ class ContributionToRSquared(Resource):
         logger.info(data)
         return make_response(jsonify(format_json({ 'data': data })))
 
+
 class NumericalComparisonFromSpec(Resource):
     def post(self):
         '''
@@ -97,7 +98,9 @@ class NumericalComparisonFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(format_json({"result": result})), status)
+        return make_response(jsonify(format_json(result)), status)
+
+
 class ContingencyTableFromSpec(Resource):
     def post(self):
         '''
@@ -113,7 +116,8 @@ class ContingencyTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(format_json({"result": result})), status)
+        return make_response(jsonify(format_json(result)), status)
+
 
 class ComparisonFromSpec(Resource):
     def post(self):
@@ -121,7 +125,7 @@ class ComparisonFromSpec(Resource):
         project_id = args.get('project_id')
         spec = args.get('spec')
         result, status = run_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(format_json({"result": result})), status)
+        return make_response(jsonify(format_json(result)), status)
 
 
 class SegmentationFromSpec(Resource):
