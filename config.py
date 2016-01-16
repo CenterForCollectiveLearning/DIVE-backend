@@ -25,6 +25,7 @@ class BaseConfig(object):
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
 
     CELERY_IMPORTS = [
+        'dive.tasks.pipelines',
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
         'dive.tasks.ingestion.type_detection',
@@ -32,7 +33,11 @@ class BaseConfig(object):
         'dive.tasks.ingestion.field_properties',
         'dive.tasks.ingestion.relationships',
         'dive.tasks.transformation.reduce',
-        'dive.tasks.visualization.specs',
+        'dive.tasks.visualization.data',
+        'dive.tasks.visualization.enumerate_specs',
+        'dive.tasks.visualization.marginal_spec_functions',
+        'dive.tasks.visualization.score_specs',
+        'dive.tasks.visualization.spec_pipeline',
         'dive.tasks.statistics.regression',
         'dive.tasks.statistics.comparison',
         'dive.tasks.statistics.segmentation',

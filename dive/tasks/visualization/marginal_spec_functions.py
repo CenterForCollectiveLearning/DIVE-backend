@@ -1,3 +1,6 @@
+'''
+Functions providing only the new specs for each case (subsumed cases are taken care of elsewhere)
+'''
 import numpy as np
 from itertools import combinations
 
@@ -5,6 +8,7 @@ from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermTyp
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+
 
 elementwise_functions = {
     'add': '+',
@@ -22,10 +26,14 @@ binning_procedures = {
     'bayesian': False
 }
 
-###
-# Functions providing only the new specs for each case (subsumed cases are taken care of elsewhere)
-###
+
 def A(q_field):
+    '''
+    Single numeric field
+
+    - For non-unique fields, aggregate on count
+    - For all, count on bin
+    '''
     specs = []
 
     q_label = q_field['name']

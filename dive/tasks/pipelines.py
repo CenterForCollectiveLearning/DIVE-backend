@@ -6,7 +6,7 @@ from dive.task_core import celery, task_app
 from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
 from dive.tasks.ingestion.relationships import compute_relationships, save_relationships
-from dive.tasks.visualization.specs import filter_viz_specs, score_viz_specs, format_viz_specs, save_viz_specs
+from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, format_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
 
@@ -63,9 +63,10 @@ def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs, conditionals):
 
     pipeline = chain([
         enumerate_viz_specs.si(project_id, dataset_id, field_agg_pairs),
+        attach_data_to_viz_specs.s(dataset_id, project_id, conditionals),
         filter_viz_specs.s(project_id),
-        score_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals),
-        format_viz_specs.s(project_id),
+        score_viz_specs.s(dataset_id, project_id, field_agg_pairs),
+        # format_viz_specs.s(project_id),
         save_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals)
     ])
     return pipeline

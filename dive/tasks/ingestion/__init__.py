@@ -37,8 +37,15 @@ numeric_types = [
 quantitative_types = [
     DataType.INTEGER.value,
     DataType.DECIMAL.value,
+]
+
+temporal_types = [
     DataType.DATETIME.value,
     DataType.DATE.value,
+    DataType.TIME.value,
+    DataType.YEAR.value,
+    DataType.MONTH.value,
+    DataType.DAY.value
 ]
 
 categorical_types = [
@@ -52,6 +59,16 @@ categorical_types = [
     DataType.COUNTRY_NAME.value,
     DataType.CONTINENT_NAME.value,
 ]
+
+
+specific_to_general_type = {}
+for data_type in quantitative_types:
+    specific_to_general_type[data_type] = 'q'
+for data_type in temporal_types:
+    specific_to_general_type[data_type] = 't'
+for data_type in categorical_types:
+    specific_to_general_type[data_type] = 'c'
+
 
 class DataTypeWeights(Enum):
     # Fundamental
