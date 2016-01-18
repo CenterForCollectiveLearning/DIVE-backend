@@ -93,7 +93,7 @@ def run_regression_from_spec(spec, project_id):
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     estimator = spec.get('estimator', 'ols')
-    degree = spec.get('degree', 1)
+    degree = spec.get('degree', 1) # need to find quantitative, categorical
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
