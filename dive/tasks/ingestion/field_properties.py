@@ -43,7 +43,7 @@ def calculate_field_stats(field_type, field_values, logging=False):
 
 
 @celery.task(bind=True, task_name='field_properties')
-def compute_field_properties(self, dataset_id, project_id, track_started=True):
+def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
@@ -64,6 +64,7 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
 
     # Single-field types
     for (i, field_name) in enumerate(df):
+        logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]
 
@@ -120,27 +121,32 @@ def compute_field_properties(self, dataset_id, project_id, track_started=True):
             'manual': False
         })
 
+    logger.debug("Detecting hierarchical relationships")
     # Detect hierarchical relationships
     # Hierarchical relationships
     # Given the unique values of current field, are the corresponding values
     # in another field a complete set of t?
-    MAX_UNIQUE_VALUES_THRESHOLD = 100
-    for field_a, field_b in permutations(all_field_properties, 2):
-        if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
-            continue
-
-        field_b_unique_corresponding_values = []
-        for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
-            if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
+    if compute_hierarchical_relationships:
+        MAX_UNIQUE_VALUES_THRESHOLD = 100
+        for field_a, field_b in permutations(all_field_properties, 2):
+            logger.debug('%s - %s', field_a['name'], field_b['name'])
+            if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
                 continue
-            sub_df = df.loc[df[field_a['name']] == unique_value_a]
-            field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
 
-        if detect_unique_list(field_b_unique_corresponding_values):
-            all_field_properties[all_field_properties.index(field_a)]['child'] = field_b['name']
-            all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
+            field_b_unique_corresponding_values = []
+            for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
+                if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
+                    continue
+                sub_df = df.loc[df[field_a['name']] == unique_value_a]
+                field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
+
+            if detect_unique_list(field_b_unique_corresponding_values):
+                all_field_properties[all_field_properties.index(field_a)]['child'] = field_b['name']
+                all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
 
     self.update_state(state=states.SUCCESS)
+
+    logger.info("Done computing field properties")
     return all_field_properties
 
 
