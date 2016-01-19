@@ -31,14 +31,17 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
 
     field_types = []
     for (i, field_name) in enumerate(df):
+        logger.info('Calculating types for field %s', field_name)
         field_values = df[field_name]
         field_type, field_type_scores = calculate_field_type(field_name, field_values)
         field_types.append(field_type)
 
-    time_series = detect_time_series(df, field_types)
-    if time_series:
-        time_series = True
-    
+    # Forgoing time series detection for now (expensive)
+    # time_series = detect_time_series(df, field_types)
+    # if time_series:
+    #     time_series = True
+    time_series = False
+
     structure = 'wide' if time_series else 'long'
 
     properties = {
@@ -61,11 +64,11 @@ def save_dataset_properties(self, properties, dataset_id, project_id):
     with task_app.app_context():
         existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
     if existing_dataset_properties:
-        logger.debug("Updating field property of dataset %s", dataset_id)
+        logger.info("Updating field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
     else:
-        logger.debug("Inserting field property of dataset %s", dataset_id)
+        logger.info("Inserting field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
     self.update_state(state=states.SUCCESS)

@@ -54,7 +54,7 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
     '''
     self.update_state(state=states.PENDING, meta={'status': 'Computing dataset properties'})
 
-    logger.info("Computing field properties for dataset_id %s", dataset_id)
+    logger.debug("Computing field properties for dataset_id %s", dataset_id)
 
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
@@ -84,26 +84,27 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
             unique_values = None
 
         # Stats
-        stats = calculate_field_stats(field_type, field_values)
+        stats = {}  # calculate_field_stats(field_type, field_values)
 
         # ID
         is_id = True if ((field_type is DataType.INTEGER.value) and is_unique) else False
 
         # Normality
+        # Skip for now
         normality = None
-        if general_type is 'q':
-            try:
-                d = field_values.astype(np.float)
-                normality_test_result = sc_stats.normaltest(d)
-                if normality_test_result:
-                    statistic = normality_test_result.statistic
-                    pvalue = normality_test_result.pvalue
-                    if pvalue < 0.05:
-                        normality = True
-                    else:
-                        normality = False
-            except ValueError:
-                normality = None
+        # if general_type is 'q':
+        #     try:
+        #         d = field_values.astype(np.float)
+        #         normality_test_result = sc_stats.normaltest(d)
+        #         if normality_test_result:
+        #             statistic = normality_test_result.statistic
+        #             pvalue = normality_test_result.pvalue
+        #             if pvalue < 0.05:
+        #                 normality = True
+        #             else:
+        #                 normality = False
+        #     except ValueError:
+        #         normality = None
 
         all_field_properties[i].update({
             'index': i,
@@ -147,6 +148,7 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
     self.update_state(state=states.SUCCESS)
 
     logger.info("Done computing field properties")
+
     return all_field_properties
 
 
@@ -194,6 +196,7 @@ def detect_unique_list(l):
 @celery.task(bind=True)
 def save_field_properties(self, all_properties, dataset_id, project_id):
     ''' Upsert all field properties corresponding to a dataset '''
+    logger.debug('In save_field_properties for dataset_id %s and project_id %s', dataset_id, project_id)
     self.update_state(state=states.PENDING, meta={'status': 'Saving field properties'})
     field_properties_with_id = []
     for field_properties in all_properties:
