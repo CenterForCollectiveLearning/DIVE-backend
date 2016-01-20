@@ -17,22 +17,31 @@ from dive.tasks.ingestion.utilities import get_unique
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-def create_contingency_table_from_spec(spec, project_id):
-    ind_cat_variables = spec.get("categoricalIndependentVariableNames", [])
-    ind_num_variables = spec.get("numericalIndependentVariableNames", [])
+def create_one_dimensional_contingency_table_from_spec(spec, project_id):
+    ind_cat_variable = spec.get("categoricalIndependentVariableName", None)
+    ind_num_variable = spec.get("numericalIndependentVariableName", [])
     dataset_id = spec.get("datasetId")
-    dep_num_variable = spec.get("numericalDependentVariable")
-    dep_cat_variable = spec.get("categoricalDependentVariable")
+    dep_variable = spec.get("dependentVariable", [])
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
-    print comparison_result
+    comparison_result = create_one_dimensional_contingency_table(df, ind_cat_variable, ind_num_variable, dep_variable)
+    return comparison_result, 200
+
+def create_contingency_table_from_spec(spec, project_id):
+    ind_cat_variables = spec.get("categoricalIndependentVariableNames", [])
+    ind_num_variables = spec.get("numericalIndependentVariableNames", [])
+    dataset_id = spec.get("datasetId")
+    dep_variable = spec.get("dependentVariable", [])
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_variable)
     return comparison_result, 200
 
 def parse_aggregation_function(string_function, list_weights):
-    print list_weights
     if string_function == "SUM":
         return np.sum
     if string_function == 'MEAN':
@@ -71,106 +80,218 @@ def parse_variable(num, index, variable_type_summary, df):
         binning_edges = variable_type_summary[num][2]
         binning_names = variable_type_summary[num][3]
         return find_bin(df.get_value(index, passed_variable[0]), binning_edges, binning_names, passed_variable[1])
+
 '''
 df : dataframe
 variable_type_summary:
    for cat variables: ['cat', field]
    for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-dep_num_variable : [numerical variable name, aggregation function name]
-unique_indep_values : [[unique values for columns], [unique values for rows]]
+dep_variable :
+    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+    for num variable: [type, numerical variable name, aggregation function name]
+unique_indep_values : [unique values for the one variable]
 '''
 
 
-def create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values):
+def create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values):
     result_dict = {}
-    num_var_dict = {}
-    dep_variable_name = dep_num_variable[0]
-    aggregation_function_name = dep_num_variable[1][0]
+    dep_var_dict = {}
+    type_string = dep_variable[0]
+    dep_variable_name = dep_variable[1]
+    aggregation_function_name = dep_variable[2][0]
     aggregationMean = aggregation_function_name == 'MEAN'
-    weight_variable_name = dep_num_variable[1][1]
+    weight_variable_name = dep_variable[2][1]
+    weight_dict = {}
+
+
+    for index in range(len(df)):
+        var = parse_variable(0, index, variable_type_summary, df)
+        if dep_var_dict.get(var):
+            dep_var_dict[var].append(df.get_value(index, dep_variable_name))
+            if weight_variable_name != 'UNIFORM':
+                weight_dict[var].append(df.get_value(index, weight_variable_name))
+
+        else:
+            dep_var_dict[var] = [df.get_value(index, dep_variable_name)]
+            weight_dict[var] = None
+            if weight_variable_name != 'UNIFORM':
+                weight_dict[var] = [df.get_value(index, weight_variable_name)]
+
+    if type_string == 'q':
+        for var in unique_indep_values:
+            if dep_var_dict.get(var):
+                result_dict[var] = parse_aggregation_function(aggregation_function_name, weight_dict[var])(dep_var_dict[var])
+
+            else:
+                result_dict[var] = 0
+    else:
+        mapping_function_name = dep_variable[3]
+        for var in unique_indep_values:
+            if dep_var_dict.get(var):
+                result_dict[var] = parse_aggregation_function(aggregation_function_name, weight_dict[var])(map(parse_string_mapping_function(mapping_function_name),dep_var_dict[row][col]))
+            else:
+                result_dict[var] = 0
+
+    return (result_dict, aggregationMean)
+
+
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+unique_indep_values : [unique values for the one variable]
+'''
+def create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
+    result_dict = {}
+    count_dict = {}
+
+    for index in range(len(df)):
+        var = parse_variable(0, index, variable_type_summary, df)
+        if count_dict.get(var):
+            count_dict[var]+= 1
+        else:
+            count_dict[var] = 1
+
+    for var in unique_indep_values:
+        if count_dict.get(var):
+            result_dict[var] = count_dict[var]
+        else:
+            result_dict[var] = 0
+
+    return result_dict
+
+'''
+ind_num_variable : represents independent numerical variable. It is a list of form [numerical variable name, number of bins]
+ind_cat_variable: represents independent categorical variable name. It is a string
+dep_variable :
+    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+    for num variable: [type, numerical variable name, aggregation function name]
+
+supported mapping functions:
+    (FILTER, target) -> returns 1 if value == target, 0 otherwise
+supported aggregation functions:
+    SUM, MEAN
+'''
+
+def create_one_dimensional_contingency_table(df, ind_cat_variable, ind_num_variable, dep_variable):
+    #a list of lists
+    results_dict = {}
+    formatted_results_dict = {}
+    unique_indep_values = []
+    variable_type_summary = []
+
+    aggregationMean = False
+
+    if ind_cat_variable:
+        unique_indep_values = get_unique(df[ind_cat_variable], True)
+        variable_type_summary.append(('cat', ind_cat_variable))
+    elif ind_num_variable:
+        (names, binningEdges) = find_binning_edges_equal_spaced(df[ind_num_variable[0]], ind_num_variable[1])
+        unique_indep_values = names
+        variable_type_summary.append(('num', var, binningEdges, names))
+
+    if dep_variable:
+        (results_dict, aggregationMean) = create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values)
+
+    else:
+        results_dict = create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
+
+
+    formatted_results_dict["column_headers"] = ["VARIABLE", "AGGREGATION"]
+    formatted_results_dict["row_headers"] = unique_indep_values
+    formatted_results_dict["rows"] = []
+
+    if not aggregationMean:
+        formatted_results_dict['column_total'] = 0
+
+    for var in unique_indep_values:
+        value = results_dict[var]
+
+        if not aggregationMean:
+            formatted_results_dict['column_total'] += value
+
+        formatted_results_dict["rows"].append({
+            "field": var,
+            "value": value
+        })
+
+    return formatted_results_dict
+
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+dep_variable :
+    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+    for num variable: [type, numerical variable name, aggregation function name]
+'''
+
+
+def create_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values):
+    result_dict = {}
+    dep_var_dict = {}
+    dep_variable_type = dep_variable[0]
+    dep_variable_name = dep_variable[1]
+    aggregation_function_name = dep_variable[2][0]
+    aggregationMean = aggregation_function_name == 'MEAN'
+    weight_variable_name = dep_variable[2][1]
     weight_dict = {}
 
 
     for index in range(len(df)):
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
-        if num_var_dict.get(row):
-            if num_var_dict[row].get(col):
-                num_var_dict[row][col].append(df.get_value(index, dep_variable_name))
+        if dep_var_dict.get(row):
+            if dep_var_dict[row].get(col):
+                dep_var_dict[row][col].append(df.get_value(index, dep_variable_name))
                 if weight_variable_name != 'UNIFORM':
                     weight_dict[row][col].append(df.get_value(index, weight_variable_name))
 
             else:
-                num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+                dep_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
                 weight_dict[row][col] = None
                 if weight_variable_name != 'UNIFORM':
                     weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
         else:
-            num_var_dict[row] = {}
-            num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+            dep_var_dict[row] = {}
+            dep_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
             weight_dict[row] = {}
             weight_dict[row][col] = None
             if weight_variable_name != 'UNIFORM':
                 weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
 
-    for row in unique_indep_values[1]:
-        result_dict[row] = {}
-        if num_var_dict.get(row):
-            for col in unique_indep_values[0]:
-                if num_var_dict[row].get(col) != None:
-                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(num_var_dict[row][col])
+    if dep_variable_type == 'q':
+        for row in unique_indep_values[1]:
+            result_dict[row] = {}
+            if dep_var_dict.get(row):
+                for col in unique_indep_values[0]:
+                    if dep_var_dict[row].get(col) != None:
+                        result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(dep_var_dict[row][col])
 
-                else:
+                    else:
+                        result_dict[row][col] = 0
+
+            else:
+                for col in unique_indep_values[0]:
                     result_dict[row][col] = 0
+    else:
+        for row in unique_indep_values[1]:
+            result_dict[row] = {}
+            if dep_var_dict.get(col):
+                for col in unique_indep_values[0]:
+                    if dep_var_dict[row].get(col) != None:
+                        result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(map(parse_string_mapping_function(mapping_function_name),dep_var_dict[row][col]))
 
-        else:
-            for col in unique_indep_values[0]:
-                result_dict[row][col] = 0
+                    else:
+                        result_dict[row][col] = 0
+            else:
+                for col in unique_indep_values[0]:
+                    result_dict[row][col] = 0
 
     return (result_dict, aggregationMean)
 
-'''
-df : dataframe
-variable_type_summary:
-   for cat variables: ['cat', field]
-   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-dep_cat_variable : [categorical variable name, mapping function name, aggregation function name]
-unique_indep_values : [[unique values for columns], [unique values for rows]]
-'''
-def create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values):
-    result_dict = {}
-    cat_var_dict = {}
-    dep_variable_name = dep_cat_variable[0]
-    mapping_function_name = dep_cat_variable[1]
-    aggregation_function_name = dep_cat_variable[2][0]
-
-    for index in range(len(df)):
-        col = parse_variable(0, index, variable_type_summary, df)
-        row = parse_variable(1, index, variable_type_summary, df)
-        if cat_var_dict.get(row):
-            if cat_var_dict[row].get(col):
-                cat_var_dict[row][col].append(df.get_value(index, dep_variable_name))
-
-            else:
-                cat_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
-        else:
-            cat_var_dict[row] = {}
-            cat_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
-
-    for row in unique_indep_values[1]:
-        result_dict[row] = {}
-        if cat_var_dict.get(col):
-            for col in unique_indep_values[0]:
-                if cat_var_dict[row].get(col):
-                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name, None)(map(parse_string_mapping_function(mapping_function_name),cat_var_dict[row][col]))
-
-                else:
-                    result_dict[row][col] = 0
-        else:
-            for col in unique_indep_values[0]:
-                result_dict[row][col] = 0
-
-    return result_dict
 
 '''
 df : dataframe
@@ -215,8 +336,9 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
 '''
 ind_num_variables : represents independent numerical variables. It is a list of lists, where each list is of form [numerical variable name, number of bins]
 ind_cat_variables: represents independent categorical variable names. It is a list of names
-dep_num_variable : represents the dependent numerical variable name.  [numerical variable name, aggregation function name]
-dep_cat_variable : represents the dependent categorical variable. It is a list of form [categorical variable name, mapping function (string-> number), aggregation function]
+dep_variable :
+    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+    for num variable: [type, numerical variable name, aggregation function name]
 
 supported mapping functions:
     (FILTER, target) -> returns 1 if value == target, 0 otherwise
@@ -224,7 +346,7 @@ supported aggregation functions:
     SUM
 '''
 
-def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
+def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_variable):
     #a list of lists
     results_dict = {}
     formatted_results_dict = {}
@@ -234,20 +356,15 @@ def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_v
     aggregationMean = False
 
     for var in ind_cat_variables:
-        unique_indep_values.append(get_unique(df[var]))
+        unique_indep_values.append(get_unique(df[var], True))
         variable_type_summary.append(('cat', var))
-    print variable_type_summary
     for var in ind_num_variables:
         (names, binningEdges) = find_binning_edges_equal_spaced(df[var[0]], var[1])
         unique_indep_values.append(names)
         variable_type_summary.append(('num', var, binningEdges, names))
 
-    if dep_num_variable:
-        (results_dict, aggregationMean) = create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values)
-
-    elif dep_cat_variable:
-        results_dict = create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values)
-
+    if dep_variable:
+        (results_dict, aggregationMean) = create_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values)
     else:
         results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
 
