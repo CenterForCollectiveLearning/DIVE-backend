@@ -18,27 +18,25 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 def create_one_dimensional_contingency_table_from_spec(spec, project_id):
-    ind_cat_variable = spec.get("categoricalIndependentVariableName", None)
-    ind_num_variable = spec.get("numericalIndependentVariableName", [])
+    comparison_variable = spec.get('comparisonVariable')
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    comparison_result = create_one_dimensional_contingency_table(df, ind_cat_variable, ind_num_variable, dep_variable)
+    comparison_result = create_one_dimensional_contingency_table(df, comparison_variable, dep_variable)
     return comparison_result, 200
 
 def create_contingency_table_from_spec(spec, project_id):
-    ind_cat_variables = spec.get("categoricalIndependentVariableNames", [])
-    ind_num_variables = spec.get("numericalIndependentVariableNames", [])
+    comparison_variables = spec.get("comparisonVariables")
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_variable)
+    comparison_result = create_contingency_table(df, comparison_variables, dep_variable)
     return comparison_result, 200
 
 def parse_aggregation_function(string_function, list_weights):
@@ -165,7 +163,7 @@ def create_one_dimensional_contingency_table_with_no_dependent_variable(df, vari
 comparison_variable: represents the variable used to create the contingency table.
 Is either an independent_variable or categorical_variable
     independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
-    ind_cat_variables: represents an independent categorical variable name. It is a string
+    categorical_variable: represents an independent categorical variable name. It is a string
 dep_variable :
     for cat variable: [type, numerical variable name, aggregation function name, filter function name]
     for num variable: [type, numerical variable name, aggregation function name]
@@ -177,6 +175,8 @@ supported aggregation functions:
 '''
 
 def create_one_dimensional_contingency_table(df, comparison_variable, dep_variable):
+    print 'cooooooooooooooooooooooooooooooooooooooool'
+    print comparison_variable
     #a list of lists
     results_dict = {}
     formatted_results_dict = {}
@@ -185,10 +185,10 @@ def create_one_dimensional_contingency_table(df, comparison_variable, dep_variab
 
     aggregationMean = False
 
-    if comparison_variable[0] == 'cat':
+    if comparison_variable[0] == 'c':
         unique_indep_values = get_unique(df[comparison_variable[1]], True)
         variable_type_summary.append(('cat', comparison_variable[1]))
-    elif comparison_variable[1] == 'num':
+    elif comparison_variable[0] == 'q':
         (names, binningEdges) = find_binning_edges_equal_spaced(df[comparison_variable[1]], comparison_variable[2])
         unique_indep_values = names
         variable_type_summary.append(('num', [comparison_variable[1], comparison_variable[2]], binningEdges, names))
@@ -339,7 +339,7 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
 comparison_variables: represents the variables used to create the contingency table.
 Is a list of independent_variable and categorical_variable
     independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
-    ind_cat_variables: represents an independent categorical variable name. It is a string
+    categorical_variable: represents an independent categorical variable name. It is a string
 dep_variable :
     for cat variable: [type, numerical variable name, aggregation function name, filter function name]
     for num variable: [type, numerical variable name, aggregation function name]
@@ -360,10 +360,10 @@ def create_contingency_table(df, comparison_variables, dep_variable):
     aggregationMean = False
 
     for var in comparison_variables:
-        if var[0] == 'cat':
+        if var[0] == 'c':
             unique_indep_values.append(get_unique(df[var[1]], True))
-            variable_type_summary.append(('cat', var))
-        elif var[0] == 'num':
+            variable_type_summary.append(('cat', var[1]))
+        elif var[0] == 'q':
             (names, binningEdges) = find_binning_edges_equal_spaced(df[var[1]], var[2])
             unique_indep_values.append(names)
             variable_type_summary.append(('num', [var[1], var[2]], binningEdges, names))
