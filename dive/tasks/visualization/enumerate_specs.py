@@ -2,10 +2,7 @@ from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.tasks.ingestion import specific_to_general_type
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
-from dive.tasks.visualization.marginal_spec_functions import single_c, single_t, single_q, \
-    single_ct, single_cq, single_tq, single_ctq, \
-    multi_c, multi_t, multi_q, \
-    multi_ct, multi_cq, multi_tq, multi_ctq
+from dive.tasks.visualization.marginal_spec_functions import *
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
 from dive.tasks.visualization.score_specs import score_spec
@@ -158,16 +155,30 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
 
     # Multi field specs, single type
     if (n_c > 1) and (n_t == 0) and (n_q == 0):
-        specs.extend(multi_c(c_fields[0]))
+        specs.extend(multi_c(c_fields))
     if (n_c == 0) and (n_t > 1) and (n_q == 0):
         specs.extend(multi_t(t_fields))
     if (n_c == 0) and (n_t == 0) and (n_q > 1):
         specs.extend(multi_q(q_fields))
 
+    # Mixed field specs, multi type
+    if (n_c == 1) and (n_t > 1) and (n_q == 0):
+        specs.extend(single_c_multi_t(c_fields[0], t_fields))
+    if (n_c == 1) and (n_t == 0) and (n_q > 1):
+        specs.extend(single_c_multi_q(c_fields[0], q_fields))
+    if (n_c > 1) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_q_multi_c(c_fields, q_fields[0]))
+    if (n_c == 0) and (n_t > 1) and (n_q == 1):
+        specs.extend(single_q_multi_t(t_fields, q_fields[0]))
+    if (n_c > 1) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_t_multi_c(t_fields[0], c_fields))
+    if (n_c == 0) and (n_t == 1) and (n_q > 1):
+        specs.extend(single_t_multi_q(t_fields[0], q_fields))
+
     # Multi field specs, multi type
     if (n_c > 1) and (n_t > 1) and (n_q == 0):
         specs.extend(multi_ct(c_fields, t_fields))
-    if (n_c > 0) and (n_t == 0) and (n_q > 1):
+    if (n_c > 1) and (n_t == 0) and (n_q > 1):
         specs.extend(multi_cq(c_fields, q_fields))
     if (n_c == 0) and (n_t > 0) and (n_q > 1):
         specs.extend(multi_tq(t_fields, q_fields))
