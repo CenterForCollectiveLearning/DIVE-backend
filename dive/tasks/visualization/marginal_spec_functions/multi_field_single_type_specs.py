@@ -1,6 +1,8 @@
 from itertools import combinations
 from dive.tasks.visualization import GeneratingProcedure as GP, TypeStructure as TS, \
     TermType, aggregation_functions, VizType as VT
+from dive.tasks.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
+
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
