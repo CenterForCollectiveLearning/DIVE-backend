@@ -137,6 +137,7 @@ class Spec(db.Model):
     '''
     __tablename__ = ModelName.SPEC.value
     id = db.Column(db.Integer, primary_key=True)
+    case = db.Column(db.Unicode(250))
     generating_procedure = db.Column(db.Unicode(250))
     type_structure = db.Column(db.Unicode(250))
     viz_types = db.Column(JSONB)

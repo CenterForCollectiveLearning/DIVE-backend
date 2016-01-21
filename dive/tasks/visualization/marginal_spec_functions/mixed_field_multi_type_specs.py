@@ -49,11 +49,9 @@ def single_c_multi_q(c_field, q_fields):
     return specs
 
 
-
-
 def single_q_multi_c(c_fields, q_field):
     specs = []
-    logger.debug('G: Multi C Single Q')
+    logger.debug('Multi C Single Q')
     # TODO How do you deal with this?
     # Two-field val:val:q with quantitative data
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
