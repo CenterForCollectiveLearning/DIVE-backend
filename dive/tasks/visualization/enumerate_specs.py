@@ -2,8 +2,12 @@ from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.tasks.ingestion import specific_to_general_type
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
-from dive.tasks.visualization.marginal_spec_functions import single_q, \
-    multi_q, single_c, single_c_single_q, single_c_multi_q, multi_c, single_c_multi_q, multi_c_multi_q
+from dive.tasks.visualization.marginal_spec_functions import single_q, single_c, single_t, \
+    multi_c, multi_q, \
+    single_cq, single_tq, single_ct, \
+    single_ctq, \
+    single_c_multi_q, single_c_multi_q, \
+    multi_cq
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
 from dive.tasks.visualization.score_specs import score_spec
@@ -84,6 +88,7 @@ def get_selected_fields(field_properties, selected_fields):
                 q_fields.append(field)
             else:
                 q_fields_not_selected.append(field)
+
         elif general_type == 't':
             if is_selected_field:
                 t_fields.append(field)
@@ -138,8 +143,8 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
             specs.extend(multi_q_specs)
     elif (n_c == 1):
         if (n_q == 1):
-            single_c_single_q_specs = single_c_single_q(c_fields[0], q_fields[0])
-            specs.extend(single_c_single_q_specs)
+            single_cq_specs = single_cq(c_fields[0], q_fields[0])
+            specs.extend(single_cq_specs)
         elif (n_q > 1):
             for q_field in q_fields:
                 D_specs = D(c_fields[0], q_fields[0])
@@ -152,13 +157,13 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
             specs.extend(multi_c_specs)
         elif (n_q == 1):
             for c_field in c_fields:
-                single_c_single_q_specs = single_c_single_q(c_fields[0], q_fields[0])
-                specs.extend(single_c_single_q_specs)
+                single_cq_specs = single_cq(c_fields[0], q_fields[0])
+                specs.extend(single_cq_specs)
             single_c_multi_q_specs = single_c_multi_q(c_fields, q_fields[0])
             specs.extend(single_c_multi_q_specs)
         elif (n_q > 1):
-            multi_c_multi_q_specs = multi_c_multi_q(c_fields, q_fields)
-            specs.extend(multi_c_multi_q_specs)
+            multi_cq_specs = multi_cq(c_fields, q_fields)
+            specs.extend(multi_cq_specs)
     logger.info('Got %s cascading specs', len(specs))
     return specs
 
@@ -179,15 +184,15 @@ def get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, 
             specs.extend(multi_c_specs)
         # C + Q field
         for q_field in q_fields_not_selected:
-            single_c_single_q_specs = single_c_single_q(c_field_1, q_field)
-            specs.extend(single_c_single_q_specs)
+            single_cq_specs = single_cq(c_field_1, q_field)
+            specs.extend(single_cq_specs)
     for q_field_1 in q_fields:
         # Pairs of Q fields
         for q_field_2 in q_fields_not_selected:
             multi_q_specs = multi_q([q_field_1, q_field_2])
             specs.extend(multi_q_specs)
         for c_field in c_fields_not_selected:
-            single_c_single_q_specs = single_c_single_q(c_field, q_field_1)
-            specs.extend(single_c_single_q_specs)
+            single_cq_specs = single_cq(c_field, q_field_1)
+            specs.extend(single_cq_specs)
     logger.info('Got %s expanded specs', len(specs))
     return specs
