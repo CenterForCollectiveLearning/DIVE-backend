@@ -13,9 +13,10 @@ class GeneratingProcedure(Enum):
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'
     VAL_VAL_Q = 'val:val:q'
+    MULTIGROUP_AGG = 'multigroup:agg'
     MULTIGROUP_COUNT = 'multigroup:count'
 
-
+# TODO Remove this? Doesn't really make sense anymore
 class TypeStructure(Enum):
     C = 'c'
     Q = 'q'
