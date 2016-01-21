@@ -2,12 +2,10 @@ from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.tasks.ingestion import specific_to_general_type
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
-from dive.tasks.visualization.marginal_spec_functions import single_q, single_c, single_t, \
-    multi_c, multi_q, \
-    single_cq, single_tq, single_ct, \
-    single_ctq, \
-    single_c_multi_q, single_c_multi_q, \
-    multi_cq
+from dive.tasks.visualization.marginal_spec_functions import single_c, single_t, single_q, \
+    single_ct, single_cq, single_tq, single_ctq, \
+    multi_c, multi_t, multi_q, \
+    multi_ct, multi_cq, multi_tq, multi_ctq
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
 from dive.tasks.visualization.score_specs import score_spec
@@ -120,7 +118,8 @@ def get_baseline_viz_specs(field_properties):
             single_q_specs = single_q(field)
             specs.extend(single_q_specs)
         elif general_type == 't':
-            continue
+            single_t_specs = single_t(field)
+            specs.extend(single_t_specs)
         else:
             raise ValueError('Not valid general_type', general_type)
     logger.info('Got %s baseline specs', len(specs))
@@ -137,33 +136,44 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
     n_q = len(q_fields)
     n_t = len(t_fields)
 
-    if (n_c == 0):
-        if (n_q > 1):
-            multi_q_specs = multi_q(q_fields)
-            specs.extend(multi_q_specs)
-    elif (n_c == 1):
-        if (n_q == 1):
-            single_cq_specs = single_cq(c_fields[0], q_fields[0])
-            specs.extend(single_cq_specs)
-        elif (n_q > 1):
-            for q_field in q_fields:
-                D_specs = D(c_fields[0], q_fields[0])
-                specs.extend(D_specs)
-            single_c_multi_q_specs = single_c_multi_q(c_fields[0], q_fields)
-            specs.extend(single_c_multi_q_specs)
-    elif (n_c > 1):
-        if (n_q == 0):
-            multi_c_specs = multi_c(c_fields)
-            specs.extend(multi_c_specs)
-        elif (n_q == 1):
-            for c_field in c_fields:
-                single_cq_specs = single_cq(c_fields[0], q_fields[0])
-                specs.extend(single_cq_specs)
-            single_c_multi_q_specs = single_c_multi_q(c_fields, q_fields[0])
-            specs.extend(single_c_multi_q_specs)
-        elif (n_q > 1):
-            multi_cq_specs = multi_cq(c_fields, q_fields)
-            specs.extend(multi_cq_specs)
+    # TODO Can we encode requirements into the spec functions themselves?
+
+    # Single field specs, single type
+    if (n_c == 1) and (n_t == 0) and (n_q == 0):
+        specs.extend(single_c(c_fields[0]))
+    if (n_c == 0) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_t(t_fields[0]))
+    if (n_c == 0) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_q(q_fields[0]))
+
+    # Single field specs, multi type
+    if (n_c == 1) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_ct(c_fields[0], t_fields[0]))
+    if (n_c == 1) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_cq(c_fields[0], q_fields[0]))
+    if (n_c == 0) and (n_t == 1) and (n_q == 1):
+        specs.extend(single_tq(t_fields[0], q_fields[0]))
+    if (n_c == 1) and (n_t == 1) and (n_q == 1):
+        specs.extend(single_ctq(c_fields[0], t_fields[0], q_fields[0]))
+
+    # Multi field specs, single type
+    if (n_c > 1) and (n_t == 0) and (n_q == 0):
+        specs.extend(multi_c(c_fields[0]))
+    if (n_c == 0) and (n_t > 1) and (n_q == 0):
+        specs.extend(multi_t(t_fields))
+    if (n_c == 0) and (n_t == 0) and (n_q > 1):
+        specs.extend(multi_q(q_fields))
+
+    # Multi field specs, multi type
+    if (n_c > 1) and (n_t > 1) and (n_q == 0):
+        specs.extend(multi_ct(c_fields, t_fields))
+    if (n_c > 0) and (n_t == 0) and (n_q > 1):
+        specs.extend(multi_cq(c_fields, q_fields))
+    if (n_c == 0) and (n_t > 0) and (n_q > 1):
+        specs.extend(multi_tq(t_fields, q_fields))
+    if (n_c > 1) and (n_t > 1) and (n_q > 1):
+        specs.extend(multi_ctq(c_fields, t_fields, q_fields))
+
     logger.info('Got %s cascading specs', len(specs))
     return specs
 

@@ -90,6 +90,7 @@ def single_q(q_field):
 
 
 def single_t(t_field):
+    ''' Return distribution if not uniform '''
     logger.debug('Single T - %s', t_field['name'])
     specs = []
 
@@ -114,23 +115,53 @@ def single_tq(t_field, q_field):
 
     logger.debug('Single T Single Q - %s, %s', t_label, q_label)
     specs = []
-    raw_time_series_spec = {
-        'generating_procedure': GP.VAL_VAL.value,
-        'type_structure': TS.T_Q.value,
-        'viz_types': [ VT.LINE.value, VT.SCATTER.value ],
-        'args': {
-            'field_a': t_field,
-            'field_b': q_field
-        },
-        'meta': {
-            'desc': '%s vs. %s' % (t_label, q_label),
-            'construction': [
-                { 'string': t_label, 'type': TermType.FIELD.value },
-                { 'string': 'vs.', 'type': TermType.PLAIN.value },
-                { 'string': q_label, 'type': TermType.FIELD.value },
-            ]
+
+    # Raw time vs. value
+    if t_field['is_unique']:
+        raw_time_series_spec = {
+            'generating_procedure': GP.VAL_VAL.value,
+            'type_structure': TS.T_Q.value,
+            'viz_types': [ VT.LINE.value, VT.SCATTER.value ],
+            'field_ids': [ c_field['id'], q_field['id'] ],
+            'args': {
+                'field_a': t_field,
+                'field_b': q_field
+            },
+            'meta': {
+                'desc': '%s vs. %s' % (t_label, q_label),
+                'construction': [
+                    { 'string': t_label, 'type': TermType.FIELD.value },
+                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                ]
+            }
         }
-    }
+        specs.append(raw_time_series_spec)
+
+    for agg_fn in aggregation_functions.keys():
+        aggregated_time_series_spec_on_value = {
+            'generating_procedure': GP.VAL_AGG.value,
+            'type_structure': TS.T_Q.value,
+            'viz_types': [ VT.LINE.value, VT.SCATTER.value ],
+            'field_ids': [ c_field['id'], q_field['id'] ],
+            'args': {
+                'agg_fn': agg_fn,
+                'grouped_field': t_field,
+                'agg_field': q_field
+            },
+            'meta': {
+                'desc': '%s of %s by %s' % (agg_fn, q_label, c_label),
+                'construction': [
+                    { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                    { 'string': 'of', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                    { 'string': 'by', 'type': TermType.OPERATION.value },
+                    { 'string': t_label, 'type': TermType.FIELD.value },
+                ]
+            }
+        }
+        specs.append(aggregated_time_series_spec_on_value)
+
     return specs
 
 
