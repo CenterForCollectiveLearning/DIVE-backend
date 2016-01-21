@@ -27,7 +27,7 @@ binning_procedures = {
 }
 
 
-def A(q_field):
+def single_q(q_field):
     '''
     Single numeric field
 
@@ -35,6 +35,7 @@ def A(q_field):
     - For all, count on bin
     '''
     specs = []
+    logger.debug('A: Single Q - %s', q_field['name'])
 
     q_label = q_field['name']
 
@@ -106,8 +107,8 @@ def A(q_field):
             specs.append(bin_spec)
     return specs
 
-def B(q_fields):
-    logger.info("B")
+def multi_q(q_fields):
+    logger.debug("B: Multi Q - %s", [f['name'] for f in q_fields])
     specs = []
 
     #Function on pairs of columns
@@ -146,12 +147,13 @@ def B(q_fields):
         #     specs.extend(A_specs)
     return specs
 
-def C(c_field):
+def single_c(c_field):
     '''
     Single categorical field
     '''
     specs = []
     c_label = c_field['name']
+    logger.debug('C: Single C')
 
     # # 0D
     # most_frequent_spec = {
@@ -194,10 +196,11 @@ def C(c_field):
     specs.append(val_count_spec)
     return specs
 
-def D(c_field, q_field):
+def single_c_single_q(c_field, q_field):
     specs = []
     c_label = c_field['name']
     q_label = q_field['name']
+    logger.debug('D: Single C Single Q')
 
     if c_field['is_unique']:
         spec = {
@@ -248,8 +251,8 @@ def D(c_field, q_field):
             specs.append(spec)
     return specs
 
-def E(c_field, q_fields):
-    logger.info("E")
+def single_c_multi_q(c_field, q_fields):
+    logger.debug("E: Single C Multi Q")
     specs = []
 
     # Two-field agg:agg
@@ -289,8 +292,8 @@ def E(c_field, q_fields):
                 specs.append(spec)
     return specs
 
-def F(c_fields):
-    logger.info("F")
+def multi_c(c_fields):
+    logger.debug("F: Multi C")
     specs = []
 
     # Count of one field given another
@@ -344,8 +347,9 @@ def F(c_fields):
     #     specs.append(spec)
     return specs
 
-def G(c_fields, q_field):
+def single_c_multi_q(c_fields, q_field):
     specs = []
+    logger.debug('G: Single C Multi Q')
     # TODO How do you deal with this?
     # Two-field val:val:q with quantitative data
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
@@ -376,8 +380,9 @@ def G(c_fields, q_field):
         specs.append(spec)
     return specs
 
-def H(c_fields, q_fields):
+def multi_c_multi_q(c_fields, q_fields):
     specs = []
+    logger.debug('H: Multi C Multi Q')
     # TODO How do you deal with this?
     # Two-field val:val:[q] with quantitative data
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
