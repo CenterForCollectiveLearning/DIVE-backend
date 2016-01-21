@@ -39,6 +39,105 @@ def create_contingency_table_from_spec(spec, project_id):
     comparison_result = create_contingency_table(df, comparison_variables, dep_variable)
     return comparison_result, 200
 
+def get_variable_summary_statistics_from_spec(spec, project_id):
+    dataset_id = spec.get("datasetId")
+    field_ids = spec.get("fieldIds")
+    field_properties = db_access.get_field_properties(project_id, dataset_id)
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    summary_statistics_result = get_variable_summary_statistics(df, field_properties, field_ids)
+    return summary_statistics_result, 200
+
+def get_variable_summary_statistics(df, field_properties, field_ids):
+    result_dict = {}
+    result_dict['summary_stats'] = []
+    field_ids = set(field_ids)
+    for field_property in field_properties:
+        print field_property['id']
+    relevant_field_properties = filter(lambda field: field['id'] in field_ids, field_properties)
+    for field_property in relevant_field_properties:
+        stats = field_property['stats']
+        name = field_property['name']
+        print 'it follows'
+        print stats
+        print name
+        if field_property['general_type'] == 'c':
+            result_dict['summary_stats'].append({'field':name, 'stats': get_summary_stats_categorical(df, name, stats)})
+        elif field_property['general_type'] == 'q':
+            result_dict['summary_stats'].append({'field':name, 'stats': get_summary_stats_numerical(df, name, stats)})
+    return result_dict
+
+
+def get_summary_stats_categorical(df, field_name, stats_dict):
+    stats = []
+    data_column = df[field_name]
+
+    if stats_dict.get('count'):
+        stats.append({'prop': 'count', 'value': stats_dict['count']})
+    else:
+        stats.append({'prop': 'count', 'value': len(data_column)})
+
+    if stats_dict.get('freq'):
+        stats.append({'prop': 'max frequency', 'value': stats_dict['freq']})
+    else:
+        stats.append({'prop': 'count', 'value': find_unique_values_and_max_frequency(data_column)[1]})
+
+    if stats_dict.get('unique'):
+        stats.append({'prop': 'unique values', 'value': stats_dict['unique']})
+    else:
+        stats.append({'prop': 'unique values', 'value': find_unique_values_and_max_frequency(data_column)[0]})
+    return stats
+
+def get_summary_stats_numerical(df, field_name, stats_dict):
+    stats = []
+    data_column = df[field_name]
+
+    if stats_dict.get('count'):
+        stats.append({'prop': 'count', 'value': stats_dict['count']})
+    else:
+        stats.append({'prop': 'count', 'value': len(data_column)})
+
+    if stats_dict.get('max'):
+        stats.append({'prop': 'max', 'value': stats_dict['max']})
+    else:
+        stats.append({'prop': 'max', 'value': max(data_column)})
+
+    if stats_dict.get('min'):
+        stats.append({'prop': 'min', 'value': stats_dict['min']})
+    else:
+        stats.append({'prop': 'min', 'value': min(data_column)})
+
+    if stats_dict.get('mean'):
+        stats.append({'prop': 'mean', 'value': stats_dict['mean']})
+    else:
+        stats.append({'prop': 'mean', 'value': np.mean(data_column)})
+
+    if stats_dict.get('median'):
+        stats.append({'prop': 'median', 'value': stats_dict['median']})
+    else:
+        stats.append({'prop': 'median', 'value': np.median(data_column)})
+
+    if stats_dict.get('std'):
+        stats.append({'prop': 'standard deviation', 'value': stats_dict['std']})
+    else:
+        stats.append({'prop': 'standard deviation', 'value': np.std(data_column)})
+
+    return stats
+
+def find_unique_values_and_max_frequency(list):
+    seen = {}
+    max = 0
+    for val in list:
+        if seen.get(val):
+            seen[val] += 1
+            if seen[val] > max:
+                max = seen[val]
+        else:
+            seen[val] = 1
+    return (len(seen), max)
+
 def parse_aggregation_function(string_function, list_weights):
     if string_function == "SUM":
         return np.sum
