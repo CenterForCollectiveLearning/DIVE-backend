@@ -21,6 +21,7 @@ class TypeStructure(Enum):
     Q = 'q'
     liC = '[c]'
     liQ = '[q]'
+    T_Q = 't:q'
     C_C = 'c:c'
     C_Q = 'c:q'
     liC_Q = '[c]:q'

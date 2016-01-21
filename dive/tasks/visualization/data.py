@@ -93,21 +93,21 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
 
 def get_raw_comparison_data(df, args, data_formats):
     final_data = {}
-    fieldA_label = args['fieldA']['name']
-    fieldB_label = args['fieldB']['name']
+    field_a_label = args['field_a']['name']
+    field_b_label = args['field_b']['name']
 
-    fieldA_list = df[fieldA_label].tolist()
-    fieldB_list = df[fieldB_label].tolist()
+    field_a_list = df[field_a_label].tolist()
+    field_b_list = df[field_b_label].tolist()
 
     if 'score' in data_formats:
         final_data['score'] = {
-            'fieldA': fieldA_list,
-            'fieldB': fieldB_list
+            'field_a': field_a_list,
+            'field_b': field_b_list
         }
     if 'visualize' in data_formats:
         data_array = []
-        data_array.append([ fieldA_label, fieldB_label ])
-        for (a, b) in zip(fieldA_list, fieldB_list):
+        data_array.append([ field_a_label, field_b_label ])
+        for (a, b) in zip(field_a_list, field_b_list):
             data_array.append([a, b])
         final_data['visualize'] = data_array
     if 'table' in data_formats:
@@ -129,8 +129,8 @@ def get_multigroup_count_data(df, args, data_formats):
         [group_a_value_2, group_b_value_1, group_b_value_2, count]
     ]
     '''
-    group_a_field_label = args['fieldA']['name']
-    group_b_field_label = args['fieldB']['name']
+    group_a_field_label = args['field_a']['name']
+    group_b_field_label = args['field_b']['name']
     grouped_df = df.groupby([group_a_field_label, group_b_field_label]).size()
 
     results_as_data_array = []
@@ -187,10 +187,10 @@ def get_agg_agg_data(df, args, data_formats):
     '''
     final_data = {}
 
-    group_field_name = args['groupedField']['name']
-    agg_field_a_name = args['aggFieldA']['name']
-    agg_field_b_name = args['aggFieldB']['name']
-    agg_fn = args['aggFn']
+    group_field_name = args['grouped_field']['name']
+    agg_field_a_name = args['agg_field_a']['name']
+    agg_field_b_name = args['agg_field_b']['name']
+    agg_fn = args['agg_fn']
 
     grouped_df = df.groupby(group_field_name)
     agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])
@@ -208,8 +208,8 @@ def get_agg_agg_data(df, args, data_formats):
 
     if 'score' in data_formats:
         final_data['score'] = {
-            'fieldA': agg_field_a_list,
-            'fieldB': agg_field_b_list,
+            'field_a': agg_field_a_list,
+            'field_b': agg_field_b_list,
         }
 
     if 'visualize' in data_formats:
@@ -226,9 +226,9 @@ def get_agg_agg_data(df, args, data_formats):
 
 def get_agg_data(df, args, data_formats):
     final_data = {}
-    agg_field_label = args['aggFieldA']['name']
+    agg_field_label = args['agg_field_a']['name']
     agg_field_data = df[agg_field_label]
-    agg_fn_label = args['aggFn']
+    agg_fn_label = args['agg_fn']
 
     if agg_fn_label == 'mode':
         result = agg_field_data.value_counts().idxmax()
@@ -241,7 +241,7 @@ def get_agg_data(df, args, data_formats):
 
 def get_ind_val_data(df, args, data_formats):
     final_data = {}
-    field_a_label = args['fieldA']['name']
+    field_a_label = args['field_a']['name']
 
     # If direct field
     if isinstance(field_a_label, basestring):
@@ -278,10 +278,10 @@ def get_ind_val_data(df, args, data_formats):
 
 def get_bin_agg_data(df, args, data_formats):
     final_data = {}
-    binning_field = args['binningField']['name']
-    binning_procedure = args['binningProcedure']
-    agg_field_a = args['aggFieldA']['name']
-    agg_fn = aggregation_functions[args['aggFn']]
+    binning_field = args['binning_field']['name']
+    binning_procedure = args['binning_procedure']
+    agg_field_a = args['agg_field_a']['name']
+    agg_fn = aggregation_functions[args['agg_fn']]
 
     unbinned_field = df[binning_field]
     try:
@@ -327,7 +327,7 @@ def get_bin_agg_data(df, args, data_formats):
         final_data['visualize'] = data_array
     if 'table' in data_formats:
         table_data = []
-        if args['aggFn'] == 'count':
+        if args['agg_fn'] == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
                 new_row = [bin_num_to_formatted_edges[i], count]
@@ -348,23 +348,23 @@ def get_bin_agg_data(df, args, data_formats):
 
 def get_val_agg_data(df, args, data_formats):
     final_data = {}
-    grouped_field_label = args['groupedField']['name']
-    agg_field_label = args['aggField']['name']
+    grouped_field_label = args['grouped_field']['name']
+    agg_field_label = args['agg_field']['name']
 
     grouped_df = df.groupby(grouped_field_label)
-    agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
+    agg_df = grouped_df.aggregate(aggregation_functions[args['agg_fn']])
     grouped_field_list = agg_df.index.tolist()
     agg_field_list = agg_df[agg_field_label].tolist()
 
     final_viz_data = {
-        'groupedField': agg_df.index.tolist(),
-        'aggField': agg_df[agg_field_label].tolist()
+        'grouped_field': agg_df.index.tolist(),
+        'agg_field': agg_df[agg_field_label].tolist()
     }
 
     if 'score' in data_formats:
         final_data['score'] = {
-            'groupedField': grouped_field_list,
-            'aggField': agg_field_list
+            'grouped_field': grouped_field_list,
+            'agg_field': agg_field_list
         }
     if 'visualize' in data_formats:
         data_array = [ [grouped_field_label, agg_field_label] ] + \
@@ -379,8 +379,8 @@ def get_val_agg_data(df, args, data_formats):
 
 def get_val_count_data(df, args, data_formats):
     final_data = {}
-    fieldA_label = args['fieldA']['name']
-    vc = df[fieldA_label].value_counts()
+    field_a_label = args['field_a']['name']
+    vc = df[field_a_label].value_counts()
     value_list = list(vc.index.values)
     counts = vc.tolist()
 
@@ -390,12 +390,12 @@ def get_val_count_data(df, args, data_formats):
             'count': counts
         }
     if 'visualize' in data_formats:
-        data_array = [ [fieldA_label, 'count'] ] + [[v, c] for (v, c) in zip(value_list, counts)]
+        data_array = [ [field_a_label, 'count'] ] + [[v, c] for (v, c) in zip(value_list, counts)]
 
         final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
-            'columns': [fieldA_label, 'count'],
+            'columns': [field_a_label, 'count'],
             'data': [[v, c] for (v, c) in zip(value_list, counts)]
         }
     return final_data
