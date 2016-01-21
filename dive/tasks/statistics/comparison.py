@@ -17,6 +17,341 @@ from dive.tasks.ingestion.utilities import get_unique
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+def create_contingency_table_from_spec(spec, project_id):
+    ind_cat_variables = spec.get("categoricalIndependentVariableNames", [])
+    ind_num_variables = spec.get("numericalIndependentVariableNames", [])
+    dataset_id = spec.get("datasetId")
+    dep_num_variable = spec.get("numericalDependentVariable")
+    dep_cat_variable = spec.get("categoricalDependentVariable")
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result = create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable)
+    print comparison_result
+    return comparison_result, 200
+
+def parse_aggregation_function(string_function, list_weights):
+    print list_weights
+    if string_function == "SUM":
+        return np.sum
+    if string_function == 'MEAN':
+        if not list_weights:
+            return np.mean
+        else:
+            def weight_sum(list):
+                sum = 0
+                counter = 0.0
+                for index in range(len(list)):
+                    sum += list[index]*list_weights[index]
+                    counter += list_weights[index]
+                return sum/counter
+            return weight_sum
+
+def parse_string_mapping_function(list_function):
+    if list_function[0] == "FILTER":
+        return (lambda x: x == list_function[1])
+
+'''
+helper function to return the appropriate independent variable value from the dataframe
+num: 0 represents parsing the column, 1 represents parsing the row
+index: represents the index of the dataframe we are extracting the value from
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+df : dataframe
+'''
+
+def parse_variable(num, index, variable_type_summary, df):
+    type_variable = variable_type_summary[num][0]
+    passed_variable = variable_type_summary[num][1]
+    if type_variable == 'cat':
+        return df.get_value(index, passed_variable)
+    elif type_variable == 'num':
+        binning_edges = variable_type_summary[num][2]
+        binning_names = variable_type_summary[num][3]
+        return find_bin(df.get_value(index, passed_variable[0]), binning_edges, binning_names, passed_variable[1])
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+dep_num_variable : [numerical variable name, aggregation function name]
+unique_indep_values : [[unique values for columns], [unique values for rows]]
+'''
+
+
+def create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values):
+    result_dict = {}
+    num_var_dict = {}
+    dep_variable_name = dep_num_variable[0]
+    aggregation_function_name = dep_num_variable[1][0]
+    aggregationMean = aggregation_function_name == 'MEAN'
+    weight_variable_name = dep_num_variable[1][1]
+    weight_dict = {}
+
+
+    for index in range(len(df)):
+        col = parse_variable(0, index, variable_type_summary, df)
+        row = parse_variable(1, index, variable_type_summary, df)
+        if num_var_dict.get(row):
+            if num_var_dict[row].get(col):
+                num_var_dict[row][col].append(df.get_value(index, dep_variable_name))
+                if weight_variable_name != 'UNIFORM':
+                    weight_dict[row][col].append(df.get_value(index, weight_variable_name))
+
+            else:
+                num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+                weight_dict[row][col] = None
+                if weight_variable_name != 'UNIFORM':
+                    weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
+        else:
+            num_var_dict[row] = {}
+            num_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+            weight_dict[row] = {}
+            weight_dict[row][col] = None
+            if weight_variable_name != 'UNIFORM':
+                weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
+
+    for row in unique_indep_values[1]:
+        result_dict[row] = {}
+        if num_var_dict.get(row):
+            for col in unique_indep_values[0]:
+                if num_var_dict[row].get(col) != None:
+                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(num_var_dict[row][col])
+
+                else:
+                    result_dict[row][col] = 0
+
+        else:
+            for col in unique_indep_values[0]:
+                result_dict[row][col] = 0
+
+    return (result_dict, aggregationMean)
+
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+dep_cat_variable : [categorical variable name, mapping function name, aggregation function name]
+unique_indep_values : [[unique values for columns], [unique values for rows]]
+'''
+def create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values):
+    result_dict = {}
+    cat_var_dict = {}
+    dep_variable_name = dep_cat_variable[0]
+    mapping_function_name = dep_cat_variable[1]
+    aggregation_function_name = dep_cat_variable[2][0]
+
+    for index in range(len(df)):
+        col = parse_variable(0, index, variable_type_summary, df)
+        row = parse_variable(1, index, variable_type_summary, df)
+        if cat_var_dict.get(row):
+            if cat_var_dict[row].get(col):
+                cat_var_dict[row][col].append(df.get_value(index, dep_variable_name))
+
+            else:
+                cat_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+        else:
+            cat_var_dict[row] = {}
+            cat_var_dict[row][col] = [df.get_value(index, dep_variable_name)]
+
+    for row in unique_indep_values[1]:
+        result_dict[row] = {}
+        if cat_var_dict.get(col):
+            for col in unique_indep_values[0]:
+                if cat_var_dict[row].get(col):
+                    result_dict[row][col] = parse_aggregation_function(aggregation_function_name, None)(map(parse_string_mapping_function(mapping_function_name),cat_var_dict[row][col]))
+
+                else:
+                    result_dict[row][col] = 0
+        else:
+            for col in unique_indep_values[0]:
+                result_dict[row][col] = 0
+
+    return result_dict
+
+'''
+df : dataframe
+variable_type_summary:
+   for cat variables: ['cat', field]
+   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+unique_indep_values : [[unique values for columns], [unique values for rows]]
+'''
+def create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
+    result_dict = {}
+    count_dict = {}
+
+    for index in range(len(df)):
+        col = parse_variable(0, index, variable_type_summary, df)
+        row = parse_variable(1, index, variable_type_summary, df)
+        if count_dict.get(row):
+            if count_dict[row].get(col):
+                count_dict[row][col]+= 1
+
+            else:
+                count_dict[row][col] = 1
+
+        else:
+            count_dict[row] = {}
+            count_dict[row][col] = 1
+
+    for row in unique_indep_values[1]:
+        result_dict[row] = {}
+        if count_dict.get(row):
+            for col in unique_indep_values[0]:
+                if count_dict[row].get(col):
+                    result_dict[row][col] = count_dict[row][col]
+
+                else:
+                    result_dict[row][col] = 0
+        else:
+            for col in unique_indep_values[0]:
+                result_dict[row][col] = 0
+
+    return result_dict
+
+'''
+ind_num_variables : represents independent numerical variables. It is a list of lists, where each list is of form [numerical variable name, number of bins]
+ind_cat_variables: represents independent categorical variable names. It is a list of names
+dep_num_variable : represents the dependent numerical variable name.  [numerical variable name, aggregation function name]
+dep_cat_variable : represents the dependent categorical variable. It is a list of form [categorical variable name, mapping function (string-> number), aggregation function]
+
+supported mapping functions:
+    (FILTER, target) -> returns 1 if value == target, 0 otherwise
+supported aggregation functions:
+    SUM
+'''
+
+def create_contingency_table(df, ind_cat_variables, ind_num_variables, dep_num_variable, dep_cat_variable):
+    #a list of lists
+    results_dict = {}
+    formatted_results_dict = {}
+    unique_indep_values = []
+    variable_type_summary = []
+
+    aggregationMean = False
+
+    for var in ind_cat_variables:
+        unique_indep_values.append(get_unique(df[var]))
+        variable_type_summary.append(('cat', var))
+    print variable_type_summary
+    for var in ind_num_variables:
+        (names, binningEdges) = find_binning_edges_equal_spaced(df[var[0]], var[1])
+        unique_indep_values.append(names)
+        variable_type_summary.append(('num', var, binningEdges, names))
+
+    if dep_num_variable:
+        (results_dict, aggregationMean) = create_contingency_table_with_dependent_numerical_variable(df, variable_type_summary, dep_num_variable, unique_indep_values)
+
+    elif dep_cat_variable:
+        results_dict = create_contingency_table_with_dependent_categorical_variable(df, variable_type_summary, dep_cat_variable, unique_indep_values)
+
+    else:
+        results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
+
+    if not aggregationMean:
+        formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Row Totals']
+    else:
+        formatted_results_dict['column_headers'] = unique_indep_values[0]
+    formatted_results_dict["row_headers"] = unique_indep_values[1]
+    formatted_results_dict["rows"] = []
+    if not aggregationMean:
+        formatted_results_dict['column_totals'] = np.zeros(len(unique_indep_values[0]) + 1)
+
+    for row in unique_indep_values[1]:
+        values = [ results_dict[row][col] for col in unique_indep_values[0] ]
+
+        if not aggregationMean:
+            values.append(sum(values))
+            formatted_results_dict['column_totals'] += values
+
+        formatted_results_dict["rows"].append({
+            "field": row,
+            "values": values
+        })
+
+    return formatted_results_dict
+
+#binning functions
+##################
+##we want to round to three floats
+##right edge is open for the binning edges
+def find_binning_edges_equal_spaced(array, num_bins):
+    theMin = min(array)
+    theMax = max(array)
+
+    edges = np.linspace(theMin, theMax, num_bins+1)
+
+    roundedEdges = []
+    for i in range(len(edges)-1):
+        roundedEdges.append( float('%.3f' % edges[i]))
+    roundedEdges.append(float('%.3f' % edges[-1])+0.001)
+
+    names = []
+    for i in range(len(edges)-1):
+        names.append('%s-%s' % (str(roundedEdges[i]), str(roundedEdges[i+1])))
+
+    return (names, roundedEdges)
+
+#finds the bin the target number is in given the binning edges and binning names
+def find_bin(target, binningEdges, binningNames, num_bins):
+    def searchIndex(nums, target, length, index):
+        mid = length/2
+        if length == 1:
+            if target <= nums[0]:
+                return index
+
+            else:
+                return index + 1
+
+        elif target < nums[mid]:
+            return searchIndex(nums[:mid], target, mid, index)
+
+        else:
+            return searchIndex(nums[mid:], target, length-mid, index+mid)
+
+    #subtraction of 1 since indexing starts at 0
+    return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
+
+
+def run_numerical_comparison_from_spec(spec, project_id):
+    variable_names = spec.get('variableNames', [])
+    independence = spec.get('independence', True)
+    dataset_id = spec.get('datasetId')
+    if not (len(variable_names) >= 2 and dataset_id):
+        return 'Not passed required parameters', 400
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result = run_valid_comparison_tests(df, variable_names, independence)
+    return comparison_result, 200
+
+# args must be a list of lists
+def run_valid_comparison_tests(df, variable_names, independence):
+    '''
+    Run non-regression tests
+    Performs comparisons between different data sets
+    Requires more than one data set to be sent
+    '''
+    args = []
+    for name in variable_names:
+        args.append(df[name])
+
+    results = {}
+    normal = sets_normal(.25,*args)
+    numDataSets = len(args)
+    equalVar = variations_equal(.25,*args)
+
+    ################we are assuming independence right now
+    valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
+    for test in valid_tests:
+        results[test] = valid_tests[test](*args)
+
+    return results
+
 def run_comparison_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     indep = spec.get('indep', [])
@@ -43,20 +378,19 @@ def run_comparison(df, fields, indep, dep, test):
     if indep:
         for indep_field_name in indep:
             indep_data[indep_field_name] = df[indep_field_name]
+
     else:
-        print "else"
         for field in fields:
             field_name = field['name']
             if (field_name is not dep_field_name) and (field['general_type'] == 'q'):
                 indep_data[field_name] = df[field_name]
+
     dep_data = {}
     for dep_field_name in dep:
         dep_data[dep_field_name] = df[dep_field_name]
 
     if test is 'ttest':
         return ttest(df, fields, indep, dep)
-    return 'here!'
-
 
 def ttest(df, fields, indep, dep):
     # Ensure single field
@@ -79,36 +413,25 @@ def ttest(df, fields, indep, dep):
     return result
 
 
-def run_valid_tests(df, arguments):
-    '''
-    Run non-regression tests
-    Performs comparisons between different data sets
-    If only one data set is sent, it requires user input for the null hypothesis/expected values
-    '''
-    independent = arguments.get('compare').get('independent')
-    args = []
-    for argument in arguments.get('compare').get('dataLabels'):
-        args.append(df[argument].tolist())
 
-    results = {}
-    normal = sets_normal(.25,*args)
-    numDataSets = len(args)
+##################
+#Functions to determine which tests could be run
+##################
 
-    if numDataSets > 1:
-        equalVar = variations_equal(.25,*args)
+#return a boolean, if p-value less than threshold, returns false
+def variations_equal(THRESHOLD, *args):
+    return stats.levene(*args)[1]>THRESHOLD
 
-    else:
-        equalVar = True
+#if normalP is less than threshold, not considered normal
+def sets_normal(THRESHOLD, *args):
+    normal = True;
+    for arg in args:
+        if len(arg) < 8:
+            return False
+        if stats.normaltest(arg)[1] < THRESHOLD:
+            normal = False;
 
-    valid_tests = get_valid_tests(equalVar, independent, normal, numDataSets)
-    for test in valid_tests:
-        if numDataSets == 1:
-            results[test] = valid_tests[test](args[0], arguments.get('userInput'))
-
-        else:
-            results[test] = valid_tests[test](*args)
-    return results
-
+    return normal
 
 def get_valid_tests(equal_var, independent, normal, num_samples):
     '''
@@ -126,7 +449,7 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
             'kstest': stats.kstest
         }
         if normal:
-            valid_tests['one_sample_ttest'] = stats.ttest_1samp
+            valid_tests['input']['one_sample_ttest'] = stats.ttest_1samp
 
     elif num_samples == 2:
         if independent:
@@ -154,6 +477,8 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
             }
             if normal and equal_var:
                 valid_tests['f_oneway'] = stats.f_oneway
+
         else:
             valid_tests['friedmanchisquare'] = stats.friedmanchisquare
+
     return valid_tests

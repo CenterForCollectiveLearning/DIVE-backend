@@ -2,6 +2,7 @@ from enum import Enum
 from dive.tasks.ingestion import DataType
 import numpy as np
 
+
 class GeneratingProcedure(Enum):
     AGG = 'agg'
     IND_VAL = 'ind:val'
@@ -29,6 +30,7 @@ class TypeStructure(Enum):
     Q_liQ = 'q:[q]'
     B_Q = 'b:q'
 
+
 class QuantitativeFunction(Enum):
     AUTO = 'auto'
     RAW = 'raw'
@@ -38,6 +40,7 @@ class QuantitativeFunction(Enum):
     MIN = 'min'
     MAX = 'min'
     BIN = 'bin'
+
 
 class TemporalFunction(Enum):
     AUTO = 'auto'
@@ -54,6 +57,7 @@ class TemporalFunction(Enum):
     MIN = 'min'
     MAX = 'max'
 
+
 class VizType(Enum):
     TREE = 'tree'
     PIE = 'pie'
@@ -63,6 +67,7 @@ class VizType(Enum):
     HIST = 'hist'
     BAR = 'bar'
     STACKED_BAR = 'stackedbar'
+
 
 class TermType(Enum):
     '''
@@ -78,21 +83,6 @@ class TermType(Enum):
     TRANSFORMATION = 'transformation'
     OPERATION = 'operation'
 
-specific_to_general_type = {
-    DataType.STRING.value: 'c',
-    DataType.BOOLEAN.value: 'c',
-    DataType.TEXT.value: 'c',
-    DataType.URL.value: 'c',
-    DataType.CITY.value: 'c',
-    DataType.COUNTRY_CODE_2.value: 'c',
-    DataType.COUNTRY_CODE_3.value: 'c',
-    DataType.COUNTRY_NAME.value: 'c',
-    DataType.CONTINENT_NAME.value: 'c',
-    DataType.INTEGER.value: 'q',
-    DataType.DECIMAL.value: 'q',
-    DataType.DATETIME.value: 'q',
-    DataType.DATE.value: 'q',
-}
 
 aggregation_functions = {
     'sum': np.sum,
