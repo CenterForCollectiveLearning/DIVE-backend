@@ -72,9 +72,12 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
         final_data = get_bin_agg_data(df, args, data_formats)
+    #
+    # elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+    #     final_data = get_multigroup_count_data(df, args, data_formats)
 
-    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-        final_data = get_multigroup_count_data(df, args, data_formats)
+    elif gp == GeneratingProcedure.MULTIGROUP_AGG.value:
+        final_data = get_multigroup_agg_data(df, args, data_formats)
 
     elif gp == GeneratingProcedure.VAL_AGG.value:
         final_data = get_val_agg_data(df, args, data_formats)
@@ -119,11 +122,77 @@ def get_raw_comparison_data(df, args, data_formats):
     return final_data
 
 
+def get_multigroup_agg_data(df, args, data_formats):
+    '''
+    Group by two groups then aggregate on the third
+
+    For google charts, need this form for multiple line charts:
+    [
+        [group_field_a, group_b_value_1, group_b_value_2]
+        [2011-MAR, 100, 200]
+    ]
+    '''
+    logger.debug('In get_multigroup_agg_data')
+    agg_field = args['agg_field']['name']
+    agg_fn = args['agg_fn']
+    group_a_field_label = args['grouped_field_a']['name']
+    group_b_field_label = args['grouped_field_b']['name']
+    grouped_df = df.groupby([group_a_field_label, group_b_field_label])
+    agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])[agg_field]
+
+    results_as_data_array = []
+    secondary_field_values = []
+
+    results_grouped_by_highest_level_value = {}
+
+    for k, v in agg_df.to_dict().iteritems():
+        # Structure: {highest_level_value: (secondary_level_value, aggregated_value)}
+        highest_level_value = k[0]
+        secondary_level_value = k[1]
+
+        if highest_level_value in results_grouped_by_highest_level_value:
+            results_grouped_by_highest_level_value[highest_level_value][secondary_level_value] = v
+        else:
+            results_grouped_by_highest_level_value[highest_level_value] = { secondary_level_value: v }
+
+        if secondary_level_value not in secondary_field_values:
+            secondary_field_values.append(secondary_level_value)
+
+    secondary_field_values = sorted(secondary_field_values)
+
+    logger.info('Secondary field values: %s', secondary_field_values)
+    header_row = [ group_a_field_label ] + secondary_field_values
+    results_as_data_array.append(header_row)
+    for k, v in results_grouped_by_highest_level_value.iteritems():
+        data_array_element = [ k ]
+        for secondary_field_value in secondary_field_values:
+            data_array_element.append( v[secondary_field_value] )
+        results_as_data_array.append(data_array_element)
+
+    final_data = {}
+    if 'score' in data_formats:
+        score_data = {
+            'agg': agg_df.values
+        }
+        final_data['score'] = score_data
+    if 'visualize' in data_formats:
+        visualization_data = results_as_data_array
+        final_data['visualize'] = visualization_data
+
+    if 'table' in data_formats:
+        table_data = {
+            'columns': results_as_data_array[0],
+            'data': results_as_data_array[1:]
+        }
+        final_data['table'] = table_data
+    return final_data
+
+
 def get_multigroup_count_data(df, args, data_formats):
     '''
     Group by one field, then by another
 
-    For google charts, need in form of:
+    For google charts, need this form for multiple (e.g. stacked) charts:
     [
         [group_a_value_1, group_b_value_1, group_b_value_2, count],
         [group_a_value_2, group_b_value_1, group_b_value_2, count]
