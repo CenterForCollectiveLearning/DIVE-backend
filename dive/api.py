@@ -5,7 +5,7 @@ from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
-from dive.resources.statistics_resources import RegressionEstimator, RegressionFromSpec, NumericalComparisonFromSpec, ContingencyTableFromSpec, ComparisonFromSpec, SegmentationFromSpec, ContributionToRSquared
+from dive.resources.statistics_resources import RegressionEstimator, RegressionFromSpec, SummaryStatsFromSpec, NumericalComparisonFromSpec, OneDimensionalTableFromSpec, ContingencyTableFromSpec, ComparisonFromSpec, SegmentationFromSpec, ContributionToRSquared
 from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
 from dive.resources.transform import Reduce, Unpivot, Join
 
@@ -46,8 +46,10 @@ def add_resources(api):
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
     api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
     api.add_resource(ComparisonFromSpec,            '/statistics/v1/comparison')
+    api.add_resource(SummaryStatsFromSpec,          '/statistics/v1/summary_stats')
     api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
     api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
+    api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
     api.add_resource(SegmentationFromSpec,          '/statistics/v1/segmentation')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
