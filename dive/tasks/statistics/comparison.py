@@ -40,6 +40,7 @@ def create_contingency_table_from_spec(spec, project_id):
     return comparison_result, 200
 
 def get_variable_summary_statistics_from_spec(spec, project_id):
+    summary_statistics_result = {}
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")
     field_properties = db_access.get_field_properties(project_id, dataset_id)
@@ -47,82 +48,126 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    summary_statistics_result = get_variable_summary_statistics(df, field_properties, field_ids)
+    field_ids = set(field_ids)
+    relevant_field_properties = filter(lambda field: field['id'] in field_ids, field_properties)
+    summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
-def get_variable_summary_statistics(df, field_properties, field_ids):
+
+def return_data_list_categorical(data_column, variable_name):
+    unique_elements = get_unique(data_column)
+
+    count_dict = {}
+    data_array = []
+
+    data_array.append([variable_name, 'count'])
+
+    for ele in data_column:
+        if count_dict.get(ele):
+            count_dict[ele] += 1
+        else:
+            count_dict[ele] = 1
+
+    for name in unique_elements:
+        data_array.append([name, count_dict[name]])
+
+    return data_array
+
+############FOR NOW, ONLY BINS INTO 5 DIFFERENT BINS
+def return_data_list_numerical(data_column, variable_name):
+    count_dict = {}
+    data_array = []
+
+    (names, roundedEdges) = find_binning_edges_equal_spaced(data_column, 5)
+    data_array.append([variable_name, 'count'])
+    for ele in data_column:
+        bin_name = find_bin(ele, roundedEdges, names, 5)
+        if count_dict.get(bin_name):
+            count_dict[bin_name] += 1
+        else:
+            count_dict[bin_name] = 1
+
+    for name in names:
+        count = 0
+        if count_dict.get(name):
+            count = count_dict[name]
+        data_array.append([name, count])
+
+    return data_array
+
+def get_variable_summary_statistics(df, relevant_field_properties):
     result_dict = {}
-    result_dict['summary_stats'] = []
-    field_ids = set(field_ids)
-    for field_property in field_properties:
-        print field_property['id']
-    relevant_field_properties = filter(lambda field: field['id'] in field_ids, field_properties)
+    result_dict['items'] = []
+
+    categorical_headers = ['count', 'max frequency', 'unique values']
+    numerical_headers = ['count', 'max', 'min', 'mean', 'median', 'standard deviation']
+
     for field_property in relevant_field_properties:
         stats = field_property['stats']
         name = field_property['name']
-        print 'it follows'
-        print stats
-        print name
-        if field_property['general_type'] == 'c':
-            result_dict['summary_stats'].append({'field':name, 'stats': get_summary_stats_categorical(df, name, stats)})
+        type = field_property['general_type']
+        data_column = df[name]
+        if  type == 'c':
+            result_dict['items'].append({'type': type, 'field':name, 'stats': get_summary_stats_categorical(data_column, stats), 'viz_data': return_data_list_categorical(data_column, name)})
         elif field_property['general_type'] == 'q':
-            result_dict['summary_stats'].append({'field':name, 'stats': get_summary_stats_numerical(df, name, stats)})
+            result_dict['items'].append({'type': type, 'field':name, 'stats': get_summary_stats_numerical(data_column, stats), 'viz_data': return_data_list_numerical(data_column, name)})
+
+    result_dict['categoricalHeaders'] = categorical_headers
+    result_dict['numericalHeaders'] = numerical_headers
     return result_dict
 
 
-def get_summary_stats_categorical(df, field_name, stats_dict):
+def get_summary_stats_categorical(data_column, stats_dict):
     stats = []
-    data_column = df[field_name]
 
     if stats_dict.get('count'):
-        stats.append({'prop': 'count', 'value': stats_dict['count']})
+        stats.append(stats_dict['count'])
     else:
-        stats.append({'prop': 'count', 'value': len(data_column)})
+        stats.append(len(data_column))
 
     if stats_dict.get('freq'):
-        stats.append({'prop': 'max frequency', 'value': stats_dict['freq']})
+        stats.append(stats_dict['freq'])
     else:
-        stats.append({'prop': 'count', 'value': find_unique_values_and_max_frequency(data_column)[1]})
+        stats.append(find_unique_values_and_max_frequency(data_column)[1])
 
     if stats_dict.get('unique'):
-        stats.append({'prop': 'unique values', 'value': stats_dict['unique']})
+        stats.append(stats_dict['unique'])
     else:
-        stats.append({'prop': 'unique values', 'value': find_unique_values_and_max_frequency(data_column)[0]})
+        stats.append(find_unique_values_and_max_frequency(data_column)[0])
     return stats
 
-def get_summary_stats_numerical(df, field_name, stats_dict):
+def get_summary_stats_numerical(data_column, stats_dict):
     stats = []
-    data_column = df[field_name]
 
     if stats_dict.get('count'):
-        stats.append({'prop': 'count', 'value': stats_dict['count']})
+        stats.append(stats_dict['count'])
     else:
-        stats.append({'prop': 'count', 'value': len(data_column)})
+        stats.append(len(data_column))
 
     if stats_dict.get('max'):
-        stats.append({'prop': 'max', 'value': stats_dict['max']})
+        stats.append(stats_dict['max'])
     else:
-        stats.append({'prop': 'max', 'value': max(data_column)})
+        stats.append(max(data_column))
 
     if stats_dict.get('min'):
-        stats.append({'prop': 'min', 'value': stats_dict['min']})
+        stats.append(stats_dict['min'])
     else:
-        stats.append({'prop': 'min', 'value': min(data_column)})
+        stats.append(min(data_column))
 
     if stats_dict.get('mean'):
-        stats.append({'prop': 'mean', 'value': stats_dict['mean']})
+        stats.append(stats_dict['mean'])
     else:
-        stats.append({'prop': 'mean', 'value': np.mean(data_column)})
+        stats.append(np.mean(data_column))
 
     if stats_dict.get('median'):
-        stats.append({'prop': 'median', 'value': stats_dict['median']})
+        stats.append(stats_dict['median'])
     else:
-        stats.append({'prop': 'median', 'value': np.median(data_column)})
+        stats.append(np.median(data_column))
 
     if stats_dict.get('std'):
-        stats.append({'prop': 'standard deviation', 'value': stats_dict['std']})
+        stats.append(stats_dict['std'])
     else:
-        stats.append({'prop': 'standard deviation', 'value': np.std(data_column)})
+        stats.append(np.std(data_column))
 
     return stats
 
@@ -508,7 +553,7 @@ def find_binning_edges_equal_spaced(array, num_bins):
     roundedEdges = []
     for i in range(len(edges)-1):
         roundedEdges.append( float('%.3f' % edges[i]))
-    roundedEdges.append(float('%.3f' % edges[-1])+0.001)
+    roundedEdges.append(float('%.3f' % edges[-1])+0.1)
 
     names = []
     for i in range(len(edges)-1):
