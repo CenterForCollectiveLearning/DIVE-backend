@@ -90,11 +90,9 @@ def filter_viz_specs(self, viz_specs_with_data_result, project_id):
 
     for s in viz_specs_with_data:
         # Don't show aggregations with only one element
-        # if s['generating_procedure'] == GeneratingProcedure.VAL_COUNT.value:
         if (len(s['data']['visualize']) <= 2):
             continue
         filtered_viz_specs.append(s)
-    self.update_state(state=states.PENDING, meta={'status': 'Filtered viz specs'})
     return {
         'desc': 'Filtered %s visualization specs' % len(filtered_viz_specs),
         'result': filtered_viz_specs

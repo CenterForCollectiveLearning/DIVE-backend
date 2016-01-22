@@ -65,7 +65,6 @@ class ChainTaskResult(Resource):
     If all tasks are completed, return result
     '''
     def post(self):
-        logger.info('In ChainTaskResult')
         args = chainTaskResultPostParser.parse_args()
         task_ids = args.get('task_ids')
 
@@ -74,7 +73,6 @@ class ChainTaskResult(Resource):
         current_task = ''
         most_recent_result = None
         for task_id in task_ids:
-            logger.info(task_id)
             task = celery.AsyncResult(task_id)
 
             if task.state == states.SUCCESS:
