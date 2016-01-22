@@ -9,15 +9,16 @@ from dive.resources.statistics_resources import RegressionEstimator, RegressionF
 from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
 from dive.resources.transform import Reduce, Unpivot, Join
 
-from dive.resources.task_resources import TestPipeline, TaskResult
+from dive.resources.task_resources import TaskResult, RevokeTask, ChainTaskResult
 # from dive.resources.auth import Register, Login
 
 from flask.ext.restful import Resource
 
 
 def add_resources(api):
-    api.add_resource(TestPipeline,                  '/test/<project_id>/<dataset_id>')
-    api.add_resource(TaskResult,                    '/task_result/<task_id>')
+    api.add_resource(TaskResult,                    '/tasks/v1/result/<task_id>')
+    api.add_resource(ChainTaskResult,               '/tasks/v1/result')
+    api.add_resource(RevokeTask,                    '/tasks/v1/revoke/<task_id>')
 
     api.add_resource(Projects,                      '/projects/v1/projects')
     api.add_resource(Project,                       '/projects/v1/projects/<project_id>')

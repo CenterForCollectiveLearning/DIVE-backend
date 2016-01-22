@@ -5,7 +5,7 @@ from dive.db import db_access
 from dive.resources.utilities import format_json
 from dive.tasks.visualization import GeneratingProcedure
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
-from dive.tasks.pipelines import viz_spec_pipeline
+from dive.tasks.pipelines import viz_spec_pipeline, get_chain_IDs
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class Specs(Resource):
             return make_response(jsonify(format_json({'specs': specs})))
         else:
             specs_task = viz_spec_pipeline(dataset_id, project_id, selected_fields, conditionals).apply_async()
-            return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
+            return make_response(jsonify(format_json({'task_ids': get_chain_IDs(specs_task)})))
 
 
 visualizationFromSpecPostParser = reqparse.RequestParser()

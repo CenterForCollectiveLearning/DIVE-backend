@@ -14,6 +14,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def get_chain_IDs(task):
+    parent = task.parent
+    if parent:
+        return get_chain_IDs(parent) + [ task.id ]
+    else:
+        return [ task.id ]
+
+
 def full_pipeline(dataset_id, project_id):
     '''
     Get properties and then get viz specs
@@ -69,4 +77,5 @@ def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs, conditionals):
         # format_viz_specs.s(project_id),
         save_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals)
     ])
+    pipeline.trail = True
     return pipeline

@@ -1,8 +1,8 @@
 from flask import make_response, jsonify, current_app, url_for
 from flask.ext.restful import Resource, reqparse, marshal_with
 
-from celery import states
-from celery.result import result_from_tuple
+from celery import states, chain, group
+from celery.result import result_from_tuple, ResultSet
 
 from dive.task_core import celery
 from dive.resources.utilities import format_json
@@ -12,25 +12,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def getChainIDs(task):
-    parent = task.parent
-    if parent:
-        return getChainIDs(parent) + [ task.id ]  # Return first task first
-    else:
-        return [ task.id ]
+def object_type(j):
+    return j
 
 
-class TestPipeline(Resource):
-    def get(self, project_id, dataset_id):
-        task = full_pipeline(dataset_id, project_id).apply_async()
-        logger.info(task_id)
-        logger.info(getChainIDs(task))
-
-
-        task_id = task.id
-        response = jsonify({'task_ids': getChainIDs(task)})
-        response.status_code = 202
-        return make_response(jsonify(format_json(response)))
+class RevokeTask(Resource):
+    def get(self, task_id):
+        celery.control.revoke(task_id,
+            terminate = False,
+            signal = 'SIGKILL'
+        )
 
 
 class TaskResult(Resource):
@@ -39,14 +30,15 @@ class TaskResult(Resource):
     '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
-
-        logger.info("STATE %s", task.state)
+        logger.info('%s: %s', task.state, task_id)
 
         # TODO Make sure that these are consistent
+        print dir(task), task.state, task.status
         if task.state == states.PENDING:
             state = {
+                'result': task.result,
                 'state': task.state,
-                'info': task.info
+                # 'info': task.info
             }
         elif task.state != states.FAILURE:
             state = {
@@ -56,8 +48,53 @@ class TaskResult(Resource):
         else:
             state = {
                 'state': task.state,
-                'status': str(task.info),
+                'result': task.result,
+                # 'status': str(task.info),
             }
         response = jsonify(format_json(state))
-        response.status_code = 202
+        if task.state == states.PENDING:
+            response.status_code = 202
         return response
+
+
+chainTaskResultPostParser = reqparse.RequestParser()
+chainTaskResultPostParser.add_argument('task_ids', type=object_type, required=True, location='json')
+class ChainTaskResult(Resource):
+    '''
+    If not all tasks are completed, return description for current task and previous task.
+    If all tasks are completed, return result
+    '''
+    def post(self):
+        logger.info('In ChainTaskResult')
+        args = chainTaskResultPostParser.parse_args()
+        task_ids = args.get('task_ids')
+
+        all_success = True
+        previous_task = ''
+        current_task = ''
+        most_recent_result = None
+        for task_id in task_ids:
+            logger.info(task_id)
+            task = celery.AsyncResult(task_id)
+
+            if task.state == states.SUCCESS:
+                previous_task = task.info.get('desc')
+                most_recent_result = task.info.get('result')
+
+            if task.state == states.PENDING:
+                all_success = False
+                if (task.info) and (task.info.get('desc')):
+                    current_task = task.info.get('desc')
+
+        if all_success:
+            result = {
+                'state': states.SUCCESS,
+                'result': most_recent_result
+            }
+        else:
+            result = {
+                'state': states.PENDING,
+                'previous_task': previous_task,
+                'current_task': current_task
+            }
+        return jsonify(format_json(result))

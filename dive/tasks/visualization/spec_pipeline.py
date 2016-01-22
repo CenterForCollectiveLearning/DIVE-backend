@@ -40,10 +40,12 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
 
 
 @celery.task(bind=True)
-def attach_data_to_viz_specs(self, enumerated_viz_specs, dataset_id, project_id, conditionals):
+def attach_data_to_viz_specs(self, enumerated_viz_specs_result, dataset_id, project_id, conditionals):
     '''
     Get data corresponding to each viz spec (before filtering and scoring)
     '''
+    self.update_state(state=states.PENDING, meta={'desc': 'Attaching data to visualization specs'})
+    enumerated_viz_specs = enumerated_viz_specs_result['result']
     viz_specs_with_data = []
 
     full_conditionals = get_full_fields_for_conditionals(conditionals, dataset_id, project_id)
@@ -71,14 +73,19 @@ def attach_data_to_viz_specs(self, enumerated_viz_specs, dataset_id, project_id,
         viz_spec_with_data['data'] = data
         viz_specs_with_data.append(viz_spec_with_data)
 
-    return viz_specs_with_data
+    return {
+        'desc': 'Attached data to %s visualization specs' % len(viz_specs_with_data),
+        'result': viz_specs_with_data
+    }
 
 
 @celery.task(bind=True)
-def filter_viz_specs(self, viz_specs_with_data, project_id):
+def filter_viz_specs(self, viz_specs_with_data_result, project_id):
     '''
     Filtering enumerated viz specs based on interpretability, usability, and renderability
     '''
+    self.update_state(state=states.PENDING, meta={'desc': 'Filtering visualization specs'})
+    viz_specs_with_data = viz_specs_with_data_result['result']
     filtered_viz_specs = []
 
     for s in viz_specs_with_data:
@@ -87,13 +94,19 @@ def filter_viz_specs(self, viz_specs_with_data, project_id):
         if (len(s['data']['visualize']) <= 2):
             continue
         filtered_viz_specs.append(s)
-    # self.update_state(state=states.SUCCESS, meta={'status': 'Filtered viz specs'})
-    return filtered_viz_specs
+    self.update_state(state=states.PENDING, meta={'status': 'Filtered viz specs'})
+    return {
+        'desc': 'Filtered %s visualization specs' % len(filtered_viz_specs),
+        'result': filtered_viz_specs
+    }
 
 
 @celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_fields, sort_key='relevance'):
+def score_viz_specs(self, filtered_viz_specs_result, dataset_id, project_id, selected_fields, sort_key='relevance'):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
+    self.update_state(state=states.PENDING, meta={'desc': 'Scoring visualization specs'})
+
+    filtered_viz_specs = filtered_viz_specs_result['result']
     scored_viz_specs = []
     for i, spec in enumerate(filtered_viz_specs):
         if ((i + 1) % 100) == 0:
@@ -111,18 +124,29 @@ def score_viz_specs(self, filtered_viz_specs, dataset_id, project_id, selected_f
 
     sorted_viz_specs = sorted(scored_viz_specs, key=lambda k: next(s for s in k['scores'] if s['type'] == 'relevance')['score'], reverse=True)
 
-    return sorted_viz_specs
+    return {
+        'desc': 'Scored %s visualizations' % len(sorted_viz_specs),
+        'result': sorted_viz_specs
+    }
 
 
 @celery.task(bind=True)
-def format_viz_specs(self, scored_viz_specs, project_id):
+def format_viz_specs(self, scored_viz_specs_result, project_id):
     ''' Get viz specs into a format usable by front end '''
-    formatted_viz_specs = scored_viz_specs
-    return formatted_viz_specs
+    self.update_state(state=states.PENDING, meta={'desc': 'Formatting visualization specs'})
+
+    formatted_viz_specs = scored_viz_specs_result['result']
+    return {
+        'desc': 'Formatted %s visualizations' % len(formatted_viz_specs),
+        'result': formatted_viz_specs
+    }
 
 
 @celery.task(bind=True)
-def save_viz_specs(self, specs, dataset_id, project_id, selected_fields, conditionals):
+def save_viz_specs(self, specs_result, dataset_id, project_id, selected_fields, conditionals):
+    self.update_state(state=states.PENDING, meta={'desc': 'Saving visualization specs'})
+
+    specs = specs_result['result']
     with task_app.app_context():
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
@@ -130,4 +154,7 @@ def save_viz_specs(self, specs, dataset_id, project_id, selected_fields, conditi
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
         inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals)
-    return inserted_specs
+    return {
+        'desc': 'Saved %s visualizations' % len(inserted_specs),
+        'result': inserted_specs
+    }
