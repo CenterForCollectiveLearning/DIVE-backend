@@ -53,48 +53,11 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
-
-def return_data_list_categorical(data_column, variable_name):
-    unique_elements = get_unique(data_column)
-
-    count_dict = {}
-    data_array = []
-
-    data_array.append([variable_name, 'count'])
-
-    for ele in data_column:
-        if count_dict.get(ele):
-            count_dict[ele] += 1
-        else:
-            count_dict[ele] = 1
-
-    for name in unique_elements:
-        data_array.append([name, count_dict[name]])
-
-    return data_array
-
-############FOR NOW, ONLY BINS INTO 5 DIFFERENT BINS
-def return_data_list_numerical(data_column, variable_name):
-    count_dict = {}
-    data_array = []
-
-    (names, roundedEdges) = find_binning_edges_equal_spaced(data_column, 5)
-    data_array.append([variable_name, 'count'])
-    for ele in data_column:
-        bin_name = find_bin(ele, roundedEdges, names, 5)
-        if count_dict.get(bin_name):
-            count_dict[bin_name] += 1
-        else:
-            count_dict[bin_name] = 1
-
-    for name in names:
-        count = 0
-        if count_dict.get(name):
-            count = count_dict[name]
-        data_array.append([name, count])
-
-    return data_array
-
+'''
+Returns the formatted dict that is sent through the endpoint.
+df: the dataframe
+relevant_field_properties: the field properties we are trying to create summary statistics for
+'''
 def get_variable_summary_statistics(df, relevant_field_properties):
     result_dict = {}
     result_dict['items'] = []
@@ -116,7 +79,66 @@ def get_variable_summary_statistics(df, relevant_field_properties):
     result_dict['numericalHeaders'] = numerical_headers
     return result_dict
 
+'''
+helper function to return visualization data in the right format for categorical variables
+data_column: represents the array of data
+variable_name: represents the name of the variable that is being visualized
+'''
 
+def return_data_list_categorical(data_column, variable_name):
+    unique_elements = get_unique(data_column)
+
+    count_dict = {}
+    data_array = []
+
+    data_array.append([variable_name, 'count'])
+
+    for ele in data_column:
+        if count_dict.get(ele):
+            count_dict[ele] += 1
+        else:
+            count_dict[ele] = 1
+
+    for name in unique_elements:
+        data_array.append([name, count_dict[name]])
+
+    return data_array
+
+'''
+helper function to return visualization data in the right format for numerical variables
+FOR NOW, ONLY BINS INTO 5 DIFFERENT BINS
+data_column: represents the array of data
+variable_name: represents the name of the variable that is being visualized
+'''
+def return_data_list_numerical(data_column, variable_name):
+    count_dict = {}
+    data_array = []
+
+    (names, roundedEdges) = find_binning_edges_equal_spaced(data_column, 5)
+    data_array.append([variable_name, 'count'])
+    for ele in data_column:
+        bin_name = find_bin(ele, roundedEdges, names, 5)
+        if count_dict.get(bin_name):
+            count_dict[bin_name] += 1
+        else:
+            count_dict[bin_name] = 1
+
+    for name in names:
+        count = 0
+        if count_dict.get(name):
+            count = count_dict[name]
+        data_array.append([name, count])
+
+    return data_array
+
+
+
+'''
+helper function to find some statistics of the data
+    looks at count, max frequency, and number of unique values
+data_column: represents the array of data
+stats_dict: represents the statistical dictionary already in field_properties
+'''
 def get_summary_stats_categorical(data_column, stats_dict):
     stats = []
 
@@ -136,6 +158,12 @@ def get_summary_stats_categorical(data_column, stats_dict):
         stats.append(find_unique_values_and_max_frequency(data_column)[0])
     return stats
 
+'''
+helper function to find some statistics of the data
+    looks at count, max, min, mean, median, and standard deviation
+data_column: represents the array of data
+stats_dict: represents the statistical dictionary already in field_properties
+'''
 def get_summary_stats_numerical(data_column, stats_dict):
     stats = []
 
@@ -171,6 +199,11 @@ def get_summary_stats_numerical(data_column, stats_dict):
 
     return stats
 
+'''
+helper function to find the number of unique values in the list and the maximum
+frequency that an unique value has
+list: represents the list being analyzed
+'''
 def find_unique_values_and_max_frequency(list):
     seen = {}
     max = 0
@@ -319,8 +352,6 @@ supported aggregation functions:
 '''
 
 def create_one_dimensional_contingency_table(df, comparison_variable, dep_variable):
-    print 'cooooooooooooooooooooooooooooooooooooooool'
-    print comparison_variable
     #a list of lists
     results_dict = {}
     formatted_results_dict = {}
@@ -540,10 +571,13 @@ def create_contingency_table(df, comparison_variables, dep_variable):
 
     return formatted_results_dict
 
-#binning functions
-##################
-##we want to round to three floats
-##right edge is open for the binning edges
+'''
+helper function to get the formatted names and edges of the bins.
+The bins will be equally spaced, and rounded to 1 decimal place. The right edge is open.
+array: represents the array being binning_edges
+num_bins: represents how many bins we want to bin the data
+'''
+
 def find_binning_edges_equal_spaced(array, num_bins):
     theMin = min(array)
     theMax = max(array)
@@ -552,8 +586,8 @@ def find_binning_edges_equal_spaced(array, num_bins):
 
     roundedEdges = []
     for i in range(len(edges)-1):
-        roundedEdges.append( float('%.3f' % edges[i]))
-    roundedEdges.append(float('%.3f' % edges[-1])+0.1)
+        roundedEdges.append( float('%.1f' % edges[i]))
+    roundedEdges.append(float('%.1f' % edges[-1])+0.1)
 
     names = []
     for i in range(len(edges)-1):
@@ -561,7 +595,13 @@ def find_binning_edges_equal_spaced(array, num_bins):
 
     return (names, roundedEdges)
 
-#finds the bin the target number is in given the binning edges and binning names
+'''
+helper function to find the name of the bin the target is in
+target: the number which we are trying to find the right bin
+binningEdges: an array of floats representing the edges of the bins
+binningNames: an array of strings representing the names of hte bins
+num_bins: a number represents how many bins there are
+'''
 def find_bin(target, binningEdges, binningNames, num_bins):
     def searchIndex(nums, target, length, index):
         mid = length/2
