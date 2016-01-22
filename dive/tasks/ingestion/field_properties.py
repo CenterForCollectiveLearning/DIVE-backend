@@ -52,7 +52,7 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
     Returns a mapping from dataset_ids to properties
 
     '''
-    self.update_state(state=states.PENDING, meta={'status': 'Computing dataset properties'})
+    self.update_state(state=states.PENDING, meta={'desc': 'Computing dataset field properties'})
 
     logger.debug("Computing field properties for dataset_id %s", dataset_id)
 
@@ -64,6 +64,7 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
 
     # Single-field types
     for (i, field_name) in enumerate(df):
+        self.update_state(state=states.PENDING, meta={'desc': 'Computing dataset field property %s' % field_name})
         logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]
@@ -145,11 +146,13 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
                 all_field_properties[all_field_properties.index(field_a)]['child'] = field_b['name']
                 all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
 
-    self.update_state(state=states.SUCCESS)
 
     logger.info("Done computing field properties")
 
-    return all_field_properties
+    return {
+        'desc': 'Done computing field properties for %s fields' % len(all_field_properties),
+        'result': all_field_properties
+    }
 
 
 # Retrieve entities given datasets
@@ -194,10 +197,13 @@ def detect_unique_list(l):
 
 
 @celery.task(bind=True)
-def save_field_properties(self, all_properties, dataset_id, project_id):
+def save_field_properties(self, all_properties_result, dataset_id, project_id):
     ''' Upsert all field properties corresponding to a dataset '''
+    self.update_state(state=states.PENDING, meta={'desc': 'Saving dataset field properties'})
+
     logger.debug('In save_field_properties for dataset_id %s and project_id %s', dataset_id, project_id)
-    self.update_state(state=states.PENDING, meta={'status': 'Saving field properties'})
+
+    all_properties = all_properties_result['result']
     field_properties_with_id = []
     for field_properties in all_properties:
         name = field_properties['name']
@@ -214,5 +220,7 @@ def save_field_properties(self, all_properties, dataset_id, project_id):
             with task_app.app_context():
                 field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
         field_properties_with_id.append(field_properties)
-    return { 'id': dataset_id }  # Return doc for frontend flow
-    # self.update_state(state=states.SUCCESS, meta={'status': 'Saved field properties'})
+    return {
+        'desc': 'Saved %s field properties' % len(field_properties_with_id),
+        'result': dataset_id
+    }

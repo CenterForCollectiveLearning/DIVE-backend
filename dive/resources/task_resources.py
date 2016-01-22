@@ -75,6 +75,7 @@ class ChainTaskResult(Resource):
         for task_id in task_ids:
             task = celery.AsyncResult(task_id)
 
+            print task_id, task.state
             if task.state == states.SUCCESS:
                 previous_task = task.info.get('desc')
                 most_recent_result = task.info.get('result')

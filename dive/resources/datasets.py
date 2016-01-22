@@ -10,7 +10,7 @@ from celery import chain
 from dive.db import db_access
 from dive.resources.utilities import format_json
 from dive.data.access import get_dataset_sample
-from dive.tasks.pipelines import full_pipeline, ingestion_pipeline
+from dive.tasks.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
 from dive.tasks.ingestion.upload import upload_file
 
 import logging
@@ -49,7 +49,7 @@ class UploadFile(Resource):
             }
             for dataset in datasets:
                 ingestion_task = ingestion_pipeline(dataset['id'], project_id).apply_async()
-                result['task_id'] = ingestion_task.task_id
+                result['task_ids'] = get_chain_IDs(ingestion_task)
             return make_response(jsonify(format_json(result)))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 

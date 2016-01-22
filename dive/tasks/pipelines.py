@@ -44,12 +44,12 @@ def ingestion_pipeline(dataset_id, project_id):
     pipeline = chain([
         chain([
             compute_dataset_properties.si(dataset_id, project_id),
-            save_dataset_properties.s(dataset_id, project_id)
+            save_dataset_properties.s(dataset_id, project_id),
         ]),
         chain([
             compute_field_properties.si(dataset_id, project_id),
             save_field_properties.s(dataset_id, project_id)
-        ]),
+        ])
     ])
     return pipeline
 
@@ -77,5 +77,4 @@ def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs, conditionals):
         # format_viz_specs.s(project_id),
         save_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals)
     ])
-    pipeline.trail = True
     return pipeline
