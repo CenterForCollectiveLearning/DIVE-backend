@@ -53,6 +53,22 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
+def run_numerical_comparison_from_spec(spec, project_id):
+    comparison_result = {}
+
+    variable_names = spec.get('variableNames', [])
+    independence = spec.get('independence', True)
+    dataset_id = spec.get('datasetId')
+    if not (len(variable_names) >= 2 and dataset_id):
+        return 'Not passed required parameters', 400
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)
+    print comparison_result
+    return comparison_result, 200
+
 '''
 Returns the formatted dict that is sent through the endpoint.
 df: the dataframe
@@ -622,19 +638,6 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
 
 
-def run_numerical_comparison_from_spec(spec, project_id):
-    variable_names = spec.get('variableNames', [])
-    independence = spec.get('independence', True)
-    dataset_id = spec.get('datasetId')
-    if not (len(variable_names) >= 2 and dataset_id):
-        return 'Not passed required parameters', 400
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()  # Remove unclean
-
-    comparison_result = run_valid_comparison_tests(df, variable_names, independence)
-    return comparison_result, 200
-
 # args must be a list of lists
 def run_valid_comparison_tests(df, variable_names, independence):
     '''
@@ -646,7 +649,7 @@ def run_valid_comparison_tests(df, variable_names, independence):
     for name in variable_names:
         args.append(df[name])
 
-    results = {}
+    results = []
     normal = sets_normal(.25,*args)
     numDataSets = len(args)
     equalVar = variations_equal(.25,*args)
@@ -654,7 +657,7 @@ def run_valid_comparison_tests(df, variable_names, independence):
     ################we are assuming independence right now
     valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
     for test in valid_tests:
-        results[test] = valid_tests[test](*args)
+        results.append({'test':test, 'values':valid_tests[test](*args)})
 
     return results
 
