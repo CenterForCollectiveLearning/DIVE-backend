@@ -77,7 +77,6 @@ class ChainTaskResult(Resource):
             step = i + 1
             task = celery.AsyncResult(task_id)
 
-            print task_id, task.state
             if task.state == states.SUCCESS:
                 previous_task = '(%s/%s) %s' % (step, num_tasks, task.info.get('desc'))
                 most_recent_result = task.info.get('result')
