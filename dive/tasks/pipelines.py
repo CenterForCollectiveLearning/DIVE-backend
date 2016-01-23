@@ -14,6 +14,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def get_chain_IDs(task):
+    parent = task.parent
+    if parent:
+        return get_chain_IDs(parent) + [ task.id ]
+    else:
+        return [ task.id ]
+
+
 def full_pipeline(dataset_id, project_id):
     '''
     Get properties and then get viz specs
@@ -36,12 +44,12 @@ def ingestion_pipeline(dataset_id, project_id):
     pipeline = chain([
         chain([
             compute_dataset_properties.si(dataset_id, project_id),
-            save_dataset_properties.s(dataset_id, project_id)
+            save_dataset_properties.s(dataset_id, project_id),
         ]),
         chain([
             compute_field_properties.si(dataset_id, project_id),
             save_field_properties.s(dataset_id, project_id)
-        ]),
+        ])
     ])
     return pipeline
 

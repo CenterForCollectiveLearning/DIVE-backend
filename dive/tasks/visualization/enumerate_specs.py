@@ -7,17 +7,20 @@ from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.type_mapping import get_viz_types_from_spec
 from dive.tasks.visualization.score_specs import score_spec
 
+from celery import states
+
 import logging
 logger = logging.getLogger(__name__)
 
 
-@celery.task()
-def enumerate_viz_specs(project_id, dataset_id, selected_fields):
+@celery.task(bind=True)
+def enumerate_viz_specs(self, project_id, dataset_id, selected_fields):
     '''
     TODO Move key filtering to the db query
     TODO Incorporate 0D and 1D data returns
     '''
     specs = []
+    self.update_state(state=states.PENDING, meta={'desc': 'Enumerating visualization specs'})
 
     # Get field properties
     with task_app.app_context():
@@ -49,9 +52,10 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
         # spec['viz_types'] = viz_types
         spec['dataset_id'] = dataset_id
 
-    logger.info("Number of specs: %s", len(specs))
-
-    return specs
+    return {
+        'desc': 'Enumerated %s visualization specs' % len(specs),
+        'result': specs
+    }
 
 
 def get_selected_fields(field_properties, selected_fields):
@@ -133,6 +137,7 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
     n_q = len(q_fields)
     n_t = len(t_fields)
 
+    # TODO Implement the cascading aspect, not only the marginal cases
     # TODO Can we encode requirements into the spec functions themselves?
 
     # Single field specs, single type
@@ -185,7 +190,7 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
     if (n_c > 1) and (n_t > 1) and (n_q > 1):
         specs.extend(multi_ctq(c_fields, t_fields, q_fields))
 
-    logger.info('Got %s cascading specs', len(specs))
+    logger.debug('Got %s cascading specs', len(specs))
     return specs
 
 
@@ -215,5 +220,5 @@ def get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, 
         for c_field in c_fields_not_selected:
             single_cq_specs = single_cq(c_field, q_field_1)
             specs.extend(single_cq_specs)
-    logger.info('Got %s expanded specs', len(specs))
+    logger.debug('Got %s expanded specs', len(specs))
     return specs
