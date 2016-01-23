@@ -68,22 +68,25 @@ class ChainTaskResult(Resource):
         args = chainTaskResultPostParser.parse_args()
         task_ids = args.get('task_ids')
 
+        num_tasks = len(task_ids)
         all_success = True
         previous_task = ''
         current_task = ''
         most_recent_result = None
-        for task_id in task_ids:
+        for i, task_id in enumerate(task_ids):
+            step = i + 1
             task = celery.AsyncResult(task_id)
 
             print task_id, task.state
             if task.state == states.SUCCESS:
-                previous_task = task.info.get('desc')
+                previous_task = '(%s/%s) %s' % (step, num_tasks, task.info.get('desc'))
                 most_recent_result = task.info.get('result')
 
             if task.state == states.PENDING:
                 all_success = False
                 if (task.info) and (task.info.get('desc')):
-                    current_task = task.info.get('desc')
+                    current_task = '(%s/%s) %s' % (step, num_tasks, task.info.get('desc'))
+
 
         if all_success:
             result = {
