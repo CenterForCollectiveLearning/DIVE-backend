@@ -14,6 +14,7 @@ class Project(db.Model):
     topics = db.Column(JSONB)
     preloaded = db.Column(db.Boolean())
     directory = db.Column(db.Unicode(2000))
+    private = db.Column(db.Boolean())
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     users = db.relationship("User")

@@ -17,7 +17,7 @@ from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pip
 from dive.tasks.ingestion.upload import save_dataset
 
 
-excluded_filetypes = ['json', 'py', 'yaml', 'xls', 'xlsx']
+excluded_filetypes = ['json', 'py', 'yaml']
 
 
 def preload_from_directory_tree(app):
@@ -46,6 +46,7 @@ def preload_from_directory_tree(app):
             project_config = yaml.load(project_config_file.read())
         project_title = project_config.get('title', project_dir)
         project_datasets = project_config.get('datasets')
+        private = project_config.get('private')
 
         # Insert projects
         app.logger.info('Preloading project: %s', project_dir)
@@ -55,7 +56,8 @@ def preload_from_directory_tree(app):
                 description = project_config.get('description'),
                 preloaded = True,
                 topics = project_config.get('topics', []),
-                directory = project_dir
+                directory = project_dir,
+                private = private
             )
         project_id = project_dict['id']
 
@@ -67,9 +69,9 @@ def preload_from_directory_tree(app):
         for dataset_file_name in dataset_file_names:
             app.logger.info('Ingesting dataset: %s', dataset_file_name)
             full_dataset_path = join(full_project_dir, dataset_file_name)
-            if not isfile(full_dataset_path) \
+            if (not isfile(full_dataset_path)) \
                 or dataset_file_name.startswith('.') \
-                or dataset_file_name.split('.')[1] in excluded_filetypes:
+                or (dataset_file_name.rsplit('.')[1] in excluded_filetypes):
                 continue
 
             dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
