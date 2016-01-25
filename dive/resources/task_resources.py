@@ -18,8 +18,23 @@ def object_type(j):
 
 class RevokeTask(Resource):
     def get(self, task_id):
-        celery.control.revoke(task_id,
-            terminate = False,
+        logger.debug('Revoking task: %s', task_id)
+        r = celery.control.revoke(task_id,
+            terminate = True,
+            signal = 'SIGKILL'
+        )
+        logger.debug(r)
+
+
+revokeChainTaskPostParser = reqparse.RequestParser()
+revokeChainTaskPostParser.add_argument('task_ids', type=object_type, required=True, location='json')
+class RevokeChainTask(Resource):
+    def post(self):
+        args = revokeChainTaskPostParser.parse_args()
+        task_ids = args.get('task_ids')
+        logger.debug('Revoking tasks: %s', task_ids)
+        celery.control.revoke(task_ids,
+            terminate = True,
             signal = 'SIGKILL'
         )
 
