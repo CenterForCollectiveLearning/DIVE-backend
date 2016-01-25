@@ -80,7 +80,7 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
 
         # Unique values for categorical fields
         if general_type is 'c':
-            unique_values = get_unique(field_values)
+            unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ]
         else:
             unique_values = None
 

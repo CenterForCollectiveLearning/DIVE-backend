@@ -10,6 +10,7 @@ from dive.resources.utilities import format_json
 import logging
 logger = logging.getLogger(__name__)
 
+
 projectPutParser = reqparse.RequestParser()
 projectPutParser.add_argument('title', type=str, required=False)
 projectPutParser.add_argument('description', type=str, required=False)
@@ -40,7 +41,8 @@ class Project(Resource):
                             "id": int(result['id'])}))
 
 projectsGetParser = reqparse.RequestParser()
-projectsGetParser.add_argument('preloaded', type=str, required=False)
+projectsGetParser.add_argument('preloaded', type=bool, required=False)
+projectsGetParser.add_argument('private', type=bool, required=False, default=False)
 
 projectsPostParser = reqparse.RequestParser()
 projectsPostParser.add_argument('title', type=str, required=False)
@@ -54,9 +56,14 @@ class Projects(Resource):
     '''
     def get(self):
         args = projectsGetParser.parse_args()
-        query_args = {}
         preloaded = args.get('preloaded')
+
+        query_args = {}
         if preloaded: query_args['preloaded'] = preloaded
+        if 'private' in args:
+            if args.get('private') != True:
+                query_args['private'] = args.get('private')
+
         return jsonify(format_json({'projects': db_access.get_projects(**query_args)}))
 
     # Create project, initialize directories and collections
