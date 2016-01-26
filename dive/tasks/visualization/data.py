@@ -428,11 +428,6 @@ def get_val_agg_data(df, args, data_formats):
     grouped_field_list = agg_df.index.tolist()
     agg_field_list = agg_df[agg_field_label].tolist()
 
-    final_viz_data = {
-        'grouped_field': agg_df.index.tolist(),
-        'agg_field': agg_df[agg_field_label].tolist()
-    }
-
     if 'score' in data_formats:
         final_data['score'] = {
             'grouped_field': grouped_field_list,
@@ -448,6 +443,7 @@ def get_val_agg_data(df, args, data_formats):
             'data': agg_df.values.tolist()
         }
     return final_data
+
 
 def get_val_count_data(df, args, data_formats):
     final_data = {}
