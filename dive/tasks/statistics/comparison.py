@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
+from statsmodels.formula.api import ols
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -69,6 +70,70 @@ def run_numerical_comparison_from_spec(spec, project_id):
     print comparison_result
     return comparison_result, 200
 
+'''
+For now, spec will be form:
+    datasetId
+    independentVariables - list names, must be categorical
+    dependentVariables - list names, must be numerical
+'''
+def run_anova_from_spec(spec, project_id):
+    anova_result = {}
+
+    dependent_variables = spec.get('dependentVariables', [])
+    independent_variables = spec.get('independentVariables', [])
+    dataset_id = spec.get('datasetId')
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    anova_result = run_anova(df, independent_variables, dependent_variables)
+    return anova_result, 200
+
+def run_anova(df, independent_variables, dependent_variables):
+    num_independent_variables = len(independent_variables)
+    num_dependent_variables = len(dependent_variables)
+
+    if num_independent_variables == 1:
+        if num_dependent_variables == 1:
+            return anova_oneway(df, independent_variables[0], dependent_variables[0])
+
+    return []
+
+def create_comparison_formula(dependent_variable, independent_variables):
+    formula = '%s ~ ' % dependent_variable
+    terms = []
+    for independent_variable in independent_variables:
+        term = 'C(%s)' % independent_variable
+        terms.append(term)
+    concatenated_terms = ' + '.join(terms)
+    formula = formula + concatenated_terms
+    formula = formula.encode('ascii')
+    logger.info("Regression formula %s:", formula)
+    return formula
+
+def anova_oneway(transformed_data, independent_variable, dependent_variable):
+    formatted_formula_string = create_comparison_formula(dependent_variable, [independent_variable])
+    formatted_independent_variable = 'C(%s)' % independent_variable
+
+    data_linear_model = ols(formatted_formula_string, data=transformed_data).fit()
+    anova_table = sm.stats.anova_lm(data_linear_model).transpose()
+
+    column_header_names = ['Degrees of Freedom', 'Sum Squares', 'Mean Squares', 'F', 'Probability > F']
+    column_headers = ['df', 'sum_sq', 'mean_sq', 'F', 'PR(>F)']
+
+    results = {}
+    results['column_headers'] = column_header_names
+    results['stats']=[]
+
+    stats_main = []
+    stats_residual = []
+    for header in column_headers:
+        stats_main.append(anova_table[formatted_independent_variable][header])
+        stats_residual.append(anova_table['Residual'][header])
+
+    results['stats'].append({'field': independent_variable, 'stats': stats_main})
+    results['stats'].append({'field': 'Residual', 'stats': stats_residual})
+    return results
 '''
 Returns the formatted dict that is sent through the endpoint.
 df: the dataframe
@@ -650,7 +715,7 @@ def run_valid_comparison_tests(df, variable_names, independence):
         args.append(df[name])
 
     results = []
-    normal = sets_normal(.25,*args)
+    normal = sets_normal(.15,*args)
     numDataSets = len(args)
     equalVar = variations_equal(.25,*args)
 
@@ -733,14 +798,13 @@ def variations_equal(THRESHOLD, *args):
 
 #if normalP is less than threshold, not considered normal
 def sets_normal(THRESHOLD, *args):
-    normal = True;
     for arg in args:
         if len(arg) < 8:
             return False
         if stats.normaltest(arg)[1] < THRESHOLD:
-            normal = False;
+            return False;
 
-    return normal
+    return True
 
 def get_valid_tests(equal_var, independent, normal, num_samples):
     '''
