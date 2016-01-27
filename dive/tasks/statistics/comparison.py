@@ -93,9 +93,8 @@ def run_anova(df, independent_variables, dependent_variables):
     num_independent_variables = len(independent_variables)
     num_dependent_variables = len(dependent_variables)
 
-    if num_independent_variables == 1:
-        if num_dependent_variables == 1:
-            return anova_oneway(df, independent_variables[0], dependent_variables[0])
+    if num_dependent_variables == 1:
+        return anova(df, independent_variables, dependent_variables[0])
 
     return []
 
@@ -103,17 +102,38 @@ def create_comparison_formula(dependent_variable, independent_variables):
     formula = '%s ~ ' % dependent_variable
     terms = []
     for independent_variable in independent_variables:
-        term = 'C(%s)' % independent_variable
-        terms.append(term)
-    concatenated_terms = ' + '.join(terms)
+        terms.append(get_formatted_name(independent_variable))
+    if len(independent_variables) == 2:
+        concatenated_terms = ' * '.join(terms)
+    else:
+        concatenated_terms = ' + '.join(terms)
     formula = formula + concatenated_terms
     formula = formula.encode('ascii')
     logger.info("Regression formula %s:", formula)
     return formula
 
-def anova_oneway(transformed_data, independent_variable, dependent_variable):
-    formatted_formula_string = create_comparison_formula(dependent_variable, [independent_variable])
-    formatted_independent_variable = 'C(%s)' % independent_variable
+def create_comparison_names(independent_variables):
+    if len(independent_variables) != 2:
+        return (None, None)
+    formatted_name = '%s:%s' % (get_formatted_name(independent_variables[0]), get_formatted_name(independent_variables[1]))
+    name = '%s:%s' % (independent_variables[0][1], independent_variables[1][1])
+    return (formatted_name, name)
+
+def get_formatted_name(variable):
+    if variable[0] == 'q':
+        return variable[1]
+    else:
+        return 'C(%s)' % variable[1]
+
+def anova(transformed_data, independent_variables, dependent_variable):
+    formatted_independent_variables = []
+    formatted_formula_string = create_comparison_formula(dependent_variable, independent_variables)
+
+    formatted_comparison_name, comparison_name = create_comparison_names(independent_variables)
+
+    for independent_variable in independent_variables:
+        formatted_independent_variable = get_formatted_name(independent_variable)
+        formatted_independent_variables.append(formatted_independent_variable)
 
     data_linear_model = ols(formatted_formula_string, data=transformed_data).fit()
     anova_table = sm.stats.anova_lm(data_linear_model).transpose()
@@ -127,11 +147,25 @@ def anova_oneway(transformed_data, independent_variable, dependent_variable):
 
     stats_main = []
     stats_residual = []
-    for header in column_headers:
-        stats_main.append(anova_table[formatted_independent_variable][header])
-        stats_residual.append(anova_table['Residual'][header])
+    stats_compare = []
+    for formatted_independent_variable in formatted_independent_variables:
+        stats_variable = []
+        for header in column_headers:
+            stats_variable.append(anova_table[formatted_independent_variable][header])
 
-    results['stats'].append({'field': independent_variable, 'stats': stats_main})
+        stats_main.append(stats_variable)
+
+    for header in column_headers:
+        stats_residual.append(anova_table['Residual'][header])
+        if comparison_name:
+            stats_compare.append(anova_table[formatted_comparison_name][header])
+
+    for index in range(len(independent_variables)):
+        results['stats'].append({'field': independent_variables[index][1], 'stats': stats_main[index]})
+
+    if comparison_name:
+        results['stats'].append({'field': comparison_name, 'stats': stats_compare})
+
     results['stats'].append({'field': 'Residual', 'stats': stats_residual})
     return results
 '''
