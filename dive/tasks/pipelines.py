@@ -60,10 +60,10 @@ def ingestion_pipeline(self, dataset_id, project_id):
 @celery.task(bind=True)
 def relationship_pipeline(self, project_id):
     logger.info("In relationship modelling pipeline with project_id %s", project_id)
-    self.update_state(state=states.PENDING, meta={'status': '(1/2) Computing relationships'})
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Computing relationships'})
     relationships = compute_relationships(project_id)
 
-    self.update_state(state=states.PENDING, meta={'status': '(2/2) Saving relationships'})
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving relationships'})
     save_relationships(relationships, project_id)
     return
 

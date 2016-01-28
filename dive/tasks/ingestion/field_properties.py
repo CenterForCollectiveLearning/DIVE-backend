@@ -61,7 +61,6 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
 
     # Single-field types
     for (i, field_name) in enumerate(df):
-        self.update_state(state=states.PENDING, meta={'desc': 'Computing dataset field property %s' % field_name})
         logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]

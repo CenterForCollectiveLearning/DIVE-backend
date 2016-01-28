@@ -29,7 +29,7 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
 
     field_types = []
     for (i, field_name) in enumerate(df):
-        logger.info('Calculating types for field %s', field_name)
+        logger.debug('Calculating types for field %s', field_name)
         field_values = df[field_name]
         field_type, field_type_scores = calculate_field_type(field_name, field_values)
         field_types.append(field_type)
