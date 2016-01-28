@@ -76,9 +76,9 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
         final_data = get_bin_agg_data(df, args, data_formats)
-    #
-    # elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-    #     final_data = get_multigroup_count_data(df, args, data_formats)
+    
+    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+        final_data = get_multigroup_count_data(df, args, data_formats)
 
     elif gp == GeneratingProcedure.MULTIGROUP_AGG.value:
         final_data = get_multigroup_agg_data(df, args, data_formats)

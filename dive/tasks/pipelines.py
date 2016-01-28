@@ -74,16 +74,19 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, conditional
     '''
     logger.info("In viz spec enumeration pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(1/4) Enumerating visualization specs'})
+    self.update_state(state=states.PENDING, meta={'desc': '(1/5) Enumerating visualization specs'})
     enumerated_viz_specs = enumerate_viz_specs(project_id, dataset_id, field_agg_pairs)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(2/4) Attaching data to visualization specs'})
+    self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to visualization specs'})
     viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(3/4) Scoring visualization specs'})
-    scored_viz_specs = score_viz_specs(viz_specs_with_data, dataset_id, project_id, field_agg_pairs)
+    self.update_state(state=states.PENDING, meta={'desc': '(3/5) Scoring visualization specs'})
+    filtered_viz_specs = filter_viz_specs(viz_specs_with_data)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving visualization specs'})
+    self.update_state(state=states.PENDING, meta={'desc': '(4/5) Scoring visualization specs'})
+    scored_viz_specs = score_viz_specs(filtered_viz_specs, dataset_id, project_id, field_agg_pairs)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(5/5) Saving visualization specs'})
     saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, conditionals)
 
     return saved_viz_specs

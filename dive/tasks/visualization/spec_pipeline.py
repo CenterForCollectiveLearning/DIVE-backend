@@ -76,16 +76,17 @@ def attach_data_to_viz_specs(enumerated_viz_specs_result, dataset_id, project_id
     }
 
 
-def filter_viz_specs(viz_specs_with_data_result, project_id):
+def filter_viz_specs(viz_specs_with_data_result):
     '''
     Filtering enumerated viz specs based on interpretability, usability, and renderability
     '''
-    self.update_state(state=states.PENDING, meta={'desc': 'Filtering visualization specs'})
     viz_specs_with_data = viz_specs_with_data_result['result']
     filtered_viz_specs = []
 
     for s in viz_specs_with_data:
         # Don't show aggregations with only one element
+        if not s['data']['visualize']:
+            continue
         if (len(s['data']['visualize']) <= 2):
             continue
         filtered_viz_specs.append(s)
