@@ -39,12 +39,11 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
     return conditionals_with_full_docs
 
 
-@celery.task(bind=True)
-def attach_data_to_viz_specs(self, enumerated_viz_specs_result, dataset_id, project_id, conditionals):
+def attach_data_to_viz_specs(enumerated_viz_specs_result, dataset_id, project_id, conditionals):
     '''
     Get data corresponding to each viz spec (before filtering and scoring)
     '''
-    self.update_state(state=states.PENDING, meta={'desc': 'Attaching data to visualization specs'})
+
     enumerated_viz_specs = enumerated_viz_specs_result['result']
     viz_specs_with_data = []
 
@@ -57,8 +56,6 @@ def attach_data_to_viz_specs(self, enumerated_viz_specs_result, dataset_id, proj
         conditioned_df = get_conditioned_data(df, conditionals)
 
     for i, spec in enumerate(enumerated_viz_specs):
-        if ((i + 1) % 100) == 0:
-            logger.info('Attached data to %s out of %s specs', (i + 1), len(enumerated_viz_specs))
 
         viz_spec_with_data = spec
         # TODO Optimize data reads
@@ -79,8 +76,7 @@ def attach_data_to_viz_specs(self, enumerated_viz_specs_result, dataset_id, proj
     }
 
 
-@celery.task(bind=True)
-def filter_viz_specs(self, viz_specs_with_data_result, project_id):
+def filter_viz_specs(viz_specs_with_data_result, project_id):
     '''
     Filtering enumerated viz specs based on interpretability, usability, and renderability
     '''
@@ -99,16 +95,13 @@ def filter_viz_specs(self, viz_specs_with_data_result, project_id):
     }
 
 
-@celery.task(bind=True)
-def score_viz_specs(self, filtered_viz_specs_result, dataset_id, project_id, selected_fields, sort_key='relevance'):
+def score_viz_specs(filtered_viz_specs_result, dataset_id, project_id, selected_fields, sort_key='relevance'):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
-    self.update_state(state=states.PENDING, meta={'desc': 'Scoring visualization specs'})
+
 
     filtered_viz_specs = filtered_viz_specs_result['result']
     scored_viz_specs = []
     for i, spec in enumerate(filtered_viz_specs):
-        if ((i + 1) % 100) == 0:
-            logger.info('Scored %s out of %s specs', i, len(filtered_viz_specs))
         scored_spec = spec
 
         score_doc = score_spec(spec, selected_fields)
@@ -128,8 +121,7 @@ def score_viz_specs(self, filtered_viz_specs_result, dataset_id, project_id, sel
     }
 
 
-@celery.task(bind=True)
-def format_viz_specs(self, scored_viz_specs_result, project_id):
+def format_viz_specs(scored_viz_specs_result, project_id):
     ''' Get viz specs into a format usable by front end '''
     self.update_state(state=states.PENDING, meta={'desc': 'Formatting visualization specs'})
 
@@ -140,9 +132,7 @@ def format_viz_specs(self, scored_viz_specs_result, project_id):
     }
 
 
-@celery.task(bind=True)
-def save_viz_specs(self, specs_result, dataset_id, project_id, selected_fields, conditionals):
-    self.update_state(state=states.PENDING, meta={'desc': 'Saving visualization specs'})
+def save_viz_specs(specs_result, dataset_id, project_id, selected_fields, conditionals):
 
     specs = specs_result['result']
     with task_app.app_context():

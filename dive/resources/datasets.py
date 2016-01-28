@@ -48,9 +48,8 @@ class UploadFile(Resource):
                 'datasets': datasets
             }
             for dataset in datasets:
-                ingestion_task = ingestion_pipeline(dataset['id'], project_id).apply_async()
-                result['task_ids'] = get_chain_IDs(ingestion_task)
-            return make_response(jsonify(format_json(result)))
+                ingestion_task = ingestion_pipeline.apply_async(args=[dataset['id'], project_id])
+            return make_response(jsonify(format_json({'task_id': ingestion_task.task_id})))
         return make_response(jsonify(format_json({'status': 'Upload failed'})))
 
 

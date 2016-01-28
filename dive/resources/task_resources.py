@@ -45,26 +45,23 @@ class TaskResult(Resource):
     '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
-        logger.info('%s: %s', task.state, task_id)
 
-        # TODO Make sure that these are consistent
-        print dir(task), task.state, task.status
         if task.state == states.PENDING:
+            if (task.info) and (task.info.get('desc')):
+                logger.info(task.info.get('desc'))
+                state = {
+                    'current_task': task.info.get('desc'),
+                    'state': task.state,
+                }
+            else:
+                state = {
+                    'current_task': '',
+                    'state': task.state,
+                }
+        elif task.state == states.SUCCESS:
             state = {
-                'result': task.result,
+                'result': task.info.get('result'),
                 'state': task.state,
-                # 'info': task.info
-            }
-        elif task.state != states.FAILURE:
-            state = {
-                'state': task.state,
-                'info': task.info,
-            }
-        else:
-            state = {
-                'state': task.state,
-                'result': task.result,
-                # 'status': str(task.info),
             }
         response = jsonify(format_json(state))
         if task.state == states.PENDING:

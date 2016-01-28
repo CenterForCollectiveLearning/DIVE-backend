@@ -13,14 +13,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@celery.task(bind=True)
-def enumerate_viz_specs(self, project_id, dataset_id, selected_fields):
+
+def enumerate_viz_specs(project_id, dataset_id, selected_fields):
     '''
     TODO Move key filtering to the db query
     TODO Incorporate 0D and 1D data returns
     '''
     specs = []
-    self.update_state(state=states.PENDING, meta={'desc': 'Enumerating visualization specs'})
+
 
     # Get field properties
     with task_app.app_context():

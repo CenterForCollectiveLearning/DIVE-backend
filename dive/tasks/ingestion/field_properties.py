@@ -42,17 +42,14 @@ def calculate_field_stats(field_type, field_values, logging=False):
     return stats
 
 
-@celery.task(bind=True, task_name='field_properties')
-def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
+def compute_field_properties(dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
 
     Arguments: project_id + dataset ids
     Returns a mapping from dataset_ids to properties
-
     '''
-    self.update_state(state=states.PENDING, meta={'desc': 'Computing dataset field properties'})
 
     logger.debug("Computing field properties for dataset_id %s", dataset_id)
 
@@ -147,7 +144,7 @@ def compute_field_properties(self, dataset_id, project_id, compute_hierarchical_
                 all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
 
 
-    logger.info("Done computing field properties")
+    logger.debug("Done computing field properties")
 
     return {
         'desc': 'Done computing field properties for %s fields' % len(all_field_properties),
@@ -196,11 +193,8 @@ def detect_unique_list(l):
     return False
 
 
-@celery.task(bind=True)
-def save_field_properties(self, all_properties_result, dataset_id, project_id):
+def save_field_properties(all_properties_result, dataset_id, project_id):
     ''' Upsert all field properties corresponding to a dataset '''
-    self.update_state(state=states.PENDING, meta={'desc': 'Saving dataset field properties'})
-
     logger.debug('In save_field_properties for dataset_id %s and project_id %s', dataset_id, project_id)
 
     all_properties = all_properties_result['result']
