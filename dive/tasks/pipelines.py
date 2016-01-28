@@ -49,7 +49,6 @@ def ingestion_pipeline(self, dataset_id, project_id):
     save_dataset_properties(dataset_properties, dataset_id, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
-
     field_properties = compute_field_properties(dataset_id, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
