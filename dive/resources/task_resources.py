@@ -20,7 +20,6 @@ class RevokeTask(Resource):
     def get(self, task_id):
         logger.debug('Revoking task: %s', task_id)
         r = celery.control.revoke(task_id)
-        logger.debug(r)
 
 
 revokeChainTaskPostParser = reqparse.RequestParser()
