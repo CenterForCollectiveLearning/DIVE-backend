@@ -62,7 +62,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = df.dropna()
-        conditioned_df = get_conditioned_data(df, conditionals)
+        conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     if gp == GeneratingProcedure.AGG.value:
         final_data = get_agg_data(df, args, data_formats)
