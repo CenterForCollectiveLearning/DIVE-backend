@@ -53,16 +53,19 @@ def attach_data_to_viz_specs(enumerated_viz_specs_result, dataset_id, project_id
         df = df.dropna()
         conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
-    for i, spec in enumerate(enumerated_viz_specs):
+    if project_id and dataset_id:
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+        df = df.dropna()
+        conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
+    for i, spec in enumerate(enumerated_viz_specs):
         viz_spec_with_data = spec
-        # TODO Optimize data reads
-        with task_app.app_context():
-            try:
-                data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=conditioned_df, data_formats=['score', 'visualize'])
-            except Exception as e:
-                logger.error("Error getting viz data %s", e, exc_info=True)
-                continue
+        try:
+            data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=conditioned_df, data_formats=['score', 'visualize'])
+        except Exception as e:
+            logger.error("Error getting viz data %s", e, exc_info=True)
+            continue
+            
         if not data:
             continue
         viz_spec_with_data['data'] = data
