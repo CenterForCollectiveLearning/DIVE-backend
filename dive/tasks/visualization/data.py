@@ -36,18 +36,21 @@ def _get_derived_field(df, precomputed, label_descriptor):
     return result
 
 
-def get_aggregated_df(groupby, agg_fn):
+def get_aggregated_df(groupby, aggregation_function_name):
     try:
-        if agg_fn == 'sum':
+        if aggregation_function_name == 'sum':
             agg_df = groupby.sum()
-        elif agg_fn == 'min':
+        elif aggregation_function_name == 'min':
             agg_df = groupby.min()
-        elif agg_fn == 'max':
+        elif aggregation_function_name == 'max':
             agg_df = groupby.max()
-        elif agg_fn == 'mean':
+        elif aggregation_function_name == 'mean':
             agg_df = groupby.mean()
-    except:
-        agg_df = groupby.aggregate(aggregation_functions[args['agg_fn']])
+        elif aggregation_function_name == 'count':
+            agg_df = groupby.count()
+    except Exception as e:
+        logger.error(e)
+        agg_df = groupby.aggregate(aggregation_functions[aggregation_function_name])
     return agg_df
 
 
@@ -157,11 +160,11 @@ def get_multigroup_agg_data(df, precomputed, args, data_formats):
     '''
     logger.debug('In get_multigroup_agg_data')
     agg_field = args['agg_field']['name']
-    agg_fn = args['agg_fn']
+    aggregation_function_name = args['agg_fn']
     group_a_field_label = args['grouped_field_a']['name']
     group_b_field_label = args['grouped_field_b']['name']
     groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
-    agg_df = get_aggregated_df(groupby, aggregation_functions[agg_fn])[agg_field]
+    agg_df = get_aggregated_df(groupby, aggregation_function_name)[agg_field]
 
     results_as_data_array = []
     secondary_field_values = []
@@ -281,13 +284,13 @@ def get_agg_agg_data(df, precomputed, args, data_formats):
     group_field_name = args['grouped_field']['name']
     agg_field_a_name = args['agg_field_a']['name']
     agg_field_b_name = args['agg_field_b']['name']
-    agg_fn = args['agg_fn']
+    aggregation_function_name = args['agg_fn']
 
     if group_field_name in precomputed['groupby']:
         groupby = precomputed['groupby'][grouped_field_name]
     else:
         groupby = df.groupby(group_field_name, sort=False)
-    agg_df = get_aggregated_df(groupby, aggregation_functions[agg_fn])
+    agg_df = get_aggregated_df(groupby, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
     agg_field_a_list = agg_df[agg_field_a_name].tolist()
     agg_field_b_list = agg_df[agg_field_b_name].tolist()
@@ -322,13 +325,13 @@ def get_agg_data(df, precomputed, args, data_formats):
     final_data = {}
     agg_field_label = args['agg_field_a']['name']
     agg_field_data = df[agg_field_label]
-    agg_fn_label = args['agg_fn']
+    aggregation_function_name = args['agg_fn']
 
-    if agg_fn_label == 'mode':
+    if aggregation_function_name == 'mode':
         result = agg_field_data.value_counts().idxmax()
     else:
-        agg_fn = aggregation_functions[agg_fn_label]
-        result = agg_fn(agg_field_data)
+        aggregation_function_name = aggregation_functions[aggregation_function_name_label]
+        result = aggregation_function_name(agg_field_data)
     final_data['visualize'] = result
     return final_data
 
@@ -375,8 +378,7 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
     binning_field = args['binning_field']['name']
     binning_procedure = args['binning_procedure']
     agg_field_a = args['agg_field_a']['name']
-    agg_fn = aggregation_functions[args['agg_fn']]
-
+    aggregation_function_name = args['agg_fn']
 
     unbinned_field = df[binning_field]
     try:
@@ -402,8 +404,8 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
 
-    grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list), sort=False) # Right edge open
-    agg_df = grouped_df.aggregate(agg_fn)
+    groupby = df.groupby(np.digitize(df[binning_field], bin_edges_list), sort=False) # Right edge open
+    agg_df = get_aggregated_df(groupby, aggregation_function_name)
     agg_values = agg_df[agg_field_a].tolist()
 
     if 'score' in data_formats:
@@ -422,7 +424,7 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
         final_data['visualize'] = data_array
     if 'table' in data_formats:
         table_data = []
-        if args['agg_fn'] == 'count':
+        if aggregation_function_name == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
                 new_row = [bin_num_to_formatted_edges[i], count]
@@ -445,13 +447,14 @@ def get_val_agg_data(df, precomputed, args, data_formats):
     final_data = {}
     grouped_field_name = args['grouped_field']['name']
     agg_field_name = args['agg_field']['name']
+    aggregation_function_name = args['agg_fn']
 
     if grouped_field_name in precomputed['groupby']:
         grouped_df = precomputed['groupby'][grouped_field_name]
     else:
         grouped_df = df.groupby(grouped_field_name, sort=False)
 
-    agg_df = get_aggregated_df(grouped_df, args['agg_fn'])
+    agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
     agg_field_list = agg_df[agg_field_name].tolist()
 

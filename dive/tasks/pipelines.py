@@ -80,7 +80,7 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, conditional
     self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to %s visualization specs' % len(enumerated_viz_specs)})
     viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(3/5) Scoring %s visualization specs' % len(viz_specs_with_data)})
+    self.update_state(state=states.PENDING, meta={'desc': '(3/5) Filtering %s visualization specs' % len(viz_specs_with_data)})
     filtered_viz_specs = filter_viz_specs(viz_specs_with_data)
 
     self.update_state(state=states.PENDING, meta={'desc': '(4/5) Scoring %s visualization specs' % len(filtered_viz_specs)})

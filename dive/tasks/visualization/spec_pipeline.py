@@ -8,8 +8,9 @@ from flask import current_app
 from dive.db import db_access
 from dive.data.access import get_data, get_conditioned_data
 from dive.task_core import celery, task_app
+from dive.tasks.utilities import timeit
 from dive.tasks.ingestion import specific_to_general_type
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
+from dive.tasks.visualization import GeneratingProcedure as GP, TypeStructure as TS, TermType as TT
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.score_specs import score_spec
 
@@ -38,7 +39,6 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
 
     return conditionals_with_full_docs
 
-
 def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals):
     '''
     Get data corresponding to each viz spec (before filtering and scoring)
@@ -61,7 +61,6 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     }
     for i, spec in enumerate(enumerated_viz_specs):
         viz_spec_with_data = spec
-
         # TODO Move this into another function
         if spec['args'].get('grouped_field'):
             grouped_field = spec['args']['grouped_field']['name']
@@ -74,15 +73,18 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
                 precomputed=precomputed,
                 data_formats=['score', 'visualize']
             )
+
         except Exception as e:
             logger.error("Error getting viz data %s", e, exc_info=True)
             continue
 
         if not data:
+            logger.info('No data for spec with generating procedure %s', spec['generating_procedure'])
             continue
         viz_spec_with_data['data'] = data
         viz_specs_with_data.append(viz_spec_with_data)
 
+    logger.info(len(viz_specs_with_data))
     return viz_specs_with_data
 
 
@@ -96,8 +98,9 @@ def filter_viz_specs(viz_specs_with_data):
         # Don't show aggregations with only one element
         if not s['data']['visualize']:
             continue
-        if (len(s['data']['visualize']) <= 2):
-            continue
+        if s['generating_procedure'] != GP.MULTIGROUP_COUNT.value:
+            if (len(s['data']['visualize']) <= 2):
+                continue
         filtered_viz_specs.append(s)
     return filtered_viz_specs
 
