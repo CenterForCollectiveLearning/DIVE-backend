@@ -36,6 +36,21 @@ def _get_derived_field(df, precomputed, label_descriptor):
     return result
 
 
+def get_aggregated_df(groupby, agg_fn):
+    try:
+        if agg_fn == 'sum':
+            agg_df = groupby.sum()
+        elif agg_fn == 'min':
+            agg_df = groupby.min()
+        elif agg_fn == 'max':
+            agg_df = groupby.max()
+        elif agg_fn == 'mean':
+            agg_df = groupby.mean()
+    except:
+        agg_df = groupby.aggregate(aggregation_functions[args['agg_fn']])
+    return agg_df
+
+
 def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, precomputed={}, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
@@ -145,8 +160,8 @@ def get_multigroup_agg_data(df, precomputed, args, data_formats):
     agg_fn = args['agg_fn']
     group_a_field_label = args['grouped_field_a']['name']
     group_b_field_label = args['grouped_field_b']['name']
-    grouped_df = df.groupby([group_a_field_label, group_b_field_label], sort=False)
-    agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])[agg_field]
+    groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
+    agg_df = get_aggregated_df(groupby, aggregation_functions[agg_fn])[agg_field]
 
     results_as_data_array = []
     secondary_field_values = []
@@ -269,11 +284,10 @@ def get_agg_agg_data(df, precomputed, args, data_formats):
     agg_fn = args['agg_fn']
 
     if group_field_name in precomputed['groupby']:
-
-        grouped_df = precomputed['groupby'][grouped_field_name]
+        groupby = precomputed['groupby'][grouped_field_name]
     else:
-        grouped_df = df.groupby(group_field_name, sort=False)
-    agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])
+        groupby = df.groupby(group_field_name, sort=False)
+    agg_df = get_aggregated_df(groupby, aggregation_functions[agg_fn])
     grouped_field_list = agg_df.index.tolist()
     agg_field_a_list = agg_df[agg_field_a_name].tolist()
     agg_field_b_list = agg_df[agg_field_b_name].tolist()
@@ -437,16 +451,7 @@ def get_val_agg_data(df, precomputed, args, data_formats):
     else:
         grouped_df = df.groupby(grouped_field_name, sort=False)
 
-    agg_fn = args['agg_fn']
-    if agg_fn == 'sum':
-        agg_df = grouped_df.sum()
-    elif agg_fn == 'min':
-        agg_df = grouped_df.min()
-    elif agg_fn == 'max':
-        agg_df = grouped_df.max()
-    elif agg_fn == 'mean':
-        agg_df = grouped_df.mean()
-        # agg_df = grouped_df.aggregate(aggregation_functions[args['agg_fn']])
+    agg_df = get_aggregated_df(grouped_df, args['agg_fn'])
     grouped_field_list = agg_df.index.tolist()
     agg_field_list = agg_df[agg_field_name].tolist()
 
