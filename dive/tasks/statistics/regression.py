@@ -116,8 +116,8 @@ def run_regression_from_spec(spec, project_id):
 
     # Determine regression model based on number of type of variables
     variable_types = Counter({
-        'independent': { 'q': 0, 'c': 0 },
-        'dependent': { 'q': 0, 'c': 0}
+        'independent': { 'q': 0, 'c': 0, 't': 0 },
+        'dependent': { 'q': 0, 'c': 0, 't': 0 }
     })
 
     for independent_variable in independent_variables:
