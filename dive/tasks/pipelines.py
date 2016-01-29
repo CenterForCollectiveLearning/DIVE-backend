@@ -6,7 +6,7 @@ from dive.task_core import celery, task_app
 from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
 from dive.tasks.ingestion.relationships import compute_relationships, save_relationships
-from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, format_viz_specs, save_viz_specs
+from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
 
@@ -89,4 +89,4 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, conditional
     self.update_state(state=states.PENDING, meta={'desc': '(5/5) Saving %s visualization specs' % len(scored_viz_specs)})
     saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, conditionals)
 
-    return saved_viz_specs
+    return { 'result': saved_viz_specs }

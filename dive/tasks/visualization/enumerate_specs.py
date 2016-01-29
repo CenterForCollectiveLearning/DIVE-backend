@@ -52,10 +52,7 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
         # spec['viz_types'] = viz_types
         spec['dataset_id'] = dataset_id
 
-    return {
-        'desc': 'Enumerated %s visualization specs' % len(specs),
-        'result': specs
-    }
+    return specs
 
 
 def get_selected_fields(field_properties, selected_fields):
