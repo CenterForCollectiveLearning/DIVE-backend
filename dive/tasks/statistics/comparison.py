@@ -253,11 +253,9 @@ def parse_variable(num, index, variable_type_summary, df):
        for num variables: ['num', [field, num_bins], binning_edges, binning_names]
     df : dataframe
     '''
-    logger.info(num)
-    logger.info(index)
-    logger.info(df.columns)
     type_variable = variable_type_summary[num][0]
     passed_variable = variable_type_summary[num][1]
+
     if type_variable == 'cat':
         return df.get_value(index, passed_variable)
     elif type_variable == 'num':
@@ -286,8 +284,7 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
     weight_variable_name = dep_variable[2][1]
     weight_dict = {}
 
-    num_rows = df.shape[1]
-    for index in range(num_rows - 1):
+    for index in df.index:
         var = parse_variable(0, index, variable_type_summary, df)
         if dep_var_dict.get(var):
             dep_var_dict[var].append(df.get_value(index, dep_variable_name))
@@ -329,7 +326,7 @@ def create_one_dimensional_contingency_table_with_no_dependent_variable(df, vari
     result_dict = {}
     count_dict = {}
 
-    for index in range(len(df)):
+    for index in df.index:
         var = parse_variable(0, index, variable_type_summary, df)
         if count_dict.get(var):
             count_dict[var]+= 1
@@ -423,8 +420,7 @@ def create_contingency_table_with_dependent_variable(df, variable_type_summary, 
     weight_variable_name = dep_variable[2][1]
     weight_dict = {}
 
-
-    for index in range(len(df)):
+    for index in df.index:
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
         if dep_var_dict.get(row):
@@ -488,9 +484,10 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
     result_dict = {}
     count_dict = {}
 
-    for index in range(len(df)):
+    for index in df.index:
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
+        logger.info('%s %s %s', index, col, row)
         if count_dict.get(row):
             if count_dict[row].get(col):
                 count_dict[row][col]+= 1
