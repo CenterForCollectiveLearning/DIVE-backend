@@ -9,7 +9,7 @@ from dive.resources.statistics_resources import RegressionEstimator, RegressionF
 from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
 from dive.resources.transform import Reduce, Unpivot, Join
 
-from dive.resources.task_resources import TaskResult, ChainTaskResult, RevokeTask, RevokeChainTask
+from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
 # from dive.resources.auth import Register, Login
 
 from flask.ext.restful import Resource
@@ -17,7 +17,6 @@ from flask.ext.restful import Resource
 
 def add_resources(api):
     api.add_resource(TaskResult,                    '/tasks/v1/result/<task_id>')
-    api.add_resource(ChainTaskResult,               '/tasks/v1/result')
     api.add_resource(RevokeTask,                    '/tasks/v1/revoke/<task_id>')
     api.add_resource(RevokeChainTask,               '/tasks/v1/revoke')
 

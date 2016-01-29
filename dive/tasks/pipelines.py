@@ -1,7 +1,7 @@
 '''
 Containers for celery task chains
 '''
-from celery import group, chain
+from celery import group, chain, states
 from dive.task_core import celery, task_app
 from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
@@ -33,7 +33,8 @@ def full_pipeline(dataset_id, project_id):
     return pipeline
 
 
-def ingestion_pipeline(dataset_id, project_id):
+@celery.task(bind=True)
+def ingestion_pipeline(self, dataset_id, project_id):
     '''
     Compute dataset and field properties in parallel
 
@@ -41,40 +42,51 @@ def ingestion_pipeline(dataset_id, project_id):
     '''
     logger.info("In ingestion pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
 
-    pipeline = chain([
-        chain([
-            compute_dataset_properties.si(dataset_id, project_id),
-            save_dataset_properties.s(dataset_id, project_id),
-        ]),
-        chain([
-            compute_field_properties.si(dataset_id, project_id),
-            save_field_properties.s(dataset_id, project_id)
-        ])
-    ])
-    return pipeline
+    self.update_state(state=states.PENDING, meta={'desc': '(1/4) Computing dataset properties'})
+    dataset_properties = compute_dataset_properties(dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/4) Saving dataset properties'})
+    save_dataset_properties(dataset_properties, dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
+    field_properties = compute_field_properties(dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
+    result = save_field_properties(field_properties, dataset_id, project_id)
+    return result
 
 
-def relationship_pipeline(project_id):
+@celery.task(bind=True)
+def relationship_pipeline(self, project_id):
     logger.info("In relationship modelling pipeline with project_id %s", project_id)
-    pipeline = chain([
-        compute_relationships.si(project_id),
-        save_relationships.s(project_id)
-    ])
-    return pipeline
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Computing relationships'})
+    relationships = compute_relationships(project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving relationships'})
+    save_relationships(relationships, project_id)
+    return
 
 
-def viz_spec_pipeline(dataset_id, project_id, field_agg_pairs, conditionals):
+@celery.task(bind=True)
+def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, conditionals):
     '''
     Enumerate, filter, score, and format viz specs in sequence
     '''
     logger.info("In viz spec enumeration pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
 
-    pipeline = chain([
-        enumerate_viz_specs.si(project_id, dataset_id, field_agg_pairs),
-        attach_data_to_viz_specs.s(dataset_id, project_id, conditionals),
-        filter_viz_specs.s(project_id),
-        score_viz_specs.s(dataset_id, project_id, field_agg_pairs),
-        # format_viz_specs.s(project_id),
-        save_viz_specs.s(dataset_id, project_id, field_agg_pairs, conditionals)
-    ])
-    return pipeline
+    self.update_state(state=states.PENDING, meta={'desc': '(1/5) Enumerating visualization specs'})
+    enumerated_viz_specs = enumerate_viz_specs(project_id, dataset_id, field_agg_pairs)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to visualization specs'})
+    viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(3/5) Scoring visualization specs'})
+    filtered_viz_specs = filter_viz_specs(viz_specs_with_data)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(4/5) Scoring visualization specs'})
+    scored_viz_specs = score_viz_specs(filtered_viz_specs, dataset_id, project_id, field_agg_pairs)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(5/5) Saving visualization specs'})
+    saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, conditionals)
+
+    return saved_viz_specs

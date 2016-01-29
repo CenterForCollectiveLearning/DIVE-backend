@@ -17,11 +17,13 @@ from dive.tasks.ingestion.type_detection import detect_time_series
 from dive.tasks.ingestion.binning import get_bin_edges
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, aggregation_functions
 
+from time import time
+
 import logging
 logger = logging.getLogger(__name__)
 
 
-def makeSafeString(s):
+def make_safe_string(s):
     invalid_chars = '-_.+^$ '
     for invalid_char in invalid_chars:
         s = s.replace(invalid_char, '_')
@@ -59,6 +61,8 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
     args = spec['args']
     dataset_id = spec['dataset_id']
 
+    start_time = time()
+
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = df.dropna()
@@ -72,9 +76,9 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
         final_data = get_bin_agg_data(df, args, data_formats)
-    #
-    # elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-    #     final_data = get_multigroup_count_data(df, args, data_formats)
+    
+    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+        final_data = get_multigroup_count_data(df, args, data_formats)
 
     elif gp == GeneratingProcedure.MULTIGROUP_AGG.value:
         final_data = get_multigroup_agg_data(df, args, data_formats)
@@ -91,6 +95,10 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, d
     elif gp == GeneratingProcedure.AGG_AGG.value:
         final_data = get_agg_agg_data(df, args, data_formats)
 
+    logger.debug('Data for %s: %s', gp, time() - start_time)
+
+    if (time() - start_time > 1):
+        logger.info(spec['meta'])
     return final_data
 
 
@@ -137,7 +145,7 @@ def get_multigroup_agg_data(df, args, data_formats):
     agg_fn = args['agg_fn']
     group_a_field_label = args['grouped_field_a']['name']
     group_b_field_label = args['grouped_field_b']['name']
-    grouped_df = df.groupby([group_a_field_label, group_b_field_label])
+    grouped_df = df.groupby([group_a_field_label, group_b_field_label], sort=False)
     agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])[agg_field]
 
     results_as_data_array = []
@@ -160,7 +168,6 @@ def get_multigroup_agg_data(df, args, data_formats):
 
     secondary_field_values = sorted(secondary_field_values)
 
-    logger.info('Secondary field values: %s', secondary_field_values)
     header_row = [ group_a_field_label ] + secondary_field_values
     results_as_data_array.append(header_row)
     for k, v in results_grouped_by_highest_level_value.iteritems():
@@ -200,7 +207,7 @@ def get_multigroup_count_data(df, args, data_formats):
     '''
     group_a_field_label = args['field_a']['name']
     group_b_field_label = args['field_b']['name']
-    grouped_df = df.groupby([group_a_field_label, group_b_field_label]).size()
+    grouped_df = df.groupby([group_a_field_label, group_b_field_label], sort=False).size()
 
     results_as_data_array = []
     secondary_field_values = []
@@ -261,7 +268,7 @@ def get_agg_agg_data(df, args, data_formats):
     agg_field_b_name = args['agg_field_b']['name']
     agg_fn = args['agg_fn']
 
-    grouped_df = df.groupby(group_field_name)
+    grouped_df = df.groupby(group_field_name, sort=False)
     agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])
     grouped_field_list = agg_df.index.tolist()
     agg_field_a_list = agg_df[agg_field_a_name].tolist()
@@ -352,11 +359,13 @@ def get_bin_agg_data(df, args, data_formats):
     agg_field_a = args['agg_field_a']['name']
     agg_fn = aggregation_functions[args['agg_fn']]
 
+
     unbinned_field = df[binning_field]
     try:
         bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
     except Exception, e:
         # Skip this spec
+        logger.error(e)
         return None
 
     bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
@@ -375,15 +384,14 @@ def get_bin_agg_data(df, args, data_formats):
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
 
-    # TODO Ensure that order is preserved here
-    grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list)) # Right edge open
+    grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list), sort=False) # Right edge open
     agg_df = grouped_df.aggregate(agg_fn)
     agg_values = agg_df[agg_field_a].tolist()
 
     if 'score' in data_formats:
         final_data['score'] = {
             'bins': bin_num_to_edges,
-            'binEdges': bin_edges_list,
+            'bin_edges': list(bin_edges_list),
             'agg': agg_values
         }
     if 'visualize' in data_formats:
@@ -420,15 +428,19 @@ def get_val_agg_data(df, args, data_formats):
     grouped_field_label = args['grouped_field']['name']
     agg_field_label = args['agg_field']['name']
 
-    grouped_df = df.groupby(grouped_field_label)
-    agg_df = grouped_df.aggregate(aggregation_functions[args['agg_fn']])
+    grouped_df = df.groupby(grouped_field_label, sort=False)
+    agg_fn = args['agg_fn']
+    if agg_fn == 'sum':
+        agg_df = grouped_df.sum()
+    elif agg_fn == 'min':
+        agg_df = grouped_df.min()
+    elif agg_fn == 'max':
+        agg_df = grouped_df.max()
+    elif agg_fn == 'mean':
+        agg_df = grouped_df.mean()
+        # agg_df = grouped_df.aggregate(aggregation_functions[args['agg_fn']])
     grouped_field_list = agg_df.index.tolist()
     agg_field_list = agg_df[agg_field_label].tolist()
-
-    final_viz_data = {
-        'grouped_field': agg_df.index.tolist(),
-        'agg_field': agg_df[agg_field_label].tolist()
-    }
 
     if 'score' in data_formats:
         final_data['score'] = {
@@ -445,6 +457,7 @@ def get_val_agg_data(df, args, data_formats):
             'data': agg_df.values.tolist()
         }
     return final_data
+
 
 def get_val_count_data(df, args, data_formats):
     final_data = {}

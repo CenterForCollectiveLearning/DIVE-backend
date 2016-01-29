@@ -16,8 +16,10 @@ class BaseConfig(object):
     RECOMPUTE_VIZ_SPECS = True
     RECOMPUTE_STATISTICS = True
 
-    CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
-    CELERY_RESULT_BACKEND = 'amqp://'
+    CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
+    # CELERY_RESULT_BACKEND = 'db+postgresql+psycopg2://admin:password@localhost:5432/dive'
+    CELERY_RESULT_BACKEND = 'rpc'
+    # CELERY_RESULT_PERSISTENT = True
 
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@localhost:5432/dive'
 
@@ -40,7 +42,7 @@ class BaseConfig(object):
         'dive.tasks.visualization.marginal_spec_functions.single_field_multi_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.multi_field_single_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.mixed_field_multi_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',                        
+        'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',
         'dive.tasks.visualization.score_specs',
         'dive.tasks.visualization.spec_pipeline',
         'dive.tasks.statistics.regression',

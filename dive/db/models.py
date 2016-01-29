@@ -70,7 +70,7 @@ class Dataset(db.Model):
 
     # Many-to-one with project
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
@@ -91,9 +91,9 @@ class Dataset_Properties(db.Model):
     is_time_series = db.Column(db.Boolean())
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -119,10 +119,10 @@ class Field_Properties(db.Model):
     manual = db.Column(db.Boolean())
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
 
     project = db.relationship(Project)
 
@@ -157,10 +157,10 @@ class Spec(db.Model):
         lazy='dynamic')
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -177,10 +177,10 @@ class Exported_Spec(db.Model):
     config = db.Column(JSONB)
 
     spec_id = db.Column(db.Integer, db.ForeignKey('spec.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -194,7 +194,7 @@ class Document(db.Model):
     content = db.Column(JSONB)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -219,7 +219,7 @@ class Regression(db.Model):
         lazy='dynamic')
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -240,7 +240,7 @@ class Exported_Regression(db.Model):
         onupdate="CASCADE", ondelete="CASCADE"))
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
-        onupdate="CASCADE", ondelete="CASCADE"))
+        onupdate="CASCADE", ondelete="CASCADE"), index=True)
     project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
