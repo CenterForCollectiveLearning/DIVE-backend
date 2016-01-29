@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
+from statsmodels.formula.api import ols
 from time import time
 from itertools import chain, combinations
 from operator import add, mul
@@ -53,6 +54,183 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
+def run_numerical_comparison_from_spec(spec, project_id):
+    comparison_result = {}
+
+    variable_names = spec.get('variableNames', [])
+    independence = spec.get('independence', True)
+    dataset_id = spec.get('datasetId')
+    if not (len(variable_names) >= 2 and dataset_id):
+        return 'Not passed required parameters', 400
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)
+    print comparison_result
+    return comparison_result, 200
+
+'''
+For now, spec will be form:
+    datasetId
+    independentVariables - list names, must be categorical
+    dependentVariables - list names, must be numerical
+    numBins - number of bins for the independent quantitative variables (if they exist)
+'''
+def run_anova_from_spec(spec, project_id):
+    anova_result = {}
+
+    dependent_variables = spec.get('dependentVariables', [])
+    independent_variables = spec.get('independentVariables', [])
+    dataset_id = spec.get('datasetId')
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna()  # Remove unclean
+
+    anova_result = run_anova(df, independent_variables, dependent_variables)
+    return anova_result, 200
+
+'''
+Returns either a dictionary with the anova stats are an empty list (if the anova test
+is not valid)
+df : dataframe
+independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+'''
+
+def run_anova(df, independent_variables, dependent_variables):
+    num_independent_variables = len(independent_variables)
+    num_dependent_variables = len(dependent_variables)
+
+    transformed_data = transform_data(df, independent_variables, dependent_variables)
+    if num_dependent_variables == 1:
+        return anova(transformed_data, independent_variables, dependent_variables[0])
+
+    return []
+
+'''
+Adds the binned names as a column to the data
+The key for the binned data is of format _bins_(name of variable)
+df : dataframe
+independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+'''
+def transform_data(df, independent_variables, dependent_variables):
+    transformed_data = {}
+    for independent_variable in independent_variables:
+        transformed_data[independent_variable[1]] = df[independent_variable[1]]
+        num_bins = independent_variable[2]
+        if num_bins > 0:
+            bin_list = []
+            data_column = df[independent_variable[1]]
+            names, rounded_edges = find_binning_edges_equal_spaced(data_column, independent_variable[2])
+
+            for entry in data_column:
+                bin_list.append(find_bin(entry, rounded_edges, names, num_bins))
+
+            transformed_data['_bins_%s' %independent_variable[1]] = bin_list
+
+
+    for dependent_variable in dependent_variables:
+        transformed_data[dependent_variable] = df[dependent_variable]
+
+    return transformed_data
+
+'''
+Creates the appropriate patsy formula for
+df : dataframe
+independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+'''
+def create_comparison_formula(dependent_variable, independent_variables):
+    formula = '%s ~ ' % dependent_variable
+    terms = []
+    for independent_variable in independent_variables:
+        terms.append(get_formatted_name(independent_variable))
+    if len(independent_variables) == 2:
+        concatenated_terms = ' * '.join(terms)
+    else:
+        concatenated_terms = ' + '.join(terms)
+    formula = formula + concatenated_terms
+    formula = formula.encode('ascii')
+    logger.info("Regression formula %s:", formula)
+    return formula
+'''
+If there are two independent variables, returns a string for the comparison_name and a string for how it would have appeared
+in the anova table result
+independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+'''
+def create_comparison_names(independent_variables):
+    if len(independent_variables) != 2:
+        return (None, None)
+    first_variable = independent_variables[0]
+    second_variable = independent_variables[1]
+    formatted_name = '%s:%s' % (get_formatted_name(first_variable), get_formatted_name(second_variable))
+    name = '%s:%s' % (independent_variables[0][1], independent_variables[1][1])
+    return (formatted_name, name)
+
+'''
+Returns the formatted name of the variable
+variable: of form [type, name, num_bins (0 means will be treated as continuous)]
+'''
+def get_formatted_name(variable):
+    if variable[0] == 'q':
+        if variable[2]:
+            return '_bins_%s' % variable[1]
+        else:
+            return variable[1]
+    else:
+        return 'C(%s)' % variable[1]
+
+'''
+Returns the formatted dictionary with the anova results
+transformed_data: a dictionary with the added binned columns
+independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+'''
+def anova(transformed_data, independent_variables, dependent_variable):
+    formatted_independent_variables = []
+    formatted_formula_string = create_comparison_formula(dependent_variable, independent_variables)
+
+    formatted_comparison_name, comparison_name = create_comparison_names(independent_variables)
+
+    for independent_variable in independent_variables:
+        formatted_independent_variable = get_formatted_name(independent_variable)
+        formatted_independent_variables.append(formatted_independent_variable)
+
+    data_linear_model = ols(formatted_formula_string, data=transformed_data).fit()
+    anova_table = sm.stats.anova_lm(data_linear_model).transpose()
+
+    column_headers = ['df', 'sum_sq', 'mean_sq', 'F', 'PR(>F)']
+
+    results = {}
+    results['column_headers'] = ['Degrees of Freedom', 'Sum Squares', 'Mean Squares', 'F', 'Probability > F']
+    results['stats'] = []
+
+    stats_main = []
+    stats_residual = []
+    stats_compare = []
+
+    for formatted_independent_variable in formatted_independent_variables:
+        stats_variable = []
+        for header in column_headers:
+            stats_variable.append(anova_table[formatted_independent_variable][header])
+
+        stats_main.append(stats_variable)
+
+    for header in column_headers:
+        stats_residual.append(anova_table['Residual'][header])
+        if comparison_name:
+            stats_compare.append(anova_table[formatted_comparison_name][header])
+
+    for index in range(len(independent_variables)):
+        results['stats'].append({'field': independent_variables[index][1], 'stats': stats_main[index]})
+
+    if comparison_name:
+        results['stats'].append({'field': comparison_name, 'stats': stats_compare})
+
+    results['stats'].append({'field': 'Residual', 'stats': stats_residual})
+    return results
 '''
 Returns the formatted dict that is sent through the endpoint.
 df: the dataframe
@@ -622,19 +800,6 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
 
 
-def run_numerical_comparison_from_spec(spec, project_id):
-    variable_names = spec.get('variableNames', [])
-    independence = spec.get('independence', True)
-    dataset_id = spec.get('datasetId')
-    if not (len(variable_names) >= 2 and dataset_id):
-        return 'Not passed required parameters', 400
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()  # Remove unclean
-
-    comparison_result = run_valid_comparison_tests(df, variable_names, independence)
-    return comparison_result, 200
-
 # args must be a list of lists
 def run_valid_comparison_tests(df, variable_names, independence):
     '''
@@ -646,15 +811,15 @@ def run_valid_comparison_tests(df, variable_names, independence):
     for name in variable_names:
         args.append(df[name])
 
-    results = {}
-    normal = sets_normal(.25,*args)
+    results = []
+    normal = sets_normal(.15,*args)
     numDataSets = len(args)
     equalVar = variations_equal(.25,*args)
 
     ################we are assuming independence right now
     valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
     for test in valid_tests:
-        results[test] = valid_tests[test](*args)
+        results.append({'test':test, 'values':valid_tests[test](*args)})
 
     return results
 
@@ -730,14 +895,13 @@ def variations_equal(THRESHOLD, *args):
 
 #if normalP is less than threshold, not considered normal
 def sets_normal(THRESHOLD, *args):
-    normal = True;
     for arg in args:
         if len(arg) < 8:
             return False
         if stats.normaltest(arg)[1] < THRESHOLD:
-            normal = False;
+            return False;
 
-    return normal
+    return True
 
 def get_valid_tests(equal_var, independent, normal, num_samples):
     '''
