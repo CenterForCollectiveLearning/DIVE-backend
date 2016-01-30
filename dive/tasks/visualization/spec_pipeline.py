@@ -45,6 +45,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     '''
     viz_specs_with_data = []
 
+    start_time = time()
     # Get dataframe
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
@@ -84,7 +85,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
         viz_spec_with_data['data'] = data
         viz_specs_with_data.append(viz_spec_with_data)
 
-    logger.info(len(viz_specs_with_data))
+    logger.info('Attaching data to %s specs took %.3fs', len(viz_specs_with_data), time() - start_time)
     return viz_specs_with_data
 
 

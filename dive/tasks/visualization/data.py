@@ -114,9 +114,6 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, p
         final_data = get_agg_agg_data(df, precomputed, args, data_formats)
 
     logger.debug('Data for %s: %s', gp, time() - start_time)
-
-    if (time() - start_time > 1):
-        logger.info(spec['meta'])
     return final_data
 
 
