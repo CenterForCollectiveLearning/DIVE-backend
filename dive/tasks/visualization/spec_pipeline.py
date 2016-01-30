@@ -8,8 +8,9 @@ from flask import current_app
 from dive.db import db_access
 from dive.data.access import get_data, get_conditioned_data
 from dive.task_core import celery, task_app
+from dive.tasks.utilities import timeit
 from dive.tasks.ingestion import specific_to_general_type
-from dive.tasks.visualization import GeneratingProcedure, TypeStructure, TermType
+from dive.tasks.visualization import GeneratingProcedure as GP, TypeStructure as TS, TermType as TT
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.score_specs import score_spec
 
@@ -38,67 +39,75 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
 
     return conditionals_with_full_docs
 
-
-def attach_data_to_viz_specs(enumerated_viz_specs_result, dataset_id, project_id, conditionals):
+def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals):
     '''
     Get data corresponding to each viz spec (before filtering and scoring)
     '''
-
-    enumerated_viz_specs = enumerated_viz_specs_result['result']
     viz_specs_with_data = []
 
+    start_time = time()
     # Get dataframe
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = df.dropna()
         conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
-    for i, spec in enumerate(enumerated_viz_specs):
+    if project_id and dataset_id:
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+        df = df.dropna()
+        conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
+    precomputed = {
+        'groupby': {}
+    }
+    for i, spec in enumerate(enumerated_viz_specs):
         viz_spec_with_data = spec
-        # TODO Optimize data reads
-        with task_app.app_context():
-            try:
-                data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=conditioned_df, data_formats=['score', 'visualize'])
-            except Exception as e:
-                logger.error("Error getting viz data %s", e, exc_info=True)
-                continue
+        # TODO Move this into another function
+        if spec['args'].get('grouped_field'):
+            grouped_field = spec['args']['grouped_field']['name']
+            grouped_df = conditioned_df.groupby(grouped_field)
+            precomputed['groupby'][grouped_field] = grouped_df
+
+        try:
+            data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals,
+                df=conditioned_df,
+                precomputed=precomputed,
+                data_formats=['score', 'visualize']
+            )
+
+        except Exception as e:
+            logger.error("Error getting viz data %s", e, exc_info=True)
+            continue
+
         if not data:
+            logger.info('No data for spec with generating procedure %s', spec['generating_procedure'])
             continue
         viz_spec_with_data['data'] = data
         viz_specs_with_data.append(viz_spec_with_data)
 
-    return {
-        'desc': 'Attached data to %s visualization specs' % len(viz_specs_with_data),
-        'result': viz_specs_with_data
-    }
+    logger.info('Attaching data to %s specs took %.3fs', len(viz_specs_with_data), time() - start_time)
+    return viz_specs_with_data
 
 
-def filter_viz_specs(viz_specs_with_data_result):
+def filter_viz_specs(viz_specs_with_data):
     '''
     Filtering enumerated viz specs based on interpretability, usability, and renderability
     '''
-    viz_specs_with_data = viz_specs_with_data_result['result']
     filtered_viz_specs = []
 
     for s in viz_specs_with_data:
         # Don't show aggregations with only one element
         if not s['data']['visualize']:
             continue
-        if (len(s['data']['visualize']) <= 2):
-            continue
+        if s['generating_procedure'] != GP.MULTIGROUP_COUNT.value:
+            if (len(s['data']['visualize']) <= 2):
+                continue
         filtered_viz_specs.append(s)
-    return {
-        'desc': 'Filtered %s visualization specs' % len(filtered_viz_specs),
-        'result': filtered_viz_specs
-    }
+    return filtered_viz_specs
 
 
-def score_viz_specs(filtered_viz_specs_result, dataset_id, project_id, selected_fields, sort_key='relevance'):
+def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields, sort_key='relevance'):
     ''' Scoring viz specs based on effectiveness, expressiveness, and statistical properties '''
-
-
-    filtered_viz_specs = filtered_viz_specs_result['result']
     scored_viz_specs = []
     for i, spec in enumerate(filtered_viz_specs):
         scored_spec = spec
@@ -114,26 +123,10 @@ def score_viz_specs(filtered_viz_specs_result, dataset_id, project_id, selected_
 
     sorted_viz_specs = sorted(scored_viz_specs, key=lambda k: next(s for s in k['scores'] if s['type'] == 'relevance')['score'], reverse=True)
 
-    return {
-        'desc': 'Scored %s visualizations' % len(sorted_viz_specs),
-        'result': sorted_viz_specs
-    }
+    return sorted_viz_specs
 
 
-def format_viz_specs(scored_viz_specs_result, project_id):
-    ''' Get viz specs into a format usable by front end '''
-    self.update_state(state=states.PENDING, meta={'desc': 'Formatting visualization specs'})
-
-    formatted_viz_specs = scored_viz_specs_result['result']
-    return {
-        'desc': 'Formatted %s visualizations' % len(formatted_viz_specs),
-        'result': formatted_viz_specs
-    }
-
-
-def save_viz_specs(specs_result, dataset_id, project_id, selected_fields, conditionals):
-
-    specs = specs_result['result']
+def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals):
     with task_app.app_context():
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
@@ -141,7 +134,4 @@ def save_viz_specs(specs_result, dataset_id, project_id, selected_fields, condit
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
         inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals)
-    return {
-        'desc': 'Saved %s visualizations' % len(inserted_specs),
-        'result': inserted_specs
-    }
+    return inserted_specs

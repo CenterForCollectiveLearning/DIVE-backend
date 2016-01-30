@@ -227,7 +227,9 @@ def get_specs(project_id, dataset_id, **kwargs):
         abort(404)
     return [ row_to_dict(spec) for spec in specs ]
 
+from time import time
 def insert_specs(project_id, specs, selected_fields, conditionals):
+    start_time = time()
     spec_objects = []
     for s in specs:
         spec_objects.append(Spec(
@@ -238,6 +240,7 @@ def insert_specs(project_id, specs, selected_fields, conditionals):
         ))
     db.session.add_all(spec_objects)
     db.session.commit()
+    logger.info('Insertion took %s seconds', (time() - start_time))
     return [ row_to_dict(s) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
