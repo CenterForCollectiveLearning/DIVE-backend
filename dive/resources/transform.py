@@ -8,7 +8,7 @@ from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
 from dive.resources.utilities import format_json
-from dive.tasks.pipelines import unpivot_pipeline  # import unpivot_pipeline, reduce_pipeline, join_pipeline
+from dive.tasks.pipelines import unpivot_pipeline, reduce_pipeline, join_pipeline
 
 import logging
 logger = logging.getLogger(__name__)
@@ -36,8 +36,10 @@ class Reduce(Resource):
         column_ids = args.get('column_ids')
         new_dataset_name_prefix = args.get('new_dataset_name_prefix')
 
-        result = reduce_dataset(project_id, dataset_id, column_ids, new_dataset_name_prefix)
-        return make_response(jsonify(format_json({'dataset_id': result})))
+        reduce_task = reduce_pipeline.apply_async(args=[
+            column_ids, new_dataset_name_prefix, dataset_id, project_id
+        ])
+        return make_response(jsonify(format_json({ 'task_id': reduce_task.task_id })))
 
 
 #####################################################################
@@ -52,7 +54,7 @@ unpivotPostParser.add_argument('dataset_id', type=str, required=True, location='
 unpivotPostParser.add_argument('pivot_fields', type=object_type, required=True, location='json')
 unpivotPostParser.add_argument('variable_name', type=str, location='json', default='variable')
 unpivotPostParser.add_argument('value_name', type=str, location='json', default='value')
-unpivotPostParser.add_argumen-t('new_dataset_name_prefix', type=str, location='json', default='[UNPIVOTED]')
+unpivotPostParser.add_argument('new_dataset_name_prefix', type=str, location='json', default='[UNPIVOTED]')
 class Unpivot(Resource):
     def post(self):
         args = unpivotPostParser.parse_args()
@@ -102,5 +104,9 @@ class Join(Resource):
         right_suffix = args.get('right_suffix')
         new_dataset_name_prefix = args.get('new_dataset_name_prefix')
 
-        result = join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, right_on, how, left_suffix, right_suffix, new_dataset_name_prefix)
-        return make_response(jsonify(format_json({'dataset_id': result})))
+        join_task = join_pipeline.apply_async(args=[
+            left_dataset_id, right_dataset_id, on, left_on, right_on, how,
+            left_suffix, right_suffix, new_dataset_name_prefix, project_id
+        ])
+
+        return make_response(jsonify(format_json({ 'task_id': join_task.task_id })))
