@@ -30,10 +30,16 @@ class Specs(Resource):
 
         specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
-            return make_response(jsonify(format_json({'specs': specs})))
+            return make_response(jsonify(format_json({
+                'result': specs,
+                'compute': False
+            })))
         else:
             specs_task = viz_spec_pipeline.apply_async(args=[dataset_id, project_id, selected_fields, conditionals])
-            return make_response(jsonify(format_json({'task_id': specs_task.task_id})))
+            return make_response(jsonify(format_json({
+                'task_id': specs_task.task_id,
+                'compute': True
+            })))
 
 
 visualizationFromSpecPostParser = reqparse.RequestParser()
