@@ -5,7 +5,6 @@ from flask import current_app
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import celery, task_app
-from dive.tasks.pipelines import ingestion_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 from dive.tasks.transformation.utilities import list_elements_from_indices, get_transformed_file_name
 
@@ -49,6 +48,6 @@ def join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, ri
     dataset_doc = dataset_docs[0]
     new_dataset_id = dataset_doc['id']
 
-    ingestion_result = ingestion_pipeline(new_dataset_id, project_id).apply()
+    # ingestion_result = ingestion_pipeline(new_dataset_id, project_id).apply()
 
     return new_dataset_id

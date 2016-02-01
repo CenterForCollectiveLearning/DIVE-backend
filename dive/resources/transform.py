@@ -8,9 +8,7 @@ from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
 from dive.resources.utilities import format_json
-from dive.tasks.transformation.reduce import reduce_dataset
-from dive.tasks.transformation.pivot import unpivot_dataset
-from dive.tasks.transformation.join import join_datasets
+from dive.tasks.pipelines import unpivot_pipeline  # import unpivot_pipeline, reduce_pipeline, join_pipeline
 
 import logging
 logger = logging.getLogger(__name__)
@@ -54,7 +52,7 @@ unpivotPostParser.add_argument('dataset_id', type=str, required=True, location='
 unpivotPostParser.add_argument('pivot_fields', type=object_type, required=True, location='json')
 unpivotPostParser.add_argument('variable_name', type=str, location='json', default='variable')
 unpivotPostParser.add_argument('value_name', type=str, location='json', default='value')
-unpivotPostParser.add_argument('new_dataset_name_prefix', type=str, location='json', default='[UNPIVOTED]')
+unpivotPostParser.add_argumen-t('new_dataset_name_prefix', type=str, location='json', default='[UNPIVOTED]')
 class Unpivot(Resource):
     def post(self):
         args = unpivotPostParser.parse_args()
@@ -65,8 +63,11 @@ class Unpivot(Resource):
         value_name = args.get('value_name')
         new_dataset_name_prefix = args.get('new_dataset_name_prefix')
 
-        result = unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_name, new_dataset_name_prefix)
-        return make_response(jsonify(format_json({'dataset_id': result})))
+        unpivot_task = unpivot_pipeline.apply_async(args=[
+            pivot_fields, variable_name, value_name, new_dataset_name_prefix,
+            dataset_id, project_id
+        ])
+        return make_response(jsonify(format_json({ 'task_id': unpivot_task.task_id })))
 
 
 #####################################################################
