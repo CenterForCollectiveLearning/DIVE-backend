@@ -3,9 +3,13 @@ Containers for celery task chains
 '''
 from celery import group, chain, states
 from dive.task_core import celery, task_app
+from dive.tasks.ingestion.upload import save_dataset
 from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
 from dive.tasks.ingestion.relationships import compute_relationships, save_relationships
+from dive.tasks.transformation.reduce import reduce_dataset
+from dive.tasks.transformation.join import join_datasets
+from dive.tasks.transformation.pivot import unpivot_dataset
 from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
@@ -31,6 +35,84 @@ def full_pipeline(dataset_id, project_id):
         viz_spec_pipeline(dataset_id, project_id, [])
     ])
     return pipeline
+
+
+@celery.task(bind=True)
+def reduce_pipeline(self, column_ids_to_keep, new_dataset_name_prefix, dataset_id, project_id):
+    logger.info("In reduce pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
+
+    # Unpivot
+    self.update_state(state=states.PENDING, meta={'desc': '(1/3) Reducing dataset'})
+    df_reduced, new_dataset_title, new_dataset_name, new_dataset_path = \
+        reduce_dataset(project_id, dataset_id, column_ids_to_keep, new_dataset_name_prefix)
+
+    # Save
+    self.update_state(state=states.PENDING, meta={'desc': '(2/3) Saving reduced dataset'})
+    df_reduced.to_csv(new_dataset_path, sep='\t', index=False)
+    dataset_docs = save_dataset(project_id, new_dataset_title, new_dataset_name, 'tsv', new_dataset_path)
+    dataset_doc = dataset_docs[0]
+    new_dataset_id = dataset_doc['id']
+
+    # Ingest
+    self.update_state(state=states.PENDING, meta={'desc': '(3/3) Ingesting reduced dataset'})
+    ingestion_result = ingestion_pipeline.apply(args=[ new_dataset_id, project_id ])
+    return {
+        'result': {
+            'dataset_id': new_dataset_id
+        }
+    }
+
+
+@celery.task(bind=True)
+def join_pipeline(self, left_dataset_id, right_dataset_id, on, left_on, right_on, how, left_suffix, right_suffix, new_dataset_name_prefix, project_id):
+    logger.info("In join pipeline with dataset_ids %s %s and project_id %s", left_dataset_id, right_dataset_id, project_id)
+
+    # Unpivot
+    self.update_state(state=states.PENDING, meta={'desc': '(1/3) Joining dataset'})
+    df_joined, new_dataset_title, new_dataset_name, new_dataset_path = \
+        join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, right_on, how, left_suffix, right_suffix, new_dataset_name_prefix)
+
+    # Save
+    self.update_state(state=states.PENDING, meta={'desc': '(2/3) Saving joined dataset'})
+    df_joined.to_csv(new_dataset_path, sep='\t', index=False)
+    dataset_docs = save_dataset(project_id, new_dataset_title, new_dataset_name, 'tsv', new_dataset_path)
+    dataset_doc = dataset_docs[0]
+    new_dataset_id = dataset_doc['id']
+
+    # Ingest
+    self.update_state(state=states.PENDING, meta={'desc': '(3/3) Ingesting joined dataset'})
+    ingestion_result = ingestion_pipeline.apply(args=[ new_dataset_id, project_id ])
+    return {
+        'result': {
+            'dataset_id': new_dataset_id
+        }
+    }
+
+
+@celery.task(bind=True)
+def unpivot_pipeline(self, pivot_fields, variable_name, value_name, new_dataset_name_prefix, dataset_id, project_id):
+    logger.info("In unpivot pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
+
+    # Unpivot
+    self.update_state(state=states.PENDING, meta={'desc': '(1/3) Unpivoting dataset'})
+    df_unpivoted, new_dataset_title, new_dataset_name, new_dataset_path = \
+        unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_name, new_dataset_name_prefix)
+
+    # Save
+    self.update_state(state=states.PENDING, meta={'desc': '(2/3) Saving unpivoted dataset'})
+    df_unpivoted.to_csv(new_dataset_path, sep='\t', index=False)
+    dataset_docs = save_dataset(project_id, new_dataset_title, new_dataset_name, 'tsv', new_dataset_path)
+    dataset_doc = dataset_docs[0]
+    new_dataset_id = dataset_doc['id']
+
+    # Ingest
+    self.update_state(state=states.PENDING, meta={'desc': '(3/3) Ingesting unpivoted dataset'})
+    ingestion_result = ingestion_pipeline.apply(args=[ new_dataset_id, project_id ])
+    return {
+        'result': {
+            'dataset_id': new_dataset_id
+        }
+    }
 
 
 @celery.task(bind=True)
