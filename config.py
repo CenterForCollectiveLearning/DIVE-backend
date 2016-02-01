@@ -60,7 +60,6 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
-    DEBUG = True
 
 class TestingConfig(BaseConfig):
     TESTING = True
