@@ -26,14 +26,14 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     return result
 
 
-def get_data(project_id=None, dataset_id=None, nrows=None, time=False):
+def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
     '''
     Generally return data in different formats
 
     TODO Change to get_data_as_dataframe
     TODO fill_na arguments
     '''
-    if time:
+    if profile:
         start_time = time()
     if IMD.hasData(dataset_id):
         return IMD.getData(dataset_id)
@@ -48,6 +48,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, time=False):
             path,
             skiprows = dataset['offset'],
             sep = dialect['delimiter'],
+            engine = 'c',
             # lineterminator = dialect['lineterminator'],
             escapechar = dialect['escapechar'],
             doublequote = dialect['doublequote'],
@@ -57,8 +58,8 @@ def get_data(project_id=None, dataset_id=None, nrows=None, time=False):
             nrows = nrows
         )
         IMD.insertData(dataset_id, df)
-    if time:
-        logger.info('Getting dataset %s took %.3fs', dataset_id, (time() - start_time))
+    if profile:
+        logger.debug('[ACCESS] Getting dataset %s took %.3fs', dataset_id, (time() - start_time))
     return df
 
 
