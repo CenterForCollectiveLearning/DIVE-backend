@@ -446,7 +446,7 @@ def get_val_agg_data(df, precomputed, args, data_formats):
     agg_field_name = args['agg_field']['name']
     aggregation_function_name = args['agg_fn']
 
-    if grouped_field_name in precomputed['groupby']:
+    if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
         grouped_df = precomputed['groupby'][grouped_field_name]
     else:
         grouped_df = df.groupby(grouped_field_name, sort=False)

@@ -22,7 +22,7 @@ def replace_unserializable_numpy(obj):
         if np.isnan(obj) or np.isinf(obj):
             return None
         return obj.item()
-    elif isinstance(obj, float):
+    elif isinstance(obj, float) or isinstance(obj, int):
         if np.isnan(obj) or np.isinf(obj):
             return None
         return obj
@@ -30,7 +30,9 @@ def replace_unserializable_numpy(obj):
         return map(replace_unserializable_numpy, obj)
     elif isinstance(obj,(pd.DataFrame, pd.Series)):
         return replace_unserializable_numpy(obj.to_dict())
-    elif isinstance(obj, str) or isinstance(obj.keys()[0], unicode):
+    elif obj == None:
+        return None
+    elif isinstance(obj, str) or isinstance(obj, unicode) or isinstance(obj.keys()[0], unicode):
         return obj.replace('nan', 'null').replace('NaN', 'null')
     return obj
 
