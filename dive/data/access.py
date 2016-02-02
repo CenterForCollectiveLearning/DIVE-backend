@@ -114,7 +114,7 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
     if or_clause_list:
         for c in or_clause_list:
             clause = _construct_conditional_clause(all_field_properties, c['field_id'], c['operation'], c['criteria'])
-            query_strings['or'] = query_strings['or'] + ' | ' + query_string
+            query_strings['or'] = query_strings['or'] + ' | ' + clause
 
     query_strings['and'] = query_strings['and'].strip(' & ')
     query_strings['or'] = query_strings['or'].strip(' | ')
