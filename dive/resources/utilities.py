@@ -41,10 +41,7 @@ def format_json(obj):
             if isinstance(obj.keys()[0], str) or isinstance(obj.keys()[0], unicode):
                 return dict((to_camel_case(k), format_json(v)) for k, v in obj.items())
             elif isinstance(obj.keys()[0], tuple):
-                print 'In second case'
                 return dict((str(k), format_json(v)) for k, v in obj.items())
-            else:
-                print 'Not in either case'
     if isinstance(obj, np.float32) or isinstance(obj, np.float64):
         if np.isnan(obj) or np.isinf(obj):
             return None
