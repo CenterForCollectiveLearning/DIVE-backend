@@ -56,10 +56,12 @@ class TaskResult(Resource):
                 'result': task.info.get('result'),
                 'state': task.state,
             }
+
         from time import time
         start_time = time()
         response = jsonify(format_json(state))
-        logger.info('Formatting result took %.3fs', (time() - start_time))
+        if task.state == states.SUCCESS:
+            logger.info('Formatting result took %.3fs', (time() - start_time))
         if task.state == states.PENDING:
             response.status_code = 202
         return response

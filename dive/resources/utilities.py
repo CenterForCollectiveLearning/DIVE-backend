@@ -13,8 +13,10 @@ class RoundedFloat(float):
     def __repr__(self):
         return '%.3f' % self
 
+
 def jsonify(args):
     return current_app.response_class(json.dumps(args), mimetype='application/json')
+
 
 def to_camel_case(snake_str):
     components = snake_str.split('_')

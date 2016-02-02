@@ -16,6 +16,8 @@ class BaseConfig(object):
     RECOMPUTE_VIZ_SPECS = True
     RECOMPUTE_STATISTICS = True
 
+    COMPRESS = True
+
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     # CELERY_RESULT_BACKEND = 'db+postgresql+psycopg2://admin:password@localhost:5432/dive'
     CELERY_RESULT_BACKEND = 'rpc'
@@ -60,6 +62,8 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
+
+    COMPRESS = False
 
 class TestingConfig(BaseConfig):
     TESTING = True
