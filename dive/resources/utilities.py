@@ -30,17 +30,21 @@ def replace_unserializable_numpy(obj):
         return map(replace_unserializable_numpy, obj)
     elif isinstance(obj,(pd.DataFrame, pd.Series)):
         return replace_unserializable_numpy(obj.to_dict())
-    elif isinstance(obj, str):
+    elif isinstance(obj, str) or isinstance(obj.keys()[0], unicode):
         return obj.replace('nan', 'null').replace('NaN', 'null')
     return obj
+
 
 def format_json(obj):
     if isinstance(obj, dict):
         if len(obj.keys()) > 0:
-            if isinstance(obj.keys()[0], str):
+            if isinstance(obj.keys()[0], str) or isinstance(obj.keys()[0], unicode):
                 return dict((to_camel_case(k), format_json(v)) for k, v in obj.items())
             elif isinstance(obj.keys()[0], tuple):
+                print 'In second case'
                 return dict((str(k), format_json(v)) for k, v in obj.items())
+            else:
+                print 'Not in either case'
     if isinstance(obj, np.float32) or isinstance(obj, np.float64):
         if np.isnan(obj) or np.isinf(obj):
             return None
