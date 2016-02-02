@@ -1,11 +1,11 @@
 import os
 import shutil
 
-from flask import make_response, jsonify, current_app
+from flask import make_response, current_app
 from flask.ext.restful import Resource, reqparse, marshal_with
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.utilities import format_json, jsonify
 
 import logging
 logger = logging.getLogger(__name__)

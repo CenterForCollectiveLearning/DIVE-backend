@@ -5,7 +5,7 @@ from celery import states, chain, group
 from celery.result import result_from_tuple, ResultSet
 
 from dive.task_core import celery
-from dive.resources.utilities import format_json
+from dive.resources.utilities import format_json, jsonify
 from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
 
 import logging
@@ -56,7 +56,10 @@ class TaskResult(Resource):
                 'result': task.info.get('result'),
                 'state': task.state,
             }
+        from time import time
+        start_time = time()
         response = jsonify(format_json(state))
+        logger.info('Formatting result took %.3fs', (time() - start_time))
         if task.state == states.PENDING:
             response.status_code = 202
         return response

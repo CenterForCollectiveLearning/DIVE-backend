@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+import ujson as json
+
+from flask import current_app
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -9,6 +13,8 @@ class RoundedFloat(float):
     def __repr__(self):
         return '%.3f' % self
 
+def jsonify(args):
+    return current_app.response_class(json.dumps(args), mimetype='application/json')
 
 def to_camel_case(snake_str):
     components = snake_str.split('_')

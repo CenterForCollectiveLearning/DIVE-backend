@@ -1,11 +1,11 @@
-from flask import make_response, jsonify
+from flask import make_response
 from flask.ext.restful import Resource, reqparse
 
 import logging
 import json
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.utilities import format_json, jsonify
 
 
 visualizationFromExportedSpecGetParser = reqparse.RequestParser()

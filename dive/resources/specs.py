@@ -1,8 +1,8 @@
-from flask import make_response, jsonify, request, current_app
+from flask import make_response, request, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.utilities import format_json, jsonify
 from dive.tasks.visualization import GeneratingProcedure
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.pipelines import viz_spec_pipeline, get_chain_IDs
@@ -36,10 +36,16 @@ class Specs(Resource):
             })))
         else:
             specs_task = viz_spec_pipeline.apply_async(args=[dataset_id, project_id, selected_fields, conditionals])
-            return make_response(jsonify(format_json({
+            from time import time
+            start_time = time()
+
+            result = make_response(jsonify(format_json({
                 'task_id': specs_task.task_id,
                 'compute': True
             })))
+
+            logger.info('Formatting result took %.3fs', (time() - start_time))
+            return result
 
 
 visualizationFromSpecPostParser = reqparse.RequestParser()

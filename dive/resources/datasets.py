@@ -3,12 +3,12 @@ Endpoints for uploading, getting, updating, and deleting datasets
 '''
 import os
 import json
-from flask import request, make_response, jsonify
+from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
 from celery import chain
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.utilities import format_json, jsonify
 from dive.data.access import get_dataset_sample
 from dive.tasks.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
 from dive.tasks.ingestion.upload import upload_file
