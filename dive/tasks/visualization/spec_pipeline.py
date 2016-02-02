@@ -47,15 +47,11 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
 
     start_time = time()
     # Get dataframe
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
-        df = df.dropna()
-        conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-
     if project_id and dataset_id:
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
-        df = df.dropna()
-        conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+        with task_app.app_context():
+            df = get_data(project_id=project_id, dataset_id=dataset_id, time=True)
+            df = df.dropna()
+            conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     precomputed = {
         'groupby': {}
