@@ -6,11 +6,8 @@ appnope==0.1.0
 Babel==2.1.1
 backports.ssl-match-hostname==3.4.0.2
 billiard==3.3.0.22
-cairocffi==0.7.2
-CairoSVG==1.0.17
 celery==3.1.19
 certifi==2015.9.6.2
-cffi==1.2.1
 chardet==2.3.0
 colorlog==2.6.0
 csvkit==0.9.1
@@ -68,7 +65,6 @@ six==1.10.0
 SQLAlchemy==1.0.8
 SQLAlchemy-Utils==0.31.0
 statsmodels==0.6.1
-tornado==4.2.1
 traitlets==4.0.0
 ujson==1.35
 Werkzeug==0.11.3
