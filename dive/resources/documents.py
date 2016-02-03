@@ -1,10 +1,10 @@
 import os
 
-from flask import make_response, jsonify, current_app
+from flask import make_response, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)
@@ -37,21 +37,21 @@ class Document(Resource):
         project_id = args.get('project_id')
         print 'past args', project_id
         result = db_access.get_document(project_id, document_id)
-        return jsonify(format_json(result))
+        return jsonify(result)
 
     def put(self, document_id):
         args = documentPutParser.parse_args()
         content = args.get('content')
         project_id = args.get('project_id')
         result = db_access.update_document(project_id, document_id, content)
-        return jsonify(format_json(result))
+        return jsonify(result)
 
     def delete(self, document_id):
         args = documentDeleteParser.parse_args()
         project_id = args.get('project_id')
         result = db_access.delete_document(project_id, document_id)
-        return jsonify(format_json({"message": "Successfully deleted project.",
-                            "id": int(result['id'])}))
+        return jsonify({"message": "Successfully deleted project.",
+                            "id": int(result['id'])})
 
 
 documentPostParser = reqparse.RequestParser()
@@ -66,4 +66,4 @@ class NewDocument(Resource):
         content = args.get('content')
         project_id = args.get('project_id')
         result = db_access.create_document(project_id, content)
-        return jsonify(format_json(result))
+        return jsonify(result)

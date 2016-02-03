@@ -5,7 +5,7 @@ from celery import states, chain, group
 from celery.result import result_from_tuple, ResultSet
 
 from dive.task_core import celery
-from dive.resources.utilities import format_json
+from dive.resources.serialization import jsonify
 from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
 
 import logging
@@ -43,12 +43,12 @@ class TaskResult(Resource):
             if (task.info) and (task.info.get('desc')):
                 logger.info(task.info.get('desc'))
                 state = {
-                    'current_task': task.info.get('desc'),
+                    'currentTask': task.info.get('desc'),
                     'state': task.state,
                 }
             else:
                 state = {
-                    'current_task': '',
+                    'currentTask': '',
                     'state': task.state,
                 }
         elif task.state == states.SUCCESS:
@@ -56,7 +56,8 @@ class TaskResult(Resource):
                 'result': task.info.get('result'),
                 'state': task.state,
             }
-        response = jsonify(format_json(state))
+
+        response = jsonify(state)
         if task.state == states.PENDING:
             response.status_code = 202
         return response

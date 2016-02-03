@@ -5,6 +5,7 @@ from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
 from flask.ext.cors import CORS
+from flask.ext.compress import Compress
 from werkzeug.local import LocalProxy
 
 # Setup logging config
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 db = SQLAlchemy()
 login_manager = LoginManager()
 cors = CORS()
+compress = Compress()
 
 def create_app(**kwargs):
     '''
@@ -32,11 +34,13 @@ def create_app(**kwargs):
         app.config.from_object('config.DevelopmentConfig')
     elif mode == 'testing':
         logger.info('Running DIVE application in development mode')
-        app.config.from_object('config.TestingConfig')        
+        app.config.from_object('config.TestingConfig')
     elif mode == 'production':
         logger.info('Running DIVE application in production mode')
         app.config.from_object('config.ProductionConfig')
 
+    if app.config.get('COMPRESS', True):
+        compress.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
 

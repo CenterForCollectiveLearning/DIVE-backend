@@ -3,11 +3,11 @@ Endpoints for uploading, getting, updating, and deleting datasets
 '''
 import os
 import json
-from flask import request, make_response, jsonify
+from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.serialization import jsonify
 from dive.tasks.pipelines import unpivot_pipeline, reduce_pipeline, join_pipeline
 
 import logging
@@ -39,7 +39,7 @@ class Reduce(Resource):
         reduce_task = reduce_pipeline.apply_async(args=[
             column_ids, new_dataset_name_prefix, dataset_id, project_id
         ])
-        return make_response(jsonify(format_json({ 'task_id': reduce_task.task_id })))
+        return make_response(jsonify({ 'taskId': reduce_task.task_id }))
 
 
 #####################################################################
@@ -69,7 +69,7 @@ class Unpivot(Resource):
             pivot_fields, variable_name, value_name, new_dataset_name_prefix,
             dataset_id, project_id
         ])
-        return make_response(jsonify(format_json({ 'task_id': unpivot_task.task_id })))
+        return make_response(jsonify({ 'taskId': unpivot_task.task_id }))
 
 
 #####################################################################
@@ -109,4 +109,4 @@ class Join(Resource):
             left_suffix, right_suffix, new_dataset_name_prefix, project_id
         ])
 
-        return make_response(jsonify(format_json({ 'task_id': join_task.task_id })))
+        return make_response(jsonify({ 'taskId': join_task.task_id }))

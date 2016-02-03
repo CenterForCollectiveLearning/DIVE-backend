@@ -1,11 +1,11 @@
-from flask import make_response, jsonify
+from flask import make_response
 from flask.ext.restful import Resource, reqparse
 
 import logging
 import json
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.serialization import jsonify
 
 
 dataFromExportedRegressionGetParser = reqparse.RequestParser()
@@ -19,7 +19,7 @@ class DataFromExportedRegression(Resource):
         regression_id = exported_spec['regression_id']
         regression = db_access.get_regression_by_id(regression_id, project_id)
 
-        return make_response(jsonify(format_json(regression['data'])))
+        return make_response(jsonify(regression['data']))
 
 
 exportedRegressionsGetParser = reqparse.RequestParser()
@@ -34,7 +34,7 @@ class ExportedRegressions(Resource):
         project_id = args.get('project_id').strip().strip('"')
 
         exported_regressions = db_access.get_exported_regressions(project_id)
-        return make_response(jsonify(format_json({'result': exported_regressions, 'length': len(exported_regressions)})))
+        return make_response(jsonify({'result': exported_regressions, 'length': len(exported_regressions)}))
 
     def post(self):
         args = exportedRegressionsPostParser.parse_args()
@@ -42,4 +42,4 @@ class ExportedRegressions(Resource):
         regression_id = args.get('regression_id')
 
         result = db_access.insert_exported_regression(project_id, regression_id)
-        return jsonify(format_json(result))
+        return jsonify(result)
