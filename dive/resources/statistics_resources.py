@@ -4,7 +4,7 @@ from flask.ext.restful import Resource, reqparse
 
 
 from dive.db import db_access
-from dive.resources.utilities import format_json, replace_unserializable_numpy, jsonify
+from dive.resources.serialization import replace_unserializable_numpy, jsonify
 from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
 from dive.tasks.statistics.comparison import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
 
@@ -69,7 +69,7 @@ class RegressionFromSpec(Resource):
             regression_doc = save_regression(spec, serializable_regression_data, project_id)
             regression_data['id'] = regression_doc['id']
 
-        return make_response(jsonify(format_json(regression_data)))
+        return make_response(jsonify(regression_data))
 
 
 contributionToRSquaredGetParser = reqparse.RequestParser()
@@ -82,7 +82,7 @@ class ContributionToRSquared(Resource):
         regression_data = regression_doc['data']
         data = get_contribution_to_r_squared_data(regression_data)
         logger.info(data)
-        return make_response(jsonify(format_json({ 'data': data })))
+        return make_response(jsonify({ 'data': data }))
 
 
 class NumericalComparisonFromSpec(Resource):
@@ -98,7 +98,7 @@ class NumericalComparisonFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+        return make_response(jsonify(result)), status
 
 class SummaryStatsFromSpec(Resource):
     def post(self):
@@ -112,7 +112,7 @@ class SummaryStatsFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = get_variable_summary_statistics_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+        return make_response(jsonify(result)), status
 
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
@@ -128,7 +128,7 @@ class OneDimensionalTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+        return make_response(jsonify(result)), status
 
 class ContingencyTableFromSpec(Resource):
     def post(self):
@@ -144,7 +144,7 @@ class ContingencyTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+        return make_response(jsonify(result)), status
 
 
 class ComparisonFromSpec(Resource):
@@ -153,7 +153,7 @@ class ComparisonFromSpec(Resource):
         project_id = args.get('project_id')
         spec = args.get('spec')
         result, status = run_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(format_json(result)), status)
+        return make_response(jsonify(result)), status
 
 
 class SegmentationFromSpec(Resource):

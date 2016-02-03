@@ -8,7 +8,7 @@ from flask.ext.restful import Resource, reqparse
 from celery import chain
 
 from dive.db import db_access
-from dive.resources.utilities import format_json, jsonify
+from dive.resources.serialization import jsonify
 from dive.data.access import get_dataset_sample
 from dive.tasks.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
 from dive.tasks.ingestion.upload import upload_file
@@ -49,8 +49,8 @@ class UploadFile(Resource):
             }
             for dataset in datasets:
                 ingestion_task = ingestion_pipeline.apply_async(args=[dataset['id'], project_id])
-            return make_response(jsonify(format_json({'task_id': ingestion_task.task_id})))
-        return make_response(jsonify(format_json({'status': 'Upload failed'})))
+            return make_response(jsonify({'task_id': ingestion_task.task_id}))
+        return make_response(jsonify({'status': 'Upload failed'}))
 
 
 # Datasets list retrieval
@@ -70,8 +70,8 @@ class Datasets(Resource):
         for d in datasets:
             dataset_data = {
                 'title': d.get('title'),
-                'file_name': d.get('file_name'),
-                'dataset_id': d.get('id')
+                'fileName': d.get('file_name'),
+                'datasetId': d.get('id')
             }
 
             if args['getStructure']:
@@ -79,7 +79,7 @@ class Datasets(Resource):
 
             data_list.append(dataset_data)
 
-        return make_response(jsonify(format_json({'status': 'success', 'datasets': data_list})))
+        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
 
 
 # Dataset retrieval, editing, deletion
@@ -99,11 +99,11 @@ class Dataset(Resource):
         sample = get_dataset_sample(dataset.get('id'), project_id)
 
         response = {
-            'dataset_id': dataset.get('id'),
+            'datasetId': dataset.get('id'),
             'title': dataset.get('title'),
             'details': sample
         }
-        return make_response(jsonify(format_json(response)))
+        return make_response(jsonify(response))
 
 
     def delete(self, dataset_id):
