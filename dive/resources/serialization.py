@@ -17,9 +17,7 @@ def object_handler(obj):
 
 
 def jsonify(args):
-    start_time = time()
     args = pre_serialize(args)
-    logger.info('%.3f', (time() - start_time))
     json_string = json.dumps(
         args,
         allow_nan=False,
