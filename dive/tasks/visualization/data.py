@@ -377,13 +377,8 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
 
-    unbinned_field = df[binning_field]
-    try:
-        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
-    except Exception, e:
-        # Skip this spec
-        logger.error(e)
-        return None
+    binning_field_values = df[binning_field]
+    bin_edges_list = get_bin_edges(binning_field_values)
 
     bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
     bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
@@ -400,8 +395,9 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
 
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
-
-    groupby = df.groupby(np.digitize(df[binning_field], bin_edges_list), sort=False) # Right edge open
+    # Faster digitize? https://github.com/numpy/numpy/pull/4184
+    df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
+    groupby = df.groupby(df_bin_indices, sort=False)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)
     agg_values = agg_df[agg_field_a].tolist()
 
@@ -411,6 +407,7 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
             'bin_edges': list(bin_edges_list),
             'agg': agg_values
         }
+
     if 'visualize' in data_formats:
         data_array = [['Bin', 'Value']]
         for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
@@ -419,11 +416,13 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
                 agg_val
             ])
         final_data['visualize'] = data_array
+
     if 'table' in data_formats:
         table_data = []
         if aggregation_function_name == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
+                print i, count
                 new_row = [bin_num_to_formatted_edges[i], count]
                 table_data.append(new_row)
 
