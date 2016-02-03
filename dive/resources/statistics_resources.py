@@ -30,7 +30,7 @@ class RegressionEstimator(Resource):
         funcArraySize = args.get('funcArraySize')
 
         result, status = timeEstimator(numInputs, sizeArray, funcArraySize)
-        return result
+        return make_response(jsonify(result))
 
 
 #####################################################################
@@ -98,7 +98,7 @@ class NumericalComparisonFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(result)), status
+        return make_response(jsonify(result), status)
 
 class SummaryStatsFromSpec(Resource):
     def post(self):
@@ -112,7 +112,7 @@ class SummaryStatsFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = get_variable_summary_statistics_from_spec(spec, project_id)
-        return make_response(jsonify(result)), status
+        return make_response(jsonify(result), status)
 
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
@@ -128,7 +128,7 @@ class OneDimensionalTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(result)), status
+        return make_response(jsonify(result), status)
 
 class ContingencyTableFromSpec(Resource):
     def post(self):
@@ -144,7 +144,7 @@ class ContingencyTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(result)), status
+        return make_response(jsonify(result), status)
 
 
 class ComparisonFromSpec(Resource):
@@ -153,7 +153,7 @@ class ComparisonFromSpec(Resource):
         project_id = args.get('project_id')
         spec = args.get('spec')
         result, status = run_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(result)), status
+        return make_response(jsonify(result), status)
 
 
 class SegmentationFromSpec(Resource):
