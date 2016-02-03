@@ -54,7 +54,7 @@ def get_aggregated_df(groupby, aggregation_function_name):
     return agg_df
 
 
-def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, precomputed={}, data_formats=['score']):
+def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df=None, precomputed={}, data_formats=['score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
     structure), and all necessary information to interpret data.

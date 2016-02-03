@@ -39,7 +39,7 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
 
     return conditionals_with_full_docs
 
-def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals):
+def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config):
     '''
     Get data corresponding to each viz spec (before filtering and scoring)
     '''
@@ -65,7 +65,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
             precomputed['groupby'][grouped_field] = grouped_df
 
         try:
-            data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals,
+            data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config,
                 df=conditioned_df,
                 precomputed=precomputed,
                 data_formats=['score', 'visualize']
@@ -122,12 +122,12 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
     return sorted_viz_specs
 
 
-def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals):
+def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals, config):
     with task_app.app_context():
         # Delete existing specs with same parameters
-        existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
+        existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
-        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals)
+        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals, config)
     return inserted_specs

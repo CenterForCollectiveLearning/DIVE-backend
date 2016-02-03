@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
 ###
+DEFAULT_BINS = 10
 MAX_BINS = 20
 def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, nice_bins=True):
     '''
@@ -50,8 +51,11 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, nice_bi
             num_bins = 2 * n**(-1/3)
         elif procedure == 'sturges':
             num_bins = math.ceil(math.log(n, 2) + 1)
+            
         num_bins = math.floor(num_bins)
         num_bins = min(num_bins, MAX_BINS)
+        if not num_bins:
+            num_bins = DEFAULT_BINS
 
     logger.debug('Num bins: %s', num_bins)
     # Incrementing max value by tiny amount to deal with np.digitize right edge

@@ -228,7 +228,7 @@ def get_specs(project_id, dataset_id, **kwargs):
     return [ row_to_dict(spec) for spec in specs ]
 
 from time import time
-def insert_specs(project_id, specs, selected_fields, conditionals):
+def insert_specs(project_id, specs, selected_fields, conditionals, config):
     start_time = time()
     spec_objects = []
     for s in specs:
@@ -236,6 +236,7 @@ def insert_specs(project_id, specs, selected_fields, conditionals):
             project_id = project_id,
             selected_fields = selected_fields,
             conditionals = conditionals,
+            config = config,
             **s
         ))
     db.session.add_all(spec_objects)
