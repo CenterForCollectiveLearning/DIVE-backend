@@ -381,7 +381,11 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     logger.info('Config %s', config)
     # Configuration
     procedure = config.get('binning_procedure', 'freedman')
-    procedural = config.get('procedural', True)
+    binning_type = config.get('binning_type', 'procedural')
+    if binning_type == 'procedural':
+        procedural = True
+    else:
+        procedural = False
     precision = config.get('precision', 3)
     num_bins = config.get('num_bins', 3)
 
