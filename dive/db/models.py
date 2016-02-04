@@ -149,6 +149,7 @@ class Spec(db.Model):
     field_ids = db.Column(JSONB)
     selected_fields = db.Column(JSONB)
     conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     # One-to-many with exported specs
     exported_specs = db.relationship('Exported_Spec',

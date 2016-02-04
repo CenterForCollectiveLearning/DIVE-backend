@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def make_safe_string(s):
+    # TODO Use slugify?
     invalid_chars = '-_.+^$ '
     for invalid_char in invalid_chars:
         s = s.replace(invalid_char, '_')
@@ -54,7 +55,7 @@ def get_aggregated_df(groupby, aggregation_function_name):
     return agg_df
 
 
-def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, precomputed={}, data_formats=['score']):
+def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df=None, precomputed={}, data_formats=['visualize', 'table', 'score']):
     '''
     Returns a dictionary containing data corresponding to spec (in automated-viz
     structure), and all necessary information to interpret data.
@@ -87,37 +88,37 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, df=None, p
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     if gp == GeneratingProcedure.AGG.value:
-        final_data = get_agg_data(df, precomputed, args, data_formats)
+        final_data = get_agg_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.IND_VAL.value:
-        final_data = get_ind_val_data(df, precomputed, args, data_formats)
+        final_data = get_ind_val_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.BIN_AGG.value:
-        final_data = get_bin_agg_data(df, precomputed, args, data_formats)
+        final_data = get_bin_agg_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-        final_data = get_multigroup_count_data(df, precomputed, args, data_formats)
+        final_data = get_multigroup_count_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.MULTIGROUP_AGG.value:
-        final_data = get_multigroup_agg_data(df, precomputed, args, data_formats)
+        final_data = get_multigroup_agg_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.VAL_AGG.value:
-        final_data = get_val_agg_data(df, precomputed, args, data_formats)
+        final_data = get_val_agg_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_data = get_raw_comparison_data(df, precomputed, args, data_formats)
+        final_data = get_raw_comparison_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.VAL_COUNT.value:
-        final_data = get_val_count_data(df, precomputed, args, data_formats)
+        final_data = get_val_count_data(df, precomputed, args, config, data_formats)
 
     elif gp == GeneratingProcedure.AGG_AGG.value:
-        final_data = get_agg_agg_data(df, precomputed, args, data_formats)
+        final_data = get_agg_agg_data(df, precomputed, args, config, data_formats)
 
     logger.debug('Data for %s: %s', gp, time() - start_time)
     return final_data
 
 
-def get_raw_comparison_data(df, precomputed, args, data_formats):
+def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
     field_b_label = args['field_b']['name']
@@ -145,7 +146,7 @@ def get_raw_comparison_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_multigroup_agg_data(df, precomputed, args, data_formats):
+def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     '''
     Group by two groups then aggregate on the third
 
@@ -210,7 +211,7 @@ def get_multigroup_agg_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_multigroup_count_data(df, precomputed, args, data_formats):
+def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visualize']):
     '''
     Group by one field, then by another
 
@@ -271,7 +272,7 @@ def get_multigroup_count_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_agg_agg_data(df, precomputed, args, data_formats):
+def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     '''
     1) Group by a categorical field
     2) Aggregate two other quantitative fields
@@ -318,7 +319,7 @@ def get_agg_agg_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_agg_data(df, precomputed, args, data_formats):
+def get_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     agg_field_label = args['agg_field_a']['name']
     agg_field_data = df[agg_field_label]
@@ -333,7 +334,7 @@ def get_agg_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_ind_val_data(df, precomputed, args, data_formats):
+def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
 
@@ -370,20 +371,31 @@ def get_ind_val_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_bin_agg_data(df, precomputed, args, data_formats):
+def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
+
     binning_field = args['binning_field']['name']
-    binning_procedure = args['binning_procedure']
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
 
-    unbinned_field = df[binning_field]
-    try:
-        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
-    except Exception, e:
-        # Skip this spec
-        logger.error(e)
-        return None
+    logger.info('Config %s', config)
+    # Configuration
+    procedure = config.get('binning_procedure', 'freedman')
+    binning_type = config.get('binning_type', 'procedural')
+    if binning_type == 'procedural':
+        procedural = True
+    else:
+        procedural = False
+    precision = config.get('precision', 3)
+    num_bins = config.get('num_bins', 3)
+
+    binning_field_values = df[binning_field]
+    bin_edges_list = get_bin_edges(
+        binning_field_values,
+        procedural=procedural,
+        procedure=procedure,
+        num_bins=num_bins,
+    )
 
     bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
     bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
@@ -393,15 +405,16 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
             bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
         bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-        rounded_left_bin_edge = '%.3f' % left_bin_edge
-        rounded_right_bin_edge = '%.3f' % right_bin_edge
+        rounded_left_bin_edge = ('%.' + str(precision) + 'f') % left_bin_edge
+        rounded_right_bin_edge = ('%.' + str(precision) + 'f') % right_bin_edge
         formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
         formatted_bin_edges_list.append(formatted_bin_edge)
 
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
-
-    groupby = df.groupby(np.digitize(df[binning_field], bin_edges_list), sort=False) # Right edge open
+    # Faster digitize? https://github.com/numpy/numpy/pull/4184
+    df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
+    groupby = df.groupby(df_bin_indices, sort=False)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)
     agg_values = agg_df[agg_field_a].tolist()
 
@@ -411,6 +424,7 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
             'bin_edges': list(bin_edges_list),
             'agg': agg_values
         }
+
     if 'visualize' in data_formats:
         data_array = [['Bin', 'Value']]
         for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
@@ -419,11 +433,13 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
                 agg_val
             ])
         final_data['visualize'] = data_array
+
     if 'table' in data_formats:
         table_data = []
         if aggregation_function_name == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
+                print i, count
                 new_row = [bin_num_to_formatted_edges[i], count]
                 table_data.append(new_row)
 
@@ -440,7 +456,7 @@ def get_bin_agg_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_val_agg_data(df, precomputed, args, data_formats):
+def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     grouped_field_name = args['grouped_field']['name']
     agg_field_name = args['agg_field']['name']
@@ -472,7 +488,7 @@ def get_val_agg_data(df, precomputed, args, data_formats):
     return final_data
 
 
-def get_val_count_data(df, precomputed, args, data_formats):
+def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
     vc = df[field_a_label].value_counts()

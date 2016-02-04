@@ -1,7 +1,9 @@
 from itertools import combinations
+
 from dive.tasks.visualization import GeneratingProcedure as GP, TypeStructure as TS, \
-    TermType, aggregation_functions, VizType as VT
+    VizType as VT, TermType, aggregation_functions
 from dive.tasks.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
+
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -41,30 +43,27 @@ def single_q(q_field):
         specs.append(count_spec)
 
     # { Bins: Aggregate(binned values) }
-    for binning_procedure, implemented in binning_procedures.iteritems():
-        if implemented:
-            bin_spec = {
-                'generating_procedure': GP.BIN_AGG.value,
-                'type_structure': TS.B_Q.value,
-                'viz_types': [ VT.HIST.value ],
-                'field_ids': [ q_field['id'] ],
-                'args': {
-                    'agg_fn': 'count',
-                    'agg_field_a': q_field,
-                    'binning_procedure': binning_procedure,
-                    'binning_field': q_field
-                },
-                'meta': {
-                    'description': '%s of %s by bin' % ('count', q_label),
-                    'construction': [
-                        { 'string': 'count', 'type': TermType.OPERATION.value },
-                        { 'string': 'of', 'type': TermType.PLAIN.value },
-                        { 'string': q_label, 'type': TermType.FIELD.value },
-                        { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
-                    ]
-                }
-            }
-            specs.append(bin_spec)
+    bin_spec = {
+        'generating_procedure': GP.BIN_AGG.value,
+        'type_structure': TS.B_Q.value,
+        'viz_types': [ VT.HIST.value ],
+        'field_ids': [ q_field['id'] ],
+        'args': {
+            'agg_fn': 'count',
+            'agg_field_a': q_field,
+            'binning_field': q_field
+        },
+        'meta': {
+            'description': '%s of %s by bin' % ('count', q_label),
+            'construction': [
+                { 'string': 'count', 'type': TermType.OPERATION.value },
+                { 'string': 'of', 'type': TermType.PLAIN.value },
+                { 'string': q_label, 'type': TermType.FIELD.value },
+                { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+            ]
+        }
+    }
+    specs.append(bin_spec)
     return specs
 
 
