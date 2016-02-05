@@ -419,12 +419,6 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     agg_bins_to_values = agg_df[agg_field_a].to_dict()
     agg_values = agg_bins_to_values.values()
 
-    # TODO FIX THIS
-
-    # print zip(formatted_bin_edges_list, agg_values)
-    # print formatted_bin_edges_list
-    # print agg_values
-
     if 'score' in data_formats:
         final_data['score'] = {
             'bins': bin_num_to_edges,
