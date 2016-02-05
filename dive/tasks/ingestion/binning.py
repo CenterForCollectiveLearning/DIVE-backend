@@ -8,6 +8,7 @@ from itertools import combinations
 from collections import OrderedDict  # Get unique elements of list while preserving order
 from time import time
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 import math
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 ###
 DEFAULT_BINS = 10
 MAX_BINS = 20
-def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, nice_bins=True):
+def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
     '''
     Given a quantitative vector, either:
     1) Automatically bin according to Freedman
@@ -34,7 +35,9 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, nice_bi
     max_v = max(v)
     n = len(v)
 
+    logger.info('Procedural: %s', procedural)
     logger.debug('Binning procedure: %s', procedure)
+    logger.debug('Num bins (init): %s', num_bins)
     # Procedural binning
     if procedural:
         if procedure == 'freedman':
@@ -51,7 +54,7 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, nice_bi
             num_bins = 2 * n**(-1/3)
         elif procedure == 'sturges':
             num_bins = math.ceil(math.log(n, 2) + 1)
-            
+
         num_bins = math.floor(num_bins)
         num_bins = min(num_bins, MAX_BINS)
         if not num_bins:
@@ -59,9 +62,13 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, nice_bi
 
     logger.debug('Num bins: %s', num_bins)
     # Incrementing max value by tiny amount to deal with np.digitize right edge
-    eps = 0.00000001
+    eps = max_v * 0.00001
     fake_max = max_v + eps
+    fake_min = min_v - eps
     bin_edges = np.histogram(v, range=(min_v, fake_max), bins=num_bins)[1]
+    # bin_edges = np.linspace(fake_min, fake_max, num_bins)
+    # bin_edges = pd.cut(v, num_bins, precision=3, retbins=True, include_lowest=True)
+    # print list(bin_edges)
 
     logger.debug('Bin edges: %s', bin_edges)
     return bin_edges
