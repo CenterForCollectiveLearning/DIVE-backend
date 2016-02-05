@@ -414,9 +414,16 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 
     # Faster digitize? https://github.com/numpy/numpy/pull/4184
     df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
-    groupby = df.groupby(df_bin_indices, sort=False)
+    groupby = df.groupby(df_bin_indices, sort=True)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)
-    agg_values = agg_df[agg_field_a].tolist()
+    agg_bins_to_values = agg_df[agg_field_a].to_dict()
+    agg_values = agg_bins_to_values.values()
+
+    # TODO FIX THIS
+
+    # print zip(formatted_bin_edges_list, agg_values)
+    # print formatted_bin_edges_list
+    # print agg_values
 
     if 'score' in data_formats:
         final_data['score'] = {
@@ -427,7 +434,9 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 
     if 'visualize' in data_formats:
         data_array = [['Bin', 'Value']]
-        for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
+        for i, formatted_bin_edges in enumerate(formatted_bin_edges_list):
+            bin_num = i + 1
+            agg_val = agg_bins_to_values.get(bin_num, 0)
             data_array.append([
                 formatted_bin_edges,
                 agg_val
