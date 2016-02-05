@@ -1,5 +1,7 @@
 from enum import Enum
+from dive.tasks.ingestion import DataType
 import numpy as np
+
 
 class GeneratingProcedure(Enum):
     AGG = 'agg'
@@ -11,14 +13,16 @@ class GeneratingProcedure(Enum):
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'
     VAL_VAL_Q = 'val:val:q'
+    MULTIGROUP_AGG = 'multigroup:agg'
     MULTIGROUP_COUNT = 'multigroup:count'
 
-
+# TODO Remove this? Doesn't really make sense anymore
 class TypeStructure(Enum):
     C = 'c'
     Q = 'q'
     liC = '[c]'
     liQ = '[q]'
+    T_Q = 't:q'
     C_C = 'c:c'
     C_Q = 'c:q'
     liC_Q = '[c]:q'
@@ -27,6 +31,7 @@ class TypeStructure(Enum):
     Q_Q = 'q:q'
     Q_liQ = 'q:[q]'
     B_Q = 'b:q'
+
 
 class QuantitativeFunction(Enum):
     AUTO = 'auto'
@@ -37,6 +42,7 @@ class QuantitativeFunction(Enum):
     MIN = 'min'
     MAX = 'min'
     BIN = 'bin'
+
 
 class TemporalFunction(Enum):
     AUTO = 'auto'
@@ -53,6 +59,7 @@ class TemporalFunction(Enum):
     MIN = 'min'
     MAX = 'max'
 
+
 class VizType(Enum):
     TREE = 'tree'
     PIE = 'pie'
@@ -62,6 +69,7 @@ class VizType(Enum):
     HIST = 'hist'
     BAR = 'bar'
     STACKED_BAR = 'stackedbar'
+
 
 class TermType(Enum):
     '''
@@ -77,17 +85,6 @@ class TermType(Enum):
     TRANSFORMATION = 'transformation'
     OPERATION = 'operation'
 
-specific_to_general_type = {
-    'float': 'q',
-    'integer': 'q',
-    'string': 'c',
-    'continent': 'c',
-    'countryName': 'c',
-    'countryCode2': 'c',
-    'countryCode3': 'c',
-    'decimal': 'q',
-    'datetime': 'q',
-}
 
 aggregation_functions = {
     'sum': np.sum,

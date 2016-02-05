@@ -1,1 +1,4 @@
-celery -A dive.task_core worker -l info --autoreload
+celery worker \
+  --app=dive.task_core \
+  -l debug \
+  --autoreload

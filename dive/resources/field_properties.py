@@ -1,21 +1,15 @@
 import json
 
-from flask import make_response, jsonify
+from flask import make_response
 from flask.ext.restful import Resource, reqparse, marshal, fields, marshal_with
 
 from dive.db import db_access
-from dive.resources.utilities import format_json
+from dive.resources.serialization import jsonify
 from dive.tasks.ingestion.field_properties import compute_field_properties
 
 import logging
 logger = logging.getLogger(__name__)
 
-field_marshaller = {
-    'id': fields.Integer,
-    'name': fields.String,
-    'type': fields.String,
-    'general_type': fields.String
-}
 
 fieldPropertiesGetParser = reqparse.RequestParser()
 fieldPropertiesGetParser.add_argument('project_id', type=str, required=True)
@@ -43,6 +37,6 @@ class FieldProperties(Resource):
                 else:
                     result[fp_group_by] = [fp]
         else:
-            result = {'field_properties': field_properties}
+            result = {'fieldProperties': field_properties}
 
-        return make_response(jsonify(format_json(result)))
+        return make_response(jsonify(result))

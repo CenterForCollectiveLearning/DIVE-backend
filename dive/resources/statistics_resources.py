@@ -1,12 +1,12 @@
 import time
-from flask import current_app, request, make_response, jsonify
+from flask import current_app, request, make_response
 from flask.ext.restful import Resource, reqparse
 
 
 from dive.db import db_access
-from dive.resources.utilities import format_json, replace_unserializable_numpy
+from dive.resources.serialization import replace_unserializable_numpy, jsonify
 from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
-from dive.tasks.statistics.comparison import run_comparison_from_spec
+from dive.tasks.statistics.comparison import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
 
 import logging
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class RegressionEstimator(Resource):
         funcArraySize = args.get('funcArraySize')
 
         result, status = timeEstimator(numInputs, sizeArray, funcArraySize)
-        return result
+        return make_response(jsonify(result))
 
 
 #####################################################################
@@ -69,7 +69,7 @@ class RegressionFromSpec(Resource):
             regression_doc = save_regression(spec, serializable_regression_data, project_id)
             regression_data['id'] = regression_doc['id']
 
-        return make_response(jsonify(format_json(regression_data)))
+        return make_response(jsonify(regression_data))
 
 
 contributionToRSquaredGetParser = reqparse.RequestParser()
@@ -82,7 +82,69 @@ class ContributionToRSquared(Resource):
         regression_data = regression_doc['data']
         data = get_contribution_to_r_squared_data(regression_data)
         logger.info(data)
-        return make_response(jsonify(format_json({ 'data': data })))
+        return make_response(jsonify({ 'data': data }))
+
+
+class NumericalComparisonFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            variable_names : list names
+            dataset_id : integer
+            independence : boolean
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_numerical_comparison_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
+
+class SummaryStatsFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            datasetId : integer
+            fieldIds : list
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = get_variable_summary_statistics_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
+
+class OneDimensionalTableFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            categoricalIndependentVariableNames
+            numericalIndependentVariableNames
+            dependentVariable
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
+
+class ContingencyTableFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            categoricalIndependentVariableNames
+            numericalIndependentVariableNames
+            dependentVariable
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = create_contingency_table_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
 
 
 class ComparisonFromSpec(Resource):
@@ -91,7 +153,7 @@ class ComparisonFromSpec(Resource):
         project_id = args.get('project_id')
         spec = args.get('spec')
         result, status = run_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(format_json({"result": result})), status)
+        return make_response(jsonify(result), status)
 
 
 class SegmentationFromSpec(Resource):

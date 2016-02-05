@@ -11,17 +11,20 @@ import scipy as sp
 from itertools import combinations
 from flask import current_app
 
-from dive.data.access import get_data, get_conditioned_data
 from dive.data.in_memory_data import InMemoryData as IMD
+from dive.data.access import get_data, get_conditioned_data
 from dive.tasks.ingestion.type_detection import detect_time_series
 from dive.tasks.ingestion.binning import get_bin_edges
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, aggregation_functions
+
+from time import time
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-def makeSafeString(s):
+def make_safe_string(s):
+    # TODO Use slugify?
     invalid_chars = '-_.+^$ '
     for invalid_char in invalid_chars:
         s = s.replace(invalid_char, '_')
@@ -29,28 +32,109 @@ def makeSafeString(s):
     return s
 
 
-def _get_derived_field(df, label_descriptor):
+def _get_derived_field(df, precomputed, label_descriptor):
     label_a, op, label_b = label.split(' ')
     return result
 
 
-def get_raw_comparison_data(df, args, data_formats):
-    final_data = {}
-    fieldA_label = args['fieldA']['name']
-    fieldB_label = args['fieldB']['name']
+def get_aggregated_df(groupby, aggregation_function_name):
+    try:
+        if aggregation_function_name == 'sum':
+            agg_df = groupby.sum()
+        elif aggregation_function_name == 'min':
+            agg_df = groupby.min()
+        elif aggregation_function_name == 'max':
+            agg_df = groupby.max()
+        elif aggregation_function_name == 'mean':
+            agg_df = groupby.mean()
+        elif aggregation_function_name == 'count':
+            agg_df = groupby.count()
+    except Exception as e:
+        logger.error(e)
+        agg_df = groupby.aggregate(aggregation_functions[aggregation_function_name])
+    return agg_df
 
-    fieldA_list = df[fieldA_label].tolist()
-    fieldB_list = df[fieldB_label].tolist()
+
+def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df=None, precomputed={}, data_formats=['visualize', 'table', 'score']):
+    '''
+    Returns a dictionary containing data corresponding to spec (in automated-viz
+    structure), and all necessary information to interpret data.
+
+    There are three types of formats:
+        Score: a dict of lists for scoring
+        Visualize: a list of dicts (collection)
+        Table: {columns: list, data: matrix}
+
+    Args:
+    spec, dataset_id, project_id, format (list of 'score', 'visualize', or 'table')
+    Returns:
+        data specified by spec, in specified format
+
+    '''
+    for f in data_formats:
+        if f not in ['score', 'visualize', 'table']:
+            raise ValueError('Passed incorrect data format', f)
+    final_data = dict([(f, {}) for f in data_formats])
+
+    gp = spec['generating_procedure']
+    args = spec['args']
+    dataset_id = spec['dataset_id']
+
+    start_time = time()
+
+    if df is None:
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+        df = df.dropna()
+        df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+
+    if gp == GeneratingProcedure.AGG.value:
+        final_data = get_agg_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.IND_VAL.value:
+        final_data = get_ind_val_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.BIN_AGG.value:
+        final_data = get_bin_agg_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
+        final_data = get_multigroup_count_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.MULTIGROUP_AGG.value:
+        final_data = get_multigroup_agg_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.VAL_AGG.value:
+        final_data = get_val_agg_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.VAL_VAL.value:
+        final_data = get_raw_comparison_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.VAL_COUNT.value:
+        final_data = get_val_count_data(df, precomputed, args, config, data_formats)
+
+    elif gp == GeneratingProcedure.AGG_AGG.value:
+        final_data = get_agg_agg_data(df, precomputed, args, config, data_formats)
+
+    logger.debug('Data for %s: %s', gp, time() - start_time)
+    return final_data
+
+
+def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visualize']):
+    final_data = {}
+    field_a_label = args['field_a']['name']
+    field_b_label = args['field_b']['name']
+
+    field_a_list = df[field_a_label].tolist()
+    field_b_list = df[field_b_label].tolist()
 
     if 'score' in data_formats:
         final_data['score'] = {
-            'fieldA': fieldA_list,
-            'fieldB': fieldB_list
+            'field_a': field_a_list,
+            'field_b': field_b_list
         }
     if 'visualize' in data_formats:
         data_array = []
-        data_array.append([ fieldA_label, fieldB_label ])
-        for (a, b) in zip(fieldA_list, fieldB_list):
+        data_array.append([ field_a_label, field_b_label ])
+        for (a, b) in zip(field_a_list, field_b_list):
             data_array.append([a, b])
         final_data['visualize'] = data_array
     if 'table' in data_formats:
@@ -62,27 +146,31 @@ def get_raw_comparison_data(df, args, data_formats):
     return final_data
 
 
-def get_multigroup_count_data(df, args, data_formats):
+def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     '''
-    Group by one field, then by another
+    Group by two groups then aggregate on the third
 
-    For google charts, need in form of:
+    For google charts, need this form for multiple line charts:
     [
-        [group_a_value_1, group_b_value_1, group_b_value_2, count],
-        [group_a_value_2, group_b_value_1, group_b_value_2, count]
+        [group_field_a, group_b_value_1, group_b_value_2]
+        [2011-MAR, 100, 200]
     ]
     '''
-    group_a_field_label = args['fieldA']['name']
-    group_b_field_label = args['fieldB']['name']
-    grouped_df = df.groupby([group_a_field_label, group_b_field_label]).size()
+    logger.debug('In get_multigroup_agg_data')
+    agg_field = args['agg_field']['name']
+    aggregation_function_name = args['agg_fn']
+    group_a_field_label = args['grouped_field_a']['name']
+    group_b_field_label = args['grouped_field_b']['name']
+    groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
+    agg_df = get_aggregated_df(groupby, aggregation_function_name)[agg_field]
 
     results_as_data_array = []
     secondary_field_values = []
 
     results_grouped_by_highest_level_value = {}
 
-    for k, v in grouped_df.to_dict().iteritems():
-        # Structure: {(highest_level_value, secondary_level_value): value}
+    for k, v in agg_df.to_dict().iteritems():
+        # Structure: {highest_level_value: (secondary_level_value, aggregated_value)}
         highest_level_value = k[0]
         secondary_level_value = k[1]
 
@@ -107,6 +195,67 @@ def get_multigroup_count_data(df, args, data_formats):
     final_data = {}
     if 'score' in data_formats:
         score_data = {
+            'agg': agg_df.values
+        }
+        final_data['score'] = score_data
+    if 'visualize' in data_formats:
+        visualization_data = results_as_data_array
+        final_data['visualize'] = visualization_data
+
+    if 'table' in data_formats:
+        table_data = {
+            'columns': results_as_data_array[0],
+            'data': results_as_data_array[1:]
+        }
+        final_data['table'] = table_data
+    return final_data
+
+
+def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visualize']):
+    '''
+    Group by one field, then by another
+
+    For google charts, need this form for multiple (e.g. stacked) charts:
+    [
+        [group_a_value_1, group_b_value_1, group_b_value_2, count],
+        [group_a_value_2, group_b_value_1, group_b_value_2, count]
+    ]
+    '''
+    group_a_field_name = args['field_a']['name']
+    group_b_field_name = args['field_b']['name']
+    grouped_df = df.groupby([group_a_field_name, group_b_field_name], sort=False).size()
+
+    results_as_data_array = []
+    secondary_field_values = []
+
+    results_grouped_by_highest_level_value = {}
+
+    for k, v in grouped_df.to_dict().iteritems():
+        # Structure: {(highest_level_value, secondary_level_value): value}
+        highest_level_value = k[0]
+        secondary_level_value = k[1]
+
+        if highest_level_value in results_grouped_by_highest_level_value:
+            results_grouped_by_highest_level_value[highest_level_value][secondary_level_value] = v
+        else:
+            results_grouped_by_highest_level_value[highest_level_value] = { secondary_level_value: v }
+
+        if secondary_level_value not in secondary_field_values:
+            secondary_field_values.append(secondary_level_value)
+
+    secondary_field_values = sorted(secondary_field_values)
+
+    header_row = [ group_a_field_name ] + secondary_field_values
+    results_as_data_array.append(header_row)
+    for k, v in results_grouped_by_highest_level_value.iteritems():
+        data_array_element = [ k ]
+        for secondary_field_value in secondary_field_values:
+            data_array_element.append( v.get(secondary_field_value) )
+        results_as_data_array.append(data_array_element)
+
+    final_data = {}
+    if 'score' in data_formats:
+        score_data = {
             'agg': grouped_df.values
         }
         final_data['score'] = score_data
@@ -123,20 +272,23 @@ def get_multigroup_count_data(df, args, data_formats):
     return final_data
 
 
-def get_agg_agg_data(df, args, data_formats):
+def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     '''
     1) Group by a categorical field
     2) Aggregate two other quantitative fields
     '''
     final_data = {}
 
-    group_field_name = args['groupedField']['name']
-    agg_field_a_name = args['aggFieldA']['name']
-    agg_field_b_name = args['aggFieldB']['name']
-    agg_fn = args['aggFn']
+    group_field_name = args['grouped_field']['name']
+    agg_field_a_name = args['agg_field_a']['name']
+    agg_field_b_name = args['agg_field_b']['name']
+    aggregation_function_name = args['agg_fn']
 
-    grouped_df = df.groupby(group_field_name)
-    agg_df = grouped_df.aggregate(aggregation_functions[agg_fn])
+    if group_field_name in precomputed['groupby']:
+        groupby = precomputed['groupby'][grouped_field_name]
+    else:
+        groupby = df.groupby(group_field_name, sort=False)
+    agg_df = get_aggregated_df(groupby, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
     agg_field_a_list = agg_df[agg_field_a_name].tolist()
     agg_field_b_list = agg_df[agg_field_b_name].tolist()
@@ -151,8 +303,8 @@ def get_agg_agg_data(df, args, data_formats):
 
     if 'score' in data_formats:
         final_data['score'] = {
-            'fieldA': agg_field_a_list,
-            'fieldB': agg_field_b_list,
+            'field_a': agg_field_a_list,
+            'field_b': agg_field_b_list,
         }
 
     if 'visualize' in data_formats:
@@ -167,80 +319,24 @@ def get_agg_agg_data(df, args, data_formats):
     return final_data
 
 
-def get_agg_data(df, args, data_formats):
+def get_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
-    agg_field_label = args['aggFieldA']['name']
+    agg_field_label = args['agg_field_a']['name']
     agg_field_data = df[agg_field_label]
-    agg_fn_label = args['aggFn']
+    aggregation_function_name = args['agg_fn']
 
-    if agg_fn_label == 'mode':
+    if aggregation_function_name == 'mode':
         result = agg_field_data.value_counts().idxmax()
     else:
-        agg_fn = aggregation_functions[agg_fn_label]
-        result = agg_fn(agg_field_data)
+        aggregation_function_name = aggregation_functions[aggregation_function_name_label]
+        result = aggregation_function_name(agg_field_data)
     final_data['visualize'] = result
     return final_data
 
-def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, data_formats=['score']):
-    '''
-    Returns a dictionary containing data corresponding to spec (in automated-viz
-    structure), and all necessary information to interpret data.
 
-    There are three types of formats:
-        Score: a dict of lists for scoring
-        Visualize: a list of dicts (collection)
-        Table: {columns: list, data: matrix}
-
-    Args:
-    spec, dataset_id, project_id, format (list of 'score', 'visualize', or 'table')
-    Returns:
-        data specified by spec, in specified format
-    Raises:
-
-    TODO Don't do so much in this function
-    '''
-    for f in data_formats:
-        if f not in ['score', 'visualize', 'table']:
-            raise ValueError('Passed incorrect data format', f)
-    final_data = dict([(f, {}) for f in data_formats])
-
-    gp = spec['generating_procedure']
-    args = spec['args']
-    dataset_id = spec['dataset_id']
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    conditioned_df = get_conditioned_data(df, conditionals)
-
-    if gp == GeneratingProcedure.AGG.value:
-        final_data = get_agg_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.IND_VAL.value:
-        final_data = get_ind_val_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.BIN_AGG.value:
-        final_data = get_bin_agg_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-        final_data = get_multigroup_count_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_AGG.value:
-        final_data = get_val_agg_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_data = get_raw_comparison_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_COUNT.value:
-        final_data = get_val_count_data(conditioned_df, args, data_formats)
-
-    elif gp == GeneratingProcedure.AGG_AGG.value:
-        final_data = get_agg_agg_data(conditioned_df, args, data_formats)
-
-    return final_data
-
-
-def get_ind_val_data(df, args, data_formats):
+def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
-    field_a_label = args['fieldA']['name']
+    field_a_label = args['field_a']['name']
 
     # If direct field
     if isinstance(field_a_label, basestring):
@@ -248,9 +344,9 @@ def get_ind_val_data(df, args, data_formats):
     # If derived field
     # TODO Deal with this later
     elif isinstance(field_a_label, dict):
-        data = _get_derived_field(df, field_a_label)
+        data = _get_derived_field(df, precomputed, field_a_label)
     else:
-        print "Ill-formed field_a_label %s" % (field_a)
+        logger.error("Ill-formed field_a_label %s" % (field_a))
 
     field_a_series = df[field_a_label]
 
@@ -274,19 +370,32 @@ def get_ind_val_data(df, args, data_formats):
         }
     return final_data
 
-def get_bin_agg_data(df, args, data_formats):
-    final_data = {}
-    binning_field = args['binningField']['name']
-    binning_procedure = args['binningProcedure']
-    agg_field_a = args['aggFieldA']['name']
-    agg_fn = aggregation_functions[args['aggFn']]
 
-    unbinned_field = df[binning_field]
-    try:
-        bin_edges_list = get_bin_edges(unbinned_field, procedure=binning_procedure)
-    except Exception, e:
-        # Skip this spec
-        return None
+def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+    final_data = {}
+
+    binning_field = args['binning_field']['name']
+    agg_field_a = args['agg_field_a']['name']
+    aggregation_function_name = args['agg_fn']
+
+    logger.info('Config %s', config)
+    # Configuration
+    procedure = config.get('binning_procedure', 'freedman')
+    binning_type = config.get('binning_type', 'procedural')
+    if binning_type == 'procedural':
+        procedural = True
+    else:
+        procedural = False
+    precision = config.get('precision', 3)
+    num_bins = config.get('num_bins', 3)
+
+    binning_field_values = df[binning_field]
+    bin_edges_list = get_bin_edges(
+        binning_field_values,
+        procedural=procedural,
+        procedure=procedure,
+        num_bins=num_bins,
+    )
 
     bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
     bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
@@ -296,38 +405,44 @@ def get_bin_agg_data(df, args, data_formats):
             bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
         bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-        rounded_left_bin_edge = '%.3f' % left_bin_edge
-        rounded_right_bin_edge = '%.3f' % right_bin_edge
+        rounded_left_bin_edge = ('%.' + str(precision) + 'f') % left_bin_edge
+        rounded_right_bin_edge = ('%.' + str(precision) + 'f') % right_bin_edge
         formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
         formatted_bin_edges_list.append(formatted_bin_edge)
 
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
-
-    # TODO Ensure that order is preserved here
-    grouped_df = df.groupby(np.digitize(df[binning_field], bin_edges_list)) # Right edge open
-    agg_df = grouped_df.aggregate(agg_fn)
-    agg_values = agg_df[agg_field_a].tolist()
+    # Faster digitize? https://github.com/numpy/numpy/pull/4184
+    df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
+    groupby = df.groupby(df_bin_indices, sort=True)
+    agg_df = get_aggregated_df(groupby, aggregation_function_name)
+    agg_bins_to_values = agg_df[agg_field_a].to_dict()
+    agg_values = agg_bins_to_values.values()
 
     if 'score' in data_formats:
         final_data['score'] = {
             'bins': bin_num_to_edges,
-            'binEdges': bin_edges_list,
+            'bin_edges': list(bin_edges_list),
             'agg': agg_values
         }
+
     if 'visualize' in data_formats:
         data_array = [['Bin', 'Value']]
-        for (formatted_bin_edges, agg_val) in zip(formatted_bin_edges_list, agg_values):
+        for i, formatted_bin_edges in enumerate(formatted_bin_edges_list):
+            bin_num = i + 1
+            agg_val = agg_bins_to_values.get(bin_num, 0)
             data_array.append([
                 formatted_bin_edges,
                 agg_val
             ])
         final_data['visualize'] = data_array
+
     if 'table' in data_formats:
         table_data = []
-        if args['aggFn'] == 'count':
+        if aggregation_function_name == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
+                print i, count
                 new_row = [bin_num_to_formatted_edges[i], count]
                 table_data.append(new_row)
 
@@ -344,28 +459,28 @@ def get_bin_agg_data(df, args, data_formats):
     return final_data
 
 
-def get_val_agg_data(df, args, data_formats):
+def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
-    grouped_field_label = args['groupedField']['name']
-    agg_field_label = args['aggField']['name']
+    grouped_field_name = args['grouped_field']['name']
+    agg_field_name = args['agg_field']['name']
+    aggregation_function_name = args['agg_fn']
 
-    grouped_df = df.groupby(grouped_field_label)
-    agg_df = grouped_df.aggregate(aggregation_functions[args['aggFn']])
+    if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
+        grouped_df = precomputed['groupby'][grouped_field_name]
+    else:
+        grouped_df = df.groupby(grouped_field_name, sort=False)
+
+    agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
-    agg_field_list = agg_df[agg_field_label].tolist()
-
-    final_viz_data = {
-        'groupedField': agg_df.index.tolist(),
-        'aggField': agg_df[agg_field_label].tolist()
-    }
+    agg_field_list = agg_df[agg_field_name].tolist()
 
     if 'score' in data_formats:
         final_data['score'] = {
-            'groupedField': grouped_field_list,
-            'aggField': agg_field_list
+            'grouped_field': grouped_field_list,
+            'agg_field': agg_field_list
         }
     if 'visualize' in data_formats:
-        data_array = [ [grouped_field_label, agg_field_label] ] + \
+        data_array = [ [grouped_field_name, agg_field_name] ] + \
             [[g, a] for (g, a) in zip(grouped_field_list, agg_field_list)]
         final_data['visualize'] = data_array
     if 'table' in data_formats:
@@ -375,10 +490,11 @@ def get_val_agg_data(df, args, data_formats):
         }
     return final_data
 
-def get_val_count_data(df, args, data_formats):
+
+def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
-    fieldA_label = args['fieldA']['name']
-    vc = df[fieldA_label].value_counts()
+    field_a_label = args['field_a']['name']
+    vc = df[field_a_label].value_counts()
     value_list = list(vc.index.values)
     counts = vc.tolist()
 
@@ -388,120 +504,12 @@ def get_val_count_data(df, args, data_formats):
             'count': counts
         }
     if 'visualize' in data_formats:
-        data_array = [ [fieldA_label, 'count'] ] + [[v, c] for (v, c) in zip(value_list, counts)]
+        data_array = [ [field_a_label, 'count'] ] + [[v, c] for (v, c) in zip(value_list, counts)]
 
         final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
-            'columns': [fieldA_label, 'count'],
+            'columns': [field_a_label, 'count'],
             'data': [[v, c] for (v, c) in zip(value_list, counts)]
         }
     return final_data
-
-
-### TODO Move these to some utility functions location
-def dict_to_collection(d):
-    result = []
-    for k, v in d.iteritems():
-        result.append({k: v})
-    return result
-
-
-def lists_to_collection(li_a, li_b):
-    if len(li_a) != len(li_b):
-        raise ValueError("Lists not equal size", len(li_a), len(li_b))
-    else:
-        result = []
-        num_elements = len(li_a)
-        for i in num_elements:
-            result.append({li_a[i]: li_b[i]})
-        return result
-
-
-# df = pd.DataFrame({'AAA': [4,5,6,7], 'BBB': [10,20,30,40], 'CCC': [100,50,-30,-50]})
-# spec = {'aggregate': {'field': 'AAA', 'operation': 'sum'}, 'condition': {'and': [{'field': 'AAA', 'operation': '>', 'criteria': 5}], 'or': [{'field': 'BBB', 'operation': '==', 'criteria': 10}]}, 'query': 'BBB'}
-def get_viz_data_from_builder_spec(spec, conditional, project_id):
-    '''
-    Deprecated function used to return viz data for a spec constructed by
-    old builder
-    '''
-    ### 0) Parse and validate arguments
-    # TODO Ensure well-formed spec
-    dataset_id = spec.get('dataset_id')
-    field_a = spec.get('field_a')
-    operation = spec.get('operation')
-    arguments = spec.get('arguments')
-
-    if not (dataset_id, field_a, operation):
-        return "dataset_id not pass required parameters", 400
-
-    ### Returned data structures
-    viz_result = {}
-    table_result = {}
-
-    ### 1) Access dataset
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-
-    ### 2) Apply all conditionals
-    conditioned_df = get_conditioned_data(df, conditional)
-
-    ### 3) Query based on operation
-    # a) Group
-    if operation == 'group':
-        function = arguments.get('function')
-        field_b = arguments.get('field_b')
-        gb = conditioned_df.groupby(field_a)
-
-        if function == 'count':
-            grouped_df = pd.DataFrame({'count': gb.size()})  # 1 col DF
-        else:
-            group_operation = aggregation_functions[function]
-            grouped_df = gb.aggregate(group_operation)
-            grouped_df.insert(0, 'count', gb.size().tolist())  # Add Count as DF col after first aggregated field
-
-        field_a_loc = conditioned_df.columns.get_loc(field_a)
-        grouped_df.insert(0, field_a, grouped_df.index.tolist())  # Add grouped column to front of list
-
-        # Table Data: Dict of matrices
-        grouped_df_copy = grouped_df
-
-        table_result = {
-            'columns': grouped_df_copy.columns.tolist(),
-            'data': grouped_df_copy.values.tolist(),
-        }
-
-        grouped_dict = grouped_df.to_dict()
-
-        for k, obj in grouped_dict.iteritems():
-            collection = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
-            viz_result[k] = collection
-
-    # b) Vs. (raw comparison of one unique field against another)
-    elif operation == 'vs':
-        # TODO Get viz_data
-        df.index = conditioned_df[field_a]
-        df = df.drop(field_a, 1)
-        final_dict = df.to_dict()
-        # If taking field_b into account
-        # final_dict = final_dict[field_b]
-
-        for k, obj in final_dict.iteritems():
-            viz_result[k] = [ { field_a: a, k: b } for a, b in obj.iteritems() ]
-
-        table_result = conditioned_df.to_dict(orient='split')
-
-    # c) Comparison
-    elif operation == 'compare':
-        function = arguments.get('function')
-        element_x = arguments.get('element_x')
-        element_y = arguments.get('element_y')
-        field_b = arguments.get('field_b')
-        field_c = arguments.get('field_c')
-
-        # TODO Implement
-        return
-
-    return {
-        'viz_data': viz_result,
-        'table_result': table_result
-    }, 200

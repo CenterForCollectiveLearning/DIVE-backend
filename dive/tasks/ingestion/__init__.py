@@ -1,7 +1,5 @@
 from enum import Enum
 
-
-
 class DataType(Enum):
 
     # Fundamental
@@ -39,8 +37,15 @@ numeric_types = [
 quantitative_types = [
     DataType.INTEGER.value,
     DataType.DECIMAL.value,
+]
+
+temporal_types = [
     DataType.DATETIME.value,
     DataType.DATE.value,
+    DataType.TIME.value,
+    DataType.YEAR.value,
+    DataType.MONTH.value,
+    DataType.DAY.value
 ]
 
 categorical_types = [
@@ -52,8 +57,18 @@ categorical_types = [
     DataType.COUNTRY_CODE_2.value,
     DataType.COUNTRY_CODE_3.value,
     DataType.COUNTRY_NAME.value,
-    DataType.CONTINENT_NAME.value,    
+    DataType.CONTINENT_NAME.value,
 ]
+
+
+specific_to_general_type = {}
+for data_type in quantitative_types:
+    specific_to_general_type[data_type] = 'q'
+for data_type in temporal_types:
+    specific_to_general_type[data_type] = 't'
+for data_type in categorical_types:
+    specific_to_general_type[data_type] = 'c'
+
 
 class DataTypeWeights(Enum):
     # Fundamental
@@ -76,12 +91,12 @@ class DataTypeWeights(Enum):
     CONTINENT_NAME = 10
 
     # Temporal
-    DATETIME = 10
-    DATE = 10
-    TIME = 10
-    YEAR = 10
-    MONTH = 10
-    DAY = 10
+    DATETIME = 5
+    DATE = 5
+    TIME = 5
+    YEAR = 5
+    MONTH = 5
+    DAY = 5
 
 
 class PseudoType(Enum):

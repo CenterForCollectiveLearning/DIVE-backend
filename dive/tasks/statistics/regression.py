@@ -24,11 +24,6 @@ from pprint import pprint
 def _difference_of_two_lists(l1, l2):
     return [ x for x in l2 if x not in set(l1) ]
 
-# def get_residual_data_array(regression_result):
-#     regressions_by_column = regression_result['regressions_by_column']['column_properties']
-#     resid =
-#     df = get_data(project_id=project_id, dataset_id=dataset_id)
-#     df = df.dropna()
 
 def get_contribution_to_r_squared_data(regression_result):
     regressions_by_column = regression_result['regressions_by_column']
@@ -93,7 +88,7 @@ def run_regression_from_spec(spec, project_id):
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     estimator = spec.get('estimator', 'ols')
-    degree = spec.get('degree', 1)
+    degree = spec.get('degree', 1) # need to find quantitative, categorical
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
@@ -116,8 +111,8 @@ def run_regression_from_spec(spec, project_id):
 
     # Determine regression model based on number of type of variables
     variable_types = Counter({
-        'independent': { 'q': 0, 'c': 0 },
-        'dependent': { 'q': 0, 'c': 0}
+        'independent': { 'q': 0, 'c': 0, 't': 0 },
+        'dependent': { 'q': 0, 'c': 0, 't': 0 }
     })
 
     for independent_variable in independent_variables:
@@ -126,7 +121,7 @@ def run_regression_from_spec(spec, project_id):
 
     # 2) Access dataset
     df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()
+    df = df.dropna(axis=0, how='any')
 
     # 3) Run test based on parameters and arguments
     regression_result = run_cascading_regression(df, independent_variables, dependent_variable, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
@@ -146,10 +141,10 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
 
     # Create list of independent variables, one per regerssion
     regression_variable_combinations = []
-    if len(independent_variable_names) > 1:
+    if len(independent_variable_names) == 2:
         for i, considered_field in enumerate(independent_variables):
             regression_variable_combinations.append([ considered_field ])
-
+    if len(independent_variable_names) > 2:
         for i, considered_field in enumerate(independent_variables):
             all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
             regression_variable_combinations.append(all_fields_except_considered_field)
@@ -216,7 +211,7 @@ def create_regression_formula(independent_variables, dependent_variable):
     formula = '%s ~ ' % (dependent_variable['name'])
     terms = []
     for independent_variable in independent_variables:
-        if (independent_variable['general_type'] == 'q') and (not independent_variable['type'] == 'datetime'):
+        if (independent_variable['general_type'] == 'q') and (not independent_variable['general_type'] == 't'):
             term = independent_variable['name']
         else:
             term = 'C(%s)' % (independent_variable['name'])
@@ -225,7 +220,7 @@ def create_regression_formula(independent_variables, dependent_variable):
     formula = formula + concatenated_terms
     formula = formula.encode('ascii')
 
-    logger.info("Regression formula %s:", formula)
+    logger.debug("Constructed formula %s:", formula)
     return formula
 
 

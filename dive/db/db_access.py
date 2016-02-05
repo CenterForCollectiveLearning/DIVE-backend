@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 from dive.core import db
 from dive.db import ModelName
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship
+    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document
 
 
 import logging
@@ -183,11 +183,18 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
     return row_to_dict(field_properties)
 
 
-def delete_field_properties(project_id, dataset_id):
-    dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, id=dataset_id).one()
-    db.session.delete(dataset_properties)
+def update_field_properties_type_by_id(project_id, field_id, field_type, general_type):
+    field_properties = Field_Properties.query.filter_by(
+        id=field_id,
+        project_id=project_id,
+        ).one()
+
+    field_properties.type = field_type
+    field_properties.general_type = general_type
+    field_properties.manual = True
+
     db.session.commit()
-    return row_to_dict(dataset_properties)
+    return row_to_dict(field_properties)
 
 
 ################
@@ -220,17 +227,21 @@ def get_specs(project_id, dataset_id, **kwargs):
         abort(404)
     return [ row_to_dict(spec) for spec in specs ]
 
-def insert_specs(project_id, specs, selected_fields, conditionals):
+from time import time
+def insert_specs(project_id, specs, selected_fields, conditionals, config):
+    start_time = time()
     spec_objects = []
     for s in specs:
         spec_objects.append(Spec(
             project_id = project_id,
             selected_fields = selected_fields,
             conditionals = conditionals,
+            config = config,
             **s
         ))
     db.session.add_all(spec_objects)
     db.session.commit()
+    logger.info('Insertion took %s seconds', (time() - start_time))
     return [ row_to_dict(s) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
@@ -321,7 +332,7 @@ def delete_regression(project_id, regression_id):
     return row_to_dict(regression)
 
 ################
-# Exported Analayses
+# Exported Analyses
 ################
 def get_exported_regression_by_id(project_id, exported_regression_id):
     exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
@@ -354,3 +365,41 @@ def delete_exported_regression(project_id, exported_regression_id):
     db.session.delete(exported_regression)
     db.session.commit()
     return row_to_dict(exported_regression)
+
+
+################
+# Documents
+################
+def get_document(project_id, document_id):
+    logger.info('In get_document')
+    try:
+        document = Document.query.filter_by(project_id=project_id, id=document_id).one()
+        return row_to_dict(document)
+    except NoResultFound, e:
+        logger.error(e)
+        return None
+    except MultipleResultsFound, e:
+        logger.error(e)
+        raise e
+
+def create_document(project_id, content):
+    document = Document(
+        project_id=project_id,
+        content=content
+    )
+    db.session.add(document)
+    db.session.commit()
+    return row_to_dict(document)
+
+def update_document(project_id, document_id, content):
+    document = Document.query.filter_by(project_id=project_id, id=document_id).one()
+    document.content = content
+    db.session.add(document)
+    db.session.commit()
+    return row_to_dict(document)
+
+def delete_document(project_id, document_id):
+    document = Document.query.filter_by(project_id=project_id, id=document_id).one()
+    db.session.delete(document)
+    db.session.commit()
+    return row_to_dict(document)
