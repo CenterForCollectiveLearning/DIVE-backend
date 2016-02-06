@@ -30,7 +30,7 @@ RUN pip install -r requirements.txt
 ADD . /DIVE-backend
 WORKDIR /DIVE-backend
 
-# Expore port
+# Expose port
 EXPOSE 5555
 
 # Run server

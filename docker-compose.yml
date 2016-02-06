@@ -8,6 +8,7 @@ web:
   links:
     - rabbitmq:rabbitmq
     - db:db
+    - worker:worker
 
 worker:
   build: .
