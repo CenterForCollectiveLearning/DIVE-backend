@@ -6,6 +6,7 @@ from dive.resources.serialization import jsonify
 from dive.tasks.visualization import GeneratingProcedure
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.pipelines import viz_spec_pipeline, get_chain_IDs
+from dive.tasks.handlers import error_handler
 
 import logging
 logger = logging.getLogger(__name__)
@@ -49,7 +50,10 @@ class Specs(Resource):
             logger.info('Formatting result took %.3fs', (time() - start_time))
             return result
         else:
-            specs_task = viz_spec_pipeline.apply_async(args=[dataset_id, project_id, selected_fields, conditionals, config])
+            specs_task = viz_spec_pipeline.apply_async(
+                args = [dataset_id, project_id, selected_fields, conditionals, config],
+                link_error = error_handler.s()
+            )
             from time import time
             start_time = time()
 

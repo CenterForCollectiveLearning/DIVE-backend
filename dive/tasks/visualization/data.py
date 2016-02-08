@@ -3,6 +3,7 @@
 '''
 Functions for returning the data corresponding to a given visualization type and specification
 '''
+from __future__ import division
 
 import math
 import numpy as np
@@ -373,6 +374,7 @@ def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
 
 def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
+    return 1 / 0
 
     binning_field = args['binning_field']['name']
     agg_field_a = args['agg_field_a']['name']

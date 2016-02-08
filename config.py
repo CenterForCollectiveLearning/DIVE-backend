@@ -28,6 +28,7 @@ class BaseConfig(object):
 
     CELERY_IMPORTS = [
         'dive.tasks.pipelines',
+        'dive.tasks.handlers',        
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
         'dive.tasks.ingestion.type_detection',

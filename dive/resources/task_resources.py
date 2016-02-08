@@ -1,7 +1,7 @@
 from flask import make_response, jsonify, current_app, url_for
 from flask.ext.restful import Resource, reqparse, marshal_with
 
-from celery import states, chain, group
+from celery import states
 from celery.result import result_from_tuple, ResultSet
 
 from dive.task_core import celery
@@ -39,6 +39,7 @@ class TaskResult(Resource):
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
 
+        logger.debug('%s: %s', task_id, task.state)
         if task.state == states.PENDING:
             if (task.info) and (task.info.get('desc')):
                 logger.info(task.info.get('desc'))
@@ -54,6 +55,12 @@ class TaskResult(Resource):
         elif task.state == states.SUCCESS:
             state = {
                 'result': task.info.get('result'),
+                'state': task.state,
+            }
+
+        elif task.state == states.FAILURE:
+            state = {
+                'error': task.info.get('error'),
                 'state': task.state,
             }
 

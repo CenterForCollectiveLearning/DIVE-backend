@@ -10,15 +10,9 @@ __pycache__/
 venv/
 
 # Logs
-*.log
-
-# Editor-specific
-.idea/
+logs/*.log
 
 uploads/
 
 migrations/
 preloaded/
-.idea
-
-preloaded
