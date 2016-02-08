@@ -67,4 +67,6 @@ class TaskResult(Resource):
         response = jsonify(state)
         if task.state == states.PENDING:
             response.status_code = 202
+        elif task.state == states.FAILURE:
+            response.status_code = 500
         return response
