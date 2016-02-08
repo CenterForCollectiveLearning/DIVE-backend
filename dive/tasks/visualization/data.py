@@ -3,6 +3,7 @@
 '''
 Functions for returning the data corresponding to a given visualization type and specification
 '''
+from __future__ import division
 
 import math
 import numpy as np

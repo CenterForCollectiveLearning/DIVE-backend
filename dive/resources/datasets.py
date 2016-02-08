@@ -12,6 +12,8 @@ from dive.resources.serialization import jsonify
 from dive.data.access import get_dataset_sample
 from dive.tasks.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
 from dive.tasks.ingestion.upload import upload_file
+from dive.tasks.handlers import error_handler
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -48,7 +50,10 @@ class UploadFile(Resource):
                 'datasets': datasets
             }
             for dataset in datasets:
-                ingestion_task = ingestion_pipeline.apply_async(args=[dataset['id'], project_id])
+                ingestion_task = ingestion_pipeline.apply_async(
+                    args=[dataset['id'], project_id],
+                    link_error = error_handler.s()
+                )
             return make_response(jsonify({'task_id': ingestion_task.task_id}))
         return make_response(jsonify({'status': 'Upload failed'}))
 

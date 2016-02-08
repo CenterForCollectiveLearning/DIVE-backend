@@ -9,16 +9,7 @@ __pycache__/
 # Virtualenv
 venv/
 
-# Logs
-*.log
-
-# Editor-specific
-.idea/
-
 uploads/
 
 migrations/
 preloaded/
-.idea
-
-preloaded

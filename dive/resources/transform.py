@@ -9,6 +9,7 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.serialization import jsonify
 from dive.tasks.pipelines import unpivot_pipeline, reduce_pipeline, join_pipeline
+from dive.tasks.handlers import error_handler
 
 import logging
 logger = logging.getLogger(__name__)
@@ -36,9 +37,10 @@ class Reduce(Resource):
         column_ids = args.get('column_ids')
         new_dataset_name_prefix = args.get('new_dataset_name_prefix')
 
-        reduce_task = reduce_pipeline.apply_async(args=[
-            column_ids, new_dataset_name_prefix, dataset_id, project_id
-        ])
+        reduce_task = reduce_pipeline.apply_async(
+            args = [column_ids, new_dataset_name_prefix, dataset_id, project_id],
+            link_error = error_handler.s()
+        )
         return make_response(jsonify({ 'taskId': reduce_task.task_id }))
 
 
@@ -65,10 +67,10 @@ class Unpivot(Resource):
         value_name = args.get('value_name')
         new_dataset_name_prefix = args.get('new_dataset_name_prefix')
 
-        unpivot_task = unpivot_pipeline.apply_async(args=[
-            pivot_fields, variable_name, value_name, new_dataset_name_prefix,
-            dataset_id, project_id
-        ])
+        unpivot_task = unpivot_pipeline.apply_async(
+            args = [pivot_fields, variable_name, value_name, new_dataset_name_prefix, dataset_id, project_id],
+            link_error = error_handler.s()
+        )
         return make_response(jsonify({ 'taskId': unpivot_task.task_id }))
 
 
@@ -107,6 +109,7 @@ class Join(Resource):
         join_task = join_pipeline.apply_async(args=[
             left_dataset_id, right_dataset_id, on, left_on, right_on, how,
             left_suffix, right_suffix, new_dataset_name_prefix, project_id
-        ])
+        ],
+        link_error = error_handler.s())
 
         return make_response(jsonify({ 'taskId': join_task.task_id }))
