@@ -21,7 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 def row_to_dict(r):
-    return { c.name: getattr(r, c.name) for c in r.__table__.columns }
+    d = r.__dict__
+    # d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
+    d.pop('_sa_instance_state', None)
+    return d
 
 
 ################
@@ -219,13 +222,28 @@ def get_spec(spec_id, project_id, **kwargs):
     spec = Spec.query.filter_by(id=spec_id, project_id=project_id, **kwargs).one()
     if spec is None:
         abort(404)
+    exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
+    if exported_spec_ids:
+        exported = True
+    else:
+        exported = False
+    setattr(spec, 'exported_spec_ids', exported_spec_ids)
     return row_to_dict(spec)
 
 def get_specs(project_id, dataset_id, **kwargs):
     specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
     if specs is None:
         abort(404)
+    for spec in specs:
+        exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
+        if exported_spec_ids:
+            exported = True
+        else:
+            exported = False
+        setattr(spec, 'exported', exported)
+        setattr(spec, 'exported_spec_ids', exported_spec_ids)
     return [ row_to_dict(spec) for spec in specs ]
+
 
 from time import time
 def insert_specs(project_id, specs, selected_fields, conditionals, config):
