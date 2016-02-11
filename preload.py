@@ -13,6 +13,7 @@ from os import listdir, curdir
 from os.path import isfile, join, isdir
 
 from dive.db import db_access
+from dive.task_core import celery, task_app
 from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 
@@ -50,7 +51,7 @@ def preload_from_directory_tree(app):
 
         # Insert projects
         app.logger.info('Preloading project: %s', project_dir)
-        with app.app_context():
+        with task_app.app_context():
             project_dict = db_access.insert_project(
                 title = project_title,
                 description = project_config.get('description'),
@@ -77,13 +78,13 @@ def preload_from_directory_tree(app):
             dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
 
             # If dataset-level config for project
-            with app.app_context():
+            with task_app.app_context():
                 datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
                 for dataset in datasets:
-                    ingestion_result = ingestion_pipeline(dataset['id'], project_id).apply_async()
+                    ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
                     ingestion_result.get()
-        relationship_result = relationship_pipeline(project_id).apply_async()
+        relationship_result = relationship_pipeline.apply(args=[ project_id ])
         relationship_result.get()
 
 
