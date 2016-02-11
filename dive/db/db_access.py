@@ -20,10 +20,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def row_to_dict(r):
-    d = r.__dict__
-    # d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
-    d.pop('_sa_instance_state', None)
+def row_to_dict(r, custom_fields=[]):
+    d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
+    if custom_fields:
+        for custom_field in custom_fields:
+            d[custom_field] = getattr(r, custom_field)
     return d
 
 
@@ -227,13 +228,15 @@ def get_spec(spec_id, project_id, **kwargs):
         exported = True
     else:
         exported = False
+    setattr(spec, 'exported', exported)
     setattr(spec, 'exported_spec_ids', exported_spec_ids)
-    return row_to_dict(spec)
+    return row_to_dict(spec, custom_fields=[ 'exported', 'exported_spec_ids'])
 
 def get_specs(project_id, dataset_id, **kwargs):
     specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
     if specs is None:
         abort(404)
+    final_specs = []
     for spec in specs:
         exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
         if exported_spec_ids:
@@ -242,7 +245,7 @@ def get_specs(project_id, dataset_id, **kwargs):
             exported = False
         setattr(spec, 'exported', exported)
         setattr(spec, 'exported_spec_ids', exported_spec_ids)
-    return [ row_to_dict(spec) for spec in specs ]
+    return [ row_to_dict(s, custom_fields=[ 'exported', 'exported_spec_ids' ]) for s in specs ]
 
 
 from time import time
@@ -250,17 +253,21 @@ def insert_specs(project_id, specs, selected_fields, conditionals, config):
     start_time = time()
     spec_objects = []
     for s in specs:
-        spec_objects.append(Spec(
+        spec_object = Spec(
             project_id = project_id,
             selected_fields = selected_fields,
             conditionals = conditionals,
             config = config,
             **s
-        ))
+        )
+        setattr(spec_object, 'exported', False)
+        setattr(spec_object, 'exported_spec_ids', [])
+        spec_objects.append(spec_object)
+
     db.session.add_all(spec_objects)
     db.session.commit()
     logger.info('Insertion took %s seconds', (time() - start_time))
-    return [ row_to_dict(s) for s in spec_objects ]
+    return [ row_to_dict(s, custom_fields=[ 'exported', 'exported_spec_ids' ]) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
     # TODO Accept multiple IDs
