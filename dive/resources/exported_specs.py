@@ -36,14 +36,13 @@ exportedSpecsGetParser.add_argument('project_id', type=str, required=True)
 exportedSpecsPostParser = reqparse.RequestParser()
 exportedSpecsPostParser.add_argument('project_id', type=str, required=True, location='json')
 exportedSpecsPostParser.add_argument('spec_id', type=str, required=True, location='json')
-exportedSpecsPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
-exportedSpecsPostParser.add_argument('config', type=object_type, required=True, location='json')
+exportedSpecsPostParser.add_argument('data', type=object_type, required=True, location='json')
+exportedSpecsPostParser.add_argument('conditionals', type=object_type, required=True, location='json', default={})
+exportedSpecsPostParser.add_argument('config', type=object_type, required=True, location='json', default={})
 class ExportedSpecs(Resource):
     def get(self):
         args = exportedSpecsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
-
-        logger.info(project_id)
 
         exported_specs = db_access.get_exported_specs(project_id)
         return make_response(jsonify({'result': exported_specs, 'length': len(exported_specs)}))
@@ -52,8 +51,9 @@ class ExportedSpecs(Resource):
         args = exportedSpecsPostParser.parse_args()
         project_id = args.get('project_id')
         spec_id = args.get('spec_id')
+        data = args.get('data')
         conditionals = args.get('conditionals')
         config = args.get('config')
 
-        result = db_access.insert_exported_spec(project_id, spec_id, conditionals, config)
+        result = db_access.insert_exported_spec(project_id, spec_id, data, conditionals, config)
         return jsonify(result)

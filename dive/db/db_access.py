@@ -292,13 +292,23 @@ def get_exported_spec(project_id, exported_spec_id):
     return row_to_dict(spec)
 
 def get_exported_specs(project_id):
-    specs = Exported_Spec.query.filter_by(project_id=project_id).all()
-    return [ row_to_dict(spec) for spec in specs ]
+    exported_specs = Exported_Spec.\
+        query.\
+        filter_by(project_id=project_id).\
+        all()
 
-def insert_exported_spec(project_id, spec_id, conditionals, config):
+    desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+    for exported_spec in exported_specs:
+        for desired_spec_key in desired_spec_keys:
+            value = getattr(exported_spec.spec, desired_spec_key)
+            setattr(exported_spec, desired_spec_key, value)
+    return [ row_to_dict(exported_spec, custom_fields=desired_spec_keys) for exported_spec in exported_specs ]
+
+def insert_exported_spec(project_id, spec_id, data, conditionals, config):
     exported_spec = Exported_Spec(
         project_id = project_id,
         spec_id = spec_id,
+        data = data,
         conditionals = conditionals,
         config = config
     )

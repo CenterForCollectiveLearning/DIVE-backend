@@ -174,6 +174,7 @@ class Exported_Spec(db.Model):
     '''
     __tablename__ = ModelName.EXPORTED_SPEC.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
     conditionals = db.Column(JSONB)
     config = db.Column(JSONB)
 
