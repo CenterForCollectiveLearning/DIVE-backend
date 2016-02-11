@@ -379,7 +379,6 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
 
-    logger.info('Config %s', config)
     # Configuration
     procedure = config.get('binning_procedure', 'freedman')
     binning_type = config.get('binning_type', 'procedural')
