@@ -54,6 +54,17 @@ class ExportedSpecs(Resource):
         data = args.get('data')
         conditionals = args.get('conditionals')
         config = args.get('config')
-
-        result = db_access.insert_exported_spec(project_id, spec_id, data, conditionals, config)
-        return jsonify(result)
+        existing_exported_spec = db_access.get_exported_spec_by_fields(
+            project_id,
+            spec_id,
+            conditionals=conditionals,
+            config=config
+        )
+        print existing_exported_spec
+        if existing_exported_spec:
+            result = {
+                'result': 'Visualization already exported.'
+            }
+        else:
+            result = db_access.insert_exported_spec(project_id, spec_id, data, conditionals, config)
+        return make_response(jsonify(result))

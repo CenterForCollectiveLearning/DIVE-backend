@@ -125,7 +125,8 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
 def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals, config):
     with task_app.app_context():
         # Delete existing specs with same parameters
-        existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
+        existing_specs = db_access.get_specs(
+            project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
