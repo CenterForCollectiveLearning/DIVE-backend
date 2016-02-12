@@ -24,7 +24,9 @@ class Documents(Resource):
         args = documentsGetParser.parse_args()
         project_id = args.get('project_id')
         result = db_access.get_documents(project_id)
-        return jsonify(result)
+        return jsonify({
+            'documents': result
+        })
 
 
 documentGetParser = reqparse.RequestParser()
