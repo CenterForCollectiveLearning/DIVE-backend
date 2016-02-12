@@ -427,8 +427,13 @@ def delete_exported_regression(project_id, exported_regression_id):
 ################
 # Documents
 ################
+def get_documents(project_id):
+    documents = Document.query.filter_by(project_id=project_id).all()
+    if documents is None:
+        abort(404)
+        return [ row_to_dict(d) for d in documents ]
+
 def get_document(project_id, document_id):
-    logger.info('In get_document')
     try:
         document = Document.query.filter_by(project_id=project_id, id=document_id).one()
         return row_to_dict(document)

@@ -1,5 +1,5 @@
 from dive.resources.datasets import UploadFile, Dataset, Datasets
-from dive.resources.documents import NewDocument, Document
+from dive.resources.documents import NewDocument, Document, Documents
 from dive.resources.fields import Field
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
@@ -56,6 +56,7 @@ def add_resources(api):
     api.add_resource(ExportedRegressions,           '/exported_regressions/v1/exported_regressions')
     api.add_resource(DataFromExportedRegression,    '/exported_regressions/v1/exported_regressions/<string:exported_spec_id>/data')
 
+    api.add_resource(Documents,                   '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
     api.add_resource(Document,                      '/compose/v1/document/<string:document_id>')
 
