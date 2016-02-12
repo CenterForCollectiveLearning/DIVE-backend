@@ -14,6 +14,19 @@ def object_type(j):
     return j
 
 
+documentsGetParser = reqparse.RequestParser()
+documentsGetParser.add_argument('project_id', type=str, required=True)
+class Documents(Resource):
+    '''
+    GET all documents
+    '''
+    def get(self):
+        args = documentsGetParser.parse_args()
+        project_id = args.get('project_id')
+        result = db_access.get_documents(project_id)
+        return jsonify(result)
+
+
 documentGetParser = reqparse.RequestParser()
 documentGetParser.add_argument('project_id', type=str, required=True)
 
@@ -31,11 +44,8 @@ class Document(Resource):
     DELETE one document
     '''
     def get(self, document_id):
-        logger.info('In get endpoint %s', document_id)
-        # print 'about to parse args'
         args = documentGetParser.parse_args()
         project_id = args.get('project_id')
-        print 'past args', project_id
         result = db_access.get_document(project_id, document_id)
         return jsonify(result)
 
