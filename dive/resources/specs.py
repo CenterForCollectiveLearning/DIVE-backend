@@ -77,8 +77,22 @@ class VisualizationFromSpec(Resource):
         conditionals = args.get('conditionals', {})
         config = args.get('config', {})
         spec = db_access.get_spec(spec_id, project_id)
+
         result = {
             'spec': spec,
-            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=['visualize', 'table'])
+            'visualization': get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=['visualize', 'table']),
+            'exported': False,
+            'exported_spec_id': None
         }
+
+        existing_exported_spec = db_access.get_exported_spec_by_fields(
+            project_id,
+            spec_id,
+            conditionals=conditionals,
+            config=config
+        )
+        if existing_exported_spec:
+            result['exported'] = True
+            result['exported_spec_id'] = existing_exported_spec['id']
+
         return make_response(jsonify(result))

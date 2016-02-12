@@ -316,11 +316,15 @@ def get_exported_specs(project_id):
         all()
 
     desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+
+    final_specs = []
     for exported_spec in exported_specs:
+        final_spec = exported_spec
         for desired_spec_key in desired_spec_keys:
-            value = getattr(exported_spec.spec, desired_spec_key)
-            setattr(exported_spec, desired_spec_key, value)
-    return [ row_to_dict(exported_spec, custom_fields=desired_spec_keys) for exported_spec in exported_specs ]
+            value = getattr(final_spec.spec, desired_spec_key)
+            setattr(final_spec, desired_spec_key, value)
+        final_specs.append(final_spec)
+    return [ row_to_dict(final_spec, custom_fields=desired_spec_keys) for final_spec in final_specs ]
 
 def insert_exported_spec(project_id, spec_id, data, conditionals, config):
     exported_spec = Exported_Spec(

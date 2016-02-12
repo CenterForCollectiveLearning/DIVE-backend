@@ -60,7 +60,6 @@ class ExportedSpecs(Resource):
             conditionals=conditionals,
             config=config
         )
-        print existing_exported_spec
         if existing_exported_spec:
             result = {
                 'result': 'Visualization already exported.'
