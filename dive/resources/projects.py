@@ -80,6 +80,9 @@ class Projects(Resource):
             user_id=user_id
         )
 
+        new_project_id = result['id']
+        db_access.create_document(new_project_id)
+
         logger.info("Created upload directory for project_id: %s", result['id'])
         project_dir = os.path.join(current_app.config['UPLOAD_DIR'], str(result['id']))
         if os.path.isdir(project_dir):

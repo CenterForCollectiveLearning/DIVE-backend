@@ -60,7 +60,11 @@ def preload_from_directory_tree(app):
                 directory = project_dir,
                 private = private
             )
-        project_id = project_dict['id']
+            project_id = project_dict['id']
+
+            # Create first document
+            db_access.create_document(project_id)
+
 
         # Iterate through datasets
         dataset_file_names = listdir(full_project_dir)
