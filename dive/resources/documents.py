@@ -34,6 +34,7 @@ documentGetParser.add_argument('project_id', type=str, required=True)
 
 documentPutParser = reqparse.RequestParser()
 documentPutParser.add_argument('project_id', type=str, required=True, location='json')
+documentPutParser.add_argument('title', type=str, required=True, location='json')
 documentPutParser.add_argument('content', type=object_type, required=True, location='json')
 
 documentDeleteParser = reqparse.RequestParser()
@@ -54,8 +55,9 @@ class Document(Resource):
     def put(self, document_id):
         args = documentPutParser.parse_args()
         content = args.get('content')
+        title = args.get('title')
         project_id = args.get('project_id')
-        result = db_access.update_document(project_id, document_id, content)
+        result = db_access.update_document(project_id, document_id, title, content)
         return jsonify(result)
 
     def delete(self, document_id):
@@ -68,6 +70,7 @@ class Document(Resource):
 
 documentPostParser = reqparse.RequestParser()
 documentPostParser.add_argument('project_id', type=str, required=True, location='json')
+documentPostParser.add_argument('title', type=str, required=True, location='json')
 documentPostParser.add_argument('content', type=object_type, required=True, location='json')
 class NewDocument(Resource):
     '''
@@ -76,6 +79,7 @@ class NewDocument(Resource):
     def post(self):
         args = documentPostParser.parse_args()
         content = args.get('content')
+        title = args.get('title')
         project_id = args.get('project_id')
-        result = db_access.create_document(project_id, content)
+        result = db_access.create_document(project_id, title, content)
         return jsonify(result)

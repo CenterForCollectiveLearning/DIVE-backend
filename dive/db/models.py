@@ -193,6 +193,7 @@ class Exported_Spec(db.Model):
 class Document(db.Model):
     __tablename__ = ModelName.DOCUMENT.value
     id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.Unicode(250))
     content = db.Column(JSONB)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
