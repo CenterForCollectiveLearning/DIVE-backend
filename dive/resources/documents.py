@@ -34,8 +34,8 @@ documentGetParser.add_argument('project_id', type=str, required=True)
 
 documentPutParser = reqparse.RequestParser()
 documentPutParser.add_argument('project_id', type=str, required=True, location='json')
-documentPutParser.add_argument('title', type=str, required=True, location='json')
-documentPutParser.add_argument('content', type=object_type, required=True, location='json')
+documentPutParser.add_argument('title', type=str, location='json')
+documentPutParser.add_argument('content', type=object_type, location='json')
 
 documentDeleteParser = reqparse.RequestParser()
 documentDeleteParser.add_argument('project_id', type=str, required=True)
