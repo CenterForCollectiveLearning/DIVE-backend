@@ -444,7 +444,7 @@ def get_document(project_id, document_id):
         logger.error(e)
         raise e
 
-def create_document(project_id, title='Unnamed Document', content={}):
+def create_document(project_id, title='Unnamed Document', content={ 'blocks': [] }):
     document = Document(
         project_id=project_id,
         title=title,
