@@ -70,16 +70,12 @@ class Document(Resource):
 
 documentPostParser = reqparse.RequestParser()
 documentPostParser.add_argument('project_id', type=str, required=True, location='json')
-documentPostParser.add_argument('title', type=str, required=True, location='json')
-documentPostParser.add_argument('content', type=object_type, required=True, location='json')
 class NewDocument(Resource):
     '''
     POST to add one new document
     '''
     def post(self):
         args = documentPostParser.parse_args()
-        content = args.get('content')
-        title = args.get('title')
         project_id = args.get('project_id')
-        result = db_access.create_document(project_id, title, content)
+        result = db_access.create_document(project_id)
         return jsonify(result)
