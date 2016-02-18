@@ -457,6 +457,7 @@ def create_document(project_id, title='Unnamed Document', content={ 'blocks': []
 def update_document(project_id, document_id, title, content):
     document = Document.query.filter_by(project_id=project_id, id=document_id).one()
     document.content = content
+    document.title = title
     db.session.add(document)
     db.session.commit()
     return row_to_dict(document)
