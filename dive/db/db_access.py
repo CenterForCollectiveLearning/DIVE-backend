@@ -20,8 +20,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def row_to_dict(r):
-    return { c.name: getattr(r, c.name) for c in r.__table__.columns }
+def row_to_dict(r, custom_fields=[]):
+    d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
+    if custom_fields:
+        for custom_field in custom_fields:
+            d[custom_field] = getattr(r, custom_field)
+    return d
 
 
 ################
@@ -219,30 +223,51 @@ def get_spec(spec_id, project_id, **kwargs):
     spec = Spec.query.filter_by(id=spec_id, project_id=project_id, **kwargs).one()
     if spec is None:
         abort(404)
-    return row_to_dict(spec)
+    exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
+    if exported_spec_ids:
+        exported = True
+    else:
+        exported = False
+    setattr(spec, 'exported', exported)
+    setattr(spec, 'exported_spec_ids', exported_spec_ids)
+    return row_to_dict(spec, custom_fields=[ 'exported', 'exported_spec_ids'])
 
 def get_specs(project_id, dataset_id, **kwargs):
     specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
     if specs is None:
         abort(404)
-    return [ row_to_dict(spec) for spec in specs ]
+    final_specs = []
+    for spec in specs:
+        exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
+        if exported_spec_ids:
+            exported = True
+        else:
+            exported = False
+        setattr(spec, 'exported', exported)
+        setattr(spec, 'exported_spec_ids', exported_spec_ids)
+    return [ row_to_dict(s, custom_fields=[ 'exported', 'exported_spec_ids' ]) for s in specs ]
+
 
 from time import time
 def insert_specs(project_id, specs, selected_fields, conditionals, config):
     start_time = time()
     spec_objects = []
     for s in specs:
-        spec_objects.append(Spec(
+        spec_object = Spec(
             project_id = project_id,
             selected_fields = selected_fields,
             conditionals = conditionals,
             config = config,
             **s
-        ))
+        )
+        setattr(spec_object, 'exported', False)
+        setattr(spec_object, 'exported_spec_ids', [])
+        spec_objects.append(spec_object)
+
     db.session.add_all(spec_objects)
     db.session.commit()
     logger.info('Insertion took %s seconds', (time() - start_time))
-    return [ row_to_dict(s) for s in spec_objects ]
+    return [ row_to_dict(s, custom_fields=[ 'exported', 'exported_spec_ids' ]) for s in spec_objects ]
 
 def delete_spec(project_id, exported_spec_id):
     # TODO Accept multiple IDs
@@ -260,20 +285,52 @@ def delete_spec(project_id, exported_spec_id):
 # Exported Specifications
 ################
 def get_exported_spec(project_id, exported_spec_id):
-    spec = Exported_Spec.query.filter_by(id=exported_spec_id,
-        project_id=project_id).one()
-    if spec is None:
-        abort(404)
-    return row_to_dict(spec)
+    try:
+        spec = Exported_Spec.query.filter_by(
+            id=exported_spec_id,
+            project_id=project_id
+        ).one()
+        return row_to_dict(spec)
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+def get_exported_spec_by_fields(project_id, spec_id, **kwargs):
+    try:
+        spec = Exported_Spec.query.filter_by(
+            spec_id = spec_id,
+            project_id = project_id,
+            **kwargs
+        ).one()
+        return row_to_dict(spec)
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
 
 def get_exported_specs(project_id):
-    specs = Exported_Spec.query.filter_by(project_id=project_id).all()
-    return [ row_to_dict(spec) for spec in specs ]
+    exported_specs = Exported_Spec.\
+        query.\
+        filter_by(project_id=project_id).\
+        all()
 
-def insert_exported_spec(project_id, spec_id, conditionals, config):
+    desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+
+    final_specs = []
+    for exported_spec in exported_specs:
+        final_spec = exported_spec
+        for desired_spec_key in desired_spec_keys:
+            value = getattr(final_spec.spec, desired_spec_key)
+            setattr(final_spec, desired_spec_key, value)
+        final_specs.append(final_spec)
+    return [ row_to_dict(final_spec, custom_fields=desired_spec_keys) for final_spec in final_specs ]
+
+def insert_exported_spec(project_id, spec_id, data, conditionals, config):
     exported_spec = Exported_Spec(
         project_id = project_id,
         spec_id = spec_id,
+        data = data,
         conditionals = conditionals,
         config = config
     )
@@ -370,8 +427,13 @@ def delete_exported_regression(project_id, exported_regression_id):
 ################
 # Documents
 ################
+def get_documents(project_id):
+    documents = Document.query.filter_by(project_id=project_id).all()
+    if documents is None:
+        abort(404)
+    return [ row_to_dict(d) for d in documents ]
+
 def get_document(project_id, document_id):
-    logger.info('In get_document')
     try:
         document = Document.query.filter_by(project_id=project_id, id=document_id).one()
         return row_to_dict(document)
@@ -382,18 +444,20 @@ def get_document(project_id, document_id):
         logger.error(e)
         raise e
 
-def create_document(project_id, content):
+def create_document(project_id, title='Unnamed Document', content={ 'blocks': [] }):
     document = Document(
         project_id=project_id,
+        title=title,
         content=content
     )
     db.session.add(document)
     db.session.commit()
     return row_to_dict(document)
 
-def update_document(project_id, document_id, content):
+def update_document(project_id, document_id, title, content):
     document = Document.query.filter_by(project_id=project_id, id=document_id).one()
     document.content = content
+    document.title = title
     db.session.add(document)
     db.session.commit()
     return row_to_dict(document)

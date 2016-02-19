@@ -1,11 +1,15 @@
 from flask import make_response
 from flask.ext.restful import Resource, reqparse
 
-import logging
-import json
-
 from dive.db import db_access
 from dive.resources.serialization import jsonify
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+def object_type(j):
+    return j
 
 
 visualizationFromExportedSpecGetParser = reqparse.RequestParser()
@@ -32,8 +36,9 @@ exportedSpecsGetParser.add_argument('project_id', type=str, required=True)
 exportedSpecsPostParser = reqparse.RequestParser()
 exportedSpecsPostParser.add_argument('project_id', type=str, required=True, location='json')
 exportedSpecsPostParser.add_argument('spec_id', type=str, required=True, location='json')
-exportedSpecsPostParser.add_argument('conditionals', type=str, required=True, location='json')
-exportedSpecsPostParser.add_argument('config', type=str, required=True, location='json')
+exportedSpecsPostParser.add_argument('data', type=object_type, required=True, location='json')
+exportedSpecsPostParser.add_argument('conditionals', type=object_type, required=True, location='json', default={})
+exportedSpecsPostParser.add_argument('config', type=object_type, required=True, location='json', default={})
 class ExportedSpecs(Resource):
     def get(self):
         args = exportedSpecsGetParser.parse_args()
@@ -46,8 +51,19 @@ class ExportedSpecs(Resource):
         args = exportedSpecsPostParser.parse_args()
         project_id = args.get('project_id')
         spec_id = args.get('spec_id')
-        conditionals = json.loads(args.get('conditionals'))
-        config = json.loads(args.get('config'))
-
-        result = db_access.insert_exported_spec(project_id, spec_id, conditionals, config)
-        return jsonify(result)
+        data = args.get('data')
+        conditionals = args.get('conditionals')
+        config = args.get('config')
+        existing_exported_spec = db_access.get_exported_spec_by_fields(
+            project_id,
+            spec_id,
+            conditionals=conditionals,
+            config=config
+        )
+        if existing_exported_spec:
+            result = {
+                'result': 'Visualization already exported.'
+            }
+        else:
+            result = db_access.insert_exported_spec(project_id, spec_id, data, conditionals, config)
+        return make_response(jsonify(result))

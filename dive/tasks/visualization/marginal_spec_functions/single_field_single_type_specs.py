@@ -54,7 +54,7 @@ def single_q(q_field):
             'binning_field': q_field
         },
         'meta': {
-            'description': '%s of %s by bin' % ('count', q_label),
+            'desc': '%s of %s by bin' % ('count', q_label),
             'construction': [
                 { 'string': 'count', 'type': TermType.OPERATION.value },
                 { 'string': 'of', 'type': TermType.PLAIN.value },

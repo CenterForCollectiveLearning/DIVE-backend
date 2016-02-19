@@ -64,16 +64,16 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
             grouped_df = conditioned_df.groupby(grouped_field)
             precomputed['groupby'][grouped_field] = grouped_df
 
-        # try:
-        data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config,
-            df=conditioned_df,
-            precomputed=precomputed,
-            data_formats=['score', 'visualize']
-        )
+        try:
+            data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config,
+                df=conditioned_df,
+                precomputed=precomputed,
+                data_formats=['score', 'visualize']
+            )
 
-        # except Exception as e:
-        #     logger.error("Error getting viz data %s", e, exc_info=True)
-        #     continue
+        except Exception as e:
+            logger.error("Error getting viz data %s", e, exc_info=True)
+            continue
 
         if not data:
             logger.info('No data for spec with generating procedure %s', spec['generating_procedure'])
@@ -125,7 +125,8 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
 def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals, config):
     with task_app.app_context():
         # Delete existing specs with same parameters
-        existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
+        existing_specs = db_access.get_specs(
+            project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])

@@ -14,12 +14,29 @@ def object_type(j):
     return j
 
 
+documentsGetParser = reqparse.RequestParser()
+documentsGetParser.add_argument('project_id', type=str, required=True)
+class Documents(Resource):
+    '''
+    GET all documents
+    '''
+    def get(self):
+        args = documentsGetParser.parse_args()
+        project_id = args.get('project_id')
+        result = db_access.get_documents(project_id)
+        return jsonify({
+            'documents': result
+        })
+
+
 documentGetParser = reqparse.RequestParser()
-documentGetParser.add_argument('project_id', type=str, required=True)
+documentGetParser.add_argument('project_id', type=str)
+documentGetParser.add_argument('include_data', type=bool, default=False)
 
 documentPutParser = reqparse.RequestParser()
 documentPutParser.add_argument('project_id', type=str, required=True, location='json')
-documentPutParser.add_argument('content', type=object_type, required=True, location='json')
+documentPutParser.add_argument('title', type=str, location='json')
+documentPutParser.add_argument('content', type=object_type, location='json')
 
 documentDeleteParser = reqparse.RequestParser()
 documentDeleteParser.add_argument('project_id', type=str, required=True)
@@ -31,19 +48,33 @@ class Document(Resource):
     DELETE one document
     '''
     def get(self, document_id):
-        logger.info('In get endpoint %s', document_id)
-        # print 'about to parse args'
         args = documentGetParser.parse_args()
         project_id = args.get('project_id')
-        print 'past args', project_id
-        result = db_access.get_document(project_id, document_id)
+        include_data = args.get('include_data')
+        document = db_access.get_public_document(document_id)
+
+        if include_data:
+            new_document = document
+            new_blocks = []
+            for block in document['content']['blocks']:
+                new_block = block
+                exported_spec_id = block['exportedSpecId']
+                exported_spec = db_access.get_public_exported_spec(exported_spec_id)
+                new_block['spec'] = exported_spec
+                new_blocks.append(new_block)
+            new_document['content']['blocks'] = new_blocks
+            result = new_document
+        else:
+            result = document
+
         return jsonify(result)
 
     def put(self, document_id):
         args = documentPutParser.parse_args()
         content = args.get('content')
+        title = args.get('title')
         project_id = args.get('project_id')
-        result = db_access.update_document(project_id, document_id, content)
+        result = db_access.update_document(project_id, document_id, title, content)
         return jsonify(result)
 
     def delete(self, document_id):
@@ -56,14 +87,12 @@ class Document(Resource):
 
 documentPostParser = reqparse.RequestParser()
 documentPostParser.add_argument('project_id', type=str, required=True, location='json')
-documentPostParser.add_argument('content', type=object_type, required=True, location='json')
 class NewDocument(Resource):
     '''
     POST to add one new document
     '''
     def post(self):
         args = documentPostParser.parse_args()
-        content = args.get('content')
         project_id = args.get('project_id')
-        result = db_access.create_document(project_id, content)
+        result = db_access.create_document(project_id)
         return jsonify(result)

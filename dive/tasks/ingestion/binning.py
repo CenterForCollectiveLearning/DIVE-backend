@@ -11,11 +11,23 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import math
+from decimal import Decimal
+import random
 
 from dive.data.access import get_data
 
 import logging
 logger = logging.getLogger(__name__)
+
+def get_bin_decimals(v, max_sample=10000, default=3):
+    v = v.astype(float)
+    if len(v) <= max_sample:
+        sample = v
+    else:
+        sample = random.sample(v, max_sample)
+    num_decimals = [ (Decimal.from_float(e).as_tuple().exponent * -1) for e in sample]
+    max_decimals = max(num_decimals)
+    return min(max_decimals, 3)
 
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
@@ -35,9 +47,6 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
     max_v = max(v)
     n = len(v)
 
-    logger.info('Procedural: %s', procedural)
-    logger.debug('Binning procedure: %s', procedure)
-    logger.debug('Num bins (init): %s', num_bins)
     # Procedural binning
     if procedural:
         if procedure == 'freedman':
@@ -60,15 +69,10 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
         if not num_bins:
             num_bins = DEFAULT_BINS
 
-    logger.debug('Num bins: %s', num_bins)
     # Incrementing max value by tiny amount to deal with np.digitize right edge
     eps = max_v * 0.00001
     fake_max = max_v + eps
     fake_min = min_v - eps
     bin_edges = np.histogram(v, range=(min_v, fake_max), bins=num_bins)[1]
-    # bin_edges = np.linspace(fake_min, fake_max, num_bins)
-    # bin_edges = pd.cut(v, num_bins, precision=3, retbins=True, include_lowest=True)
-    # print list(bin_edges)
 
-    logger.debug('Bin edges: %s', bin_edges)
     return bin_edges
