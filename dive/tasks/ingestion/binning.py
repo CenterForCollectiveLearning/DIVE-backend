@@ -34,6 +34,7 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
     min_v = min(v)
     max_v = max(v)
     n = len(v)
+    v = v.astype(float)
 
     # Procedural binning
     if procedural:
