@@ -410,9 +410,10 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
             bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
         bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-        rounded_left_bin_edge = ('%.' + str(precision) + 'f') % left_bin_edge
-        rounded_right_bin_edge = ('%.' + str(precision) + 'f') % right_bin_edge
-        formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
+        rounded_left_bin_edge = float(('%.' + str(precision) + 'f') % left_bin_edge)
+        rounded_right_bin_edge = float(('%.' + str(precision) + 'f') % right_bin_edge)
+        # formatted_bin_edge = '%s-%s' % (rounded_left_bin_edge, rounded_right_bin_edge)
+        formatted_bin_edge = (rounded_left_bin_edge, rounded_right_bin_edge)
         formatted_bin_edges_list.append(formatted_bin_edge)
 
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
