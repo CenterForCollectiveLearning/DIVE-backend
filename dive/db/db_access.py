@@ -284,6 +284,22 @@ def delete_spec(project_id, exported_spec_id):
 ################
 # Exported Specifications
 ################
+def get_public_exported_spec(exported_spec_id):
+    try:
+        exported_spec = Exported_Spec.query.filter_by(
+            id=exported_spec_id
+        ).one()
+        desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+
+        for desired_spec_key in desired_spec_keys:
+            value = getattr(exported_spec.spec, desired_spec_key)
+            setattr(exported_spec, desired_spec_key, value)
+        return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
 def get_exported_spec(project_id, exported_spec_id):
     try:
         spec = Exported_Spec.query.filter_by(
@@ -432,6 +448,17 @@ def get_documents(project_id):
     if documents is None:
         abort(404)
     return [ row_to_dict(d) for d in documents ]
+
+def get_public_document(document_id):
+    try:
+        document = Document.query.filter_by(id=document_id).one()
+        return row_to_dict(document)
+    except NoResultFound, e:
+        logger.error(e)
+        return None
+    except MultipleResultsFound, e:
+        logger.error(e)
+        raise e
 
 def get_document(project_id, document_id):
     try:
