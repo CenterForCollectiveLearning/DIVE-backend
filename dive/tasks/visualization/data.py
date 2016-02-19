@@ -15,7 +15,7 @@ from flask import current_app
 from dive.data.in_memory_data import InMemoryData as IMD
 from dive.data.access import get_data, get_conditioned_data
 from dive.tasks.ingestion.type_detection import detect_time_series
-from dive.tasks.ingestion.binning import get_bin_edges
+from dive.tasks.ingestion.binning import get_bin_edges, get_bin_decimals
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure, aggregation_functions
 
 from time import time
@@ -373,6 +373,7 @@ def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
 
 
 def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+    logger.info('in get_bin_agg_data')
     final_data = {}
 
     binning_field = args['binning_field']['name']
@@ -386,10 +387,14 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         procedural = True
     else:
         procedural = False
-    precision = config.get('precision', 3)
+    precision = config.get('precision', None)
     num_bins = config.get('num_bins', 3)
 
     binning_field_values = df[binning_field]
+
+    if not precision:
+        precision = get_bin_decimals(binning_field_values)
+
     bin_edges_list = get_bin_edges(
         binning_field_values,
         procedural=procedural,
