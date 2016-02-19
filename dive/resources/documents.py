@@ -30,7 +30,8 @@ class Documents(Resource):
 
 
 documentGetParser = reqparse.RequestParser()
-documentGetParser.add_argument('project_id', type=str, required=True)
+documentGetParser.add_argument('project_id', type=str)
+documentGetParser.add_argument('include_data', type=bool, default=False)
 
 documentPutParser = reqparse.RequestParser()
 documentPutParser.add_argument('project_id', type=str, required=True, location='json')
@@ -49,7 +50,23 @@ class Document(Resource):
     def get(self, document_id):
         args = documentGetParser.parse_args()
         project_id = args.get('project_id')
-        result = db_access.get_document(project_id, document_id)
+        include_data = args.get('include_data')
+        document = db_access.get_public_document(document_id)
+
+        if include_data:
+            new_document = document
+            new_blocks = []
+            for block in document['content']['blocks']:
+                new_block = block
+                exported_spec_id = block['exportedSpecId']
+                exported_spec = db_access.get_public_exported_spec(exported_spec_id)
+                new_block['spec'] = exported_spec
+                new_blocks.append(new_block)
+            new_document['content']['blocks'] = new_blocks
+            result = new_document
+        else:
+            result = document
+
         return jsonify(result)
 
     def put(self, document_id):

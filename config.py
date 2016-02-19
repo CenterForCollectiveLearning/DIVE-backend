@@ -2,6 +2,7 @@ import os
 
 class BaseConfig(object):
     DEBUG = False
+    HOST = '0.0.0.0'
     PORT = 8081
 
     FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
@@ -28,7 +29,7 @@ class BaseConfig(object):
 
     CELERY_IMPORTS = [
         'dive.tasks.pipelines',
-        'dive.tasks.handlers',        
+        'dive.tasks.handlers',
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
         'dive.tasks.ingestion.type_detection',
