@@ -38,6 +38,10 @@ class TaskResult(Resource):
     '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
+        state = {
+            'currentTask': '',
+            'state': ''
+        }
 
         logger.debug('%s: %s', task_id, task.state)
         if task.state == states.PENDING:
