@@ -74,4 +74,6 @@ def pre_serialize(obj):
             return None
         else:
             return obj
+    elif isinstance(obj, np.ndarray):
+        return map(pre_serialize, obj)
     return obj
