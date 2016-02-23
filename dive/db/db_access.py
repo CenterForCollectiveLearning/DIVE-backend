@@ -350,9 +350,20 @@ def insert_exported_spec(project_id, spec_id, data, conditionals, config):
         conditionals = conditionals,
         config = config
     )
+
     db.session.add(exported_spec)
     db.session.commit()
-    return row_to_dict(exported_spec)
+
+    spec = Spec.query.filter_by(id=spec_id, project_id=project_id).one()
+    if spec is None:
+        abort(404)
+
+    desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+    for desired_spec_key in desired_spec_keys:
+        value = getattr(spec, desired_spec_key)
+        setattr(exported_spec, desired_spec_key, value)
+
+    return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
 
 def delete_exported_spec(project_id, exported_spec_id):
     exported_spec = Exported_Spec.query.filter_by(project_id=project_id, id=exported_spec_id).one()

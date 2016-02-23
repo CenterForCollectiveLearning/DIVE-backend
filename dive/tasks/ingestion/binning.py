@@ -11,11 +11,23 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import math
+from decimal import Decimal
+import random
 
 from dive.data.access import get_data
 
 import logging
 logger = logging.getLogger(__name__)
+
+def get_bin_decimals(v, max_sample=10000, default=3):
+    v = v.astype(float)
+    if len(v) <= max_sample:
+        sample = v
+    else:
+        sample = random.sample(v, max_sample)
+    num_decimals = [ (Decimal.from_float(e).as_tuple().exponent * -1) for e in sample]
+    max_decimals = max(num_decimals)
+    return min(max_decimals, 3)
 
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
