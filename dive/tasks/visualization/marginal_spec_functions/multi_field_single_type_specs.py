@@ -23,6 +23,7 @@ def multi_c(c_fields):
             'type_structure': TS.liC_Q.value,
             'viz_types': [ VT.STACKED_BAR.value ],
             'field_ids': [ c_field_a['id'], c_field_b['id'] ],
+
             'args': {
                 'field_a': c_field_a,
                 'field_b': c_field_b,
@@ -35,7 +36,11 @@ def multi_c(c_fields):
                     { 'string': c_label_a, 'type': TermType.FIELD.value },
                     { 'string': 'then', 'type': TermType.PLAIN.value },
                     { 'string': c_label_b, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': 'Grouping by %s then %s' % (c_label_a, c_label_b),
+                    'y': 'Count'
+                },
             }
         }
         specs.append(spec)
