@@ -66,9 +66,9 @@ class VizType(Enum):
     SCATTER = 'scatter'
     LINE = 'line'
     NETWORK = 'network'
-    HIST = 'hist'
+    HIST = 'bar'
     BAR = 'bar'
-    STACKED_BAR = 'stackedbar'
+    STACKED_BAR = 'bar'
 
 
 class TermType(Enum):
