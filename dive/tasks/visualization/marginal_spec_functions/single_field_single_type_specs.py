@@ -60,7 +60,11 @@ def single_q(q_field):
                 { 'string': 'of', 'type': TermType.PLAIN.value },
                 { 'string': q_label, 'type': TermType.FIELD.value },
                 { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
-            ]
+            ],
+            'labels': {
+                'x': '%s by bin' % q_label,
+                'y': 'Count by bin'
+            },
         }
     }
     specs.append(bin_spec)
