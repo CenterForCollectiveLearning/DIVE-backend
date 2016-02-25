@@ -74,7 +74,6 @@ def get_full_field_documents_from_names(all_fields, names):
 
 
 def save_regression(spec, result, project_id):
-    logger.info("Saving regression")
     existing_regression_doc = db_access.get_regression_from_spec(project_id, spec)
     if existing_regression_doc:
         db_access.delete_regression(project_id, existing_regression_doc['id'])

@@ -231,13 +231,8 @@ class Regression(db.Model):
 
 
 class Exported_Regression(db.Model):
-    '''
-    Many-to-one with Regression
-    '''
     __tablename__ = ModelName.EXPORTED_REGRESSION.value
     id = db.Column(db.Integer, primary_key=True)
-
-
 
     regression_id = db.Column(db.Integer, db.ForeignKey('regression.id',
         onupdate='CASCADE', ondelete='CASCADE'))
@@ -249,6 +244,82 @@ class Exported_Regression(db.Model):
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
+
+class Summary(db.Model):
+    __tablename__ = ModelName.SUMMARY.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    spec = db.Column(JSONB)
+    data = db.Column(JSONB)
+
+    # One-to-many with exported specs
+    exported_regression = db.relationship('Exported_Summary',
+        backref='summary',
+        cascade='all, delete-orphan',
+        lazy='dynamic')
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
+class Exported_Summary(db.Model):
+    __tablename__ = ModelName.EXPORTED_SUMMARY.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    summary_id = db.Column(db.Integer, db.ForeignKey('summary.id',
+        onupdate='CASCADE', ondelete='CASCADE'))
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
+class Correlation(db.Model):
+    __tablename__ = ModelName.CORRELATION.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    spec = db.Column(JSONB)
+    data = db.Column(JSONB)
+
+    # One-to-many with exported specs
+    exported_correlation = db.relationship('Exported_Correlation',
+        backref='correlation',
+        cascade='all, delete-orphan',
+        lazy='dynamic')
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
+class Exported_Correlation(db.Model):
+    __tablename__ = ModelName.EXPORTED_CORRELATION.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    correlation_id = db.Column(db.Integer, db.ForeignKey('correlation.id',
+        onupdate='CASCADE', ondelete='CASCADE'))
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 
 class Relationship(db.Model):
     '''

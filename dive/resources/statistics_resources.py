@@ -6,7 +6,8 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.serialization import replace_unserializable_numpy, jsonify
 from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
-from dive.tasks.statistics.comparison import run_correlation_from_spec, run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
+from dive.tasks.statistics.summary import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
+from dive.tasks.statistics.correlation import run_correlation_from_spec, get_correlation_scatterplot_data, save_correlation
 
 import logging
 logger = logging.getLogger(__name__)
@@ -157,8 +158,31 @@ class CorrelationsFromSpec(Resource):
         args = request.get_json()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = run_correlation_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
+
+        correlation_doc = db_access.get_correlation_from_spec(project_id, spec)
+        if correlation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            correlation_data = correlation_doc['data']
+            correlation_data['id'] = correlation_doc['id']
+        else:
+            correlation_data, status = run_correlation_from_spec(spec, project_id)
+            serializable_correlation_data = replace_unserializable_numpy(correlation_data)
+            correlation_doc = save_correlation(spec, serializable_correlation_data, project_id)
+            correlation_data['id'] = correlation_doc['id']
+
+        return make_response(jsonify(correlation_data), status)
+
+
+correlationScatterplotGetParser = reqparse.RequestParser()
+correlationScatterplotGetParser.add_argument('projectId', type=str)
+class CorrelationScatterplot(Resource):
+    def get(self, correlation_id):
+        args = correlationScatterplotGetParser.parse_args()
+        project_id = args.get('projectId')
+        correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id)
+        correlation_spec = correlation_doc['spec']
+        data = get_correlation_scatterplot_data(correlation_spec, project_id)
+        return make_response(jsonify({ 'data': data }))
+
 
 class ComparisonFromSpec(Resource):
     def post(self):
