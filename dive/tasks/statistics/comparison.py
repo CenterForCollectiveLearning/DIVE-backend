@@ -84,11 +84,11 @@ def run_correlation(df, correlation_variables):
     for row in range(length):
         row_data = []
         for col in range(length):
-            if row >= col:
-                row_data.append(None)
+            if row > col:
+                row_data.append([None, None])
             else:
                 row_data.append(stats.pearsonr(data_columns[row], data_columns[col]))
-        correlation_result['rows'].append(row_data)
+        correlation_result['rows'].append({'field': correlation_variables[row], 'data': row_data})
 
     return correlation_result
 
