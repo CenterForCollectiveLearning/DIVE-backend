@@ -13,3 +13,5 @@ uploads/
 
 migrations/
 preloaded/
+
+dive/tasks/statistics/comparison.py

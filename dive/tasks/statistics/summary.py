@@ -55,42 +55,6 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
-def run_correlation_from_spec(spec, project_id):
-    dataset_id = spec.get("datasetId")
-    correlation_variables = spec.get("correlationVariables")
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()  # Remove unclean
-
-    correlation_result = run_correlation(df, correlation_variables)
-    return correlation_result, 200
-
-def run_correlation(df, correlation_variables):
-    '''
-    Runs correlations between pairs of correlation_variables
-    df: the dataframe
-    correlation_variables: the numerical variables to do the correlation on. A list of names.
-    '''
-    correlation_result = {}
-    correlation_result['headers'] = correlation_variables
-    correlation_result['rows'] = []
-
-    data_columns = []
-    length = len(correlation_variables)
-
-    for correlation_variable in correlation_variables:
-        data_columns.append(df[correlation_variable])
-
-    for row in range(length):
-        row_data = []
-        for col in range(length):
-            if row > col:
-                row_data.append([None, None])
-            else:
-                row_data.append(stats.pearsonr(data_columns[row], data_columns[col]))
-        correlation_result['rows'].append({'field': correlation_variables[row], 'data': row_data})
-
-    return correlation_result
 
 def get_variable_summary_statistics(df, relevant_field_properties):
     '''

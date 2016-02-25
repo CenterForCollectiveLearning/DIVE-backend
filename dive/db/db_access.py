@@ -13,7 +13,8 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 from dive.core import db
 from dive.db import ModelName
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document
+    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document, \
+    Summary, Exported_Summary, Correlation, Exported_Correlation
 
 
 import logging
@@ -414,6 +415,42 @@ def delete_regression(project_id, regression_id):
     db.session.delete(regression)
     db.session.commit()
     return row_to_dict(regression)
+
+def get_correlation_by_id(correlation_id, project_id):
+    correlation = Correlation.query.filter_by(id=correlation_id, project_id=project_id).one()
+    if correlation is None:
+        abort(404)
+    return row_to_dict(correlation)
+
+
+def get_correlation_from_spec(project_id, spec):
+    try:
+        correlation = Correlation.query.filter_by(project_id=project_id, spec=spec).one()
+    except NoResultFound:
+        return None
+    return row_to_dict(correlation)
+
+
+def insert_correlation(project_id, spec, data):
+    correlation = Correlation(
+        project_id = project_id,
+        spec = spec,
+        data = data
+    )
+    db.session.add(correlation)
+    db.session.commit()
+    return row_to_dict(correlation)
+
+def delete_correlation(project_id, correlation_id):
+    try:
+        correlation = Correlation.query.filter_by(project_id=project_id, id=correlation_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    db.session.delete(correlation)
+    db.session.commit()
+    return row_to_dict(correlation)
 
 ################
 # Exported Analyses
