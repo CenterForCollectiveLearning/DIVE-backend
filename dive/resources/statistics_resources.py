@@ -169,7 +169,7 @@ class CorrelationsFromSpec(Resource):
             correlation_doc = save_correlation(spec, serializable_correlation_data, project_id)
             correlation_data['id'] = correlation_doc['id']
 
-        return make_response(jsonify(correlation_data), status)
+        return make_response(jsonify(correlation_data))
 
 
 correlationScatterplotGetParser = reqparse.RequestParser()
