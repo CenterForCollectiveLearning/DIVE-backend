@@ -1,10 +1,10 @@
-import patsy
 import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.discrete import discrete_model
+from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 
 from collections import Counter, OrderedDict
 from time import time
@@ -213,26 +213,16 @@ def _parse_confidence_intervals(model_result):
     return parsed_conf_int
 
 
-from patsy import (ModelDesc, Term, LookupFactor, EvalFactor)
 def create_regression_model(independent_variables, dependent_variable):
     lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-
-    rhs = []
-    for iv in independent_variables:
-        name = iv['name']
-        term = Term([LookupFactor(name)])
-        # if (iv['general_type'] == 'q') and (not iv['general_type'] == 't'):
-        #     term = Term([LookupFactor(name)])
-        # else:
-        #     term = Term([LookupFactor(name)])
-        rhs.append(term)
-    # rhs = [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
+    rhs = [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
     model = ModelDesc(lhs, rhs)
     return model
 
+
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
     model = create_regression_model(independent_variables, dependent_variable)
-    y, X = patsy.dmatrices(model, df, return_type='dataframe')
+    y, X = dmatrices(model, df, return_type='dataframe')
 
     if dependent_variable['general_type'] == 'q':
         model_result = sm.OLS(y, X).fit()
