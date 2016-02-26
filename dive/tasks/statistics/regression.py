@@ -1,10 +1,10 @@
-import patsy
 import pandas as pd
 import numpy as np
 from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.discrete import discrete_model
+from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 
 from collections import Counter, OrderedDict
 from time import time
@@ -24,6 +24,13 @@ from pprint import pprint
 def _difference_of_two_lists(l1, l2):
     return [ x for x in l2 if x not in set(l1) ]
 
+def make_safe_string(s):
+    invalid_chars = '-_.+^$ '
+    if not s.startswith('temp_name_'):
+        for invalid_char in invalid_chars:
+            s = s.replace(invalid_char, '_')
+        s = 'temp_name_' + s
+    return s
 
 def get_contribution_to_r_squared_data(regression_result):
     regressions_by_column = regression_result['regressions_by_column']
@@ -206,26 +213,16 @@ def _parse_confidence_intervals(model_result):
     return parsed_conf_int
 
 
-def create_regression_formula(independent_variables, dependent_variable):
-    formula = '%s ~ ' % (dependent_variable['name'])
-    terms = []
-    for independent_variable in independent_variables:
-        if (independent_variable['general_type'] == 'q') and (not independent_variable['general_type'] == 't'):
-            term = independent_variable['name']
-        else:
-            term = 'C(%s)' % (independent_variable['name'])
-        terms.append(term)
-    concatenated_terms = ' + '.join(terms)
-    formula = formula + concatenated_terms
-    formula = formula.encode('ascii')
-
-    logger.debug("Constructed formula %s:", formula)
-    return formula
+def create_regression_model(independent_variables, dependent_variable):
+    lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
+    rhs = [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
+    model = ModelDesc(lhs, rhs)
+    return model
 
 
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
-    formula = create_regression_formula(independent_variables, dependent_variable)
-    y, X = patsy.dmatrices(formula, df, return_type='dataframe')
+    model = create_regression_model(independent_variables, dependent_variable)
+    y, X = dmatrices(model, df, return_type='dataframe')
 
     if dependent_variable['general_type'] == 'q':
         model_result = sm.OLS(y, X).fit()
@@ -333,13 +330,13 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
 def _get_fields_categorical_variable(s):
     '''
     Parse base and value fields out of statsmodels categorical encoding
-    e.g. 'C(department)[T.Engineering]' -> [ department, Engineering ]
+    e.g. 'department[T.Engineering]' -> [ department, Engineering ]
     '''
     base_field = s
     value_field = None
-    if ')[T.' in s:
-        base_field = s.split(')[T')[0].strip('C(')
-        value_field = s.split('[T.')[1].strip(']')
+    if '[' in s:
+        base_field = s.split('[')[0]
+        value_field = s.split('[')[1].strip(']')
     return base_field, value_field
 
 def test_regression_fit(residuals, actual_y):
