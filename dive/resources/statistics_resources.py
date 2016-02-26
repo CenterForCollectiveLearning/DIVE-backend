@@ -8,6 +8,7 @@ from dive.resources.serialization import replace_unserializable_numpy, jsonify
 from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
 from dive.tasks.statistics.summary import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
 from dive.tasks.statistics.correlation import run_correlation_from_spec, get_correlation_scatterplot_data, save_correlation
+from dive.tasks.statistics.comparison_tests import run_anova_from_spec, run_numerical_comparison_from_spec
 
 import logging
 logger = logging.getLogger(__name__)
@@ -99,6 +100,21 @@ class NumericalComparisonFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
+
+class AnovaFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_anova_from_spec(spec, project_id)
         return make_response(jsonify(result), status)
 
 class SummaryStatsFromSpec(Resource):
