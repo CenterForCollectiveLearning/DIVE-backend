@@ -71,6 +71,10 @@ visualizationFromSpecPostParser.add_argument('project_id', type=str, required=Tr
 visualizationFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 visualizationFromSpecPostParser.add_argument('config', type=dict, location='json', default={})
 class VisualizationFromSpec(Resource):
+    '''
+    If existing spec with same conditionals and config, return data.
+    Else, create a new spec.
+    '''
     def post(self, spec_id):
         args = visualizationFromSpecPostParser.parse_args()
         project_id = args.get('project_id')
