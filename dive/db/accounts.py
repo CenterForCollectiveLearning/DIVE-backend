@@ -1,9 +1,14 @@
 from flask import abort
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from dive.core import db
+from dive.core import db, login_manager
 from dive.db import ModelName, row_to_dict
 from dive.db.models import User
+
+
+@login_manager.user_loader
+def load_account(user_id):
+    return User.query.get(user_id)
 
 
 def validate_registration(username, email):

@@ -1,4 +1,9 @@
+from dive.core import login_manager
+from dive.db.models import User
 from flask.ext.login import current_user
+
+
+
 
 
 def logged_in():

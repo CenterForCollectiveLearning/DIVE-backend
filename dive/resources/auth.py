@@ -2,8 +2,10 @@ from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
 from flask.ext.login import current_user, login_user, logout_user
 
+from dive.core import login_manager, db
 from dive.db import row_to_dict
 from dive.db.accounts import validate_registration, register_user, delete_user, check_user_auth
+from dive.db.models import User
 from dive.resources.serialization import jsonify
 
 import logging
@@ -77,11 +79,11 @@ class Login(Resource):
 
 
 logoutGetParser = reqparse.RequestParser()
-logoutGetParser.add_argument('user_name', type=str, location='json')
+logoutGetParser.add_argument('username', type=str)
 class Logout(Resource):
     def get(self):
         logout_user()
         return jsonify({
-            'status': 'ok',
+            'status': 'success',
             'message': 'You have been logged out.'
         })
