@@ -13,6 +13,7 @@ def load_account(user_id):
 
 def is_authorized_user(user_id, project_id):
     matching_project = Project.query.get(project_id)
+    print matching_project.private
     if matching_project.private:
         if matching_project.user_id is user_id:
             return True
@@ -63,9 +64,9 @@ def check_user_auth(password, email=None, username=None):
         return 'Need to provide either username or email', False
     user = None
     if email:
-        user = User.query.filter_by(email=email, password=password).one()
+        user = User.query.filter_by(email=email, password=password).first()
     elif username:
-        user = User.query.filter_by(username=username, password=password).one()
+        user = User.query.filter_by(username=username, password=password).first()
     if user:
         return user, True
     else:

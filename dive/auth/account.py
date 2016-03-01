@@ -1,6 +1,7 @@
 from dive.core import login_manager
 from dive.db.models import User
 from dive.db.accounts import is_authorized_user
+from dive.resources.serialization import jsonify
 
 from flask.ext.login import current_user
 from functools import wraps, update_wrapper
@@ -8,9 +9,12 @@ from functools import wraps, update_wrapper
 
 def project_auth(project_id):
     if is_authorized_user(current_user.id, project_id):
-        return True
+        return True, None
     else:
-        return False
+        return False, jsonify({
+            'status': 'error',
+            'message': 'Not authorized'
+        }, status=401)
 
 
 def logged_in():

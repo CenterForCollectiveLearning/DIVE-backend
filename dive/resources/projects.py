@@ -26,11 +26,11 @@ class Project(Resource):
     '''
     @login_required
     def get(self, project_id):
-        if project_auth(project_id):
-            result = db_access.get_project(project_id)
-            return jsonify(result)
-        else:
-            return 'Not authorized'
+        has_project_access, auth_message = project_auth(project_id)
+        if not has_project_access: return auth_message
+
+        result = db_access.get_project(project_id)
+        return jsonify(result)
 
 
     def put(self, project_id):
@@ -47,6 +47,7 @@ class Project(Resource):
             shutil.rmtree(project_dir)
         return jsonify({"message": "Successfully deleted project.",
                             "id": int(result['id'])})
+
 
 projectsGetParser = reqparse.RequestParser()
 projectsGetParser.add_argument('preloaded', type=bool, required=False)

@@ -34,9 +34,7 @@ class Register(Resource):
         else:
             return jsonify({
                 'status': 'error',
-                'errors': {
-                    'message': registration_result
-                }
+                'message': registration_result
             }, status=400)
 
 
