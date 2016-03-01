@@ -3,7 +3,10 @@ import shutil
 
 from flask import make_response, current_app
 from flask.ext.restful import Resource, reqparse, marshal_with
+from flask.ext.login import login_required
 
+
+from dive.auth.account import project_auth
 from dive.db import db_access
 from dive.resources.serialization import jsonify
 
@@ -21,9 +24,14 @@ class Project(Resource):
     PUT data for one project
     DELETE one project
     '''
+    @login_required
     def get(self, project_id):
-        result = db_access.get_project(project_id)
-        return jsonify(result)
+        if project_auth(project_id):
+            result = db_access.get_project(project_id)
+            return jsonify(result)
+        else:
+            return 'Not authorized'
+
 
     def put(self, project_id):
         args = projectPutParser.parse_args()

@@ -3,12 +3,23 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.core import db, login_manager
 from dive.db import ModelName, row_to_dict
-from dive.db.models import User
+from dive.db.models import User, Project
 
 
 @login_manager.user_loader
 def load_account(user_id):
     return User.query.get(user_id)
+
+
+def is_authorized_user(user_id, project_id):
+    matching_project = Project.query.get(project_id)
+    if matching_project.private:
+        if matching_project.user_id is user_id:
+            return True
+        else:
+            return False
+    else:
+        return True
 
 
 def validate_registration(username, email):

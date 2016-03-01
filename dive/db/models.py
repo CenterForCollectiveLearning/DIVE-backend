@@ -411,4 +411,4 @@ class User(db.Model):
         return self.active
 
     def get_id(self):
-        return self.id
+        return unicode(self.id)
