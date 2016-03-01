@@ -1,7 +1,6 @@
-
 from flask.ext.login import current_user
 
-from account import logged_in
+from dive.auth.account import logged_in
 
 
 def create():

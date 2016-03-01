@@ -1,61 +1,87 @@
-from flask import request, make_response, json
-from flask.ext.restful import Resource
-from passlib.hash import sha256_crypt
+from flask import request, make_response
+from flask.ext.restful import Resource, reqparse
+from flask.ext.login import current_user, login_user, logout_user
 
-from dive.db import db_access
+from dive.db import row_to_dict
+from dive.db.accounts import validate_registration, register_user, delete_user, check_user_auth
+from dive.resources.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)
 
-# look at https://github.com/spendb/spendb/blob/master/spendb/views/api/account.py
 
-@app.route("/api/register", methods=["POST"])
-def register() :
-    params = request.json['params']
+registerPostParser = reqparse.RequestParser()
+registerPostParser.add_argument('username', type=str, location='json')
+registerPostParser.add_argument('name', type=str, location='json')
+registerPostParser.add_argument('email', type=str, location='json')
+registerPostParser.add_argument('password', type=str, location='json')
+class Register(Resource):
+    def post(self):
+        args = registerPostParser.parse_args()
+        username = args.get('username')
+        name = args.get('name')
+        email = args.get('email')
+        password = args.get('password')
 
-    existing = MI.getUser({'userName' : params['userName']})
-    resp = {}
+        registration_result, valid_registration = validate_registration(username, email)
+        if valid_registration:
+            account = register_user(username, email, password, name=name)
+            login_user(account, remember=True)
+            return jsonify(row_to_dict(account))
 
-    if (len(existing) != 1) :
-        pw_hash = sha256_crypt.encrypt(params['password'])
-        uID = MI.postNewUser(params['userName'], params['displayName'], pw_hash)
-        resp['success'] = True
-        resp['user'] = {
-            'userName' : params['userName'],
-            'displayName' : params['displayName'],
-            'uID' : uID
-        }
-    else :
-        resp['success'] = False
-        resp['error'] = {
-            'reason': 'Username already taken.'
-        }
-
-    return make_response(json.jsonify(resp))
+        else:
+            return jsonify({
+                'status': 'error',
+                'errors': {
+                    'message': registration_result
+                }
+            }, status=400)
 
 
-@app.route("/api/login", methods=["GET"])
-def login() :
-    params = request.args
+userDeleteParser = reqparse.RequestParser()
+userDeleteParser.add_argument('user_id', type=str, required=True)
+userDeleteParser.add_argument('password', type=str, required=True)
+class User(Resource):
+    def delete(self):
+        args = userDeleteParser.parse_args()
+        user_id = args.get('user_id')
+        password = args.get('password')
 
-    user = MI.getUser({'userName' : params['userName']})
-    resp = {}
-    if (len(user) != 1) :
-        resp['success'] = 0
-    else :
-        u = user[0]
+        deleted_user = delete_user(user_id, password)
+        return jsonify(deleted_user)
 
-        if sha256_crypt.verify(params['password'], u['password']) :
-            resp['success'] = True
-            resp['user'] = {
-                'userName' : u['userName'],
-                'displayName' : u['displayName'],
-                'uID' : u['uID']
-            }
-        else :
-            resp['success'] = False
-            resp['error'] = {
-                'reason': 'Incorrect username or password.'
-            }
 
-    return make_response(json.jsonify(resp))
+loginGetParser = reqparse.RequestParser()
+loginGetParser.add_argument('username', type=str)
+loginGetParser.add_argument('email', type=str)
+loginGetParser.add_argument('password', type=str)
+class Login(Resource):
+    def get(self):
+        args = loginGetParser.parse_args()
+        username = args.get('username')
+        email = args.get('email')
+        password = args.get('password')
+
+        user, auth_status = check_user_auth(password, email=email, username=username)
+        if auth_status:
+            login_user(user, remember=True)
+            return jsonify({
+                'status': 'success',
+                'message': 'Welcome back %s' % user.name
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Incorrect username, e-mail, or password'
+            }, status=400)
+
+
+logoutGetParser = reqparse.RequestParser()
+logoutGetParser.add_argument('user_name', type=str, location='json')
+class Logout(Resource):
+    def get(self):
+        logout_user()
+        return jsonify({
+            'status': 'ok',
+            'message': 'You have been logged out.'
+        })

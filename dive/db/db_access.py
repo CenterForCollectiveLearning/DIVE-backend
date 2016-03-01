@@ -7,11 +7,10 @@ db interfaces to both the API and compute layers.
 '''
 
 from flask import abort
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.core import db
-from dive.db import ModelName
+from dive.db import ModelName, row_to_dict
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document, \
     Summary, Exported_Summary, Correlation, Exported_Correlation
@@ -19,14 +18,6 @@ from dive.db.models import Project, Dataset, Dataset_Properties, Field_Propertie
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def row_to_dict(r, custom_fields=[]):
-    d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
-    if custom_fields:
-        for custom_field in custom_fields:
-            d[custom_field] = getattr(r, custom_field)
-    return d
 
 
 ################
