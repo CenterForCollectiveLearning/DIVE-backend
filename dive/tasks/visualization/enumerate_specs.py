@@ -105,11 +105,10 @@ def get_baseline_viz_specs(field_properties):
     specs = []
     for field in field_properties:
         # Skip unique and ID fields
-        if field['is_id']: continue
-        if field['is_unique']: continue
 
         general_type = field['general_type']
         if general_type == 'c':
+            if field['is_unique'] or field['is_id']: continue
             single_c_specs = single_c(field)
             specs.extend(single_c_specs)
         elif general_type == 'q':
