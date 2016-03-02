@@ -10,6 +10,5 @@ class Role(Enum):
     USER = u'user'
 
 # User Status
-
 class User_Status(Enum):
     NEW = u'new'

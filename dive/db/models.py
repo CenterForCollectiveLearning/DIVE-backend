@@ -19,9 +19,8 @@ class Project(db.Model):
     directory = db.Column(db.Unicode(2000))
     private = db.Column(db.Boolean())
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    users = db.relationship('User')
-    # TODO Define relationships for other one-to-manys?
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
     # One-to-one with datasets
     datasets = db.relationship('Dataset',
@@ -386,20 +385,25 @@ class User(db.Model):
     status = db.Column(db.Unicode(20), default=User_Status.NEW.value)
 
     projects = db.relationship('Project',
-        uselist=False,
+        backref='user',
         cascade='all, delete-orphan',
-        backref='user')
+        lazy='dynamic'
+    )
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    def __init__(self, username='', name='', email='', password=''):
+    def __init__(self, username='', name='', email='', password='', role=''):
         self.api_key = make_uuid()
         self.username = username
         self.name = name
         self.email = email
         self.password = password
+        self.role = role
+
+    def is_admin(self):
+        return (self.role == Role.ADMIN.value)
 
     def is_authenticated(self):
         return self.authenticated

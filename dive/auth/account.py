@@ -8,7 +8,7 @@ from functools import wraps, update_wrapper
 
 
 def project_auth(project_id):
-    if is_authorized_user(current_user.id, project_id):
+    if is_authorized_user(current_user, project_id):
         return True, None
     else:
         return False, jsonify({

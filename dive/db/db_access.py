@@ -33,7 +33,9 @@ def get_projects(**kwargs):
     return [ row_to_dict(project) for project in projects ]
 
 def insert_project(**kwargs):
-    project = Project(**kwargs)
+    project = Project(
+        **kwargs
+    )
     db.session.add(project)
     db.session.commit()
     return row_to_dict(project)
