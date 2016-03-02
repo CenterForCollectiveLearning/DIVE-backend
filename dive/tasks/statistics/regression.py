@@ -252,6 +252,7 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
         total_regression_properties = {
             'aic': model_result.aic,
             'bic': model_result.bic,
+            'dof': model_result.nobs,
             'r_squared': model_result.rsquared,
             'r_squared_adj': model_result.rsquared_adj,
             'f_test': model_result.fvalue,
