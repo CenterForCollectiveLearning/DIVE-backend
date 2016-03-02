@@ -58,6 +58,7 @@ projectsPostParser.add_argument('title', type=str, required=False)
 projectsPostParser.add_argument('description', type=str, required=False)
 projectsPostParser.add_argument('userId', type=str, required=False)
 projectsPostParser.add_argument('anonymous', type=str, required=False, default=False)
+projectsPostParser.add_argument('private', type=bool, required=False, default=True)
 class Projects(Resource):
     '''
     GET list of all projects
@@ -82,11 +83,13 @@ class Projects(Resource):
         description = args.get('description')
         user_id = args.get('userId')
         anonymous = args.get('anonymous')
+        private = args.get('private')
 
         result = db_access.insert_project(
             title=title,
             description=description,
-            user_id=user_id
+            user_id=user_id,
+            private=prviate
         )
 
         new_project_id = result['id']

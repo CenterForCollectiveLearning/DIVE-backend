@@ -4,6 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from dive.core import db, login_manager
 from dive.db import ModelName, row_to_dict
 from dive.db.models import User, Project
+from dive.db.constants import Role
 
 
 @login_manager.user_loader
@@ -11,16 +12,18 @@ def load_account(user_id):
     return User.query.get(user_id)
 
 
-def is_authorized_user(user_id, project_id):
+def is_authorized_user(current_user, project_id):
     matching_project = Project.query.get(project_id)
-    print matching_project.private
+    user_id = current_user.id
+
+    if current_user.is_admin() or not matching_project.private:
+        return True
+
     if matching_project.private:
         if matching_project.user_id is user_id:
             return True
         else:
             return False
-    else:
-        return True
 
 
 def validate_registration(username, email):
@@ -35,12 +38,13 @@ def validate_registration(username, email):
     return 'Valid registration', True
 
 
-def register_user(username, email, password, name=None):
+def register_user(username, email, password, name=None, role=Role.USER.value):
     user = User(
         username=username,
         email=email,
         password=password,
-        name=name
+        name=name,
+        role=role
     )
     db.session.add(user)
     db.session.commit()
