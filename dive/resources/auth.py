@@ -51,13 +51,13 @@ class User(Resource):
         return jsonify(deleted_user)
 
 
-loginGetParser = reqparse.RequestParser()
-loginGetParser.add_argument('username', type=str)
-loginGetParser.add_argument('email', type=str)
-loginGetParser.add_argument('password', type=str)
+loginPostParser = reqparse.RequestParser()
+loginPostParser.add_argument('username', type=str, location='json')
+loginPostParser.add_argument('email', type=str, location='json')
+loginPostParser.add_argument('password', type=str, location='json')
 class Login(Resource):
-    def get(self):
-        args = loginGetParser.parse_args()
+    def post(self):
+        args = loginPostParser.parse_args()
         username = args.get('username')
         email = args.get('email')
         password = args.get('password')
@@ -76,10 +76,10 @@ class Login(Resource):
             }, status=400)
 
 
-logoutGetParser = reqparse.RequestParser()
-logoutGetParser.add_argument('username', type=str)
+logoutPostParser = reqparse.RequestParser()
+logoutPostParser.add_argument('username', type=str, location='json')
 class Logout(Resource):
-    def get(self):
+    def post(self):
         logout_user()
         return jsonify({
             'status': 'success',
