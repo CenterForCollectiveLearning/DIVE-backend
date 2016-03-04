@@ -34,7 +34,7 @@ def get_bin_decimals(v, max_sample=10000, default=3):
 ###
 DEFAULT_BINS = 10
 MAX_BINS = 20
-def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
+def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_decimals):
     '''
     Given a quantitative vector, either:
     1) Automatically bin according to Freedman
@@ -70,10 +70,11 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
         if not num_bins:
             num_bins = DEFAULT_BINS
 
-    # Incrementing max value by tiny amount to deal with np.digitize right edge
-    eps = max_v * 0.00001
-    fake_max = max_v + eps
-    fake_min = min_v - eps
-    bin_edges = np.histogram(v, range=(min_v, fake_max), bins=num_bins)[1]
+    rounding_string = '%.' + str(num_decimals) + 'f'
+    edges = np.linspace(min_v, max_v, num_bins+1)
+    rounded_edges = []
+    for i in range(len(edges)-1):
+        rounded_edges.append( float(rounding_string % edges[i]))
+    rounded_edges.append(float(rounding_string % edges[-1])+0.1)
 
-    return bin_edges
+    return rounded_edges

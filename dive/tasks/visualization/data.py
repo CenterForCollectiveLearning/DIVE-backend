@@ -401,6 +401,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         procedural=procedural,
         procedure=procedure,
         num_bins=num_bins,
+        num_decimals=precision
     )
 
     bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
