@@ -35,7 +35,7 @@ class Register(Resource):
             return jsonify({
                 'status': 'error',
                 'message': registration_result
-            }, status=400)
+            }, status=401)
 
 
 userDeleteParser = reqparse.RequestParser()
@@ -67,13 +67,14 @@ class Login(Resource):
             login_user(user, remember=True)
             return jsonify({
                 'status': 'success',
-                'message': 'Welcome back %s' % user.name
+                'message': 'Welcome back %s' % user.name,
+                'user': user
             })
         else:
             return jsonify({
                 'status': 'error',
                 'message': 'Incorrect username, e-mail, or password'
-            }, status=400)
+            }, status=401)
 
 
 logoutPostParser = reqparse.RequestParser()
