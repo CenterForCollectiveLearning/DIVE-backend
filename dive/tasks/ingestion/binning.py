@@ -34,7 +34,7 @@ def get_bin_decimals(v, max_sample=10000, default=3):
 ###
 DEFAULT_BINS = 10
 MAX_BINS = 20
-def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_decimals):
+def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_decimals=2):
     '''
     Given a quantitative vector, either:
     1) Automatically bin according to Freedman
@@ -73,8 +73,11 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_dec
     rounding_string = '%.' + str(num_decimals) + 'f'
     edges = np.linspace(min_v, max_v, num_bins+1)
     rounded_edges = []
-    for i in range(len(edges)-1):
-        rounded_edges.append( float(rounding_string % edges[i]))
-    rounded_edges.append(float(rounding_string % edges[-1])+0.1)
-
+    if num_decimals == 0:
+        for i in range(len(edges)):
+            rounded_edges.append(int(float(rounding_string % edges[i])))
+    else:
+        for i in range(len(edges)):
+            rounded_edges.append(float(rounding_string % edges[i]))
+    rounded_edges[-1] += 0.0001 * max_v
     return rounded_edges
