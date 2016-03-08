@@ -215,7 +215,7 @@ def _parse_confidence_intervals(model_result):
 
 def create_regression_model(independent_variables, dependent_variable):
     lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-    rhs = [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
+    rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
     model = ModelDesc(lhs, rhs)
     return model
 
@@ -252,6 +252,7 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
         total_regression_properties = {
             'aic': model_result.aic,
             'bic': model_result.bic,
+            'dof': model_result.nobs,
             'r_squared': model_result.rsquared,
             'r_squared_adj': model_result.rsquared_adj,
             'f_test': model_result.fvalue,
@@ -336,7 +337,8 @@ def _get_fields_categorical_variable(s):
     value_field = None
     if '[' in s:
         base_field = s.split('[')[0]
-        value_field = s.split('[')[1].strip(']')
+        value_field = s.split('[T.')[1].strip(']')
+        print base_field, value_field
     return base_field, value_field
 
 def test_regression_fit(residuals, actual_y):
