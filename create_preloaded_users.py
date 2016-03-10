@@ -23,7 +23,7 @@ users = [
         'email': 'kzh@mit.edu',
         'name': 'DIVE Test User',
         'role': Role.USER.value
-    }
+    },
 ]
 
 from dive.core import create_app
