@@ -5,6 +5,7 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.serialization import replace_unserializable_numpy, jsonify
 
+from dive.tasks.statistics.regression import get_contribution_to_r_squared_data
 from dive.tasks.statistics.summary import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
 from dive.tasks.statistics.correlation import run_correlation_from_spec, get_correlation_scatterplot_data, save_correlation
 from dive.tasks.pipelines import regression_pipeline
