@@ -12,6 +12,7 @@ from itertools import chain, combinations
 from operator import add, mul
 from math import log10, floor
 
+from dive.task_core import celery, task_app
 from dive.tasks.statistics.utilities import sets_normal
 from dive.db import db_access
 from dive.data.access import get_data
@@ -81,10 +82,11 @@ def get_full_field_documents_from_names(all_fields, names):
 
 
 def save_regression(spec, result, project_id):
-    existing_regression_doc = db_access.get_regression_from_spec(project_id, spec)
-    if existing_regression_doc:
-        db_access.delete_regression(project_id, existing_regression_doc['id'])
-    inserted_regression = db_access.insert_regression(project_id, spec, result)
+    with task_app.app_context():
+        existing_regression_doc = db_access.get_regression_from_spec(project_id, spec)
+        if existing_regression_doc:
+            db_access.delete_regression(project_id, existing_regression_doc['id'])
+        inserted_regression = db_access.insert_regression(project_id, spec, result)
     return inserted_regression
 
 
@@ -103,7 +105,8 @@ def run_regression_from_spec(spec, project_id):
         return "Not passed required parameters", 400
 
     # Map variables to field documents
-    all_fields = db_access.get_field_properties(project_id, dataset_id)
+    with task_app.app_context():
+        all_fields = db_access.get_field_properties(project_id, dataset_id)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
     independent_variables = []
@@ -126,7 +129,8 @@ def run_regression_from_spec(spec, project_id):
         variable_types['independent'][variable_type] += 1
 
     # 2) Access dataset
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna(axis=0, how='any')
 
     # 3) Run test based on parameters and arguments
