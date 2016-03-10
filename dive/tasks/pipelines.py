@@ -13,6 +13,8 @@ from dive.tasks.transformation.pivot import unpivot_dataset
 from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
+from dive.resources.serialization import replace_unserializable_numpy
+from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
 
 import logging
 logger = logging.getLogger(__name__)
@@ -172,3 +174,41 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, conditional
     saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, conditionals, config)
 
     return { 'result': saved_viz_specs }
+
+
+@celery.task(bind=True)
+def ingestion_pipeline(self, dataset_id, project_id):
+    '''
+    Compute dataset and field properties in parallel
+
+    TODO Accept multiple datasets?
+    '''
+    logger.info("In ingestion pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/4) Computing dataset properties'})
+    dataset_properties = compute_dataset_properties(dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/4) Saving %s dataset properties'})
+    save_dataset_properties(dataset_properties, dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
+    field_properties = compute_field_properties(dataset_id, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
+    result = save_field_properties(field_properties, dataset_id, project_id)
+    return result
+
+
+@celery.task(bind=True)
+def regression_pipeline(self, spec, project_id):
+    logger.info("In regression pipeline with and project_id %s", project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regression'})
+    regression_data, status = run_regression_from_spec(spec, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving regression results'})
+    serializable_regression_data = replace_unserializable_numpy(regression_data)
+    regression_doc = save_regression(spec, serializable_regression_data, project_id)
+    regression_data['id'] = regression_doc['id']
+
+    return { 'result': regression_data }
