@@ -68,7 +68,7 @@ class Login(Resource):
             return jsonify({
                 'status': 'success',
                 'message': 'Welcome back %s' % user.name,
-                'user': user
+                'user': row_to_dict(user)
             })
         else:
             return jsonify({
