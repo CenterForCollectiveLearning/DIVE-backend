@@ -103,7 +103,7 @@ class NumericalComparisonFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return jsonify(result), status
+        return jsonify(result, status=status)
 
 class SummaryStatsFromSpec(Resource):
     def post(self):
@@ -117,7 +117,7 @@ class SummaryStatsFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = get_variable_summary_statistics_from_spec(spec, project_id)
-        return jsonify(result), status
+        return jsonify(result, status=status)
 
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
@@ -133,7 +133,7 @@ class OneDimensionalTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
-        return jsonify(result), status
+        return jsonify(result, status=status)
 
 class ContingencyTableFromSpec(Resource):
     def post(self):
@@ -149,7 +149,7 @@ class ContingencyTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_contingency_table_from_spec(spec, project_id)
-        return jsonify(result), status
+        return jsonify(result, status=status)
 
 class CorrelationsFromSpec(Resource):
     def post(self):

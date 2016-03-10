@@ -16,7 +16,7 @@ def object_handler(obj):
        return obj.isoformat()
 
 
-def jsonify(args):
+def jsonify(args, status=200):
     args = pre_serialize(args)
     json_string = json.dumps(
         args,
@@ -24,7 +24,7 @@ def jsonify(args):
         default=object_handler,
         check_circular=False
     )
-    return current_app.response_class(json_string, mimetype='application/json')
+    return current_app.response_class(json_string, mimetype='application/json', status=status)
 
 
 def to_camel_case(snake_str):
