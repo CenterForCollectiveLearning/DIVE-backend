@@ -5,6 +5,7 @@ import os
 import json
 from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
+from flask.ext.login import login_required
 from celery import chain
 
 from dive.db import db_access
@@ -64,6 +65,7 @@ datasetsGetParser.add_argument('project_id', type=str, required=True)
 datasetsGetParser.add_argument('getStructure', type=bool, required=False, default=False)
 class Datasets(Resource):
     ''' Get dataset descriptions or samples '''
+    @login_required
     def get(self):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
@@ -95,6 +97,7 @@ datasetDeleteParser = reqparse.RequestParser()
 datasetDeleteParser.add_argument('project_id', type=str, required=True)
 class Dataset(Resource):
     # Get dataset descriptions or samples
+    @login_required
     def get(self, dataset_id):
         args = datasetGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
@@ -110,7 +113,7 @@ class Dataset(Resource):
         }
         return make_response(jsonify(response))
 
-
+    @login_required
     def delete(self, dataset_id):
         args = datasetDeleteParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')

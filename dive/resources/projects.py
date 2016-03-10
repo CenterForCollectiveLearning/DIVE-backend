@@ -77,6 +77,7 @@ class Projects(Resource):
         return jsonify({'projects': db_access.get_projects(**query_args)})
 
     # Create project, initialize directories and collections
+    @login_required
     def post(self):
         args = projectsPostParser.parse_args()
         title = args.get('title')
