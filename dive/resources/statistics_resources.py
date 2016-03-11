@@ -71,6 +71,7 @@ class RegressionFromSpec(Resource):
             regression_doc = save_regression(spec, serializable_regression_data, project_id)
             regression_data['id'] = regression_doc['id']
 
+        logger.info(regression_data)
         return make_response(jsonify(regression_data))
 
 
