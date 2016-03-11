@@ -231,6 +231,34 @@ def summary_pipeline(self, spec, project_id):
 
 
 @celery.task(bind=True)
+def one_dimensional_contingency_table_pipeline(self, spec, project_id):
+    logger.info("In one dimensional contingency table pipeline with and project_id %s", project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating one dimensional aggregation table'})
+    table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
+    table_doc = save_table(spec, table_data, project_id)
+    table_data['id'] = table_doc['id']
+
+    return { 'result': table_data }
+
+
+@celery.task(bind=True)
+def contingency_table_pipeline(self, spec, project_id):
+    logger.info("In contingency table pipeline with and project_id %s", project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating aggregation table'})
+    table_data, status = run_create_contingency_table_from_spec(spec, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
+    table_doc = save_table(spec, table_data, project_id)
+    table_data['id'] = table_doc['id']
+
+    return { 'result': table_data }
+
+
+@celery.task(bind=True)
 def correlation_pipeline(self, spec, project_id):
     logger.info("In correlation pipeline with and project_id %s", project_id)
 

@@ -26,7 +26,7 @@ timeFromParamsPostParser.add_argument('sizeArray', type=int, location='json')
 timeFromParamsPostParser.add_argument('funcArraySize', type=int, location='json')
 class RegressionEstimator(Resource):
     def post(self):
-        args = request.json
+        args = timeFromParamsPostParser.parse_args()
         # TODO Implement required parameters
         numInputs = args.get('numInputs')
         sizeArray = args.get('sizeArray')
@@ -34,6 +34,19 @@ class RegressionEstimator(Resource):
 
         result, status = timeEstimator(numInputs, sizeArray, funcArraySize)
         return make_response(jsonify(result))
+
+
+contributionToRSquaredGetParser = reqparse.RequestParser()
+contributionToRSquaredGetParser.add_argument('projectId', type=str)
+class ContributionToRSquared(Resource):
+    def get(self, regression_id):
+        args = contributionToRSquaredGetParser.parse_args()
+        project_id = args.get('projectId')
+        regression_doc = db_access.get_regression_by_id(regression_id, project_id)
+        regression_data = regression_doc['data']
+        data = get_contribution_to_r_squared_data(regression_data)
+        logger.info(data)
+        return jsonify({ 'data': data })
 
 
 #####################################################################
@@ -58,7 +71,7 @@ class RegressionFromSpec(Resource):
             datasetId
         }
         '''
-        args = request.get_json()
+        args = regressionPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
 
@@ -78,7 +91,9 @@ class RegressionFromSpec(Resource):
                 'compute': True
             }, status=202)
 
-
+summaryPostParser = reqparse.RequestParser()
+summaryPostParser.add_argument('projectId', type=str, location='json')
+summaryPostParser.add_argument('spec', type=str, location='json')
 class SummaryStatsFromSpec(Resource):
     def post(self):
         '''
@@ -87,7 +102,7 @@ class SummaryStatsFromSpec(Resource):
             fieldIds : list
         }
         '''
-        args = request.get_json()
+        args = summaryPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
 
@@ -107,36 +122,9 @@ class SummaryStatsFromSpec(Resource):
                 'compute': True
             }, status=202)
 
-
-contributionToRSquaredGetParser = reqparse.RequestParser()
-contributionToRSquaredGetParser.add_argument('projectId', type=str)
-class ContributionToRSquared(Resource):
-    def get(self, regression_id):
-        args = contributionToRSquaredGetParser.parse_args()
-        project_id = args.get('projectId')
-        regression_doc = db_access.get_regression_by_id(regression_id, project_id)
-        regression_data = regression_doc['data']
-        data = get_contribution_to_r_squared_data(regression_data)
-        logger.info(data)
-        return jsonify({ 'data': data })
-
-
-class NumericalComparisonFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            variable_names : list names
-            dataset_id : integer
-            independence : boolean
-        }
-        '''
-        args = request.get_json()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return jsonify(result, status=status)
-
-
+oneDimensionalTableFromSpecPostParser = reqparse.RequestParser()
+oneDimensionalTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
+oneDimensionalTableFromSpecPostParser.add_argument('spec', type=str, location='json')
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
         '''
@@ -147,12 +135,16 @@ class OneDimensionalTableFromSpec(Resource):
             dependentVariable
         }
         '''
-        args = request.get_json()
+        args = oneDimensionalTableFromSpec.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
         return jsonify(result, status=status)
 
+
+contingencyTableFromSpecPostParser = reqparse.RequestParser()
+contingencyTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
+contingencyTableFromSpecPostParser.add_argument('spec', type=str, location='json')
 class ContingencyTableFromSpec(Resource):
     def post(self):
         '''
@@ -163,13 +155,16 @@ class ContingencyTableFromSpec(Resource):
             dependentVariable
         }
         '''
-        args = request.get_json()
+        args = contingencyTableFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = create_contingency_table_from_spec(spec, project_id)
         return jsonify(result, status=status)
 
 
+correlationsFromSpecPostParser = reqparse.RequestParser()
+correlationsFromSpecPostParser.add_argument('projectId', type=str, location='json')
+correlationsFromSpecPostParser.add_argument('spec', type=str, location='json')
 class CorrelationsFromSpec(Resource):
     def post(self):
         '''
@@ -178,7 +173,7 @@ class CorrelationsFromSpec(Resource):
             correlationVariables
         }
         '''
-        args = request.get_json()
+        args = correlationsFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
 
