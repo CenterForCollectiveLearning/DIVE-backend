@@ -40,33 +40,21 @@ class TaskResult(Resource):
         task = celery.AsyncResult(task_id)
         state = {
             'currentTask': '',
-            'state': ''
+            'state': task.state
         }
 
         logger.debug('%s: %s', task_id, task.state)
         if task.state == states.PENDING:
             if (task.info) and (task.info.get('desc')):
                 logger.info(task.info.get('desc'))
-                state = {
-                    'currentTask': task.info.get('desc'),
-                    'state': task.state,
-                }
-            else:
-                state = {
-                    'currentTask': '',
-                    'state': task.state,
-                }
+                state['currentTask'] = task.info.get('desc'),
         elif task.state == states.SUCCESS:
-            state = {
-                'result': task.info.get('result'),
-                'state': task.state,
-            }
+            if task.info:
+                state['result'] = task.info.get('result')
 
         elif task.state == states.FAILURE:
-            state = {
-                'error': task.info.get('error'),
-                'state': task.state,
-            }
+            if task.info:
+                state['error'] = task.info.get('error')
 
         response = jsonify(state)
         if task.state == states.PENDING:
