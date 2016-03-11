@@ -6,8 +6,8 @@ from dive.db import db_access
 from dive.resources.serialization import replace_unserializable_numpy, jsonify
 
 from dive.tasks.statistics.regression import get_contribution_to_r_squared_data
-from dive.tasks.statistics.summary import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
-from dive.tasks.statistics.correlation import run_correlation_from_spec, get_correlation_scatterplot_data, save_correlation
+from dive.tasks.statistics.summary import get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
+from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
 from dive.tasks.pipelines import regression_pipeline
 from dive.tasks.handlers import error_handler
 
@@ -76,7 +76,37 @@ class RegressionFromSpec(Resource):
             return jsonify({
                 'taskId': regression_task.task_id,
                 'compute': True
-            })
+            }, status=202)
+
+
+class SummaryStatsFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            datasetId : integer
+            fieldIds : list
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+
+        summary_doc = db_access.get_summary_from_spec(project_id, spec)
+        if summary_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            summary_data = summary_doc['data']
+            summary_data['id'] = summary_doc['id']
+            return jsonify(regression_data)
+        else:
+            summary_task = summary_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+
+            return jsonify({
+                'taskId': summary_task.task_id,
+                'compute': True
+            }, status=202)
+
 
 contributionToRSquaredGetParser = reqparse.RequestParser()
 contributionToRSquaredGetParser.add_argument('projectId', type=str)
@@ -106,19 +136,6 @@ class NumericalComparisonFromSpec(Resource):
         result, status = run_numerical_comparison_from_spec(spec, project_id)
         return jsonify(result, status=status)
 
-class SummaryStatsFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            datasetId : integer
-            fieldIds : list
-        }
-        '''
-        args = request.get_json()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        result, status = get_variable_summary_statistics_from_spec(spec, project_id)
-        return jsonify(result, status=status)
 
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
@@ -152,6 +169,7 @@ class ContingencyTableFromSpec(Resource):
         result, status = create_contingency_table_from_spec(spec, project_id)
         return jsonify(result, status=status)
 
+
 class CorrelationsFromSpec(Resource):
     def post(self):
         '''
@@ -168,13 +186,17 @@ class CorrelationsFromSpec(Resource):
         if correlation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             correlation_data = correlation_doc['data']
             correlation_data['id'] = correlation_doc['id']
+            return jsonify(regression_data)
         else:
-            correlation_data, status = run_correlation_from_spec(spec, project_id)
-            serializable_correlation_data = replace_unserializable_numpy(correlation_data)
-            correlation_doc = save_correlation(spec, serializable_correlation_data, project_id)
-            correlation_data['id'] = correlation_doc['id']
+            correlation_task = correlation_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
 
-        return jsonify(correlation_data)
+            return jsonify({
+                'taskId': correlation_task.task_id,
+                'compute': True
+            }, status=202)
 
 
 correlationScatterplotGetParser = reqparse.RequestParser()
@@ -187,20 +209,3 @@ class CorrelationScatterplot(Resource):
         correlation_spec = correlation_doc['spec']
         data = get_correlation_scatterplot_data(correlation_spec, project_id)
         return jsonify({ 'data': data })
-
-
-class ComparisonFromSpec(Resource):
-    def post(self):
-        args = request.get_json()
-        project_id = args.get('project_id')
-        spec = args.get('spec')
-        result, status = run_comparison_from_spec(spec, project_id)
-        return jsonify(result)
-
-
-class SegmentationFromSpec(Resource):
-    def post(self):
-        args = request.get_json()
-        project_id = args.get('project_id')
-        spec = args.get('spec')
-        return

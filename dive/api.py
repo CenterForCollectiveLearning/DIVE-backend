@@ -55,7 +55,6 @@ def add_resources(api):
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
-    api.add_resource(SegmentationFromSpec,          '/statistics/v1/segmentation')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
     api.add_resource(ExportedRegressions,           '/exported_regressions/v1/exported_regressions')
@@ -65,7 +64,4 @@ def add_resources(api):
     api.add_resource(NewDocument,                   '/compose/v1/document')
     api.add_resource(Document,                      '/compose/v1/document/<string:document_id>')
 
-
     return api
-    # api.add_resource(Register,                      '/auth/v1/register')
-    # api.add_resource(Login,                         '/auth/v1/login')

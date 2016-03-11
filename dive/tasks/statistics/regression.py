@@ -12,10 +12,11 @@ from itertools import chain, combinations
 from operator import add, mul
 from math import log10, floor
 
-from dive.task_core import celery, task_app
-from dive.tasks.statistics.utilities import sets_normal
 from dive.db import db_access
 from dive.data.access import get_data
+from dive.task_core import celery, task_app
+from dive.tasks.statistics.utilities import sets_normal
+from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -86,8 +87,9 @@ def save_regression(spec, result, project_id):
         existing_regression_doc = db_access.get_regression_from_spec(project_id, spec)
         if existing_regression_doc:
             db_access.delete_regression(project_id, existing_regression_doc['id'])
+        result = replace_unserializable_numpy(result)
         inserted_regression = db_access.insert_regression(project_id, spec, result)
-    return inserted_regression
+        return inserted_regression
 
 
 def run_regression_from_spec(spec, project_id):

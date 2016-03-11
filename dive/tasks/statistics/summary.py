@@ -41,7 +41,7 @@ def create_contingency_table_from_spec(spec, project_id):
     comparison_result = create_contingency_table(df, comparison_variables, dep_variable)
     return comparison_result, 200
 
-def get_variable_summary_statistics_from_spec(spec, project_id):
+def run_summary_from_spec(spec, project_id):
     summary_statistics_result = {}
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")

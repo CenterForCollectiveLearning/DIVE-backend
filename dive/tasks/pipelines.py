@@ -13,8 +13,11 @@ from dive.tasks.transformation.pivot import unpivot_dataset
 from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
+from dive.tasks.statistics.regression import run_regression_from_spec, save_regression
+from dive.tasks.statistics.summary import run_summary_from_spec, save_summary
+from dive.tasks.statistics.correlation import run_correlation_from_spec, save_correlation
 from dive.resources.serialization import replace_unserializable_numpy
-from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -207,8 +210,35 @@ def regression_pipeline(self, spec, project_id):
     regression_data, status = run_regression_from_spec(spec, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving regression results'})
-    serializable_regression_data = replace_unserializable_numpy(regression_data)
-    regression_doc = save_regression(spec, serializable_regression_data, project_id)
+    regression_doc = save_regression(spec, regression_data, project_id)
     regression_data['id'] = regression_doc['id']
 
     return { 'result': regression_data }
+
+
+@celery.task(bind=True)
+def summary_pipeline(self, spec, project_id):
+    logger.info("In summary pipeline with and project_id %s", project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical summary'})
+    summary_data, status = run_summary_from_spec(spec, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical summary'})
+    summary_doc = save_summary(spec, summary_data, project_id)
+    summary_data['id'] = summary_doc['id']
+
+    return { 'result': summary_data }
+
+
+@celery.task(bind=True)
+def correlation_pipeline(self, spec, project_id):
+    logger.info("In correlation pipeline with and project_id %s", project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical correlation'})
+    correlation_data, status = run_correlation_from_spec(spec, project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical correlation'})
+    correlation_doc = save_correlation(spec, correlation_data, project_id)
+    correlation_data['id'] = correlation_doc['id']
+
+    return { 'result': correlation_data }
