@@ -56,7 +56,7 @@ class ContributionToRSquared(Resource):
 #####################################################################
 regressionPostParser = reqparse.RequestParser()
 regressionPostParser.add_argument('projectId', type=str, location='json')
-regressionPostParser.add_argument('spec', type=str, location='json')
+regressionPostParser.add_argument('spec', type=dict, location='json')
 class RegressionFromSpec(Resource):
     def post(self):
         '''
@@ -87,13 +87,13 @@ class RegressionFromSpec(Resource):
             )
 
             return jsonify({
-                'taskId': regression_task.task_id,
+                'task_id': regression_task.task_id,
                 'compute': True
             }, status=202)
 
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=str, location='json')
-summaryPostParser.add_argument('spec', type=str, location='json')
+summaryPostParser.add_argument('spec', type=dict, location='json')
 class SummaryStatsFromSpec(Resource):
     def post(self):
         '''
@@ -118,13 +118,13 @@ class SummaryStatsFromSpec(Resource):
             )
 
             return jsonify({
-                'taskId': summary_task.task_id,
+                'task_id': summary_task.task_id,
                 'compute': True
             }, status=202)
 
 oneDimensionalTableFromSpecPostParser = reqparse.RequestParser()
 oneDimensionalTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
-oneDimensionalTableFromSpecPostParser.add_argument('spec', type=str, location='json')
+oneDimensionalTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
         '''
@@ -144,7 +144,7 @@ class OneDimensionalTableFromSpec(Resource):
 
 contingencyTableFromSpecPostParser = reqparse.RequestParser()
 contingencyTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
-contingencyTableFromSpecPostParser.add_argument('spec', type=str, location='json')
+contingencyTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
 class ContingencyTableFromSpec(Resource):
     def post(self):
         '''
@@ -164,7 +164,7 @@ class ContingencyTableFromSpec(Resource):
 
 correlationsFromSpecPostParser = reqparse.RequestParser()
 correlationsFromSpecPostParser.add_argument('projectId', type=str, location='json')
-correlationsFromSpecPostParser.add_argument('spec', type=str, location='json')
+correlationsFromSpecPostParser.add_argument('spec', type=dict, location='json')
 class CorrelationsFromSpec(Resource):
     def post(self):
         '''
@@ -189,7 +189,7 @@ class CorrelationsFromSpec(Resource):
             )
 
             return jsonify({
-                'taskId': correlation_task.task_id,
+                'task_id': correlation_task.task_id,
                 'compute': True
             }, status=202)
 
