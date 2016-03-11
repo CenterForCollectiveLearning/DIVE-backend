@@ -206,7 +206,7 @@ def ingestion_pipeline(self, dataset_id, project_id):
 def regression_pipeline(self, spec, project_id):
     logger.info("In regression pipeline with and project_id %s", project_id)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regression'})
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regressions'})
     regression_data, status = run_regression_from_spec(spec, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving regression results'})
