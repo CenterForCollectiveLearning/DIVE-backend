@@ -453,6 +453,45 @@ def delete_correlation(project_id, correlation_id):
     return row_to_dict(correlation)
 
 ################
+# Summaries
+################
+def get_summary_by_id(summary_id, project_id):
+    summary = Summary.query.filter_by(id=summary_id, project_id=project_id).one()
+    if summary is None:
+        abort(404)
+    return row_to_dict(summary)
+
+
+def get_summary_from_spec(project_id, spec):
+    try:
+        summary = Summary.query.filter_by(project_id=project_id, spec=spec).one()
+    except NoResultFound:
+        return None
+    return row_to_dict(summary)
+
+
+def insert_summary(project_id, spec, data):
+    summary = Summary(
+        project_id = project_id,
+        spec = spec,
+        data = data
+    )
+    db.session.add(summary)
+    db.session.commit()
+    return row_to_dict(summary)
+
+def delete_summary(project_id, summary_id):
+    try:
+        summary = Summary.query.filter_by(project_id=project_id, id=summary_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    db.session.delete(summary)
+    db.session.commit()
+    return row_to_dict(summary)
+
+################
 # Exported Analyses
 ################
 def get_exported_regression_by_id(project_id, exported_regression_id):
