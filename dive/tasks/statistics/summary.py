@@ -792,3 +792,13 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
             valid_tests['friedmanchisquare'] = stats.friedmanchisquare
 
     return valid_tests
+
+
+def save_summary(spec, result, project_id):
+    with task_app.app_context():
+        existing_summary_doc = db_access.get_summary_from_spec(project_id, spec)
+        if existing_summary_doc:
+            db_access.delete_summary(project_id, existing_summary_doc['id'])
+        result = replace_unserializable_numpy(result)
+        inserted_summary = db_access.insert_summary(project_id, spec, result)
+        return inserted_summary
