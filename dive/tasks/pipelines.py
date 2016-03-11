@@ -3,20 +3,22 @@ Containers for celery task chains
 '''
 from celery import group, chain, states
 from dive.task_core import celery, task_app
+
 from dive.tasks.ingestion.upload import save_dataset
 from dive.tasks.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.tasks.ingestion.field_properties import compute_field_properties, save_field_properties
 from dive.tasks.ingestion.relationships import compute_relationships, save_relationships
+
 from dive.tasks.transformation.reduce import reduce_dataset
 from dive.tasks.transformation.join import join_datasets
 from dive.tasks.transformation.pivot import unpivot_dataset
+
 from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
-from dive.tasks.statistics.regression import run_regression_from_spec, save_regression
-from dive.tasks.statistics.summary import run_summary_from_spec, save_summary
+from dive.tasks.statistics.summary import run_summary_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_summary
 from dive.tasks.statistics.correlation import run_correlation_from_spec, save_correlation
-from dive.resources.serialization import replace_unserializable_numpy
+from dive.tasks.statistics.regression import run_regression_from_spec, save_regression
 
 
 import logging
@@ -238,7 +240,7 @@ def one_dimensional_contingency_table_pipeline(self, spec, project_id):
     table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
-    table_doc = save_table(spec, table_data, project_id)
+    table_doc = save_summary(spec, table_data, project_id)
     table_data['id'] = table_doc['id']
 
     return { 'result': table_data }
@@ -249,10 +251,10 @@ def contingency_table_pipeline(self, spec, project_id):
     logger.info("In contingency table pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating aggregation table'})
-    table_data, status = run_create_contingency_table_from_spec(spec, project_id)
+    table_data, status = create_contingency_table_from_spec(spec, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
-    table_doc = save_table(spec, table_data, project_id)
+    table_doc = save_summary(spec, table_data, project_id)
     table_data['id'] = table_doc['id']
 
     return { 'result': table_data }

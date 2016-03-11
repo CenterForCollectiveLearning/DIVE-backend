@@ -3,12 +3,11 @@ from flask import current_app, request, make_response
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
-from dive.resources.serialization import replace_unserializable_numpy, jsonify
+from dive.resources.serialization import jsonify
 
 from dive.tasks.statistics.regression import get_contribution_to_r_squared_data
-from dive.tasks.statistics.summary import run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
-from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline
+from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
 from dive.tasks.handlers import error_handler
 
 import logging
@@ -110,7 +109,7 @@ class SummaryStatsFromSpec(Resource):
         if summary_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             summary_data = summary_doc['data']
             summary_data['id'] = summary_doc['id']
-            return jsonify(regression_data)
+            return jsonify(summary_data)
         else:
             summary_task = summary_pipeline.apply_async(
                 args = [spec, project_id],
@@ -135,11 +134,24 @@ class OneDimensionalTableFromSpec(Resource):
             dependentVariable
         }
         '''
-        args = oneDimensionalTableFromSpec.parse_args()
+        args = oneDimensionalTableFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
-        return jsonify(result, status=status)
+
+        table_doc = db_access.get_summary_from_spec(project_id, spec)
+        if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            table_data = table_doc['data']
+            table_data['id'] = table_doc['id']
+            return jsonify(table_data)
+        else:
+            table_task = one_dimensional_contingency_table_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+            return jsonify({
+                'task_id': table_task.task_id,
+                'compute': True
+            }, status=202)
 
 
 contingencyTableFromSpecPostParser = reqparse.RequestParser()
@@ -158,8 +170,22 @@ class ContingencyTableFromSpec(Resource):
         args = contingencyTableFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = create_contingency_table_from_spec(spec, project_id)
-        return jsonify(result, status=status)
+
+        table_doc = db_access.get_summary_from_spec(project_id, spec)
+
+        if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            table_data = table_doc['data']
+            table_data['id'] = table_doc['id']
+            return jsonify(table_data)
+        else:
+            table_task = contingency_table_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+            return jsonify({
+                'task_id': table_task.task_id,
+                'compute': True
+            }, status=202)
 
 
 correlationsFromSpecPostParser = reqparse.RequestParser()
@@ -181,7 +207,7 @@ class CorrelationsFromSpec(Resource):
         if correlation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             correlation_data = correlation_doc['data']
             correlation_data['id'] = correlation_doc['id']
-            return jsonify(regression_data)
+            return jsonify(correlation_data)
         else:
             correlation_task = correlation_pipeline.apply_async(
                 args = [spec, project_id],

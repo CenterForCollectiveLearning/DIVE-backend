@@ -12,7 +12,9 @@ from scipy.stats import ttest_ind
 
 from dive.db import db_access
 from dive.data.access import get_data
+from dive.task_core import task_app
 from dive.tasks.ingestion.utilities import get_unique
+from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -23,7 +25,8 @@ def create_one_dimensional_contingency_table_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = create_one_dimensional_contingency_table(df, comparison_variable, dep_variable)
@@ -35,7 +38,8 @@ def create_contingency_table_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = create_contingency_table(df, comparison_variables, dep_variable)
@@ -45,9 +49,10 @@ def run_summary_from_spec(spec, project_id):
     summary_statistics_result = {}
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")
-    field_properties = db_access.get_field_properties(project_id, dataset_id)
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        field_properties = db_access.get_field_properties(project_id, dataset_id)
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     field_ids = set(field_ids)
@@ -486,7 +491,6 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
     for index in df.index:
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
-        logger.info('%s %s %s', index, col, row)
         if count_dict.get(row):
             if count_dict[row].get(col):
                 count_dict[row][col]+= 1
@@ -633,7 +637,8 @@ def run_numerical_comparison_from_spec(spec, project_id):
     if not (len(variable_names) >= 2 and dataset_id):
         return 'Not passed required parameters', 400
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = run_valid_comparison_tests(df, variable_names, independence)
@@ -671,10 +676,12 @@ def run_comparison_from_spec(spec, project_id):
     if not (dataset_id and dep):
         return 'Not passed required parameters', 400
 
-    fields = db_access.get_field_properties(project_id, dataset_id)
+    with task_app.app_context():
+        fields = db_access.get_field_properties(project_id, dataset_id)
 
     # 2) Access dataset
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     # 3) Run test based on parameters and arguments
