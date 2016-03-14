@@ -58,7 +58,7 @@ def run_correlation(df, correlation_variables):
     return correlation_result
 
 
-def get_correlation_scatterplot_data(correlation_spec, project_id, max_points=500):
+def get_correlation_scatterplot_data(correlation_spec, project_id, max_points=300):
     correlation_variables = correlation_spec['correlationVariables']
     dataset_id = correlation_spec['datasetId']
     with task_app.app_context():
