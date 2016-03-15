@@ -27,9 +27,16 @@ class Register(Resource):
 
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
-            account = register_user(username, email, password, name=name)
-            login_user(account, remember=True)
-            return jsonify(row_to_dict(account))
+            user = register_user(username, email, password, name=name)
+            login_user(user, remember=True)
+            response = jsonify({
+                'status': 'success',
+                'message': 'Welcome to DIVE, %s' % user.name,
+                'user': row_to_dict(user)
+            })
+            response.set_cookie('username', user.name)
+            response.set_cookie('email', user.email)
+            return response
 
         else:
             return jsonify({
@@ -55,21 +62,26 @@ loginPostParser = reqparse.RequestParser()
 loginPostParser.add_argument('username', type=str, location='json')
 loginPostParser.add_argument('email', type=str, location='json')
 loginPostParser.add_argument('password', type=str, location='json')
+loginPostParser.add_argument('remember', type=bool, default=True, location='json')
 class Login(Resource):
     def post(self):
         args = loginPostParser.parse_args()
         username = args.get('username')
         email = args.get('email')
         password = args.get('password')
+        remember = args.get('remember')
 
         user, auth_status = check_user_auth(password, email=email, username=username)
         if auth_status:
-            login_user(user, remember=True)
-            return jsonify({
+            login_user(user, remember=remember)
+            response = jsonify({
                 'status': 'success',
                 'message': 'Welcome back %s' % user.name,
                 'user': row_to_dict(user)
             })
+            response.set_cookie('username', user.name)
+            response.set_cookie('email', user.email)
+            return response
         else:
             return jsonify({
                 'status': 'error',
@@ -82,7 +94,10 @@ logoutPostParser.add_argument('username', type=str, location='json')
 class Logout(Resource):
     def post(self):
         logout_user()
-        return jsonify({
+        response = jsonify({
             'status': 'success',
             'message': 'You have been logged out.'
         })
+        response.set_cookie('username', '', expires=0)
+        response.set_cookie('email', '', expires=0)
+        return response
