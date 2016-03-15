@@ -6,9 +6,9 @@ from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.statistics_resources import CorrelationsFromSpec, RegressionEstimator, \
-    RegressionFromSpec, SummaryStatsFromSpec, NumericalComparisonFromSpec, \
-    OneDimensionalTableFromSpec, ContingencyTableFromSpec, ComparisonFromSpec, \
-    SegmentationFromSpec, ContributionToRSquared, CorrelationScatterplot
+    RegressionFromSpec, SummaryStatsFromSpec, \
+    OneDimensionalTableFromSpec, ContingencyTableFromSpec, \
+    ContributionToRSquared, CorrelationScatterplot
 from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
 from dive.resources.transform import Reduce, Unpivot, Join
 
