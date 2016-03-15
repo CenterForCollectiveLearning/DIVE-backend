@@ -9,6 +9,7 @@ import math
 import numpy as np
 import pandas as pd
 import scipy as sp
+from random import sample
 from itertools import combinations
 from flask import current_app
 
@@ -126,6 +127,11 @@ def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visual
 
     field_a_list = df[field_a_label].tolist()
     field_b_list = df[field_b_label].tolist()
+    zipped_list = zip(field_a_list, field_b_list)
+    if len(zipped_list) > 1000:
+        final_list = sample(zipped_list, 1000)
+    else:
+        final_list = zipped_list
 
     if 'score' in data_formats:
         final_data['score'] = {
@@ -135,7 +141,7 @@ def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visual
     if 'visualize' in data_formats:
         data_array = []
         data_array.append([ field_a_label, field_b_label ])
-        for (a, b) in zip(field_a_list, field_b_list):
+        for (a, b) in final_list:
             data_array.append([a, b])
         final_data['visualize'] = data_array
     if 'table' in data_formats:

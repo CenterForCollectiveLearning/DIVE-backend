@@ -1,11 +1,11 @@
-from flask import make_response, request, current_app
+from flask import request, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.db import db_access
 from dive.resources.serialization import jsonify
 from dive.tasks.visualization import GeneratingProcedure
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
-from dive.tasks.pipelines import viz_spec_pipeline, get_chain_IDs
+from dive.tasks.pipelines import viz_spec_pipeline
 from dive.tasks.handlers import error_handler
 
 import logging
@@ -39,31 +39,20 @@ class Specs(Resource):
         specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
 
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
-            from time import time
-            start_time = time()
-
-            result = make_response(jsonify({
+            return jsonify({
                 'result': specs,
                 'compute': False
-            }))
-
-            logger.info('Formatting result took %.3fs', (time() - start_time))
-            return result
+            })
         else:
             specs_task = viz_spec_pipeline.apply_async(
                 args = [dataset_id, project_id, selected_fields, conditionals, config],
                 link_error = error_handler.s()
             )
-            from time import time
-            start_time = time()
 
-            result = make_response(jsonify({
+            return jsonify({
                 'taskId': specs_task.task_id,
                 'compute': True
-            }))
-
-            logger.info('Formatting result took %.3fs', (time() - start_time))
-            return result
+            })
 
 
 visualizationFromSpecPostParser = reqparse.RequestParser()
@@ -99,4 +88,4 @@ class VisualizationFromSpec(Resource):
             result['exported'] = True
             result['exported_spec_id'] = existing_exported_spec['id']
 
-        return make_response(jsonify(result))
+        return jsonify(result)

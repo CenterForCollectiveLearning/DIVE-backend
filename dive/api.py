@@ -48,14 +48,11 @@ def add_resources(api):
 
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
     api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
-    api.add_resource(ComparisonFromSpec,            '/statistics/v1/comparison')
     api.add_resource(SummaryStatsFromSpec,          '/statistics/v1/summary_stats')
-    api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
-    api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
+    api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
-    api.add_resource(SegmentationFromSpec,          '/statistics/v1/segmentation')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
     api.add_resource(ExportedRegressions,           '/exported_regressions/v1/exported_regressions')
@@ -68,6 +65,6 @@ def add_resources(api):
     api.add_resource(Register,                      '/auth/v1/register')
     api.add_resource(Login,                         '/auth/v1/login')
     api.add_resource(Logout,                        '/auth/v1/logout')
-    api.add_resource(User,                        '/auth/v1/user')    
+    api.add_resource(User,                        '/auth/v1/user')
 
     return api
