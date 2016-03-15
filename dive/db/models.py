@@ -255,7 +255,7 @@ class Summary(db.Model):
     data = db.Column(JSONB)
 
     # One-to-many with exported specs
-    exported_regression = db.relationship('Exported_Summary',
+    exported_summary = db.relationship('Exported_Summary',
         backref='summary',
         cascade='all, delete-orphan',
         lazy='dynamic')
