@@ -51,14 +51,15 @@ class Project(Resource):
 
 projectsGetParser = reqparse.RequestParser()
 projectsGetParser.add_argument('preloaded', type=bool, required=False)
-projectsGetParser.add_argument('private', type=bool, required=False, default=False)
+projectsGetParser.add_argument('user_id', type=int, required=False)
+projectsGetParser.add_argument('private', type=bool, required=False, default=True)
 
 projectsPostParser = reqparse.RequestParser()
-projectsPostParser.add_argument('title', type=str, required=False)
-projectsPostParser.add_argument('description', type=str, required=False)
-projectsPostParser.add_argument('userId', type=str, required=False)
-projectsPostParser.add_argument('anonymous', type=str, required=False, default=False)
-projectsPostParser.add_argument('private', type=bool, required=False, default=True)
+projectsPostParser.add_argument('title', type=str, location='json', required=False)
+projectsPostParser.add_argument('description', type=str, location='json', required=False)
+projectsPostParser.add_argument('anonymous', type=str, location='json', required=False, default=False)
+projectsPostParser.add_argument('private', type=bool, location='json', required=False, default=True)
+projectsPostParser.add_argument('user_id', type=int, required=False)
 class Projects(Resource):
     '''
     GET list of all projects
@@ -67,13 +68,19 @@ class Projects(Resource):
     def get(self):
         args = projectsGetParser.parse_args()
         preloaded = args.get('preloaded')
+        user_id = args.get('user_id')
 
         query_args = {}
-        if preloaded: query_args['preloaded'] = preloaded
+        if preloaded:
+            query_args['preloaded'] = preloaded
+        if 'user_id' in args:
+            query_args['user_id'] = user_id
+
         if 'private' in args:
             if args.get('private') != True:
                 query_args['private'] = args.get('private')
 
+        print 'QUERY_ARGS', query_args
         return jsonify({'projects': db_access.get_projects(**query_args)})
 
     # Create project, initialize directories and collections
@@ -82,7 +89,7 @@ class Projects(Resource):
         args = projectsPostParser.parse_args()
         title = args.get('title')
         description = args.get('description')
-        user_id = args.get('userId')
+        user_id = args.get('user_id')
         anonymous = args.get('anonymous')
         private = args.get('private')
 
@@ -90,7 +97,7 @@ class Projects(Resource):
             title=title,
             description=description,
             user_id=user_id,
-            private=prviate
+            private=private
         )
 
         new_project_id = result['id']
