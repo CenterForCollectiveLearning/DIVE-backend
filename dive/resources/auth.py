@@ -1,6 +1,7 @@
 from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
 from flask.ext.login import current_user, login_user, logout_user
+from datetime import timedelta, datetime
 
 from dive.core import login_manager, db
 from dive.db import row_to_dict
@@ -11,6 +12,7 @@ from dive.resources.serialization import jsonify
 import logging
 logger = logging.getLogger(__name__)
 
+COOKIE_DURATION = timedelta(days=365)
 
 registerPostParser = reqparse.RequestParser()
 registerPostParser.add_argument('username', type=str, location='json')
@@ -34,8 +36,8 @@ class Register(Resource):
                 'message': 'Welcome to DIVE, %s' % user.name,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.name)
-            response.set_cookie('email', user.email)
+            response.set_cookie('username', user.name, expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
 
         else:
@@ -79,8 +81,8 @@ class Login(Resource):
                 'message': 'Welcome back %s' % user.name,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.name)
-            response.set_cookie('email', user.email)
+            response.set_cookie('username', user.name, expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
         else:
             return jsonify({
