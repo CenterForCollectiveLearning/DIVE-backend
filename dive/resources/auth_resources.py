@@ -16,7 +16,7 @@ COOKIE_DURATION = timedelta(days=365)
 
 registerPostParser = reqparse.RequestParser()
 registerPostParser.add_argument('username', type=str, location='json')
-registerPostParser.add_argument('name', type=str, location='json')
+registerPostParser.add_argument('name', type=str, default='', location='json')
 registerPostParser.add_argument('email', type=str, location='json')
 registerPostParser.add_argument('password', type=str, location='json')
 class Register(Resource):
@@ -31,13 +31,15 @@ class Register(Resource):
         if valid_registration:
             user = register_user(username, email, password, name=name)
             login_user(user, remember=True)
+            print 'username', user.username
             response = jsonify({
                 'status': 'success',
-                'message': 'Welcome to DIVE, %s' % user.name,
+                'message': 'Welcome to DIVE, %s' % user.username,
                 'user': row_to_dict(user)
             })
             response.set_cookie('username', user.name, expires=datetime.utcnow() + COOKIE_DURATION)
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION)
             return response
 
         else:
@@ -61,8 +63,8 @@ class User(Resource):
 
 
 loginPostParser = reqparse.RequestParser()
-loginPostParser.add_argument('username', type=str, location='json')
-loginPostParser.add_argument('email', type=str, location='json')
+loginPostParser.add_argument('username', type=str, required=True, location='json')
+loginPostParser.add_argument('email', type=str, required=True, location='json')
 loginPostParser.add_argument('password', type=str, location='json')
 loginPostParser.add_argument('remember', type=bool, default=True, location='json')
 class Login(Resource):
@@ -76,13 +78,18 @@ class Login(Resource):
         user, auth_status = check_user_auth(password, email=email, username=username)
         if auth_status:
             login_user(user, remember=remember)
+            if user.name:
+                message = 'Welcome back %s!' % user.name
+            else:
+                message = 'Welcome back!'
             response = jsonify({
                 'status': 'success',
-                'message': 'Welcome back %s' % user.name,
+                'message': message,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.name, expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION)
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION)
             return response
         else:
             return jsonify({
@@ -102,4 +109,5 @@ class Logout(Resource):
         })
         response.set_cookie('username', '', expires=0)
         response.set_cookie('email', '', expires=0)
+        response.set_cookie('user_id', '', expires=0)
         return response

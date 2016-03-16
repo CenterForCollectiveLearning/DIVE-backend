@@ -38,7 +38,7 @@ def validate_registration(username, email):
     return 'Valid registration', True
 
 
-def register_user(username, email, password, name=None, role=Role.USER.value):
+def register_user(username, email, password, name='', role=Role.USER.value):
     user = User(
         username=username,
         email=email,
@@ -60,7 +60,7 @@ def delete_user(user_id, password, name=None):
         raise e
     db.session.delete(user)
     db.session.commit()
-    return row_to_dict(user)
+    return user
 
 
 def check_user_auth(password, email=None, username=None):
