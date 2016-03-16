@@ -13,7 +13,7 @@ from dive.resources.exported_regressions import ExportedRegressions, DataFromExp
 from dive.resources.transform import Reduce, Unpivot, Join
 
 from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
-from dive.resources.auth import Register, Login, Logout, User
+from dive.resources.auth_resources import Register, Login, Logout, User
 
 from flask.ext.restful import Resource
 
