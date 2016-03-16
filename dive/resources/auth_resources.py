@@ -31,13 +31,12 @@ class Register(Resource):
         if valid_registration:
             user = register_user(username, email, password, name=name)
             login_user(user, remember=True)
-            print 'username', user.username
             response = jsonify({
                 'status': 'success',
                 'message': 'Welcome to DIVE, %s' % user.username,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.name, expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION)
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
             response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION)
             return response

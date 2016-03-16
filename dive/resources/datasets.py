@@ -29,7 +29,7 @@ def allowed_file(filename):
 
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
-uploadFileParser.add_argument('project_id', type=str, required=True)
+uploadFileParser.add_argument('project_id', type=str, required=True, location='json')
 class UploadFile(Resource):
     '''
     1) Saves file
@@ -37,7 +37,6 @@ class UploadFile(Resource):
     3) Returns dataset_id
     '''
     def post(self):
-        logger.info("In upload")
         form_data = json.loads(request.form.get('data'))
         project_id = str(form_data.get('project_id'))
         file_obj = request.files.get('file')

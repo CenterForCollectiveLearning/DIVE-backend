@@ -115,7 +115,6 @@ def get_dataset_properties(project_id, dataset_id):
 
 # TODO Do an upsert?
 def insert_dataset_properties(project_id, dataset_id, **kwargs):
-    logger.debug("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
     dataset_properties = Dataset_Properties(
         dataset_id = dataset_id,
         project_id = project_id,
