@@ -72,9 +72,11 @@ class Projects(Resource):
         preloaded = args.get('preloaded')
         private = args.get('private')
 
-        print preloaded, user_id, private
+        print args
+        print preloaded
+
         query_args = {}
-        if preloaded:
+        if 'preloaded' in args:
             query_args['preloaded'] = preloaded
 
         if 'private' in args:
@@ -82,15 +84,12 @@ class Projects(Resource):
 
         if 'user_id' in args and user_id:
             user = load_account(user_id)
-            print user
             if user.is_admin():
-                print 'IS ADMIN'
                 del query_args['private']
             if not user.is_admin():
                 query_args['user_id'] = user_id
 
-        print 'QUERY_ARGS', query_args
-        print db_access.get_projects(**query_args)
+        print query_args
 
         return jsonify({'projects': db_access.get_projects(**query_args)})
 
@@ -108,7 +107,8 @@ class Projects(Resource):
             title=title,
             description=description,
             user_id=user_id,
-            private=private
+            private=private,
+            preloaded=False
         )
 
         new_project_id = result['id']
