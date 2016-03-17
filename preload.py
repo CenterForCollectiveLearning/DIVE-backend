@@ -47,7 +47,7 @@ def preload_from_directory_tree(app):
             project_config = yaml.load(project_config_file.read())
         project_title = project_config.get('title', project_dir)
         project_datasets = project_config.get('datasets')
-        private = project_config.get('private')
+        private = project_config.get('private', True)
 
         # Insert projects
         app.logger.info('Preloading project: %s', project_dir)
