@@ -28,12 +28,16 @@ def is_authorized_user(current_user, project_id):
 
 def validate_registration(username, email):
     matching_email = User.query.filter_by(email=email).first()
+    result = {}
     if matching_email:
-        return 'Matching e-mail', False
+        result['email'] = 'Account with e-mail already exists'
 
-    matching_username = User.query.filter_by(username=email).first()
+    matching_username = User.query.filter_by(username=username).first()
     if matching_username:
-        return 'Matching username', False
+        result['username'] = 'Account with username already exists'
+
+    if matching_email or matching_username:
+        return result, False
 
     return 'Valid registration', True
 

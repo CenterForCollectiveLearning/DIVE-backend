@@ -6,8 +6,9 @@ from flask.ext.restful import Resource, reqparse, marshal_with
 from flask.ext.login import login_required
 
 
-from dive.auth.account import project_auth
 from dive.db import db_access
+from dive.db.accounts import load_account
+from dive.auth.account import project_auth
 from dive.resources.serialization import jsonify
 
 import logging
@@ -50,9 +51,9 @@ class Project(Resource):
 
 
 projectsGetParser = reqparse.RequestParser()
-projectsGetParser.add_argument('preloaded', type=bool, required=False)
 projectsGetParser.add_argument('user_id', type=int, required=False)
-projectsGetParser.add_argument('private', type=bool, required=False, default=True)
+projectsGetParser.add_argument('preloaded', type=bool, default=False)
+projectsGetParser.add_argument('private', type=bool, default=False)
 
 projectsPostParser = reqparse.RequestParser()
 projectsPostParser.add_argument('title', type=str, location='json', required=False)
@@ -67,20 +68,30 @@ class Projects(Resource):
     '''
     def get(self):
         args = projectsGetParser.parse_args()
-        preloaded = args.get('preloaded')
         user_id = args.get('user_id')
+        preloaded = args.get('preloaded')
+        private = args.get('private')
 
+        print preloaded, user_id, private
         query_args = {}
         if preloaded:
             query_args['preloaded'] = preloaded
-        if 'user_id' in args:
-            query_args['user_id'] = user_id
 
         if 'private' in args:
-            if args.get('private') != True:
-                query_args['private'] = args.get('private')
+            query_args['private'] = private
+
+        if 'user_id' in args and user_id:
+            user = load_account(user_id)
+            print user
+            if user.is_admin():
+                print 'IS ADMIN'
+                del query_args['private']
+            if not user.is_admin():
+                query_args['user_id'] = user_id
 
         print 'QUERY_ARGS', query_args
+        print db_access.get_projects(**query_args)
+
         return jsonify({'projects': db_access.get_projects(**query_args)})
 
     # Create project, initialize directories and collections

@@ -65,18 +65,18 @@ loginPostParser = reqparse.RequestParser()
 loginPostParser.add_argument('username', type=str, required=True, location='json')
 loginPostParser.add_argument('email', type=str, required=True, location='json')
 loginPostParser.add_argument('password', type=str, location='json')
-loginPostParser.add_argument('remember', type=bool, default=True, location='json')
+loginPostParser.add_argument('rememberMe', type=bool, default=True, location='json')
 class Login(Resource):
     def post(self):
         args = loginPostParser.parse_args()
         username = args.get('username')
         email = args.get('email')
         password = args.get('password')
-        remember = args.get('remember')
+        rememberMe = args.get('rememberMe')
 
         user, auth_status = check_user_auth(password, email=email, username=username)
         if auth_status:
-            login_user(user, remember=remember)
+            login_user(user, remember=rememberMe)
             if user.name:
                 message = 'Welcome back %s!' % user.name
             else:
