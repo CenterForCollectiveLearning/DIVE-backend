@@ -29,7 +29,7 @@ class Register(Resource):
 
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
-            user = register_user(username, email, password, name=name)
+            user = register_user(username, email, password)
             login_user(user, remember=True)
             response = jsonify({
                 'status': 'success',
