@@ -18,6 +18,7 @@ class Project(db.Model):
     preloaded = db.Column(db.Boolean())
     directory = db.Column(db.Unicode(2000))
     private = db.Column(db.Boolean())
+    anonymous = db.Column(db.Boolean())
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
@@ -371,7 +372,6 @@ class User(db.Model):
     __tablename__ = ModelName.USER.value
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.Unicode(50), unique=True)
-    name = db.Column(db.Unicode(100))
     email = db.Column(db.Unicode(120), unique=True)
     password = db.Column(db.Unicode(120))
 
@@ -397,7 +397,6 @@ class User(db.Model):
     def __init__(self, username='', name='', email='', password='', role=''):
         self.api_key = make_uuid()
         self.username = username
-        self.name = name
         self.email = email
         self.password = password
         self.role = role

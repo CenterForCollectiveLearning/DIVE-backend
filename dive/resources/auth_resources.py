@@ -77,8 +77,8 @@ class Login(Resource):
         user, auth_status = check_user_auth(password, email=email, username=username)
         if auth_status:
             login_user(user, remember=rememberMe)
-            if user.name:
-                message = 'Welcome back %s!' % user.name
+            if user.username:
+                message = 'Welcome back %s!' % user.username
             else:
                 message = 'Welcome back!'
             response = jsonify({
@@ -93,7 +93,9 @@ class Login(Resource):
         else:
             return jsonify({
                 'status': 'error',
-                'message': 'Incorrect username, e-mail, or password'
+                'message': {
+                    'login': 'Incorrect username, e-mail, or password'
+                }
             }, status=401)
 
 

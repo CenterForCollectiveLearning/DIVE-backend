@@ -58,7 +58,7 @@ projectsGetParser.add_argument('private', type=bool, default=False)
 projectsPostParser = reqparse.RequestParser()
 projectsPostParser.add_argument('title', type=str, location='json', required=False)
 projectsPostParser.add_argument('description', type=str, location='json', required=False)
-projectsPostParser.add_argument('anonymous', type=str, location='json', required=False, default=False)
+projectsPostParser.add_argument('anonymous', type=bool, location='json', required=False, default=False)
 projectsPostParser.add_argument('private', type=bool, location='json', required=False, default=True)
 projectsPostParser.add_argument('user_id', type=int, required=False)
 class Projects(Resource):
@@ -72,9 +72,6 @@ class Projects(Resource):
         preloaded = args.get('preloaded')
         private = args.get('private')
 
-        print args
-        print preloaded
-
         query_args = {}
         if 'preloaded' in args:
             query_args['preloaded'] = preloaded
@@ -86,15 +83,12 @@ class Projects(Resource):
             user = load_account(user_id)
             if user.is_admin():
                 del query_args['private']
-            if not user.is_admin():
+            if not user.is_admin() and not preloaded:
                 query_args['user_id'] = user_id
-
-        print query_args
 
         return jsonify({'projects': db_access.get_projects(**query_args)})
 
     # Create project, initialize directories and collections
-    @login_required
     def post(self):
         args = projectsPostParser.parse_args()
         title = args.get('title')
@@ -108,13 +102,13 @@ class Projects(Resource):
             description=description,
             user_id=user_id,
             private=private,
-            preloaded=False
+            preloaded=False,
+            anonymous=anonymous
         )
 
         new_project_id = result['id']
         db_access.create_document(new_project_id)
 
-        logger.info("Created upload directory for project_id: %s", result['id'])
         project_dir = os.path.join(current_app.config['UPLOAD_DIR'], str(result['id']))
         if os.path.isdir(project_dir):
             os.mkdir(project_dir)

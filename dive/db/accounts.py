@@ -42,12 +42,11 @@ def validate_registration(username, email):
     return 'Valid registration', True
 
 
-def register_user(username, email, password, name='', role=Role.USER.value):
+def register_user(username, email, password, role=Role.USER.value):
     user = User(
         username=username,
         email=email,
         password=password,
-        name=name,
         role=role
     )
     db.session.add(user)
@@ -73,7 +72,7 @@ def check_user_auth(password, email=None, username=None):
     user = None
     if email:
         user = User.query.filter_by(email=email, password=password).first()
-    elif username:
+    if username:
         user = User.query.filter_by(username=username, password=password).first()
     if user:
         return user, True
