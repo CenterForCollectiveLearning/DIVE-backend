@@ -13,7 +13,7 @@ from dive.resources.exported_regressions import ExportedRegressions, DataFromExp
 from dive.resources.transform import Reduce, Unpivot, Join
 
 from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
-# from dive.resources.auth import Register, Login
+from dive.resources.auth_resources import Register, Login, Logout, User
 
 from flask.ext.restful import Resource
 
@@ -61,5 +61,10 @@ def add_resources(api):
     api.add_resource(Documents,                     '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
     api.add_resource(Document,                      '/compose/v1/document/<string:document_id>')
+
+    api.add_resource(Register,                      '/auth/v1/register')
+    api.add_resource(Login,                         '/auth/v1/login')
+    api.add_resource(Logout,                        '/auth/v1/logout')
+    api.add_resource(User,                        '/auth/v1/user')
 
     return api

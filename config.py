@@ -5,6 +5,8 @@ class BaseConfig(object):
     HOST = '0.0.0.0'
     PORT = 8081
 
+    SECRET_KEY = 'dive'
+
     FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
 
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
