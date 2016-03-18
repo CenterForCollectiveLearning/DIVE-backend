@@ -1,4 +1,4 @@
-from flask import request, make_response
+from flask import current_app, request, make_response
 from flask.ext.restful import Resource, reqparse
 from flask.ext.login import current_user, login_user, logout_user
 from datetime import timedelta, datetime
@@ -36,9 +36,9 @@ class Register(Resource):
                 'message': 'Welcome to DIVE, %s' % user.username,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION)
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
 
         else:
@@ -86,9 +86,9 @@ class Login(Resource):
                 'message': message,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION)
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION)
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION)
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
         else:
             return jsonify({
@@ -108,7 +108,7 @@ class Logout(Resource):
             'status': 'success',
             'message': 'You have been logged out.'
         })
-        response.set_cookie('username', '', expires=0)
-        response.set_cookie('email', '', expires=0)
-        response.set_cookie('user_id', '', expires=0)
+        response.set_cookie('username', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
+        response.set_cookie('email', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
+        response.set_cookie('user_id', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
         return response
