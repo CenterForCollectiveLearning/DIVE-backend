@@ -22,6 +22,7 @@ class BaseConfig(object):
     COMPRESS = True
 
     COOKIE_DOMAIN = 'localhost'
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'amqp'
@@ -69,6 +70,7 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_STATISTICS = False
 
     COOKIE_DOMAIN = '.usedive.com'
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN    
 
     COMPRESS = False
 
