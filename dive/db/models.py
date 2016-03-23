@@ -236,6 +236,7 @@ class Regression(db.Model):
 class Exported_Regression(db.Model):
     __tablename__ = ModelName.EXPORTED_REGRESSION.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
 
     regression_id = db.Column(db.Integer, db.ForeignKey('regression.id',
         onupdate='CASCADE', ondelete='CASCADE'))
@@ -273,6 +274,7 @@ class Summary(db.Model):
 class Exported_Summary(db.Model):
     __tablename__ = ModelName.EXPORTED_SUMMARY.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
 
     summary_id = db.Column(db.Integer, db.ForeignKey('summary.id',
         onupdate='CASCADE', ondelete='CASCADE'))
@@ -311,6 +313,7 @@ class Correlation(db.Model):
 class Exported_Correlation(db.Model):
     __tablename__ = ModelName.EXPORTED_CORRELATION.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
 
     correlation_id = db.Column(db.Integer, db.ForeignKey('correlation.id',
         onupdate='CASCADE', ondelete='CASCADE'))

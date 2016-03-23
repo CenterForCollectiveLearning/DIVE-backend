@@ -9,8 +9,8 @@ from dive.resources.statistics_resources import CorrelationsFromSpec, Regression
     RegressionFromSpec, SummaryStatsFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, \
     ContributionToRSquared, CorrelationScatterplot
-from dive.resources.exported_analyses import ExportedRegressions, DataFromExportedRegression, \
-    ExportedCorrelations, DataFromExportedCorrelations, ExportedSummary, DataFromExportedSummary
+from dive.resources.exported_analyses import ExportedRegression, DataFromExportedRegression, \
+    ExportedCorrelation, DataFromExportedCorrelation, ExportedSummary, DataFromExportedSummary
 from dive.resources.transform import Reduce, Unpivot, Join
 
 from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
@@ -56,11 +56,11 @@ def add_resources(api):
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
-    api.add_resource(ExportedRegressions,           '/exported_regressions/v1/exported_regressions')
-    api.add_resource(DataFromExportedRegression,    '/exported_regressions/v1/exported_regressions/<string:exported_spec_id>/data')
+    api.add_resource(ExportedRegression,            '/exported_regression/v1/exported_regression')
+    api.add_resource(DataFromExportedRegression,    '/exported_regression/v1/exported_regression/<string:exported_spec_id>/data')
 
-    api.add_resource(ExportedCorrelations,          '/exported_correlations/v1/exported_correlations')
-    api.add_resource(DataFromExportedCorrelations,  '/exported_correlations/v1/exported_correlations/<string:exported_spec_id>/data')
+    api.add_resource(ExportedCorrelation,           '/exported_correlations/v1/exported_correlation')
+    api.add_resource(DataFromExportedCorrelation,   '/exported_correlations/v1/exported_correlation/<string:exported_spec_id>/data')
 
     api.add_resource(ExportedSummary,               '/exported_summary/v1/exported_summary')
     api.add_resource(DataFromExportedSummary,       '/exported_summary/v1/exported_summary/<string:exported_spec_id>/data')
