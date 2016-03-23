@@ -497,10 +497,11 @@ def get_exported_regressions(project_id):
     exported_regressions = Exported_Regression.query.filter_by(project_id=project_id).all()
     return [ row_to_dict(exported_regression) for exported_regression in exported_regressions ]
 
-def insert_exported_regression(project_id, regression_id):
+def insert_exported_regression(project_id, regression_id, data):
     exported_regression = Exported_Regression(
         project_id = project_id,
-        regression_id = regression_id
+        regression_id = regression_id,
+        data = data
     )
     db.session.add(exported_regression)
     db.session.commit()

@@ -7,26 +7,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-exportedRegressionsGetParser = reqparse.RequestParser()
-exportedRegressionsGetParser.add_argument('project_id', type=str, required=True)
+def object_type(j):
+    return j
 
-exportedRegressionsPostParser = reqparse.RequestParser()
-exportedRegressionsPostParser.add_argument('project_id', type=str, required=True, location='json')
-exportedRegressionsPostParser.add_argument('regression_id', type=str, required=True, location='json')
-class ExportedRegressions(Resource):
+
+exportedRegressionGetParser = reqparse.RequestParser()
+exportedRegressionGetParser.add_argument('project_id', type=str, required=True)
+
+exportedRegressionPostParser = reqparse.RequestParser()
+exportedRegressionPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedRegressionPostParser.add_argument('regression_id', type=str, required=True, location='json')
+exportedRegressionPostParser.add_argument('data', type=object_type, required=True, location='json')
+class ExportedRegression(Resource):
     def get(self):
-        args = exportedRegressionsGetParser.parse_args()
+        args = exportedRegressionGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        exported_regressions = db_access.get_exported_regressions(project_id)
+        exported_regressions = db_access.get_exported_regression(project_id)
         return jsonify({'result': exported_regressions, 'length': len(exported_regressions)})
 
     def post(self):
-        args = exportedRegressionsPostParser.parse_args()
+        args = exportedRegressionPostParser.parse_args()
         project_id = args.get('project_id')
         regression_id = args.get('regression_id')
+        data = args.get('data')
 
-        result = db_access.insert_exported_regression(project_id, regression_id)
+        result = db_access.insert_exported_regression(project_id, regression_id, data)
         return jsonify(result)
 
 
@@ -44,32 +50,32 @@ class DataFromExportedRegression(Resource):
         return jsonify(regression['data'])
 
 
-exportedCorrelationsGetParser = reqparse.RequestParser()
-exportedCorrelationsGetParser.add_argument('project_id', type=str, required=True)
+exportedCorrelationGetParser = reqparse.RequestParser()
+exportedCorrelationGetParser.add_argument('project_id', type=str, required=True)
 
-exportedCorrelationsPostParser = reqparse.RequestParser()
-exportedCorrelationsPostParser.add_argument('project_id', type=str, required=True, location='json')
-exportedCorrelationsPostParser.add_argument('regression_id', type=str, required=True, location='json')
-class ExportedCorrelations(Resource):
+exportedCorrelationPostParser = reqparse.RequestParser()
+exportedCorrelationPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedCorrelationPostParser.add_argument('regression_id', type=str, required=True, location='json')
+class ExportedCorrelation(Resource):
     def get(self):
-        args = exportedCorrelationsGetParser.parse_args()
+        args = exportedCorrelationGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        exported_regressions = db_access.get_exported_regressions(project_id)
+        exported_regressions = db_access.get_exported_correlation(project_id)
         return jsonify({'result': exported_regressions, 'length': len(exported_regressions)})
 
     def post(self):
-        args = exportedCorrelationsPostParser.parse_args()
+        args = exportedCorrelationPostParser.parse_args()
         project_id = args.get('project_id')
         regression_id = args.get('regression_id')
 
-        result = db_access.insert_exported_regression(project_id, regression_id)
+        result = db_access.insert_exported_correlation(project_id, regression_id)
         return jsonify(result)
 
 
 dataFromExportedCorrelationGetParser = reqparse.RequestParser()
 dataFromExportedCorrelationGetParser.add_argument('project_id', type=str, required=True)
-class DataFromExportedCorrelations(Resource):
+class DataFromExportedCorrelation(Resource):
     def get(self, exported_correlation_id):
         args = dataFromExportedCorrelationGetParser.parse_args()
         project_id = args.get('project_id')
