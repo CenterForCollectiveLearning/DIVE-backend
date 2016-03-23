@@ -21,6 +21,10 @@ class BaseConfig(object):
 
     COMPRESS = True
 
+    COOKIE_DOMAIN = None
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'amqp'
 
