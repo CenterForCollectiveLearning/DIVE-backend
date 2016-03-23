@@ -519,7 +519,6 @@ def delete_exported_regression(project_id, exported_regression_id):
     db.session.commit()
     return row_to_dict(exported_regression)
 
-
 ################
 # Documents
 ################
