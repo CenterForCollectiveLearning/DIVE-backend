@@ -21,7 +21,7 @@ class BaseConfig(object):
 
     COMPRESS = True
 
-    COOKIE_DOMAIN = 'localhost'
+    COOKIE_DOMAIN = None
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
@@ -72,7 +72,7 @@ class ProductionConfig(BaseConfig):
 
     COOKIE_DOMAIN = '.usedive.com'
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
-    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN       
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     COMPRESS = False
 
