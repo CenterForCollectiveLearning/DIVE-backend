@@ -41,13 +41,10 @@ def insert_project(**kwargs):
     return row_to_dict(project)
 
 def update_project(project_id, **kwargs):
-    title = kwargs.get('title')
-    description = kwargs.get('description')
-
     project = Project.query.get_or_404(int(project_id))
 
     for k, v in kwargs.iteritems():
-        project[k] = v
+        setattr(project, k, v)
 
     db.session.add(project)
     db.session.commit()
@@ -131,7 +128,7 @@ def update_dataset_properties(project_id, dataset_id, **kwargs):
         ).one()
 
     for k, v in kwargs.iteritems():
-        dataset_properties[k] = v
+        setattr(dataset_properties, k, v)
 
     db.session.add(dataset_properties)
     db.session.commit()
@@ -174,7 +171,7 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
         name=name).one()
 
     for k, v in kwargs.iteritems():
-        field_properties[k] = v
+        setattr(field_properties, k, v)
 
     db.session.commit()
     return row_to_dict(field_properties)
