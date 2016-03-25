@@ -15,6 +15,8 @@ from dive.tasks.pipelines import full_pipeline, ingestion_pipeline, get_chain_ID
 from dive.tasks.ingestion.upload import upload_file
 from dive.tasks.handlers import error_handler
 
+import logging
+logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
