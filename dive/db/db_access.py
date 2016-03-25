@@ -495,7 +495,9 @@ def get_exported_regression_by_id(project_id, exported_regression_id):
 
 def get_exported_regressions(project_id):
     exported_regressions = Exported_Regression.query.filter_by(project_id=project_id).all()
-    return [ row_to_dict(exported_regression) for exported_regression in exported_regressions ]
+    for e in exported_regressions:
+        setattr(e, 'type', 'regression')
+    return [ row_to_dict(exported_regression, custom_fields=['type']) for exported_regression in exported_regressions ]
 
 def insert_exported_regression(project_id, regression_id, data):
     exported_regression = Exported_Regression(
