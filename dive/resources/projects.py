@@ -43,11 +43,11 @@ class Project(Resource):
 
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
-        project_dir = os.path.join(current_app.config['UPLOAD_DIR'], result['id'])
+        project_dir = os.path.join(current_app.config['UPLOAD_DIR'], str(result['id']))
         if os.path.isdir(project_dir):
             shutil.rmtree(project_dir)
         return jsonify({"message": "Successfully deleted project.",
-                            "id": int(result['id'])})
+                            "id": result['id']})
 
 
 projectsGetParser = reqparse.RequestParser()
