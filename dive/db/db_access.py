@@ -486,6 +486,8 @@ def delete_summary(project_id, summary_id):
 ################
 # Exported Analyses
 ################
+
+# Regressions
 def get_exported_regression_by_id(project_id, exported_regression_id):
     exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
         project_id=project_id).one()
@@ -496,8 +498,9 @@ def get_exported_regression_by_id(project_id, exported_regression_id):
 def get_exported_regressions(project_id):
     exported_regressions = Exported_Regression.query.filter_by(project_id=project_id).all()
     for e in exported_regressions:
+        setattr(e, 'spec', e.regression.spec)
         setattr(e, 'type', 'regression')
-    return [ row_to_dict(exported_regression, custom_fields=['type']) for exported_regression in exported_regressions ]
+    return [ row_to_dict(exported_regression, custom_fields=['type', 'spec']) for exported_regression in exported_regressions ]
 
 def insert_exported_regression(project_id, regression_id, data):
     exported_regression = Exported_Regression(
@@ -520,6 +523,81 @@ def delete_exported_regression(project_id, exported_regression_id):
     db.session.delete(exported_regression)
     db.session.commit()
     return row_to_dict(exported_regression)
+
+# Correlations
+def get_exported_correlation_by_id(project_id, exported_correlation_id):
+    exported_correlation = Exported_Correlation.query.filter_by(id=exported_correlation_id,
+        project_id=project_id).one()
+    if exported_correlation is None:
+        abort(404)
+    return row_to_dict(exported_correlation)
+
+def get_exported_correlations(project_id):
+    exported_correlations = Exported_Correlation.query.filter_by(project_id=project_id).all()
+    for e in exported_correlations:
+        setattr(e, 'spec', e.correlation.spec)
+        setattr(e, 'type', 'correlation')
+    return [ row_to_dict(exported_correlation, custom_fields=['type', 'spec']) for exported_correlation in exported_correlations ]
+
+def insert_exported_correlation(project_id, correlation_id, data):
+    exported_correlation = Exported_Correlation(
+        project_id = project_id,
+        correlation_id = correlation_id,
+        data = data
+    )
+    db.session.add(exported_correlation)
+    db.session.commit()
+    return row_to_dict(exported_correlation)
+
+def delete_exported_correlation(project_id, exported_correlation_id):
+    try:
+        exported_correlation = Exported_Correlation.query.filter_by(project_id=project_id, id=exported_correlation_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(exported_correlation)
+    db.session.commit()
+    return row_to_dict(exported_correlation)
+
+
+# Summary
+def get_exported_summary_by_id(project_id, exported_summary_id):
+    exported_summary = Exported_Summary.query.filter_by(id=exported_summary_id,
+        project_id=project_id).one()
+    if exported_summary is None:
+        abort(404)
+    return row_to_dict(exported_summary)
+
+def get_exported_summarys(project_id):
+    exported_summarys = Exported_Summary.query.filter_by(project_id=project_id).all()
+    for e in exported_summarys:
+        setattr(e, 'spec', e.summary.spec)
+        setattr(e, 'type', 'summary')
+    return [ row_to_dict(exported_summary, custom_fields=['type', 'spec']) for exported_summary in exported_summarys ]
+
+def insert_exported_summary(project_id, summary_id, data):
+    exported_summary = Exported_Summary(
+        project_id = project_id,
+        summary_id = summary_id,
+        data = data
+    )
+    db.session.add(exported_summary)
+    db.session.commit()
+    return row_to_dict(exported_summary)
+
+def delete_exported_summary(project_id, exported_summary_id):
+    try:
+        exported_summary = Exported_Summary.query.filter_by(project_id=project_id, id=exported_summary_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(exported_summary)
+    db.session.commit()
+    return row_to_dict(exported_summary)
 
 ################
 # Documents

@@ -24,7 +24,7 @@ class ExportedRegression(Resource):
         project_id = args.get('project_id').strip().strip('"')
 
         exported_regressions = db_access.get_exported_regression(project_id)
-        return jsonify({'result': exported_regressions, 'length': len(exported_regressions)})
+        return jsonify({ 'result': exported_regressions })
 
     def post(self):
         args = exportedRegressionPostParser.parse_args()
@@ -55,21 +55,23 @@ exportedCorrelationGetParser.add_argument('project_id', type=str, required=True)
 
 exportedCorrelationPostParser = reqparse.RequestParser()
 exportedCorrelationPostParser.add_argument('project_id', type=str, required=True, location='json')
-exportedCorrelationPostParser.add_argument('regression_id', type=str, required=True, location='json')
+exportedCorrelationPostParser.add_argument('correlation_id', type=str, required=True, location='json')
+exportedCorrelationPostParser.add_argument('data', type=object_type, required=True, location='json')
 class ExportedCorrelation(Resource):
     def get(self):
         args = exportedCorrelationGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        exported_regressions = db_access.get_exported_correlation(project_id)
-        return jsonify({'result': exported_regressions, 'length': len(exported_regressions)})
+        exported_correlation = db_access.get_exported_correlation(project_id)
+        return jsonify({ 'result': exported_correlation })
 
     def post(self):
         args = exportedCorrelationPostParser.parse_args()
         project_id = args.get('project_id')
-        regression_id = args.get('regression_id')
+        correlation_id = args.get('correlation_id')
+        data = args.get('data')
 
-        result = db_access.insert_exported_correlation(project_id, regression_id)
+        result = db_access.insert_exported_correlation(project_id, correlation_id, data)
         return jsonify(result)
 
 

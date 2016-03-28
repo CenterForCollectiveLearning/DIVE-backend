@@ -62,8 +62,8 @@ def add_resources(api):
     api.add_resource(ExportedRegression,            '/exported_regression/v1/exported_regression')
     api.add_resource(DataFromExportedRegression,    '/exported_regression/v1/exported_regression/<string:exported_spec_id>/data')
 
-    api.add_resource(ExportedCorrelation,           '/exported_correlations/v1/exported_correlation')
-    api.add_resource(DataFromExportedCorrelation,   '/exported_correlations/v1/exported_correlation/<string:exported_spec_id>/data')
+    api.add_resource(ExportedCorrelation,           '/exported_correlation/v1/exported_correlation')
+    api.add_resource(DataFromExportedCorrelation,   '/exported_correlation/v1/exported_correlation/<string:exported_spec_id>/data')
 
     api.add_resource(ExportedSummary,               '/exported_summary/v1/exported_summary')
     api.add_resource(DataFromExportedSummary,       '/exported_summary/v1/exported_summary/<string:exported_spec_id>/data')
