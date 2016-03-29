@@ -21,26 +21,26 @@ def single_q(q_field):
 
     q_label = q_field['name']
 
-    if not q_field['is_unique']:
-        # { Value: count }
-        count_spec = {
-            'generating_procedure': GP.VAL_COUNT.value,
-            'type_structure': TS.C_Q.value,
-            'viz_types': [ VT.TREE.value, VT.PIE.value, VT.BAR.value ],
-            'field_ids': [ q_field['id'] ],
-            'args': {
-                'field_a': q_field
-            },
-            'meta': {
-                'desc': 'Count of %s' % q_label,
-                'construction': [
-                    { 'string': 'count', 'type': TermType.OPERATION.value },
-                    { 'string': 'of', 'type': TermType.PLAIN.value },
-                    { 'string': q_label, 'type': TermType.FIELD.value },
-                ]
-            }
-        }
-        specs.append(count_spec)
+    # if not q_field['is_unique']:
+    #     # { Value: count }
+    #     count_spec = {
+    #         'generating_procedure': GP.VAL_COUNT.value,
+    #         'type_structure': TS.C_Q.value,
+    #         'viz_types': [ VT.TREE.value, VT.PIE.value, VT.BAR.value ],
+    #         'field_ids': [ q_field['id'] ],
+    #         'args': {
+    #             'field_a': q_field
+    #         },
+    #         'meta': {
+    #             'desc': 'Count of %s' % q_label,
+    #             'construction': [
+    #                 { 'string': 'count', 'type': TermType.OPERATION.value },
+    #                 { 'string': 'of', 'type': TermType.PLAIN.value },
+    #                 { 'string': q_label, 'type': TermType.FIELD.value },
+    #             ]
+    #         }
+    #     }
+    #     specs.append(count_spec)
 
     # { Bins: Aggregate(binned values) }
     bin_spec = {
