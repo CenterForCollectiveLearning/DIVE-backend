@@ -33,7 +33,7 @@ def single_cq(c_field, q_field):
                 'field_b': q_field,
             },
             'meta': {
-                'desc': '%s vs. %s ' % (c_label, q_label),
+                'desc': '%s vs. %s' % (c_label, q_label),
                 'construction': [
                     { 'string': c_label, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },

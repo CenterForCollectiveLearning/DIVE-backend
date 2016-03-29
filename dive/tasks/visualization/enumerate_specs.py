@@ -40,24 +40,24 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
             get_selected_fields(field_properties, selected_fields)
 
         if 'baseline' in recommendation_types:
-            baseline_specs = get_baseline_viz_specs(selected_field_docs)
-            specs.extend(baseline_specs)
+            baseline_viz_specs = get_baseline_viz_specs(selected_field_docs)
+            specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
 
         if 'subset' in recommendation_types:
             subset_viz_specs = get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
-            specs.extend(subset_viz_specs)
+            specs.extend([dict(s, recommendation_type='subset') for s in subset_viz_specs ])
 
         if 'exact' in recommendation_types:
             exact_viz_specs = get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
-            specs.extend(exact_viz_specs)
+            specs.extend([dict(s, recommendation_type='exact') for s in exact_viz_specs ])
 
         if 'expanded' in recommendation_types:
             expanded_viz_specs = get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
-            specs.extend(expanded_viz_specs)
+            specs.extend([dict(s, recommendation_type='expanded') for s in expanded_viz_specs ])
 
     else:
-        baseline_specs = get_baseline_viz_specs(field_properties)
-        specs.extend(baseline_specs)
+        baseline_viz_specs = get_baseline_viz_specs(field_properties)
+        specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
 
     # Assign viz_types and dataset_id
     for spec in specs:
@@ -167,6 +167,7 @@ def get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_
 def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected):
     '''
     Exact visualization cases (excluding single-field cases)
+    TODO Make sure only one case is fulfilled in each instance
     '''
     specs = []
     n_c = len(c_fields)
