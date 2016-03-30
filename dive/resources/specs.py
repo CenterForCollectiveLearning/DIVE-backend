@@ -22,7 +22,8 @@ class GeneratingProcedures(Resource):
 specPostParser = reqparse.RequestParser()
 specPostParser.add_argument('project_id', type=str, required=True, location='json')
 specPostParser.add_argument('dataset_id', type=str, required=True, location='json')
-specPostParser.add_argument('field_agg_pairs', type=list, location='json', default={})
+specPostParser.add_argument('field_agg_pairs', type=list, location='json', default=[])
+specPostParser.add_argument('recommendation_types', type=list, location='json', default=[])
 specPostParser.add_argument('conditionals', type=dict, location='json', default={})
 specPostParser.add_argument('config', type=dict, location='json', default={})
 class Specs(Resource):
@@ -33,6 +34,7 @@ class Specs(Resource):
         selected_fields = args.get('field_agg_pairs', [])
         if not selected_fields:
             selected_fields = []
+        recommendation_types = args.get('recommendation_types', [])
         conditionals = args.get('conditionals', {})
         config = args.get('config', {})
 
@@ -45,7 +47,7 @@ class Specs(Resource):
             })
         else:
             specs_task = viz_spec_pipeline.apply_async(
-                args = [dataset_id, project_id, selected_fields, conditionals, config],
+                args = [dataset_id, project_id, selected_fields, recommendation_types, conditionals, config],
                 link_error = error_handler.s()
             )
 
