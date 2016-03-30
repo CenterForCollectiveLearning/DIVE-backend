@@ -24,8 +24,9 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
     TODO Incorporate 0D and 1D data returns
     '''
     specs = []
+    num_selected_fields = len(selected_fields)
 
-    logger.info('recommendation_types %s', recommendation_types)
+    logger.info('Recommendation Types %s', recommendation_types)
 
     # Get field properties
     with task_app.app_context():
@@ -59,10 +60,11 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
         baseline_viz_specs = get_baseline_viz_specs(field_properties)
         specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
 
+    # Deduplicate
+    specs = get_list_of_unique_dicts(specs)
+
     # Assign viz_types and dataset_id
     for spec in specs:
-        # viz_types = get_viz_types_from_spec(spec)
-        # spec['viz_types'] = viz_types
         spec['dataset_id'] = dataset_id
 
     return get_list_of_unique_dicts(specs)
@@ -145,6 +147,9 @@ def get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_
     n_q = len(q_fields)
     n_t = len(t_fields)
 
+    if (n_c + n_q + n_t) <= 2:
+        return specs
+
     if n_c >= 2:
         for c_field_1, c_field_2 in combinations(c_fields, 2):
             multi_c_specs = multi_c([c_field_1, c_field_2])
@@ -174,34 +179,17 @@ def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_f
     n_q = len(q_fields)
     n_t = len(t_fields)
 
-    # TODO Implement the exact aspect, not only the marginal cases
-    # TODO Can we encode requirements into the spec functions themselves?
+    # Multi field specs, multi type
+    if (n_c > 1) and (n_t > 1) and (n_q == 0):
+        specs.extend(multi_ct(c_fields, t_fields))
+    if (n_c > 1) and (n_t == 0) and (n_q > 1):
+        specs.extend(multi_cq(c_fields, q_fields))
+    if (n_c == 0) and (n_t > 0) and (n_q > 1):
+        specs.extend(multi_tq(t_fields, q_fields))
+    if (n_c > 1) and (n_t > 1) and (n_q > 1):
+        specs.extend(multi_ctq(c_fields, t_fields, q_fields))
 
-    # Single field specs, single type
-    if (n_c == 1) and (n_t == 0) and (n_q == 0):
-        specs.extend(single_c(c_fields[0]))
-    if (n_c == 0) and (n_t == 1) and (n_q == 0):
-        specs.extend(single_t(t_fields[0]))
-    if (n_c == 0) and (n_t == 0) and (n_q == 1):
-        specs.extend(single_q(q_fields[0]))
-
-    # Single field specs, multi type
-    if (n_c == 1) and (n_t == 1) and (n_q == 0):
-        specs.extend(single_ct(c_fields[0], t_fields[0]))
-    if (n_c == 1) and (n_t == 0) and (n_q == 1):
-        specs.extend(single_cq(c_fields[0], q_fields[0]))
-    if (n_c == 0) and (n_t == 1) and (n_q == 1):
-        specs.extend(single_tq(t_fields[0], q_fields[0]))
-    if (n_c == 1) and (n_t == 1) and (n_q == 1):
-        specs.extend(single_ctq(c_fields[0], t_fields[0], q_fields[0]))
-
-    # Multi field specs, single type
-    if (n_c > 1) and (n_t == 0) and (n_q == 0):
-        specs.extend(multi_c(c_fields))
-    if (n_c == 0) and (n_t > 1) and (n_q == 0):
-        specs.extend(multi_t(t_fields))
-    if (n_c == 0) and (n_t == 0) and (n_q > 1):
-        specs.extend(multi_q(q_fields))
+    if specs: return specs
 
     # Mixed field specs, multi type
     if (n_c == 1) and (n_t > 1) and (n_q == 0):
@@ -217,15 +205,37 @@ def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_f
     if (n_c == 0) and (n_t == 1) and (n_q > 1):
         specs.extend(single_t_multi_q(t_fields[0], q_fields))
 
-    # Multi field specs, multi type
-    if (n_c > 1) and (n_t > 1) and (n_q == 0):
-        specs.extend(multi_ct(c_fields, t_fields))
-    if (n_c > 1) and (n_t == 0) and (n_q > 1):
-        specs.extend(multi_cq(c_fields, q_fields))
-    if (n_c == 0) and (n_t > 0) and (n_q > 1):
-        specs.extend(multi_tq(t_fields, q_fields))
-    if (n_c > 1) and (n_t > 1) and (n_q > 1):
-        specs.extend(multi_ctq(c_fields, t_fields, q_fields))
+    if specs: return specs
+
+    # Multi field specs, single type
+    if (n_c > 1) and (n_t == 0) and (n_q == 0):
+        specs.extend(multi_c(c_fields))
+    if (n_c == 0) and (n_t > 1) and (n_q == 0):
+        specs.extend(multi_t(t_fields))
+    if (n_c == 0) and (n_t == 0) and (n_q > 1):
+        specs.extend(multi_q(q_fields))
+
+    if specs: return specs
+
+    # Single field specs, multi type
+    if (n_c == 1) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_ct(c_fields[0], t_fields[0]))
+    if (n_c == 1) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_cq(c_fields[0], q_fields[0]))
+    if (n_c == 0) and (n_t == 1) and (n_q == 1):
+        specs.extend(single_tq(t_fields[0], q_fields[0]))
+    if (n_c == 1) and (n_t == 1) and (n_q == 1):
+        specs.extend(single_ctq(c_fields[0], t_fields[0], q_fields[0]))
+
+    if specs: return specs        
+
+    # Single field specs, single type
+    if (n_c == 1) and (n_t == 0) and (n_q == 0):
+        specs.extend(single_c(c_fields[0]))
+    if (n_c == 0) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_t(t_fields[0]))
+    if (n_c == 0) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_q(q_fields[0]))
 
     logger.debug('Got %s exact specs', len(specs))
     return specs
