@@ -1,3 +1,6 @@
+import numpy as np
+from itertools import combinations
+
 from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.tasks.ingestion import specific_to_general_type
@@ -12,15 +15,18 @@ from celery import states
 import logging
 logger = logging.getLogger(__name__)
 
+def get_list_of_unique_dicts(li):
+    return list(np.unique(np.array(li)))
 
-
-def enumerate_viz_specs(project_id, dataset_id, selected_fields):
+def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_types=[]):
     '''
     TODO Move key filtering to the db query
     TODO Incorporate 0D and 1D data returns
     '''
     specs = []
+    num_selected_fields = len(selected_fields)
 
+    logger.info('Recommendation Types %s', recommendation_types)
 
     # Get field properties
     with task_app.app_context():
@@ -34,25 +40,34 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields):
         selected_field_docs, c_fields, c_fields_not_selected, q_fields, q_fields_not_selected, t_fields, t_fields_not_selected = \
             get_selected_fields(field_properties, selected_fields)
 
-        baseline_specs = get_baseline_viz_specs(selected_field_docs)
-        specs.extend(baseline_specs)
+        if 'baseline' in recommendation_types:
+            baseline_viz_specs = get_baseline_viz_specs(selected_field_docs)
+            specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
 
-        cascading_viz_specs = get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
-        specs.extend(cascading_viz_specs)
+        if 'subset' in recommendation_types:
+            subset_viz_specs = get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
+            specs.extend([dict(s, recommendation_type='subset') for s in subset_viz_specs ])
 
-        expanded_viz_specs = get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
-        specs.extend(expanded_viz_specs)
+        if 'exact' in recommendation_types:
+            exact_viz_specs = get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
+            specs.extend([dict(s, recommendation_type='exact') for s in exact_viz_specs ])
+
+        if 'expanded' in recommendation_types:
+            expanded_viz_specs = get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
+            specs.extend([dict(s, recommendation_type='expanded') for s in expanded_viz_specs ])
+
     else:
-        baseline_specs = get_baseline_viz_specs(field_properties)
-        specs.extend(baseline_specs)
+        baseline_viz_specs = get_baseline_viz_specs(field_properties)
+        specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
+
+    # Deduplicate
+    specs = get_list_of_unique_dicts(specs)
 
     # Assign viz_types and dataset_id
     for spec in specs:
-        # viz_types = get_viz_types_from_spec(spec)
-        # spec['viz_types'] = viz_types
         spec['dataset_id'] = dataset_id
 
-    return specs
+    return get_list_of_unique_dicts(specs)
 
 
 def get_selected_fields(field_properties, selected_fields):
@@ -100,12 +115,11 @@ def get_selected_fields(field_properties, selected_fields):
 
 def get_baseline_viz_specs(field_properties):
     '''
-    Single-field summary visualizations
+    Single-field visualizations
     '''
     specs = []
     for field in field_properties:
         # Skip unique and ID fields
-
         general_type = field['general_type']
         if general_type == 'c':
             if field['is_unique'] or field['is_id']: continue
@@ -123,44 +137,59 @@ def get_baseline_viz_specs(field_properties):
     return specs
 
 
-def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected):
+def get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected):
     '''
-    Marginal and cascading visualization cases (excluding single-field cases)
-    Essentially treating selection like a mini dataset
+    Multi-field visualizations using subset of selected fields
+    Not including exact match cases
     '''
     specs = []
     n_c = len(c_fields)
     n_q = len(q_fields)
     n_t = len(t_fields)
 
-    # TODO Implement the cascading aspect, not only the marginal cases
-    # TODO Can we encode requirements into the spec functions themselves?
+    if (n_c + n_q + n_t) <= 2:
+        return specs
 
-    # Single field specs, single type
-    if (n_c == 1) and (n_t == 0) and (n_q == 0):
-        specs.extend(single_c(c_fields[0]))
-    if (n_c == 0) and (n_t == 1) and (n_q == 0):
-        specs.extend(single_t(t_fields[0]))
-    if (n_c == 0) and (n_t == 0) and (n_q == 1):
-        specs.extend(single_q(q_fields[0]))
+    if n_c >= 2:
+        for c_field_1, c_field_2 in combinations(c_fields, 2):
+            multi_c_specs = multi_c([c_field_1, c_field_2])
+            specs.extend(multi_c_specs)
 
-    # Single field specs, multi type
-    if (n_c == 1) and (n_t == 1) and (n_q == 0):
-        specs.extend(single_ct(c_fields[0], t_fields[0]))
-    if (n_c == 1) and (n_t == 0) and (n_q == 1):
-        specs.extend(single_cq(c_fields[0], q_fields[0]))
-    if (n_c == 0) and (n_t == 1) and (n_q == 1):
-        specs.extend(single_tq(t_fields[0], q_fields[0]))
-    if (n_c == 1) and (n_t == 1) and (n_q == 1):
-        specs.extend(single_ctq(c_fields[0], t_fields[0], q_fields[0]))
+    if n_q >= 2:
+        for q_field_1, q_field_2 in combinations(q_fields, 2):
+            multi_q_specs = multi_q([q_field_1, q_field_2])
+            specs.extend(multi_q_specs)
 
-    # Multi field specs, single type
-    if (n_c > 1) and (n_t == 0) and (n_q == 0):
-        specs.extend(multi_c(c_fields))
-    if (n_c == 0) and (n_t > 1) and (n_q == 0):
-        specs.extend(multi_t(t_fields))
-    if (n_c == 0) and (n_t == 0) and (n_q > 1):
-        specs.extend(multi_q(q_fields))
+    if (n_c and n_q) and (n_c != 1) and (n_q != 1):
+        for c_field in c_fields:
+            for q_field in q_fields:
+                single_cq_specs = single_cq(c_field, q_field)
+                specs.extend(single_cq_specs)
+
+    logger.debug('Got %s subset specs', len(specs))
+    return specs
+
+def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected):
+    '''
+    Exact visualization cases (excluding single-field cases)
+    TODO Make sure only one case is fulfilled in each instance
+    '''
+    specs = []
+    n_c = len(c_fields)
+    n_q = len(q_fields)
+    n_t = len(t_fields)
+
+    # Multi field specs, multi type
+    if (n_c > 1) and (n_t > 1) and (n_q == 0):
+        specs.extend(multi_ct(c_fields, t_fields))
+    if (n_c > 1) and (n_t == 0) and (n_q > 1):
+        specs.extend(multi_cq(c_fields, q_fields))
+    if (n_c == 0) and (n_t > 0) and (n_q > 1):
+        specs.extend(multi_tq(t_fields, q_fields))
+    if (n_c > 1) and (n_t > 1) and (n_q > 1):
+        specs.extend(multi_ctq(c_fields, t_fields, q_fields))
+
+    if specs: return specs
 
     # Mixed field specs, multi type
     if (n_c == 1) and (n_t > 1) and (n_q == 0):
@@ -176,29 +205,52 @@ def get_cascading_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected,
     if (n_c == 0) and (n_t == 1) and (n_q > 1):
         specs.extend(single_t_multi_q(t_fields[0], q_fields))
 
-    # Multi field specs, multi type
-    if (n_c > 1) and (n_t > 1) and (n_q == 0):
-        specs.extend(multi_ct(c_fields, t_fields))
-    if (n_c > 1) and (n_t == 0) and (n_q > 1):
-        specs.extend(multi_cq(c_fields, q_fields))
-    if (n_c == 0) and (n_t > 0) and (n_q > 1):
-        specs.extend(multi_tq(t_fields, q_fields))
-    if (n_c > 1) and (n_t > 1) and (n_q > 1):
-        specs.extend(multi_ctq(c_fields, t_fields, q_fields))
+    if specs: return specs
 
-    logger.debug('Got %s cascading specs', len(specs))
+    # Multi field specs, single type
+    if (n_c > 1) and (n_t == 0) and (n_q == 0):
+        specs.extend(multi_c(c_fields))
+    if (n_c == 0) and (n_t > 1) and (n_q == 0):
+        specs.extend(multi_t(t_fields))
+    if (n_c == 0) and (n_t == 0) and (n_q > 1):
+        specs.extend(multi_q(q_fields))
+
+    if specs: return specs
+
+    # Single field specs, multi type
+    if (n_c == 1) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_ct(c_fields[0], t_fields[0]))
+    if (n_c == 1) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_cq(c_fields[0], q_fields[0]))
+    if (n_c == 0) and (n_t == 1) and (n_q == 1):
+        specs.extend(single_tq(t_fields[0], q_fields[0]))
+    if (n_c == 1) and (n_t == 1) and (n_q == 1):
+        specs.extend(single_ctq(c_fields[0], t_fields[0], q_fields[0]))
+
+    if specs: return specs        
+
+    # Single field specs, single type
+    if (n_c == 1) and (n_t == 0) and (n_q == 0):
+        specs.extend(single_c(c_fields[0]))
+    if (n_c == 0) and (n_t == 1) and (n_q == 0):
+        specs.extend(single_t(t_fields[0]))
+    if (n_c == 0) and (n_t == 0) and (n_q == 1):
+        specs.extend(single_q(q_fields[0]))
+
+    logger.debug('Got %s exact specs', len(specs))
     return specs
 
 
 def get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected):
     '''
-    Expanded visualization cases (e.g. including fields not provided in arguments)
+    Expanded visualization cases (e.g. including non-selected fields)
     '''
     specs = []
     n_c = len(c_fields)
     n_q = len(q_fields)
     n_t = len(t_fields)
 
+    # One selected C
     for c_field_1 in c_fields:
         # Pairs of C fields
         for c_field_2 in c_fields_not_selected:
@@ -208,6 +260,11 @@ def get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, 
         for q_field in q_fields_not_selected:
             single_cq_specs = single_cq(c_field_1, q_field)
             specs.extend(single_cq_specs)
+        for t_field in t_fields_not_selected:
+            single_ct_specs = single_ct(t_field, c_field_1)
+            specs.extend(single_ct_specs)
+
+    # One expanded Q
     for q_field_1 in q_fields:
         # Pairs of Q fields
         for q_field_2 in q_fields_not_selected:
@@ -216,5 +273,10 @@ def get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, 
         for c_field in c_fields_not_selected:
             single_cq_specs = single_cq(c_field, q_field_1)
             specs.extend(single_cq_specs)
+        for t_field in t_fields_not_selected:
+            single_tq_specs = single_tq(t_field, q_field_1)
+            specs.extend(single_tq_specs)
+
+
     logger.debug('Got %s expanded specs', len(specs))
     return specs

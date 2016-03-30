@@ -144,6 +144,7 @@ class Spec(db.Model):
     case = db.Column(db.Unicode(250))
     generating_procedure = db.Column(db.Unicode(250))
     type_structure = db.Column(db.Unicode(250))
+    recommendation_type = db.Column(db.Unicode(20))
     viz_types = db.Column(JSONB)
     args = db.Column(JSONB)
     meta = db.Column(JSONB)
