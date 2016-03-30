@@ -134,7 +134,8 @@ def get_relevance_score(spec, visualization_field_ids, selected_fields):
     for field in selected_fields:
         if field['field_id'] in visualization_field_ids:
             score = score + 1
-    score = score / len(selected_fields)
+    if len(selected_fields):
+        score = score / len(selected_fields)
     return score
 
 
