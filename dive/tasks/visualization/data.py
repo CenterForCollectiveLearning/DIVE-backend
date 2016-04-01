@@ -457,10 +457,22 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
             bin_num = i + 1
             agg_val = agg_bins_to_values.get(bin_num, 0)
             bins.append({'v': i, 'f': str(formatted_bin_edges[0])})
+
+            left_interval = '['
+            right_interval = ')'
+            if (i + 1) == len(formatted_bin_edges_list):
+                right_interval = ']'
+
+            formatted_interval = '%s%s, %s%s' % (left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
             data_array.append([
                 i + 0.5,
                 agg_val,
-                'Between %s and %s: <b>%s</b>' % (formatted_bin_edges[0], formatted_bin_edges[1], agg_val)
+                '''
+                <div style="padding: 8px 12px;">
+                    <div style="white-space: nowrap;">Count in interval %s:</div>
+                    <div style="font-weight: 500; font-size: 18px; padding-top: 4px;">%s</div>
+                </div>
+                ''' % (formatted_interval, agg_val)
             ])
         final_bin_tick = len(formatted_bin_edges_list)
         bins.append({'v': final_bin_tick, 'f': str(formatted_bin_edges_list[final_bin_tick - 1][1])})
