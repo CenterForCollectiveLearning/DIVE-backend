@@ -400,7 +400,11 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 
     if not precision:
         precision = get_bin_decimals(binning_field_values)
-    float_formatting_string = '%.' + str(precision) + 'f'
+
+    if precision > 0:
+        float_formatting_string = '%.' + str(precision) + 'f'
+    else:
+        float_formatting_string = '%d'
 
     bin_edges_list = get_bin_edges(
         binning_field_values,
@@ -417,8 +421,12 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
             bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
         bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-        rounded_left_bin_edge = float(float_formatting_string % left_bin_edge)
-        rounded_right_bin_edge = float(float_formatting_string % right_bin_edge)
+        if precision > 0:
+            rounded_left_bin_edge = float(float_formatting_string % left_bin_edge)
+            rounded_right_bin_edge = float(float_formatting_string % right_bin_edge)
+        else:
+            rounded_left_bin_edge = int(float_formatting_string % left_bin_edge)
+            rounded_right_bin_edge = int(float_formatting_string % right_bin_edge)
         formatted_bin_edge = (rounded_left_bin_edge, rounded_right_bin_edge)
         formatted_bin_edges_list.append(formatted_bin_edge)
 
@@ -439,22 +447,45 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         }
 
     if 'visualize' in data_formats:
-        data_array = [['Bin', 'Value']]
+        data_array = [['Bin', 'Value', {
+            'role': 'tooltip',
+            'type': 'string',
+            'p': { 'html': True }
+        }]]
+
+        bins = []
         for i, formatted_bin_edges in enumerate(formatted_bin_edges_list):
             bin_num = i + 1
             agg_val = agg_bins_to_values.get(bin_num, 0)
+            bins.append({'v': i, 'f': str(formatted_bin_edges[0])})
+
+            left_interval = '['
+            right_interval = ')'
+            if (i + 1) == len(formatted_bin_edges_list):
+                right_interval = ']'
+
+            formatted_interval = '%s%s, %s%s' % (left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
             data_array.append([
-                formatted_bin_edges,
-                agg_val
+                i + 0.5,
+                agg_val,
+                '''
+                <div style="padding: 8px 12px;">
+                    <div style="white-space: nowrap;">Count in interval %s:</div>
+                    <div style="font-weight: 500; font-size: 18px; padding-top: 4px;">%s</div>
+                </div>
+                ''' % (formatted_interval, agg_val)
             ])
+            
+        final_bin_tick = len(formatted_bin_edges_list)
+        bins.append({'v': final_bin_tick, 'f': str(formatted_bin_edges_list[final_bin_tick - 1][1])})
         final_data['visualize'] = data_array
+        final_data['bins'] = bins
 
     if 'table' in data_formats:
         table_data = []
         if aggregation_function_name == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
-                print i, count
                 new_row = [bin_num_to_formatted_edges[i], count]
                 table_data.append(new_row)
 

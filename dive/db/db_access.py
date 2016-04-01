@@ -239,7 +239,7 @@ def get_specs(project_id, dataset_id, **kwargs):
 
 
 from time import time
-def insert_specs(project_id, specs, selected_fields, conditionals, config):
+def insert_specs(project_id, specs, selected_fields, recommendation_types, conditionals, config):
     start_time = time()
     spec_objects = []
     for s in specs:
@@ -247,6 +247,7 @@ def insert_specs(project_id, specs, selected_fields, conditionals, config):
             project_id = project_id,
             selected_fields = selected_fields,
             conditionals = conditionals,
+            recommendation_types = recommendation_types,
             config = config,
             **s
         )
