@@ -38,7 +38,7 @@ class Specs(Resource):
         conditionals = args.get('conditionals', {})
         config = args.get('config', {})
 
-        specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals)
+        specs = db_access.get_specs(project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals)
 
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
             return jsonify({

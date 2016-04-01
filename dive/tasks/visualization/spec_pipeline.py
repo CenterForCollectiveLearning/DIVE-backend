@@ -122,13 +122,13 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
     return sorted_viz_specs
 
 
-def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals, config):
+def save_viz_specs(specs, dataset_id, project_id, selected_fields, recommendation_types, conditionals, config):
     with task_app.app_context():
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(
-            project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
+            project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals, config=config)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
-        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals, config)
+        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, recommendation_types, conditionals, config)
     return inserted_specs

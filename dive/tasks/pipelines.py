@@ -176,7 +176,7 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendat
     scored_viz_specs = score_viz_specs(filtered_viz_specs, dataset_id, project_id, field_agg_pairs)
 
     self.update_state(state=states.PENDING, meta={'desc': '(5/5) Saving %s visualization specs' % len(scored_viz_specs)})
-    saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, conditionals, config)
+    saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, recommendation_types, conditionals, config)
 
     return { 'result': saved_viz_specs }
 
