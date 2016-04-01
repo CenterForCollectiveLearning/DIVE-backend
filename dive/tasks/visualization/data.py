@@ -452,6 +452,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
             'type': 'string',
             'p': { 'html': True }
         }]]
+
         bins = []
         for i, formatted_bin_edges in enumerate(formatted_bin_edges_list):
             bin_num = i + 1
@@ -474,6 +475,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
                 </div>
                 ''' % (formatted_interval, agg_val)
             ])
+            
         final_bin_tick = len(formatted_bin_edges_list)
         bins.append({'v': final_bin_tick, 'f': str(formatted_bin_edges_list[final_bin_tick - 1][1])})
         final_data['visualize'] = data_array
