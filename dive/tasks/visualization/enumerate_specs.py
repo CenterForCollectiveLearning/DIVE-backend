@@ -57,8 +57,9 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
             specs.extend([dict(s, recommendation_type='expanded') for s in expanded_viz_specs ])
 
     else:
-        baseline_viz_specs = get_baseline_viz_specs(field_properties)
-        specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
+        if 'baseline' in recommendation_types:
+            baseline_viz_specs = get_baseline_viz_specs(field_properties)
+            specs.extend([dict(s, recommendation_type='baseline') for s in baseline_viz_specs ])
 
     # Deduplicate
     specs = get_list_of_unique_dicts(specs)
@@ -227,7 +228,7 @@ def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_f
     if (n_c == 1) and (n_t == 1) and (n_q == 1):
         specs.extend(single_ctq(c_fields[0], t_fields[0], q_fields[0]))
 
-    if specs: return specs        
+    if specs: return specs
 
     # Single field specs, single type
     if (n_c == 1) and (n_t == 0) and (n_q == 0):
