@@ -379,7 +379,6 @@ def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
 
 
 def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
-    logger.info('in get_bin_agg_data')
     final_data = {}
 
     binning_field = args['binning_field']['name']
@@ -465,6 +464,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
                 right_interval = ']'
 
             formatted_interval = '%s%s, %s%s' % (left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
+            
             data_array.append([
                 i + 0.5,
                 agg_val,
@@ -475,7 +475,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
                 </div>
                 ''' % (formatted_interval, agg_val)
             ])
-            
+
         final_bin_tick = len(formatted_bin_edges_list)
         bins.append({'v': final_bin_tick, 'f': str(formatted_bin_edges_list[final_bin_tick - 1][1])})
         final_data['visualize'] = data_array
