@@ -6,6 +6,7 @@ Functions for returning the data corresponding to a given visualization type and
 from __future__ import division
 
 import math
+import locale
 import numpy as np
 import pandas as pd
 import scipy as sp
