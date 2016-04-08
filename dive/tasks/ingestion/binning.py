@@ -20,12 +20,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 def get_bin_decimals(v, max_sample=10000, default=3):
-    v = v.astype(float)
+    v = v.astype(float, raise_on_error=False)
     if len(v) <= max_sample:
         sample = v
     else:
         sample = random.sample(v, max_sample)
-    num_decimals = [ (Decimal.from_float(e).as_tuple().exponent * -1) for e in sample]
+    num_decimals = []
+    for e in sample:
+        try:
+            num_decimals.append(Decimal.from_float(e).as_tuple().exponent * -1)
+        except:
+            pass
+
+    # num_decimals = [ (Decimal.from_float(e).as_tuple().exponent * -1) for e in sample]
     max_decimals = max(num_decimals)
     return min(max_decimals, 3)
 
@@ -46,7 +53,7 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
     min_v = min(v)
     max_v = max(v)
     n = len(v)
-    v = v.astype(float)
+    v = v.astype(float, raise_on_error=False)
 
     # Procedural binning
     if procedural:

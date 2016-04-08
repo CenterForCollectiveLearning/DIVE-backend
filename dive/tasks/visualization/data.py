@@ -464,7 +464,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
                 right_interval = ']'
 
             formatted_interval = '%s%s, %s%s' % (left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
-            
+
             data_array.append([
                 i + 0.5,
                 agg_val,
@@ -515,6 +515,9 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 
     agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
+
+    logger.info('AGG_DF: %s', agg_df.columns)
+    logger.info('AGG_FIELD_NAME: %s', agg_field_name)
     agg_field_list = agg_df[agg_field_name].tolist()
 
     if 'score' in data_formats:
