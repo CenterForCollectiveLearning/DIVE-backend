@@ -117,7 +117,7 @@ def single_c(c_field):
     val_count_spec = {
         'generating_procedure': GP.VAL_COUNT.value,
         'type_structure': TS.C_Q.value,
-        'viz_types': [ VT.TREE.value, VT.PIE.value ],
+        'viz_types': [ VT.TREE.value, VT.PIE.value, VT.BAR.value ],
         'field_ids': [ c_field['id'] ],
         'args': {
             'field_a': c_field
