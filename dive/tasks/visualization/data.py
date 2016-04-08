@@ -6,6 +6,7 @@ Functions for returning the data corresponding to a given visualization type and
 from __future__ import division
 
 import math
+import locale
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -193,10 +194,11 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
 
     header_row = [ group_a_field_label ] + secondary_field_values
     results_as_data_array.append(header_row)
+
     for k, v in results_grouped_by_highest_level_value.iteritems():
         data_array_element = [ k ]
         for secondary_field_value in secondary_field_values:
-            data_array_element.append( v[secondary_field_value] )
+            data_array_element.append( v.get(secondary_field_value, None) )
         results_as_data_array.append(data_array_element)
 
     final_data = {}
@@ -464,7 +466,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
                 right_interval = ']'
 
             formatted_interval = '%s%s, %s%s' % (left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
-            
+
             data_array.append([
                 i + 0.5,
                 agg_val,
@@ -515,6 +517,9 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 
     agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
+
+    logger.info('AGG_DF: %s', agg_df.columns)
+    logger.info('AGG_FIELD_NAME: %s', agg_field_name)
     agg_field_list = agg_df[agg_field_name].tolist()
 
     if 'score' in data_formats:

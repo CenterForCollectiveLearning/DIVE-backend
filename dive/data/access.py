@@ -3,7 +3,9 @@ Module for reading datasets given some specifier
 
 TODO Rename either this or access.py to be more descriptive
 '''
+import locale
 
+import numpy as np
 import pandas as pd
 
 from dive.task_core import celery, task_app
@@ -14,6 +16,7 @@ from time import time
 import logging
 logger = logging.getLogger(__name__)
 
+locale.setlocale(locale.LC_NUMERIC, '')
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
@@ -43,20 +46,55 @@ def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
         path = dataset['path']
         dialect = dataset['dialect']
 
+        field_properties = db_access.get_field_properties(project_id, dataset_id)
+        field_to_type_mapping = {}
+
+        type_to_dtype_mapping = {
+            'decimal': np.float64,
+            'integer': np.int64,
+            'string': np.unicode
+        }
+        decimal_fields = []
+        integer_fields = []
+        string_fields = []
+        for fp in field_properties:
+            name = fp['name']
+            data_type = fp['type']
+            field_to_type_mapping[name] = type_to_dtype_mapping.get(data_type, object)
+            if data_type == 'decimal':
+                decimal_fields.append(name)
+            elif data_type == 'integer':
+                integer_fields.append(name)
+            elif data_type == 'string':
+                string_fields.append(name)
+
         # delim = get_delimiter(path)
         df = pd.read_table(
             path,
             skiprows = dataset['offset'],
             sep = dialect['delimiter'],
             engine = 'c',
-            # lineterminator = dialect['lineterminator'],
+            # dtype = field_to_type_mapping,
             escapechar = dialect['escapechar'],
             doublequote = dialect['doublequote'],
             quotechar = dialect['quotechar'],
-            error_bad_lines = False,
             parse_dates = True,
-            nrows = nrows
+            nrows = nrows,
+            thousands = ','
         )
+
+        # General Sanitation
+        invalid_chars = [ 'n/a', 'na', 'NA', 'NaN', 'n/\a', '.', '\n', '\r\n' ]
+        for invalid_char in invalid_chars:
+            df.replace(invalid_char, np.nan)
+
+        # Forcing data types
+        for decimal_field in decimal_fields:
+            df[decimal_field] = pd.to_numeric(df[decimal_field], errors='coerce')
+
+        for integer_field in integer_fields:
+            df[integer_field] = pd.to_numeric(df[integer_field], errors='coerce')
+
         IMD.insertData(dataset_id, df)
     if profile:
         logger.debug('[ACCESS] Getting dataset %s took %.3fs', dataset_id, (time() - start_time))
