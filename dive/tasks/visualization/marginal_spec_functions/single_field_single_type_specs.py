@@ -76,6 +76,32 @@ def single_t(t_field):
     logger.debug('Single T - %s', t_field['name'])
     specs = []
 
+    t_label = t_field['name']
+    bin_spec = {
+        'generating_procedure': GP.BIN_AGG.value,
+        'type_structure': TS.B_Q.value,
+        'viz_types': [ VT.HIST.value ],
+        'field_ids': [ t_field['id'] ],
+        'args': {
+            'agg_fn': 'count',
+            'agg_field_a': t_field,
+            'binning_field': t_field
+        },
+        'meta': {
+            'desc': '%s of %s by bin' % ('count', t_label),
+            'construction': [
+                { 'string': 'count', 'type': TermType.OPERATION.value },
+                { 'string': 'of', 'type': TermType.PLAIN.value },
+                { 'string': t_label, 'type': TermType.FIELD.value },
+                { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+            ],
+            'labels': {
+                'x': '%s by bin' % t_label,
+                'y': 'Count by bin'
+            },
+        }
+    }
+    specs.append(bin_spec)
     return specs
 
 

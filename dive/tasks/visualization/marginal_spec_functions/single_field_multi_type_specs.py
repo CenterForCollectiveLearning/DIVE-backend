@@ -66,7 +66,11 @@ def single_cq(c_field, q_field):
                         { 'string': q_label, 'type': TermType.FIELD.value },
                         { 'string': 'by', 'type': TermType.OPERATION.value },
                         { 'string': c_label, 'type': TermType.FIELD.value },
-                    ]
+                    ],
+                    'labels': {
+                        'x': c_label,
+                        'y': q_label,
+                    }
                 }
             }
             specs.append(spec)
@@ -122,7 +126,11 @@ def single_tq(t_field, q_field):
                     { 'string': q_label, 'type': TermType.FIELD.value },
                     { 'string': 'by', 'type': TermType.OPERATION.value },
                     { 'string': t_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': t_label,
+                    'y': q_label,
+                }
             }
         }
         specs.append(aggregated_time_series_spec_on_value)
@@ -160,7 +168,11 @@ def single_ctq(c_field, t_field, q_field):
                     { 'string': c_label, 'type': TermType.FIELD.value },
                     { 'string': 'and', 'type': TermType.OPERATION.value },
                     { 'string': t_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': t_label,
+                    'y': q_label,
+                }
             }
         }
         specs.append(aggregated_time_series_spec_on_value)
