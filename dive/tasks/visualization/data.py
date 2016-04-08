@@ -193,10 +193,11 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
 
     header_row = [ group_a_field_label ] + secondary_field_values
     results_as_data_array.append(header_row)
+
     for k, v in results_grouped_by_highest_level_value.iteritems():
         data_array_element = [ k ]
         for secondary_field_value in secondary_field_values:
-            data_array_element.append( v[secondary_field_value] )
+            data_array_element.append( v.get(secondary_field_value, None) )
         results_as_data_array.append(data_array_element)
 
     final_data = {}
