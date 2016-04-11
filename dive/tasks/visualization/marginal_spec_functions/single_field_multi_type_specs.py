@@ -38,7 +38,11 @@ def single_cq(c_field, q_field):
                     { 'string': c_label, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': c_label,
+                    'y': q_label
+                }
             }
         }
         specs.append(spec)
@@ -69,7 +73,7 @@ def single_cq(c_field, q_field):
                     ],
                     'labels': {
                         'x': c_label,
-                        'y': q_label,
+                        'y': '%s of %s' % (agg_fn, q_label),
                     }
                 }
             }
@@ -101,7 +105,11 @@ def single_tq(t_field, q_field):
                     { 'string': t_label, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': t_label,
+                    'y': q_label
+                }
             }
         }
         specs.append(raw_time_series_spec)
