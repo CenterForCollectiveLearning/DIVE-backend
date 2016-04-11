@@ -37,6 +37,38 @@ def get_bin_decimals(v, max_sample=100, default=3):
         return default
     return min(max_decimals, default)
 
+
+def get_num_bins(v, procedure='freedman', default_num_bins=10):
+    v = v.astype(float, raise_on_error=False)
+    n = len(v)
+    min_v = min(v)
+    max_v = max(v)
+
+    # Procedural binning
+    if procedure == 'freedman':
+        IQR = np.subtract(*np.percentile(v, [75, 25]))
+        bin_width = 2 * IQR * n**(-1/3)
+        num_bins = (max_v - min_v) / bin_width
+    elif procedure == 'square_root':
+        num_bins = math.sqrt(n)
+    elif procedure == 'doane':
+        skewness = abs(stats.skew(v))
+        sigma_g1 = math.sqrt((6*(n-2)) / ((n+1) * (n+3)))
+        num_bins = 1 + math.log(n, 2) + math.log((1 + (skewness / sigma_g1)), 2)
+    elif procedure == 'rice':
+        num_bins = 2 * n**(-1/3)
+    elif procedure == 'sturges':
+        num_bins = math.ceil(math.log(n, 2) + 1)
+
+    num_bins = math.floor(num_bins)
+    num_bins = min(num_bins, MAX_BINS)
+
+    if not num_bins:
+        return default_num_bins
+
+    return num_bins
+
+
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
 ###
@@ -51,32 +83,13 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
 
     Returns the edges of each bin
     '''
+    v = v.astype(float, raise_on_error=False)    
+    n = len(v)
     min_v = min(v)
     max_v = max(v)
-    n = len(v)
-    v = v.astype(float, raise_on_error=False)
 
-    # Procedural binning
     if procedural:
-        if procedure == 'freedman':
-            IQR = np.subtract(*np.percentile(v, [75, 25]))
-            bin_width = 2 * IQR * n**(-1/3)
-            num_bins = (max_v - min_v) / bin_width
-        elif procedure == 'square_root':
-            num_bins = math.sqrt(n)
-        elif procedure == 'doane':
-            skewness = abs(stats.skew(v))
-            sigma_g1 = math.sqrt((6*(n-2)) / ((n+1) * (n+3)))
-            num_bins = 1 + math.log(n, 2) + math.log((1 + (skewness / sigma_g1)), 2)
-        elif procedure == 'rice':
-            num_bins = 2 * n**(-1/3)
-        elif procedure == 'sturges':
-            num_bins = math.ceil(math.log(n, 2) + 1)
-
-        num_bins = math.floor(num_bins)
-        num_bins = min(num_bins, MAX_BINS)
-        if not num_bins:
-            num_bins = DEFAULT_BINS
+        num_bins = get_num_bins(v, procedure=procedure)
 
     # Incrementing max value by tiny amount to deal with np.digitize right edge
     eps = max_v * 0.00001
