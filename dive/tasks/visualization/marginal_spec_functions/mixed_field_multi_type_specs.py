@@ -104,6 +104,10 @@ def single_q_multi_c(c_fields, q_field):
                     { 'string': 'and', 'type': TermType.OPERATION.value },
                     { 'string': c_label_a, 'type': TermType.FIELD.value },
                     ]
+                },
+                'labels': {
+                    'x': 'Grouping by %s then %s' % (c_label_b, c_label_a),
+                    'y': '%s of %s' % (agg_fn, q_label)
                 }
             }
             specs.append(spec_1)
