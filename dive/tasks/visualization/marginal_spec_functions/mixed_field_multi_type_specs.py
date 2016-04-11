@@ -10,6 +10,8 @@ logger = get_task_logger(__name__)
 def single_c_multi_q(c_field, q_fields):
     specs = []
 
+    logger.info('SINGLE C MULTI Q %s %s', c_field, q_fields)
+
     # Two-field agg:agg
     if not c_field['is_unique']:
         c_label = c_field['name']
