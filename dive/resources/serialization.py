@@ -48,7 +48,7 @@ def replace_unserializable_numpy(obj):
         return obj
     elif isinstance(obj, (np.ndarray, list, tuple)):
         return map(replace_unserializable_numpy, obj)
-    elif isinstance(obj,(pd.DataFrame, pd.Series)):
+    elif isinstance(obj, (pd.DataFrame, pd.Series)):
         return replace_unserializable_numpy(obj.to_dict())
     elif obj == None:
         return None
@@ -76,4 +76,6 @@ def pre_serialize(obj):
             return obj
     elif isinstance(obj, np.ndarray):
         return map(pre_serialize, obj)
+    elif (obj is pd.NaT):
+        return None
     return obj
