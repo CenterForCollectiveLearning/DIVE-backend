@@ -164,7 +164,6 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
         [2011-MAR, 100, 200]
     ]
     '''
-    logger.debug('In get_multigroup_agg_data')
     agg_field = args['agg_field']['name']
     aggregation_function_name = args['agg_fn']
     group_a_field_label = args['grouped_field_a']['name']
@@ -519,8 +518,6 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
 
-    logger.info('AGG_DF: %s', agg_df.columns)
-    logger.info('AGG_FIELD_NAME: %s', agg_field_name)
     agg_field_list = agg_df[agg_field_name].tolist()
 
     if 'score' in data_formats:
