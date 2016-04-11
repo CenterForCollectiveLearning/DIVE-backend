@@ -46,9 +46,12 @@ def get_num_bins(v, procedure='freedman', default_num_bins=10):
 
     # Procedural binning
     if procedure == 'freedman':
-        IQR = np.subtract(*np.percentile(v, [75, 25]))
-        bin_width = 2 * IQR * n**(-1/3)
-        num_bins = (max_v - min_v) / bin_width
+        try:
+            IQR = np.subtract(*np.percentile(v, [75, 25]))
+            bin_width = 2 * IQR * n**(-1/3)
+            num_bins = (max_v - min_v) / bin_width
+        except:
+            num_bins = math.sqrt(n)
     elif procedure == 'square_root':
         num_bins = math.sqrt(n)
     elif procedure == 'doane':
@@ -83,7 +86,7 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10):
 
     Returns the edges of each bin
     '''
-    v = v.astype(float, raise_on_error=False)    
+    v = v.astype(float, raise_on_error=False)
     n = len(v)
     min_v = min(v)
     max_v = max(v)
