@@ -14,6 +14,7 @@ from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import task_app
 from dive.tasks.ingestion.utilities import get_unique
+from dive.tasks.ingestion.binning import get_num_bins
 from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
@@ -123,10 +124,11 @@ def return_data_list_numerical(data_column, variable_name):
     count_dict = {}
     data_array = []
 
-    (names, roundedEdges) = find_binning_edges_equal_spaced(data_column, 5)
+    num_bins = get_num_bins(data_column)
+    (names, roundedEdges) = find_binning_edges_equal_spaced(data_column, num_bins)
     data_array.append([variable_name, 'count'])
     for ele in data_column:
-        bin_name = find_bin(ele, roundedEdges, names, 5)
+        bin_name = find_bin(ele, roundedEdges, names, num_bins)
         if count_dict.get(bin_name):
             count_dict[bin_name] += 1
         else:
