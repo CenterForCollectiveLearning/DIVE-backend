@@ -68,7 +68,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
             data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config,
                 df=conditioned_df,
                 precomputed=precomputed,
-                data_formats=['score', 'visualize']
+                data_formats=['score', 'table', 'visualize']
             )
 
         except Exception as e:
