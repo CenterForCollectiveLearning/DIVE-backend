@@ -41,7 +41,11 @@ def single_c_multi_q(c_field, q_fields):
                             { 'string': q_label_b, 'type': TermType.FIELD.value },
                             { 'string': 'by', 'type': TermType.PLAIN.value },
                             { 'string': agg_fn, 'type': TermType.OPERATION.value },
-                        ]
+                        ],
+                        'labels': {
+                            'x': q_label_a,
+                            'y': q_label_b
+                        }
                     }
                 }
                 specs.append(spec)
@@ -72,14 +76,18 @@ def single_q_multi_c(c_fields, q_field):
                 'meta': {
                     'desc': '%s of %s grouped by %s and %s' % (agg_fn, q_label, c_label_a, c_label_b),
                     'construction': [
-                    { 'string': agg_fn, 'type': TermType.OPERATION.value },
-                    { 'string': 'of', 'type': TermType.PLAIN.value },
-                    { 'string': q_label, 'type': TermType.FIELD.value },
-                    { 'string': 'grouped by', 'type': TermType.OPERATION.value },
-                    { 'string': c_label_a, 'type': TermType.FIELD.value },
-                    { 'string': 'and', 'type': TermType.OPERATION.value },
-                    { 'string': c_label_b, 'type': TermType.FIELD.value },
-                    ]
+                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'grouped by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_a, 'type': TermType.FIELD.value },
+                        { 'string': 'and', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_b, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': 'Grouping by %s then %s' % (c_label_b, c_label_a),
+                        'y': '%s of %s' % (agg_fn, q_label)
+                    }
                 }
             }
             spec_2 = {
@@ -96,15 +104,20 @@ def single_q_multi_c(c_fields, q_field):
                 'meta': {
                     'desc': '%s of %s grouped by %s and %s' % (agg_fn, q_label, c_label_b, c_label_a),
                     'construction': [
-                    { 'string': agg_fn, 'type': TermType.OPERATION.value },
-                    { 'string': 'of', 'type': TermType.PLAIN.value },
-                    { 'string': q_label, 'type': TermType.FIELD.value },
-                    { 'string': 'grouped by', 'type': TermType.OPERATION.value },
-                    { 'string': c_label_b, 'type': TermType.FIELD.value },
-                    { 'string': 'and', 'type': TermType.OPERATION.value },
-                    { 'string': c_label_a, 'type': TermType.FIELD.value },
-                    ]
-                }
+                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'grouped by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_b, 'type': TermType.FIELD.value },
+                        { 'string': 'and', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_a, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': 'Grouping by %s then %s' % (c_label_b, c_label_a),
+                        'y': '%s of %s' % (agg_fn, q_label)
+                    }
+                },
+
             }
             specs.append(spec_1)
             specs.append(spec_2)

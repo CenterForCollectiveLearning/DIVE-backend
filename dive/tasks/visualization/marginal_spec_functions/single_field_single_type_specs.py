@@ -128,7 +128,11 @@ def single_c(c_field):
                 { 'string': 'count', 'type': TermType.OPERATION.value },
                 { 'string': 'of', 'type': TermType.PLAIN.value },
                 { 'string': c_label, 'type': TermType.FIELD.value },
-            ]
+            ],
+            'labels': {
+                'x': c_label,
+                'y': 'Count'
+            },
         }
     }
 

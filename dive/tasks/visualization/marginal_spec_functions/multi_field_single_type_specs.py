@@ -98,7 +98,11 @@ def multi_q(q_fields):
                     { 'string': q_label_a, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label_b, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': q_label_a,
+                    'y': q_label_b
+                },
             }
         }
         specs.append(raw_comparison_spec)

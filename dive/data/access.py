@@ -47,26 +47,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
         dialect = dataset['dialect']
 
         field_properties = db_access.get_field_properties(project_id, dataset_id)
-        field_to_type_mapping = {}
-
-        type_to_dtype_mapping = {
-            'decimal': np.float64,
-            'integer': np.int64,
-            'string': np.unicode
-        }
-        decimal_fields = []
-        integer_fields = []
-        string_fields = []
-        for fp in field_properties:
-            name = fp['name']
-            data_type = fp['type']
-            field_to_type_mapping[name] = type_to_dtype_mapping.get(data_type, object)
-            if data_type == 'decimal':
-                decimal_fields.append(name)
-            elif data_type == 'integer':
-                integer_fields.append(name)
-            elif data_type == 'string':
-                string_fields.append(name)
 
         # delim = get_delimiter(path)
         df = pd.read_table(
@@ -83,21 +63,58 @@ def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
             thousands = ','
         )
 
-        # General Sanitation
-        invalid_chars = [ 'n/a', 'na', 'NA', 'NaN', 'n/\a', '.', '\n', '\r\n' ]
-        for invalid_char in invalid_chars:
-            df.replace(invalid_char, np.nan)
+        sanitized_df = sanitize_df(df)
+        coerced_df = coerce_types(sanitized_df, field_properties)
 
-        # Forcing data types
-        for decimal_field in decimal_fields:
-            df[decimal_field] = pd.to_numeric(df[decimal_field], errors='coerce')
-
-        for integer_field in integer_fields:
-            df[integer_field] = pd.to_numeric(df[integer_field], errors='coerce')
-
-        IMD.insertData(dataset_id, df)
+        IMD.insertData(dataset_id, coerced_df)
     if profile:
         logger.debug('[ACCESS] Getting dataset %s took %.3fs', dataset_id, (time() - start_time))
+    return coerced_df
+
+
+fields_to_coerce_to_float = [ 'decimal', 'latitude', 'longitude' ]
+fields_to_coerce_to_integer = [ 'year', 'integer' ]
+fields_to_coerce_to_string = [ 'string' ]
+fields_to_coerce_to_datetime = [ 'datetime' ]
+def coerce_types(df, field_properties):
+    decimal_fields = []
+    integer_fields = []
+    string_fields = []
+    datetime_fields = []
+
+    for fp in field_properties:
+        name = fp['name']
+        data_type = fp['type']
+        if data_type in fields_to_coerce_to_float:
+            decimal_fields.append(name)
+        elif data_type in fields_to_coerce_to_integer:
+            integer_fields.append(name)
+        elif data_type in fields_to_coerce_to_string:
+            string_fields.append(name)
+        elif data_type in fields_to_coerce_to_datetime:
+            datetime_fields.append(name)
+
+    # Forcing data types
+    for decimal_field in decimal_fields:
+        df[decimal_field] = pd.to_numeric(df[decimal_field], errors='coerce')
+
+    for integer_field in integer_fields:
+        df[integer_field] = pd.to_numeric(df[integer_field], errors='coerce')
+
+    # for datetime_field in datetime_fields:
+    #     try:
+    #         df[datetime_field] = pd.to_datetime(df[datetime_field], errors='coerce', infer_datetime_format=True)
+    #     except ValueError:
+    #         df[datetime_field] = pd.to_datetime(df[datetime_field], errors='coerce')
+
+    return df
+
+
+def sanitize_df(df):
+    # General Sanitation
+    invalid_chars = [ 'n/a', 'na', 'NA', 'NaN', 'n/\a', '.', '\n', '\r\n' ]
+    for invalid_char in invalid_chars:
+        df.replace(invalid_char, np.nan)
     return df
 
 
@@ -171,6 +188,7 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
         final_query_string = query_strings['and']
     elif query_strings['or'] and not query_strings['and']:
         final_query_string = query_strings['or']
+
     conditioned_df = safe_df.query(final_query_string)
     conditioned_df.columns = orig_cols
 
