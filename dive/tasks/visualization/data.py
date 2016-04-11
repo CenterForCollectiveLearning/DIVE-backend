@@ -288,23 +288,24 @@ def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     '''
     final_data = {}
 
-    group_field_name = args['grouped_field']['name']
+    grouped_field_name = args['grouped_field']['name']
     agg_field_a_name = args['agg_field_a']['name']
     agg_field_b_name = args['agg_field_b']['name']
     aggregation_function_name = args['agg_fn']
 
-    if group_field_name in precomputed['groupby']:
-        groupby = precomputed['groupby'][grouped_field_name]
+    if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
+        grouped_df = precomputed['groupby'][grouped_field_name]
     else:
-        groupby = df.groupby(group_field_name, sort=False)
-    agg_df = get_aggregated_df(groupby, aggregation_function_name)
+        grouped_df = df.groupby(grouped_field_name, sort=False)
+
+    agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
     agg_field_a_list = agg_df[agg_field_a_name].tolist()
     agg_field_b_list = agg_df[agg_field_b_name].tolist()
 
     data_table = []
     data_array = []
-    data_table.append([ group_field_name, agg_field_a_name, agg_field_b_name ])
+    data_table.append([ grouped_field_name, agg_field_a_name, agg_field_b_name ])
     data_array.append([ agg_field_a_name, agg_field_b_name ])
     for (a, b, c) in zip(grouped_field_list, agg_field_a_list, agg_field_b_list):
         data_table.append([a, b, c])
