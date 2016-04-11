@@ -69,11 +69,11 @@ def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
         IMD.insertData(dataset_id, coerced_df)
     if profile:
         logger.debug('[ACCESS] Getting dataset %s took %.3fs', dataset_id, (time() - start_time))
-    return df
+    return coerced_df
 
 
 fields_to_coerce_to_float = [ 'decimal', 'latitude', 'longitude' ]
-fields_to_coerce_to_integer = [ 'year', 'integer']
+fields_to_coerce_to_integer = [ 'year', 'integer' ]
 fields_to_coerce_to_string = [ 'string' ]
 fields_to_coerce_to_datetime = [ 'datetime' ]
 def coerce_types(df, field_properties):
@@ -101,8 +101,11 @@ def coerce_types(df, field_properties):
     for integer_field in integer_fields:
         df[integer_field] = pd.to_numeric(df[integer_field], errors='coerce')
 
-    for datetime_field in integer_fields:
-        df[integer_field] = pd.to_datetime(df[datetime_field], errors='coerce')
+    # for datetime_field in datetime_fields:
+    #     try:
+    #         df[datetime_field] = pd.to_datetime(df[datetime_field], errors='coerce', infer_datetime_format=True)
+    #     except ValueError:
+    #         df[datetime_field] = pd.to_datetime(df[datetime_field], errors='coerce')
 
     return df
 
