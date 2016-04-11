@@ -50,6 +50,10 @@ def create_app(**kwargs):
         allow_headers='Content-Type'
     )
 
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db.session.remove()
+
     ensure_directories(app)
     return app
 
