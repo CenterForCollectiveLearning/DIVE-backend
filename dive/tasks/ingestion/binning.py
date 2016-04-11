@@ -19,7 +19,7 @@ from dive.data.access import get_data
 import logging
 logger = logging.getLogger(__name__)
 
-def get_bin_decimals(v, max_sample=10000, default=3):
+def get_bin_decimals(v, max_sample=100, default=3):
     v = v.astype(float, raise_on_error=False)
     if len(v) <= max_sample:
         sample = v
