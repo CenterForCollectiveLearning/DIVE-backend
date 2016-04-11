@@ -74,7 +74,7 @@ class VisualizationFromSpec(Resource):
         spec = db_access.get_spec(spec_id, project_id)
 
         viz_data = spec.get('data', None)
-        if viz_data:
+        if viz_data and (conditionals == spec.get('conditionals')) and (config == spec.get('config')):
             del spec['data']
         else:
             viz_data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=['visualize', 'table'])

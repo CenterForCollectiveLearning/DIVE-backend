@@ -25,16 +25,17 @@ def get_bin_decimals(v, max_sample=10000, default=3):
         sample = v
     else:
         sample = random.sample(v, max_sample)
+
     num_decimals = []
     for e in sample:
-        try:
-            num_decimals.append(Decimal.from_float(e).as_tuple().exponent * -1)
-        except:
-            pass
+        num_decimals.append(str(e).find('.'))
+        # num_decimals.append(Decimal.from_float(e).as_tuple().exponent * -1)
 
-    # num_decimals = [ (Decimal.from_float(e).as_tuple().exponent * -1) for e in sample]
-    max_decimals = max(num_decimals)
-    return min(max_decimals, 3)
+    try:
+        max_decimals = max(num_decimals)
+    except:
+        return default
+    return min(max_decimals, default)
 
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
