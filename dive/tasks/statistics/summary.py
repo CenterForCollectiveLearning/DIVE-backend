@@ -614,6 +614,7 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     num_bins: a number represents how many bins there are
     '''
     def searchIndex(nums, target, length, index):
+        length = int(length)
         mid = length/2
         if length == 1:
             if target <= nums[0]:
@@ -629,7 +630,7 @@ def find_bin(target, binningEdges, binningNames, num_bins):
             return searchIndex(nums[mid:], target, length-mid, index+mid)
 
     #subtraction of 1 since indexing starts at 0
-    return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
+    return binningNames[searchIndex(binningEdges, target, num_bins, 0) - 1]
 
 
 def run_numerical_comparison_from_spec(spec, project_id):
