@@ -231,6 +231,7 @@ def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visu
     '''
     group_a_field_name = args['field_a']['name']
     group_b_field_name = args['field_b']['name']
+
     grouped_df = df.groupby([group_a_field_name, group_b_field_name], sort=False).size()
 
     results_as_data_array = []
