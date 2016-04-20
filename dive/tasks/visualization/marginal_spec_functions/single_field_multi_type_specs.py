@@ -94,7 +94,7 @@ def single_tq(t_field, q_field):
             'generating_procedure': GP.VAL_VAL.value,
             'type_structure': TS.T_Q.value,
             'viz_types': [ VT.LINE.value, VT.SCATTER.value ],
-            'field_ids': [ c_field['id'], q_field['id'] ],
+            'field_ids': [ t_field['id'], q_field['id'] ],
             'args': {
                 'field_a': t_field,
                 'field_b': q_field
