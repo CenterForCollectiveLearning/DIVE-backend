@@ -44,10 +44,12 @@ class TaskResult(Resource):
         }
 
         logger.debug('%s: %s', task_id, task.state)
+        
         if task.state == states.PENDING:
             if (task.info) and (task.info.get('desc')):
                 logger.info(task.info.get('desc'))
                 state['currentTask'] = task.info.get('desc'),
+
         elif task.state == states.SUCCESS:
             if task.info:
                 state['result'] = task.info.get('result')
