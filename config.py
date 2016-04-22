@@ -7,6 +7,9 @@ class BaseConfig(object):
 
     SECRET_KEY = 'dive'
 
+    SENTRY_DSN = ''
+    SENTRY_USER_ATTRS = [ 'username', 'email' ]
+
     FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
 
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -18,6 +21,8 @@ class BaseConfig(object):
     RECOMPUTE_FIELD_PROPERTIES = True
     RECOMPUTE_VIZ_SPECS = True
     RECOMPUTE_STATISTICS = True
+
+    PROPAGATE_EXCEPTIONS = True
 
     COMPRESS = True
 

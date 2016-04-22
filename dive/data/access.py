@@ -5,8 +5,10 @@ TODO Rename either this or access.py to be more descriptive
 '''
 import locale
 
+import os
 import numpy as np
 import pandas as pd
+from flask.ext.restful import abort
 
 from dive.task_core import celery, task_app
 from dive.data.in_memory_data import InMemoryData as IMD
@@ -48,7 +50,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
 
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
-        # delim = get_delimiter(path)
         df = pd.read_table(
             path,
             skiprows = dataset['offset'],

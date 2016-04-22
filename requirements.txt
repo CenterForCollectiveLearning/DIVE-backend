@@ -6,6 +6,7 @@ appnope==0.1.0
 Babel==2.1.1
 backports.ssl-match-hostname==3.4.0.2
 billiard==3.3.0.22
+blinker==1.4
 cairocffi==0.7.2
 CairoSVG==1.0.17
 celery==3.1.19
@@ -13,6 +14,7 @@ certifi==2015.9.6.2
 cffi==1.2.1
 chardet==2.3.0
 colorlog==2.6.0
+contextlib2==0.5.1
 csvkit==0.9.1
 dbf==0.94.3
 decorator==4.0.4
@@ -45,7 +47,7 @@ lxml==3.4.4
 Mako==1.0.2
 MarkupSafe==0.23
 messytables==0.15.0
-numexpr==2.4.4
+numexpr==2.5.2
 numpy==1.11.0
 openpyxl==2.2.0b1
 pandas==0.18.0
@@ -62,6 +64,7 @@ python-editor==0.4
 python-magic==0.4.6
 pytz==2016.3
 PyYAML==3.11
+raven==5.13.0
 requests==2.8.1
 scikit-learn==0.16.1
 scipy==0.16.0
