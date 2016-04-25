@@ -50,7 +50,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     if project_id and dataset_id:
         with task_app.app_context():
             df = get_data(project_id=project_id, dataset_id=dataset_id, profile=True)
-            df = df.dropna()
+            # df = df.dropna()
             conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     precomputed = {

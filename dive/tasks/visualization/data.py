@@ -87,8 +87,11 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
 
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
-        df = df.dropna()
+        # df = df.dropna()
+        print "GETTING DATA at get_viz_data", df
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+
+    print "DF at get_viz_data:", df
 
     if gp == GeneratingProcedure.AGG.value:
         final_data = get_agg_data(df, precomputed, args, config, data_formats)
@@ -408,6 +411,9 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     else:
         float_formatting_string = '%d'
 
+    logger.info('Binning field: %s', binning_field)
+    logger.info('Values: %s', binning_field_values)
+    logger.info('DF: %s', df)
     bin_edges_list = get_bin_edges(
         binning_field_values,
         procedural=procedural,
