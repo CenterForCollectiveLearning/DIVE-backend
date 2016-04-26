@@ -45,6 +45,8 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     '''
     viz_specs_with_data = []
 
+    enumerated_viz_specs = enumerated_viz_specs[:30]
+
     start_time = time()
     # Get dataframe
     if project_id and dataset_id:
@@ -78,6 +80,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
         if not data:
             logger.info('No data for spec with generating procedure %s', spec['generating_procedure'])
             continue
+
         viz_spec_with_data['data'] = data
         viz_specs_with_data.append(viz_spec_with_data)
 

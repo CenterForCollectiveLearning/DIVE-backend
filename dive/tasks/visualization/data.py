@@ -87,11 +87,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
 
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
-        # df = df.dropna()
-        print "GETTING DATA at get_viz_data", df
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-
-    print "DF at get_viz_data:", df
 
     if gp == GeneratingProcedure.AGG.value:
         final_data = get_agg_data(df, precomputed, args, config, data_formats)
@@ -391,6 +387,13 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
 
+    # Handling NAs
+    pre_cleaned_binning_field_values = df[binning_field]
+    df = df[pd.notnull(pre_cleaned_binning_field_values)]
+    binning_field_values = df[binning_field]
+    if len(binning_field_values) == 0:
+        return None
+
     # Configuration
     procedure = config.get('binning_procedure', 'freedman')
     binning_type = config.get('binning_type', 'procedural')
@@ -401,8 +404,6 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     precision = config.get('precision', None)
     num_bins = config.get('num_bins', 3)
 
-    binning_field_values = df[binning_field]
-
     if not precision:
         precision = get_bin_decimals(binning_field_values)
 
@@ -411,9 +412,6 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     else:
         float_formatting_string = '%d'
 
-    logger.info('Binning field: %s', binning_field)
-    logger.info('Values: %s', binning_field_values)
-    logger.info('DF: %s', df)
     bin_edges_list = get_bin_edges(
         binning_field_values,
         procedural=procedural,
