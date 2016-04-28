@@ -524,6 +524,7 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     grouped_field_name = args['grouped_field']['name']
     agg_field_name = args['agg_field']['name']
 
+    df = df[[grouped_field_name, agg_field_name]]
     df = df.dropna(how='any', subset=[grouped_field_name, agg_field_name])
 
     aggregation_function_name = args['agg_fn']
@@ -558,6 +559,7 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
+
     vc = df[field_a_label].value_counts()
     value_list = list(vc.index.values)
     counts = vc.tolist()
