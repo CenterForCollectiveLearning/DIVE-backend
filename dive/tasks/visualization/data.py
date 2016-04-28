@@ -87,7 +87,6 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
 
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
-        df = df.dropna()
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     if gp == GeneratingProcedure.AGG.value:
@@ -125,6 +124,8 @@ def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visual
     final_data = {}
     field_a_label = args['field_a']['name']
     field_b_label = args['field_b']['name']
+
+    df = df.dropna(subset=[field_a_label, field_b_label])
 
     field_a_list = df[field_a_label].tolist()
     field_b_list = df[field_b_label].tolist()
@@ -168,6 +169,8 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
     aggregation_function_name = args['agg_fn']
     group_a_field_label = args['grouped_field_a']['name']
     group_b_field_label = args['grouped_field_b']['name']
+
+    df = df.dropna(subset=[field_a_label, field_b_label])
     groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)[agg_field]
 
@@ -232,6 +235,8 @@ def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visu
     group_a_field_name = args['field_a']['name']
     group_b_field_name = args['field_b']['name']
 
+    df = df.dropna(subset=[group_a_field_name, group_b_field_name])
+
     grouped_df = df.groupby([group_a_field_name, group_b_field_name], sort=False).size()
 
     results_as_data_array = []
@@ -291,6 +296,8 @@ def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     grouped_field_name = args['grouped_field']['name']
     agg_field_a_name = args['agg_field_a']['name']
     agg_field_b_name = args['agg_field_b']['name']
+
+    df = df.dropna(subset=[agg_field_a_name, agg_field_b_name])
     aggregation_function_name = args['agg_fn']
 
     if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
@@ -332,6 +339,8 @@ def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 def get_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     agg_field_label = args['agg_field_a']['name']
+    df = df.dropna(subset=[agg_field_label])
+
     agg_field_data = df[agg_field_label]
     aggregation_function_name = args['agg_fn']
 
@@ -388,6 +397,13 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
 
+    # Handling NAs
+    pre_cleaned_binning_field_values = df[binning_field]
+    df = df.dropna(subset=[binning_field])
+    binning_field_values = df[binning_field]
+    if len(binning_field_values) == 0:
+        return None
+
     # Configuration
     procedure = config.get('binning_procedure', 'freedman')
     binning_type = config.get('binning_type', 'procedural')
@@ -397,8 +413,6 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         procedural = False
     precision = config.get('precision', None)
     num_bins = config.get('num_bins', 3)
-
-    binning_field_values = df[binning_field]
 
     if not precision:
         precision = get_bin_decimals(binning_field_values)
@@ -509,6 +523,10 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     grouped_field_name = args['grouped_field']['name']
     agg_field_name = args['agg_field']['name']
+
+    df = df[[grouped_field_name, agg_field_name]]
+    df = df.dropna(how='any', subset=[grouped_field_name, agg_field_name])
+
     aggregation_function_name = args['agg_fn']
 
     if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
@@ -541,6 +559,7 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
+
     vc = df[field_a_label].value_counts()
     value_list = list(vc.index.values)
     counts = vc.tolist()
