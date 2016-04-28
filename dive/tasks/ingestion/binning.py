@@ -30,7 +30,6 @@ def get_bin_decimals(v, max_sample=100, default=3):
     for e in sample:
         num_decimals.append(str(e).find('.'))
         # num_decimals.append(Decimal.from_float(e).as_tuple().exponent * -1)
-
     try:
         max_decimals = max(num_decimals)
     except:

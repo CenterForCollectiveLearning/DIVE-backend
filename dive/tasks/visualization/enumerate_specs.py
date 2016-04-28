@@ -61,6 +61,9 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
             baseline_viz_specs = get_baseline_viz_specs(field_properties)
             specs.extend([dict(s, recommendation_type='exact') for s in baseline_viz_specs ])
 
+    # Limit Number of specs
+    specs = specs[:20]
+
     # Deduplicate
     specs = get_list_of_unique_dicts(specs)
 
