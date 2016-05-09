@@ -128,6 +128,7 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
 def save_viz_specs(specs, dataset_id, project_id, selected_fields, recommendation_types, conditionals, config):
     with task_app.app_context():
         specs = replace_unserializable_numpy(specs)
+        
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(
             project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals, config=config)
