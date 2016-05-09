@@ -170,7 +170,7 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
     group_a_field_label = args['grouped_field_a']['name']
     group_b_field_label = args['grouped_field_b']['name']
 
-    df = df.dropna(subset=[field_a_label, field_b_label])
+    df = df.dropna(subset=[group_a_field_label, group_b_field_label])
     groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)[agg_field]
 
