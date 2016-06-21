@@ -44,6 +44,11 @@ def get_aggregated_df(groupby, aggregation_function_name):
     try:
         if aggregation_function_name == 'sum':
             agg_df = groupby.sum()
+        elif aggregation_function_name == 'std':
+            agg_df = groupby.std()
+        elif aggregation_function_name == 'sem':
+            agg_df = groupby.sem()
+            logger.info(agg_df)
         elif aggregation_function_name == 'min':
             agg_df = groupby.min()
         elif aggregation_function_name == 'max':
@@ -88,6 +93,8 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+
+    logger.debug('Generating procedure: %s', gp)
 
     if gp == GeneratingProcedure.AGG.value:
         final_data = get_agg_data(df, precomputed, args, config, data_formats)
@@ -173,6 +180,13 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
     df = df.dropna(subset=[group_a_field_label, group_b_field_label])
     groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)[agg_field]
+
+    logger.debug('IN MULTIGROUP_AGG')
+    logger.debug(aggregation_function_name)
+    if aggregation_function_name == 'mean':
+        logger.debug('Calculating sem')
+        sem_df = get_aggregated_df(groupby, 'sem')[agg_field]
+        print sem_df
 
     results_as_data_array = []
     secondary_field_values = []
