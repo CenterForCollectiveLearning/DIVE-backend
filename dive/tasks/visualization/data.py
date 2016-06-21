@@ -190,6 +190,7 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
         upper_confidence_df = (agg_df + sem_df)
 
     results_as_data_array = []
+    results_as_data_array_with_interval = []
     secondary_field_values = []
     results_grouped_by_highest_level_value = {}
 
@@ -231,22 +232,30 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
         header_row = [ group_a_field_label ] + secondary_field_values
 
     results_as_data_array.append(header_row)
+    results_as_data_array_with_interval.append( [group_a_field_label] + secondary_field_values )
 
     for k, v in results_grouped_by_highest_level_value.iteritems():
         data_array_element = [ k ]
+        data_array_element_with_interval = [ k ]
         for secondary_field_value in secondary_field_values:
-            data_array_element.append( v.get(secondary_field_value, None) )
+            aggregation_value = v.get(secondary_field_value, None)
+            data_array_element.append(aggregation_value)
 
             if mean_aggregration:
-                logger.info(lower_confidence_df)
-                logger.info(k)
-                logger.info(secondary_field_value)
+                sem = sem_df[k].get(secondary_field_value, None)
+                if sem is None or np.isnan(sem):
+                    data_array_element_with_interval.append('%.3f' % aggregation_value)
+                else:
+                    data_array_element_with_interval.append('%.3f ± %.3f' % (aggregation_value, sem))
+
                 data_array_element.append(lower_confidence_df[k].get(secondary_field_value, None) )
                 data_array_element.append(upper_confidence_df[k].get(secondary_field_value, None) )
-        results_as_data_array.append(data_array_element)
+                results_as_data_array_with_interval.append(data_array_element_with_interval)
 
-    logger.info(results_as_data_array)
+            results_as_data_array.append(data_array_element)
 
+
+    logger.info(results_as_data_array_with_interval)
     final_data = {}
     if 'score' in data_formats:
         score_data = {
@@ -259,9 +268,14 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
         final_data['visualize'] = visualization_data
 
     if 'table' in data_formats:
+        if mean_aggregration:
+            final_array = results_as_data_array_with_interval
+        else:
+            final_array = results_as_data_array
+
         table_data = {
-            'columns': results_as_data_array[0],
-            'data': results_as_data_array[1:]
+            'columns': final_array[0],
+            'data': final_array[1:]
         }
         final_data['table'] = table_data
     return final_data
@@ -285,6 +299,7 @@ def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visu
     grouped_df = df.groupby([group_a_field_name, group_b_field_name], sort=False).size()
 
     results_as_data_array = []
+    results_as_data_array_with_interval = []
     secondary_field_values = []
 
     results_grouped_by_highest_level_value = {}
