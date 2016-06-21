@@ -44,6 +44,10 @@ def get_aggregated_df(groupby, aggregation_function_name):
     try:
         if aggregation_function_name == 'sum':
             agg_df = groupby.sum()
+        elif aggregation_function_name == 'std':
+            agg_df = groupby.std()
+        elif aggregation_function_name == 'sem':
+            agg_df = groupby.sem()
         elif aggregation_function_name == 'min':
             agg_df = groupby.min()
         elif aggregation_function_name == 'max':
@@ -88,6 +92,8 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+
+    logger.debug('Generating procedure: %s', gp)
 
     if gp == GeneratingProcedure.AGG.value:
         final_data = get_agg_data(df, precomputed, args, config, data_formats)
@@ -164,6 +170,8 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
         [group_field_a, group_b_value_1, group_b_value_2]
         [2011-MAR, 100, 200]
     ]
+
+    Add confidence intervals if calculating mean
     '''
     agg_field = args['agg_field']['name']
     aggregation_function_name = args['agg_fn']
@@ -174,13 +182,22 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
     groupby = df.groupby([group_a_field_label, group_b_field_label], sort=False)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)[agg_field]
 
-    results_as_data_array = []
-    secondary_field_values = []
 
+    mean_aggregration = (aggregation_function_name == 'mean')
+    if mean_aggregration:
+        sem_df = get_aggregated_df(groupby, 'sem')[agg_field]
+        lower_confidence_df = (agg_df - sem_df)
+        upper_confidence_df = (agg_df + sem_df)
+
+    results_as_data_array = []
+    results_as_data_array_with_interval = []
+    secondary_field_values = []
     results_grouped_by_highest_level_value = {}
 
-    for k, v in agg_df.to_dict().iteritems():
-        # Structure: {highest_level_value: (secondary_level_value, aggregated_value)}
+    agg_df_as_dict = agg_df.to_dict()
+
+    for k, v in agg_df_as_dict.iteritems():
+        # Structure: {highest_level_value: {secondary_level_value: aggregated_value}}
         highest_level_value = k[0]
         secondary_level_value = k[1]
 
@@ -189,18 +206,53 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
         else:
             results_grouped_by_highest_level_value[highest_level_value] = { secondary_level_value: v }
 
+        # Header
         if secondary_level_value not in secondary_field_values:
             secondary_field_values.append(secondary_level_value)
 
-    secondary_field_values = sorted(secondary_field_values)
+    # secondary_field_values = sorted(secondary_field_values)
 
-    header_row = [ group_a_field_label ] + secondary_field_values
+    if mean_aggregration:
+        header_row = [ group_a_field_label ]
+        for secondary_field_value in secondary_field_values:
+            header_row.extend([
+                secondary_field_value,
+                {
+                    'id': '%sLowerInterval' % secondary_field_value,
+                    'type': 'number',
+                    'role': 'interval'
+                },
+                {
+                    'id': '%sUpperInterval' % secondary_field_value,
+                    'type': 'number',
+                    'role': 'interval'
+                }
+            ])
+    else:
+        header_row = [ group_a_field_label ] + secondary_field_values
+
     results_as_data_array.append(header_row)
+    results_as_data_array_with_interval.append( [group_a_field_label] + secondary_field_values )
 
     for k, v in results_grouped_by_highest_level_value.iteritems():
         data_array_element = [ k ]
+        data_array_element_with_interval = [ k ]
         for secondary_field_value in secondary_field_values:
-            data_array_element.append( v.get(secondary_field_value, None) )
+            aggregation_value = v.get(secondary_field_value, None)
+            data_array_element.append(aggregation_value)
+
+            if mean_aggregration:
+                sem = sem_df[k].get(secondary_field_value, None)
+                if sem is None or np.isnan(sem):
+                    data_array_element_with_interval.append('%.3f' % aggregation_value)
+                else:
+                    data_array_element_with_interval.append('%.3f ± %.3f' % (aggregation_value, sem))
+
+                data_array_element.append(lower_confidence_df[k].get(secondary_field_value, None) )
+                data_array_element.append(upper_confidence_df[k].get(secondary_field_value, None) )
+
+        if mean_aggregration:
+            results_as_data_array_with_interval.append(data_array_element_with_interval)
         results_as_data_array.append(data_array_element)
 
     final_data = {}
@@ -209,14 +261,20 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
             'agg': agg_df.values
         }
         final_data['score'] = score_data
+
     if 'visualize' in data_formats:
         visualization_data = results_as_data_array
         final_data['visualize'] = visualization_data
 
     if 'table' in data_formats:
+        if mean_aggregration:
+            final_array = results_as_data_array_with_interval
+        else:
+            final_array = results_as_data_array
+
         table_data = {
-            'columns': results_as_data_array[0],
-            'data': results_as_data_array[1:]
+            'columns': final_array[0],
+            'data': final_array[1:]
         }
         final_data['table'] = table_data
     return final_data
@@ -240,6 +298,7 @@ def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visu
     grouped_df = df.groupby([group_a_field_name, group_b_field_name], sort=False).size()
 
     results_as_data_array = []
+    results_as_data_array_with_interval = []
     secondary_field_values = []
 
     results_grouped_by_highest_level_value = {}
@@ -261,6 +320,7 @@ def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visu
 
     header_row = [ group_a_field_name ] + secondary_field_values
     results_as_data_array.append(header_row)
+
     for k, v in results_grouped_by_highest_level_value.iteritems():
         data_array_element = [ k ]
         for secondary_field_value in secondary_field_values:
@@ -521,13 +581,12 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
 
 def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
+    aggregation_function_name = args['agg_fn']
     grouped_field_name = args['grouped_field']['name']
     agg_field_name = args['agg_field']['name']
 
     df = df[[grouped_field_name, agg_field_name]]
     df = df.dropna(how='any', subset=[grouped_field_name, agg_field_name])
-
-    aggregation_function_name = args['agg_fn']
 
     if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
         grouped_df = precomputed['groupby'][grouped_field_name]
@@ -537,22 +596,56 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     agg_df = get_aggregated_df(grouped_df, aggregation_function_name)
     grouped_field_list = agg_df.index.tolist()
 
-    agg_field_list = agg_df[agg_field_name].tolist()
+    mean_aggregration = (aggregation_function_name == 'mean')
+    if mean_aggregration:
+        sem_df = get_aggregated_df(grouped_df, 'sem')[agg_field_name]
+        lower_confidence_list = (agg_df[agg_field_name] - sem_df).tolist()
+        upper_confidence_list = (agg_df[agg_field_name] + sem_df).tolist()
 
+    agg_field_list = agg_df[agg_field_name].tolist()
     if 'score' in data_formats:
         final_data['score'] = {
             'grouped_field': grouped_field_list,
             'agg_field': agg_field_list
         }
     if 'visualize' in data_formats:
-        data_array = [ [grouped_field_name, agg_field_name] ] + \
-            [[g, a] for (g, a) in zip(grouped_field_list, agg_field_list)]
+        if mean_aggregration:
+            data_header = [
+                grouped_field_name,
+                agg_field_name,
+                {
+                    'id': '%sLowerInterval' % agg_field_name,
+                    'type': 'number',
+                    'role': 'interval'
+                },
+                {
+                    'id': '%sUpperInterval' % agg_field_name,
+                    'type': 'number',
+                    'role': 'interval'
+                }
+            ]
+            data_array_no_header = [
+                [g, a, a_li, a_ui] for (g, a, a_li, a_ui) in zip(grouped_field_list, agg_field_list, lower_confidence_list, upper_confidence_list)
+            ]
+            data_array = [ data_header ] + data_array_no_header
+        else:
+            data_array = [ [grouped_field_name, agg_field_name] ] + [
+                [g, a] for (g, a) in zip(grouped_field_list, agg_field_list)
+            ]
         final_data['visualize'] = data_array
+
     if 'table' in data_formats:
-        final_data['table'] = {
-            'columns': agg_df.columns.tolist(),
-            'data': agg_df.values.tolist()
-        }
+        ### TODO
+        if mean_aggregration:
+            final_data['table'] = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
+            }
+        else:
+            final_data['table'] = {
+                'columns': agg_df.columns.tolist(),
+                'data': agg_df.values.tolist()
+            }
     return final_data
 
 
