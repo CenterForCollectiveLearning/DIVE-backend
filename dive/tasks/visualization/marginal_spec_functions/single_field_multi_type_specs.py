@@ -33,12 +33,16 @@ def single_cq(c_field, q_field):
                 'field_b': q_field,
             },
             'meta': {
-                'desc': '%s vs. %s ' % (c_label, q_label),
+                'desc': '%s vs. %s' % (c_label, q_label),
                 'construction': [
                     { 'string': c_label, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': c_label,
+                    'y': q_label
+                }
             }
         }
         specs.append(spec)
@@ -66,7 +70,11 @@ def single_cq(c_field, q_field):
                         { 'string': q_label, 'type': TermType.FIELD.value },
                         { 'string': 'by', 'type': TermType.OPERATION.value },
                         { 'string': c_label, 'type': TermType.FIELD.value },
-                    ]
+                    ],
+                    'labels': {
+                        'x': c_label,
+                        'y': '%s of %s' % (agg_fn, q_label),
+                    }
                 }
             }
             specs.append(spec)
@@ -86,7 +94,7 @@ def single_tq(t_field, q_field):
             'generating_procedure': GP.VAL_VAL.value,
             'type_structure': TS.T_Q.value,
             'viz_types': [ VT.LINE.value, VT.SCATTER.value ],
-            'field_ids': [ c_field['id'], q_field['id'] ],
+            'field_ids': [ t_field['id'], q_field['id'] ],
             'args': {
                 'field_a': t_field,
                 'field_b': q_field
@@ -97,7 +105,11 @@ def single_tq(t_field, q_field):
                     { 'string': t_label, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': t_label,
+                    'y': q_label
+                }
             }
         }
         specs.append(raw_time_series_spec)
@@ -122,7 +134,11 @@ def single_tq(t_field, q_field):
                     { 'string': q_label, 'type': TermType.FIELD.value },
                     { 'string': 'by', 'type': TermType.OPERATION.value },
                     { 'string': t_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': t_label,
+                    'y': q_label,
+                }
             }
         }
         specs.append(aggregated_time_series_spec_on_value)
@@ -160,7 +176,11 @@ def single_ctq(c_field, t_field, q_field):
                     { 'string': c_label, 'type': TermType.FIELD.value },
                     { 'string': 'and', 'type': TermType.OPERATION.value },
                     { 'string': t_label, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': t_label,
+                    'y': q_label,
+                }
             }
         }
         specs.append(aggregated_time_series_spec_on_value)

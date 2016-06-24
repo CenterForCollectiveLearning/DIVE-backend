@@ -7,6 +7,9 @@ class BaseConfig(object):
 
     SECRET_KEY = 'dive'
 
+    SENTRY_DSN = ''
+    SENTRY_USER_ATTRS = [ 'username', 'email' ]
+
     FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
 
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -19,7 +22,12 @@ class BaseConfig(object):
     RECOMPUTE_VIZ_SPECS = True
     RECOMPUTE_STATISTICS = True
 
+    PROPAGATE_EXCEPTIONS = True
+
     COMPRESS = True
+
+    SQLALCHEMY_POOL_SIZE=20
+    SQLALCHEMY_MAX_OVERFLOW=100
 
     COOKIE_DOMAIN = None
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
@@ -46,13 +54,14 @@ class BaseConfig(object):
         'dive.tasks.visualization.__init__',
         'dive.tasks.visualization.data',
         'dive.tasks.visualization.enumerate_specs',
+        'dive.tasks.visualization.score_specs',
+        'dive.tasks.visualization.spec_pipeline',
+        'dive.tasks.visualization.type_mapping',
         'dive.tasks.visualization.marginal_spec_functions.single_field_single_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.single_field_multi_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.multi_field_single_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.mixed_field_multi_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',
-        'dive.tasks.visualization.score_specs',
-        'dive.tasks.visualization.spec_pipeline',
         'dive.tasks.transformation.join',
         'dive.tasks.transformation.pivot',
         'dive.tasks.transformation.reduce',
