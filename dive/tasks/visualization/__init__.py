@@ -66,7 +66,7 @@ class VizType(Enum):
     SCATTER = 'scatter'
     LINE = 'line'
     NETWORK = 'network'
-    HIST = 'bar'
+    HIST = 'hist'
     BAR = 'bar'
     STACKED_BAR = 'bar'
 

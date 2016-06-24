@@ -18,7 +18,7 @@ def multi_c(c_fields):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
         if (c_field_a['is_unique'] or c_field_b['is_unique']):
             continue
-        spec = {
+        spec_1 = {
             'generating_procedure': GP.MULTIGROUP_COUNT.value,
             'type_structure': TS.liC_Q.value,
             'viz_types': [ VT.STACKED_BAR.value ],
@@ -43,7 +43,33 @@ def multi_c(c_fields):
                 },
             }
         }
-        specs.append(spec)
+        spec_2 = {
+            'generating_procedure': GP.MULTIGROUP_COUNT.value,
+            'type_structure': TS.liC_Q.value,
+            'viz_types': [ VT.STACKED_BAR.value ],
+            'field_ids': [ c_field_a['id'], c_field_b['id'] ],
+
+            'args': {
+                'field_a': c_field_b,
+                'field_b': c_field_a,
+            },
+            'meta': {
+                'desc': 'Count by %s then %s' % (c_label_b, c_label_a),
+                'construction': [
+                    { 'string': 'Count', 'type': TermType.OPERATION.value },
+                    { 'string': 'by', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_b, 'type': TermType.FIELD.value },
+                    { 'string': 'then', 'type': TermType.PLAIN.value },
+                    { 'string': c_label_a, 'type': TermType.FIELD.value },
+                ],
+                'labels': {
+                    'x': 'Grouping by %s then %s' % (c_label_b, c_label_a),
+                    'y': 'Count'
+                },
+            }
+        }
+        specs.append(spec_1)
+        specs.append(spec_2)
     return specs
 
 
@@ -72,7 +98,11 @@ def multi_q(q_fields):
                     { 'string': q_label_a, 'type': TermType.FIELD.value },
                     { 'string': 'vs.', 'type': TermType.PLAIN.value },
                     { 'string': q_label_b, 'type': TermType.FIELD.value },
-                ]
+                ],
+                'labels': {
+                    'x': q_label_a,
+                    'y': q_label_b
+                },
             }
         }
         specs.append(raw_comparison_spec)

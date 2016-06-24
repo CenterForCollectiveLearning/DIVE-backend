@@ -103,8 +103,10 @@ def run_regression_from_spec(spec, project_id):
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
 
+    logger.info(spec)
+
     if not (dataset_id and dependent_variable_name):
-        return "Not passed required parameters", 400
+        return 'Not passed required parameters', 400
 
     # Map variables to field documents
     with task_app.app_context():
@@ -230,7 +232,7 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
     model = create_regression_model(independent_variables, dependent_variable)
     y, X = dmatrices(model, df, return_type='dataframe')
 
-    if dependent_variable['general_type'] == 'q':
+    if dependent_variable['general_type'] in [ 'q', 't' ]:
         model_result = sm.OLS(y, X).fit()
 
         p_values = model_result.pvalues.to_dict()

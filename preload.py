@@ -87,9 +87,9 @@ def preload_from_directory_tree(app):
 
                 for dataset in datasets:
                     ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
-                    ingestion_result.get()
-        relationship_result = relationship_pipeline.apply(args=[ project_id ])
-        relationship_result.get()
+                    # ingestion_result.get()
+        # relationship_result = relationship_pipeline.apply(args=[ project_id ])
+        # relationship_result.get()
 
 
 if __name__ == '__main__':

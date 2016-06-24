@@ -44,17 +44,22 @@ class TaskResult(Resource):
         }
 
         logger.debug('%s: %s', task_id, task.state)
+
         if task.state == states.PENDING:
             if (task.info) and (task.info.get('desc')):
                 logger.info(task.info.get('desc'))
                 state['currentTask'] = task.info.get('desc'),
+
         elif task.state == states.SUCCESS:
             if task.info:
                 state['result'] = task.info.get('result')
 
         elif task.state == states.FAILURE:
             if task.info:
-                state['error'] = task.info.get('error')
+                try:
+                    state['error'] = task.info.get('error')
+                except Exception as e:
+                    state['error'] = 'Unknown error occurred'
 
         response = jsonify(state)
         if task.state == states.PENDING:
