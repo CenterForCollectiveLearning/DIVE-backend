@@ -14,7 +14,7 @@ from dive.db import ModelName, row_to_dict
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document, \
     Summary, Exported_Summary, Correlation, Exported_Correlation
-
+from dive.resources import ContentType
 
 import logging
 logger = logging.getLogger(__name__)
@@ -275,17 +275,30 @@ def delete_spec(project_id, exported_spec_id):
 ################
 # Exported Specifications
 ################
-def get_public_exported_spec(exported_spec_id):
+def get_public_exported_spec(exported_spec_id, spec_type):
+    print spec_type, ContentType.VISUALIZATION.value
     try:
-        exported_spec = Exported_Spec.query.filter_by(
-            id=exported_spec_id
-        ).one()
-        desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+        if spec_type == ContentType.VISUALIZATION.value:
+            exported_spec = Exported_Spec.query.filter_by(
+                id=exported_spec_id
+            ).one()
+            desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+            for desired_spec_key in desired_spec_keys:
+                value = getattr(exported_spec.spec, desired_spec_key)
+                setattr(exported_spec, desired_spec_key, value)
+            return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
 
-        for desired_spec_key in desired_spec_keys:
-            value = getattr(exported_spec.spec, desired_spec_key)
-            setattr(exported_spec, desired_spec_key, value)
-        return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
+        elif spec_type == ContentType.CORRELATION.value:
+            exported_spec = Exported_Correlation.query.filter_by(
+                id=exported_spec_id
+            ).one()
+            return row_to_dict(exported_spec)
+
+        elif spec_type == ContentType.REGRESSION.value:
+            exported_spec = Exported_Regression.query.filter_by(
+                id=exported_spec_id
+            ).one()
+            return row_to_dict(exported_spec)
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
