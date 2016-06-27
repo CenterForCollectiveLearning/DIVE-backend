@@ -95,6 +95,7 @@ def save_regression(spec, result, project_id):
 def run_regression_from_spec(spec, project_id):
     # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
+    regressionType = spec.get('regressionType')
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     estimator = spec.get('estimator', 'ols')
