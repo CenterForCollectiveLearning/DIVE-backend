@@ -75,6 +75,8 @@ class RegressionFromSpec(Resource):
         spec = args.get('spec')
 
         regression_doc = db_access.get_regression_from_spec(project_id, spec)
+
+        # check to see if regression is in db; if so, send back data
         if regression_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             regression_data = regression_doc['data']
             regression_data['id'] = regression_doc['id']
