@@ -18,3 +18,16 @@ def sets_normal(THRESHOLD, *args):
             normal = False;
 
     return normal
+
+
+def difference_of_two_lists(l1, l2):
+    return [ x for x in l2 if x not in set(l1) ]
+
+
+def make_safe_string(s):
+    invalid_chars = '-_.+^$ '
+    if not s.startswith('temp_name_'):
+        for invalid_char in invalid_chars:
+            s = s.replace(invalid_char, '_')
+        s = 'temp_name_' + s
+    return s
