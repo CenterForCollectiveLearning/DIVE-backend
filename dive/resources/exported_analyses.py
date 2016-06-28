@@ -37,6 +37,7 @@ class ExportedRegression(Resource):
         config = args.get('config')
 
         result = db_access.insert_exported_regression(project_id, regression_id, data, conditionals, config)
+        result['spec'] = db_access.get_regression_by_id(regression_id, project_id)['spec']
         return jsonify(result)
 
 
@@ -80,6 +81,7 @@ class ExportedCorrelation(Resource):
         config = args.get('config')
 
         result = db_access.insert_exported_correlation(project_id, correlation_id, data, conditionals, config)
+        result['spec'] = db_access.get_correlation_by_id(correlation_id, project_id)['spec']
         return jsonify(result)
 
 
@@ -122,6 +124,7 @@ class ExportedSummary(Resource):
         config = args.get('config')
 
         result = db_access.insert_exported_summary(project_id, summary_id, conditionals, config)
+        result['spec'] = db_access.get_summary_by_id(summary_id, project_id)['spec'] 
         return jsonify(result)
 
 
