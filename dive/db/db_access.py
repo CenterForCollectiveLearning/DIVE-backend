@@ -500,10 +500,23 @@ def delete_summary(project_id, summary_id):
 
 # Regressions
 def get_exported_regression_by_id(project_id, exported_regression_id):
-    exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
-        project_id=project_id).one()
-    if exported_regression is None:
-        abort(404)
+    try:
+        exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_regression)
+
+def get_exported_regression_by_regression_id(project_id, regression_id):
+    try:
+        exported_regression = Exported_Regression.query.filter_by(regression_id=regression_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
     return row_to_dict(exported_regression)
 
 def get_exported_regressions(project_id):
@@ -537,10 +550,23 @@ def delete_exported_regression(project_id, exported_regression_id):
 
 # Correlations
 def get_exported_correlation_by_id(project_id, exported_correlation_id):
-    exported_correlation = Exported_Correlation.query.filter_by(id=exported_correlation_id,
-        project_id=project_id).one()
-    if exported_correlation is None:
-        abort(404)
+    try:
+        exported_correlation = Exported_Correlation.query.filter_by(id=exported_correlation_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_correlation)
+
+def get_exported_correlation_by_correlation_id(project_id, correlation_id):
+    try:
+        exported_correlation = Exported_Correlation.query.filter_by(correlation_id=correlation_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
     return row_to_dict(exported_correlation)
 
 def get_exported_correlations(project_id):
