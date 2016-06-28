@@ -18,7 +18,7 @@ from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
 from dive.tasks.statistics.summary import run_summary_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_summary
 from dive.tasks.statistics.correlation import run_correlation_from_spec, save_correlation
-from dive.tasks.statistics.regression import run_regression_from_spec, save_regression
+from dive.tasks.statistics.regression.pipelines import run_regression_from_spec, save_regression
 
 
 import logging
