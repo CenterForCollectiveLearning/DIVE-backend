@@ -143,7 +143,9 @@ def run_regression_from_spec(spec, project_id):
 
 
 def run_cascading_regression(df, independent_variables, dependent_variable, model='lr', degree=1, functions=[], estimator='ols', weights=None):
-    # Format data structures
+    '''
+    Format data structures
+    '''
     independent_variable_names = [ iv['name'] for iv in independent_variables ]
     regression_results = {
         'regressions_by_column': [],
@@ -153,6 +155,9 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
 
     num_columns = 0
 
+    '''
+    Model selection
+    '''
     # Create list of independent variables, one per regerssion
     regression_variable_combinations = []
     if len(independent_variable_names) == 2:
@@ -165,6 +170,9 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
 
     regression_variable_combinations.append(independent_variables)
 
+    '''
+    Run models
+    '''
     for considered_independent_variables in regression_variable_combinations:
         regression_result = {}
         num_columns += 1
@@ -172,6 +180,9 @@ def run_cascading_regression(df, independent_variables, dependent_variable, mode
         # Run regression
         model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
 
+        '''
+        Format each result
+        '''
         # Move categorical field values to higher level
         for field_name, field_values in model_result['categorical_field_values'].iteritems():
             regression_fields_dict[field_name] = field_values
