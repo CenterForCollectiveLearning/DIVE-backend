@@ -1,3 +1,5 @@
+'''
+'''
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -15,65 +17,142 @@ from math import log10, floor
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import celery, task_app
-from dive.tasks.statistics.utilities import sets_normal
+from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
 from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-from pprint import pprint
 
-def _difference_of_two_lists(l1, l2):
-    return [ x for x in l2 if x not in set(l1) ]
+def run_regression_from_spec(spec, project_id):
+    '''
+    Wrapper function for five discrete steps:
+    1) Parse arguments (in this function)
+    2) Loading data from DB for fields and dataframe
+    3) Construct / recommend models given those fields
+    4) Run regressions described by those models
+    5) Format results
+    '''
+    # 1) Parse and validate arguments
+    model = spec.get('model', 'lr')
+    independent_variables_names = spec.get('independentVariables', [])
+    dependent_variable_name = spec.get('dependentVariable', [])
+    estimator = spec.get('estimator', 'ols')
+    degree = spec.get('degree', 1)  # need to find quantitative, categorical
+    weights = spec.get('weights', None)
+    functions = spec.get('functions', [])
+    dataset_id = spec.get('datasetId')
 
-def make_safe_string(s):
-    invalid_chars = '-_.+^$ '
-    if not s.startswith('temp_name_'):
-        for invalid_char in invalid_chars:
-            s = s.replace(invalid_char, '_')
-        s = 'temp_name_' + s
-    return s
+    if not (dataset_id and dependent_variable_name):
+        return 'Not passed required parameters', 400
 
-def get_contribution_to_r_squared_data(regression_result):
-    regressions_by_column = regression_result['regressions_by_column']
+    dependent_variable, independent_variables, df = \
+        load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id)
 
-    considered_fields_length_to_names = {}
-    fields_to_r_squared_adj = {}
-
-    for regression_by_column in regressions_by_column:
-        column_properties = regression_by_column['column_properties']
-        r_squared_adj = column_properties['r_squared_adj']
-        fields = regression_by_column['regressed_fields']
-
-        if len(fields) not in considered_fields_length_to_names:
-            considered_fields_length_to_names[len(fields)] = [ fields ]
-        else:
-            considered_fields_length_to_names[len(fields)].append(fields)
-        fields_to_r_squared_adj[str(fields)] = r_squared_adj
-
-    max_fields_length = max(considered_fields_length_to_names.keys())
-    all_fields = considered_fields_length_to_names[max_fields_length][0]
-    all_fields_r_squared_adj = fields_to_r_squared_adj[str(all_fields)]
-
-    if max_fields_length <= 1:
-        return
-
-    maximum_r_squared_adj = max(fields_to_r_squared_adj.values())
-
-    data_array = [['Field', 'Marginal R-squared']]
-
-    all_except_one_regression_fields = considered_fields_length_to_names[max_fields_length - 1]
-    for all_except_one_regression_fields in all_except_one_regression_fields:
-        regression_r_squared_adj = fields_to_r_squared_adj[str(all_except_one_regression_fields)]
-
-        marginal_field = _difference_of_two_lists(all_except_one_regression_fields, all_fields)[0]
-        marginal_r_squared_adj = all_fields_r_squared_adj - regression_r_squared_adj
-        data_array.append([ marginal_field, marginal_r_squared_adj])
-
-    return data_array
+    models = construct_models(dependent_variable, independent_variables)
+    raw_results = run_models(models)
+    evaluate_results()
+    format_results()
+    return
 
 
-def get_full_field_documents_from_names(all_fields, names):
+def load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id):
+    '''
+    Load DF and full field documents
+    '''
+    # Map variables to field documents
+    with task_app.app_context():
+        all_fields = db_access.get_field_properties(project_id, dataset_id)
+    dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
+
+    independent_variables = []
+    if independent_variables_names:
+        independent_variables = get_full_field_documents_from_field_names(all_fields, independent_variables_names)
+    else:
+        for field in all_fields:
+            if (not (field['general_type'] == 'c' and field['is_unique']) \
+                and field['name'] != dependent_variable_name):
+                independent_variables.append(field)
+
+    # 2) Access dataset
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = df.dropna(axis=0, how='any')
+
+    return dependent_variable, independent_variables, df
+
+
+def get_variable_type_counts(dependent_variables, independent_variables):
+    '''
+    Return count of C, T, Q variables
+    '''
+    variable_types = Counter({
+        'independent': { 'q': 0, 'c': 0, 't': 0 },
+        'dependent': { 'q': 0, 'c': 0, 't': 0 }
+    })
+
+    for dependent_variable in dependent_variables:
+        dependent_variable_type = dependent_variable['general_type']
+        variable_types['dependent'][dependent_variable_type] += 1
+
+    for independent_variable in independent_variables:
+        independent_variable_type = independent_variable['general_type']
+        variable_types['independent'][independent_variable_type] += 1
+
+    return variable_types
+
+
+def run_regression_from_spec(spec, project_id):
+    '''
+    Wrapper function taking in a regression spec and returning formatted result.
+    Mostly parses arguments, loads relevant data.
+    '''
+
+    # 3) Run test based on parameters and arguments
+    regression_result = run_cascading_regression(df, independent_variables, dependent_variable, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
+    return regression_result, 200
+
+
+def construct_models(dependent_variable, independent_variables):
+    '''
+    Given dependent and independent variables, return list of patsy model.
+
+    regression_variable_combinations = [ [x], [x, y], [y, z] ]
+    models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
+    '''
+    # Create list of independent variables, one per regression
+    regression_variable_combinations = []
+    if len(independent_variable_names) == 2:
+        for i, considered_field in enumerate(independent_variables):
+            regression_variable_combinations.append([ considered_field ])
+    if len(independent_variable_names) > 2:
+        for i, considered_field in enumerate(independent_variables):
+            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
+            regression_variable_combinations.append(all_fields_except_considered_field)
+    regression_variable_combinations.append(independent_variables)
+
+    # Create patsy models
+    models = []
+    for regression_variable_combination in regression_variable_combinations:
+        model = create_patsy_model(dependent_variable, independent_variables)
+        models.append(model)
+
+    return models
+
+
+def create_patsy_model(dependent_variable, independent_variables):
+    '''
+    Construct and return patsy formula (object representation)
+    '''
+    lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
+    rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
+    return ModelDesc(lhs, rhs)
+
+
+
+
+
+def get_full_field_documents_from_field_names(all_fields, names):
     fields = []
     for name in names:
         matched_field = next((f for f in all_fields if f['name'] == name), None)
@@ -92,82 +171,22 @@ def save_regression(spec, result, project_id):
         return inserted_regression
 
 
-def run_regression_from_spec(spec, project_id):
-    # 1) Parse and validate arguments
-    model = spec.get('model', 'lr')
-    independent_variables_names = spec.get('independentVariables', [])
-    dependent_variable_name = spec.get('dependentVariable', [])
-    estimator = spec.get('estimator', 'ols')
-    degree = spec.get('degree', 1) # need to find quantitative, categorical
-    weights = spec.get('weights', None)
-    functions = spec.get('functions', [])
-    dataset_id = spec.get('datasetId')
-
-    logger.info(spec)
-
-    if not (dataset_id and dependent_variable_name):
-        return 'Not passed required parameters', 400
-
-    # Map variables to field documents
-    with task_app.app_context():
-        all_fields = db_access.get_field_properties(project_id, dataset_id)
-    dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
-
-    independent_variables = []
-    if independent_variables_names:
-        independent_variables = get_full_field_documents_from_names(all_fields, independent_variables_names)
-    else:
-        for field in all_fields:
-            if (not (field['general_type'] == 'c' and field['is_unique']) \
-                and field['name'] != dependent_variable_name):
-                independent_variables.append(field)
-
-    # Determine regression model based on number of type of variables
-    variable_types = Counter({
-        'independent': { 'q': 0, 'c': 0, 't': 0 },
-        'dependent': { 'q': 0, 'c': 0, 't': 0 }
-    })
-
-    for independent_variable in independent_variables:
-        variable_type = independent_variable['general_type']
-        variable_types['independent'][variable_type] += 1
-
-    # 2) Access dataset
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna(axis=0, how='any')
-
-    # 3) Run test based on parameters and arguments
-    regression_result = run_cascading_regression(df, independent_variables, dependent_variable, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
-    return regression_result, 200
-
-
-def run_cascading_regression(df, independent_variables, dependent_variable, model='lr', degree=1, functions=[], estimator='ols', weights=None):
-    # Format data structures
+def run_models(df, models, model='lr', degree=1, functions=[], estimator='ols', weights=None):
+    # Initialize returned data structures
+    num_columns = 0
     independent_variable_names = [ iv['name'] for iv in independent_variables ]
+    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
     regression_results = {
         'regressions_by_column': [],
     }
 
-    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
+    # Construct models
+    regression_variable_combinations = construct_regression_model(dependent_variable, independent_variables)
 
-    num_columns = 0
-
-    # Create list of independent variables, one per regerssion
-    regression_variable_combinations = []
-    if len(independent_variable_names) == 2:
-        for i, considered_field in enumerate(independent_variables):
-            regression_variable_combinations.append([ considered_field ])
-    if len(independent_variable_names) > 2:
-        for i, considered_field in enumerate(independent_variables):
-            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
-            regression_variable_combinations.append(all_fields_except_considered_field)
-
-    regression_variable_combinations.append(independent_variables)
-
+    # Iterate over and run each models
     for considered_independent_variables in regression_variable_combinations:
-        regression_result = {}
         num_columns += 1
+        regression_result = {}
 
         # Run regression
         model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
@@ -220,16 +239,7 @@ def _parse_confidence_intervals(model_result):
         parsed_conf_int[field] = [ d[0], d[1] ]
     return parsed_conf_int
 
-
-def create_regression_model(independent_variables, dependent_variable):
-    lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-    rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
-    model = ModelDesc(lhs, rhs)
-    return model
-
-
 def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
-    model = create_regression_model(independent_variables, dependent_variable)
     y, X = dmatrices(model, df, return_type='dataframe')
 
     if dependent_variable['general_type'] in [ 'q', 't' ]:
@@ -385,3 +395,42 @@ def test_regression_fit(residuals, actual_y):
         }
 
     return results
+
+
+def get_contribution_to_r_squared_data(regression_result):
+    regressions_by_column = regression_result['regressions_by_column']
+
+    considered_fields_length_to_names = {}
+    fields_to_r_squared_adj = {}
+
+    for regression_by_column in regressions_by_column:
+        column_properties = regression_by_column['column_properties']
+        r_squared_adj = column_properties['r_squared_adj']
+        fields = regression_by_column['regressed_fields']
+
+        if len(fields) not in considered_fields_length_to_names:
+            considered_fields_length_to_names[len(fields)] = [ fields ]
+        else:
+            considered_fields_length_to_names[len(fields)].append(fields)
+        fields_to_r_squared_adj[str(fields)] = r_squared_adj
+
+    max_fields_length = max(considered_fields_length_to_names.keys())
+    all_fields = considered_fields_length_to_names[max_fields_length][0]
+    all_fields_r_squared_adj = fields_to_r_squared_adj[str(all_fields)]
+
+    if max_fields_length <= 1:
+        return
+
+    maximum_r_squared_adj = max(fields_to_r_squared_adj.values())
+
+    data_array = [['Field', 'Marginal R-squared']]
+
+    all_except_one_regression_fields = considered_fields_length_to_names[max_fields_length - 1]
+    for all_except_one_regression_fields in all_except_one_regression_fields:
+        regression_r_squared_adj = fields_to_r_squared_adj[str(all_except_one_regression_fields)]
+
+        marginal_field = _difference_of_two_lists(all_except_one_regression_fields, all_fields)[0]
+        marginal_r_squared_adj = all_fields_r_squared_adj - regression_r_squared_adj
+        data_array.append([ marginal_field, marginal_r_squared_adj])
+
+    return data_array
