@@ -23,6 +23,7 @@ from dive.resources.serialization import replace_unserializable_numpy
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+from pprint import pprint
 
 def run_regression_from_spec(spec, project_id):
     '''
@@ -34,7 +35,7 @@ def run_regression_from_spec(spec, project_id):
     5) Format results
     '''
     # 1) Parse and validate arguments
-    model = spec.get('model', 'lr')
+    regression_type = spec.get('model', 'lr')
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     estimator = spec.get('estimator', 'ols')
@@ -49,11 +50,68 @@ def run_regression_from_spec(spec, project_id):
     dependent_variable, independent_variables, df = \
         load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id)
 
-    models = construct_models(dependent_variable, independent_variables)
-    raw_results = run_models(models)
-    evaluate_results()
-    format_results()
+    considered_independent_variables_per_model, patsy_models = \
+        construct_models(dependent_variable, independent_variables)
+
+    # pprint(considered_independent_variables_per_model)
+    # pprint(patsy_models)
+
+    raw_results = run_models(df, patsy_models, dependent_variable, regression_type=regression_type)
+
+    # evaluate_results()
+    formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model)
+    return formatted_results, 200
+
+
+def evaluate_results(model_results):
     return
+
+
+def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model):
+    # Initialize returned data structures
+    independent_variable_names = [ iv['name'] for iv in independent_variables ]
+    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
+    regression_results = {
+        'regressions_by_column': [],
+    }
+    for model_result, considered_independent_variables in zip(model_results, considered_independent_variables_per_model):
+        # Move categorical field values to higher level
+        for field_name, field_values in model_result['categorical_field_values'].iteritems():
+            regression_fields_dict[field_name] = field_values
+
+        # Test regression
+        regression_stats = None
+        if model_result['total_regression_properties'].get('resid'):
+            dep_data = df[dependent_variable['name']]
+            regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
+
+        # Format results
+        field_names = [ civ['name'] for civ in considered_independent_variables ]
+
+        regression_result = {
+            'regressed_fields': field_names,
+            'regression': {
+                'constants': model_result['constants'],
+                'properties_by_field': model_result['properties_by_field']
+            },
+            'column_properties': model_result['total_regression_properties']
+        }
+        regression_results['regressions_by_column'].append(regression_result)
+        if regression_stats:
+            regression_result['regression']['stats'] = regression_stats
+
+    regression_results['num_columns'] = len(model_results)
+
+    # Convert regression fields dict into collection
+    regression_fields_collection = []
+    for field, values in regression_fields_dict.iteritems():
+        regression_fields_collection.append({
+            'name': field,
+            'values': values
+        })
+    regression_results['fields'] = regression_fields_collection
+
+    return regression_results
 
 
 def load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id):
@@ -102,17 +160,6 @@ def get_variable_type_counts(dependent_variables, independent_variables):
     return variable_types
 
 
-def run_regression_from_spec(spec, project_id):
-    '''
-    Wrapper function taking in a regression spec and returning formatted result.
-    Mostly parses arguments, loads relevant data.
-    '''
-
-    # 3) Run test based on parameters and arguments
-    regression_result = run_cascading_regression(df, independent_variables, dependent_variable, model=model, degree=degree, functions=functions, estimator=estimator, weights=weights)
-    return regression_result, 200
-
-
 def construct_models(dependent_variable, independent_variables):
     '''
     Given dependent and independent variables, return list of patsy model.
@@ -122,22 +169,22 @@ def construct_models(dependent_variable, independent_variables):
     '''
     # Create list of independent variables, one per regression
     regression_variable_combinations = []
-    if len(independent_variable_names) == 2:
+    if len(independent_variables) == 2:
         for i, considered_field in enumerate(independent_variables):
             regression_variable_combinations.append([ considered_field ])
-    if len(independent_variable_names) > 2:
+    if len(independent_variables) > 2:
         for i, considered_field in enumerate(independent_variables):
             all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
             regression_variable_combinations.append(all_fields_except_considered_field)
     regression_variable_combinations.append(independent_variables)
 
     # Create patsy models
-    models = []
+    patsy_models = []
     for regression_variable_combination in regression_variable_combinations:
-        model = create_patsy_model(dependent_variable, independent_variables)
-        models.append(model)
+        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        patsy_models.append(model)
 
-    return models
+    return ( regression_variable_combinations, patsy_models )
 
 
 def create_patsy_model(dependent_variable, independent_variables):
@@ -147,9 +194,6 @@ def create_patsy_model(dependent_variable, independent_variables):
     lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
     rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
     return ModelDesc(lhs, rhs)
-
-
-
 
 
 def get_full_field_documents_from_field_names(all_fields, names):
@@ -171,64 +215,16 @@ def save_regression(spec, result, project_id):
         return inserted_regression
 
 
-def run_models(df, models, model='lr', degree=1, functions=[], estimator='ols', weights=None):
-    # Initialize returned data structures
-    num_columns = 0
-    independent_variable_names = [ iv['name'] for iv in independent_variables ]
-    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
-    regression_results = {
-        'regressions_by_column': [],
-    }
-
-    # Construct models
-    regression_variable_combinations = construct_regression_model(dependent_variable, independent_variables)
-
+def run_models(df, patsy_models, dependent_variable, regression_type='lr', degree=1, functions=[], estimator='ols', weights=None):
+    model_results = []
     # Iterate over and run each models
-    for considered_independent_variables in regression_variable_combinations:
-        num_columns += 1
+    for patsy_model in patsy_models:
         regression_result = {}
 
         # Run regression
-        model_result = multivariate_linear_regression(df, considered_independent_variables, dependent_variable, estimator, weights)
-
-        # Move categorical field values to higher level
-        for field_name, field_values in model_result['categorical_field_values'].iteritems():
-            regression_fields_dict[field_name] = field_values
-
-
-        # Test regression
-        regression_stats = None
-        if model_result['total_regression_properties'].get('resid'):
-            dep_data = df[dependent_variable['name']]
-            regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
-
-        # Format results
-        field_names = [ civ['name'] for civ in considered_independent_variables ]
-
-        regression_result = {
-            'regressed_fields': field_names,
-            'regression': {
-                'constants': model_result['constants'],
-                'properties_by_field': model_result['properties_by_field']
-            },
-            'column_properties': model_result['total_regression_properties']
-        }
-        regression_results['regressions_by_column'].append(regression_result)
-        if regression_stats:
-            regression_result['regression']['stats'] = regression_stats
-
-    regression_results['num_columns'] = num_columns
-
-    # Convert regression fields dict into collection
-    regression_fields_collection = []
-    for field, values in regression_fields_dict.iteritems():
-        regression_fields_collection.append({
-            'name': field,
-            'values': values
-        })
-    regression_results['fields'] = regression_fields_collection
-
-    return regression_results
+        model_result = multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights)
+        model_results.append(model_result)
+    return model_results
 
 
 def _parse_confidence_intervals(model_result):
@@ -239,8 +235,9 @@ def _parse_confidence_intervals(model_result):
         parsed_conf_int[field] = [ d[0], d[1] ]
     return parsed_conf_int
 
-def multivariate_linear_regression(df, independent_variables, dependent_variable, estimator, weights=None):
-    y, X = dmatrices(model, df, return_type='dataframe')
+
+def multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights=None):
+    y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
     if dependent_variable['general_type'] in [ 'q', 't' ]:
         model_result = sm.OLS(y, X).fit()
@@ -304,8 +301,6 @@ def multivariate_linear_regression(df, independent_variables, dependent_variable
             'bic': model_result.bic,
         }
 
-    independent_variable_names = [ iv['name'] for iv in independent_variables ]
-
     categorical_field_values = {}
 
     # Restructure field properties dict from
@@ -358,6 +353,7 @@ def _get_fields_categorical_variable(s):
         value_field = s.split('[T.')[1].strip(']')
         print base_field, value_field
     return base_field, value_field
+
 
 def test_regression_fit(residuals, actual_y):
     '''
@@ -429,7 +425,7 @@ def get_contribution_to_r_squared_data(regression_result):
     for all_except_one_regression_fields in all_except_one_regression_fields:
         regression_r_squared_adj = fields_to_r_squared_adj[str(all_except_one_regression_fields)]
 
-        marginal_field = _difference_of_two_lists(all_except_one_regression_fields, all_fields)[0]
+        marginal_field = difference_of_two_lists(all_except_one_regression_fields, all_fields)[0]
         marginal_r_squared_adj = all_fields_r_squared_adj - regression_r_squared_adj
         data_array.append([ marginal_field, marginal_r_squared_adj])
 
