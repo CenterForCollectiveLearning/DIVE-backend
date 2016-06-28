@@ -526,11 +526,13 @@ def get_exported_regressions(project_id):
         setattr(e, 'type', 'regression')
     return [ row_to_dict(exported_regression, custom_fields=['type', 'spec']) for exported_regression in exported_regressions ]
 
-def insert_exported_regression(project_id, regression_id, data):
+def insert_exported_regression(project_id, regression_id, data, conditionals, config):
     exported_regression = Exported_Regression(
         project_id = project_id,
         regression_id = regression_id,
-        data = data
+        data = data,
+        conditionals = conditionals,
+        config = config
     )
     db.session.add(exported_regression)
     db.session.commit()
@@ -576,11 +578,13 @@ def get_exported_correlations(project_id):
         setattr(e, 'type', 'correlation')
     return [ row_to_dict(exported_correlation, custom_fields=['type', 'spec']) for exported_correlation in exported_correlations ]
 
-def insert_exported_correlation(project_id, correlation_id, data):
+def insert_exported_correlation(project_id, correlation_id, data, conditionals, config):
     exported_correlation = Exported_Correlation(
         project_id = project_id,
         correlation_id = correlation_id,
-        data = data
+        data = data,
+        conditionals = conditionals,
+        config = config
     )
     db.session.add(exported_correlation)
     db.session.commit()
@@ -614,11 +618,13 @@ def get_exported_summarys(project_id):
         setattr(e, 'type', 'summary')
     return [ row_to_dict(exported_summary, custom_fields=['type', 'spec']) for exported_summary in exported_summarys ]
 
-def insert_exported_summary(project_id, summary_id, data):
+def insert_exported_summary(project_id, summary_id, data, conditionals, config):
     exported_summary = Exported_Summary(
         project_id = project_id,
         summary_id = summary_id,
-        data = data
+        data = data,
+        conditionals = conditionals,
+        config = config
     )
     db.session.add(exported_summary)
     db.session.commit()
