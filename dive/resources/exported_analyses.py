@@ -18,6 +18,8 @@ exportedRegressionPostParser = reqparse.RequestParser()
 exportedRegressionPostParser.add_argument('project_id', type=str, required=True, location='json')
 exportedRegressionPostParser.add_argument('regression_id', type=str, required=True, location='json')
 exportedRegressionPostParser.add_argument('data', type=object_type, required=True, location='json')
+exportedRegressionPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
+exportedRegressionPostParser.add_argument('config', type=object_type, required=True, location='json')
 class ExportedRegression(Resource):
     def get(self):
         args = exportedRegressionGetParser.parse_args()
@@ -31,8 +33,10 @@ class ExportedRegression(Resource):
         project_id = args.get('project_id')
         regression_id = args.get('regression_id')
         data = args.get('data')
+        conditionals = args.get('conditionals')
+        config = args.get('config')
 
-        result = db_access.insert_exported_regression(project_id, regression_id, data)
+        result = db_access.insert_exported_regression(project_id, regression_id, data, conditionals, config)
         return jsonify(result)
 
 
@@ -57,6 +61,8 @@ exportedCorrelationPostParser = reqparse.RequestParser()
 exportedCorrelationPostParser.add_argument('project_id', type=str, required=True, location='json')
 exportedCorrelationPostParser.add_argument('correlation_id', type=str, required=True, location='json')
 exportedCorrelationPostParser.add_argument('data', type=object_type, required=True, location='json')
+exportedCorrelationPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
+exportedCorrelationPostParser.add_argument('config', type=object_type, required=True, location='json')
 class ExportedCorrelation(Resource):
     def get(self):
         args = exportedCorrelationGetParser.parse_args()
@@ -70,8 +76,10 @@ class ExportedCorrelation(Resource):
         project_id = args.get('project_id')
         correlation_id = args.get('correlation_id')
         data = args.get('data')
+        conditionals = args.get('conditionals')
+        config = args.get('config')
 
-        result = db_access.insert_exported_correlation(project_id, correlation_id, data)
+        result = db_access.insert_exported_correlation(project_id, correlation_id, data, conditionals, config)
         return jsonify(result)
 
 
@@ -94,7 +102,9 @@ exportedSummaryGetParser.add_argument('project_id', type=str, required=True)
 
 exportedSummaryPostParser = reqparse.RequestParser()
 exportedSummaryPostParser.add_argument('project_id', type=str, required=True, location='json')
-exportedSummaryPostParser.add_argument('regression_id', type=str, required=True, location='json')
+exportedSummaryPostParser.add_argument('summary_id', type=str, required=True, location='json')
+exportedSummaryPostParser.add_argument('conditionals', type=dict, required=True, location='json')
+exportedSummaryPostParser.add_argument('config', type=dict, required=True, location='json')
 class ExportedSummary(Resource):
     def get(self):
         args = exportedSummaryGetParser.parse_args()
@@ -107,8 +117,11 @@ class ExportedSummary(Resource):
         args = exportedSummaryPostParser.parse_args()
         project_id = args.get('project_id')
         summary_id = args.get('summary_id')
+        data = args.get('data')
+        conditionals = args.get('conditionals')
+        config = args.get('config')
 
-        result = db_access.insert_exported_summary(project_id, summary_id)
+        result = db_access.insert_exported_summary(project_id, summary_id, conditionals, config)
         return jsonify(result)
 
 
