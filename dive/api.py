@@ -6,7 +6,7 @@ from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
 
 from dive.resources.statistics_resources import AnovaFromSpec, CorrelationsFromSpec, RegressionEstimator, \
-    RegressionFromSpec, SummaryStatsFromSpec, \
+    RegressionFromSpec, SummaryStatsFromSpec, NumericalComparisonFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, \
     ContributionToRSquared, CorrelationScatterplot
 
@@ -57,6 +57,7 @@ def add_resources(api):
 
     api.add_resource(AnovaFromSpec,                 '/statistics/v1/anova')
     api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
+    api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
