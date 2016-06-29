@@ -13,11 +13,12 @@ from os import listdir, curdir
 from os.path import isfile, join, isdir
 
 from dive.db import db_access
+from dive.task_core import celery, task_app
 from dive.tasks.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.tasks.ingestion.upload import save_dataset
 
 
-excluded_filetypes = ['json', 'py', 'yaml', 'xls', 'xlsx']
+excluded_filetypes = ['json', 'py', 'yaml']
 
 
 def preload_from_directory_tree(app):
@@ -46,18 +47,24 @@ def preload_from_directory_tree(app):
             project_config = yaml.load(project_config_file.read())
         project_title = project_config.get('title', project_dir)
         project_datasets = project_config.get('datasets')
+        private = project_config.get('private', True)
 
         # Insert projects
         app.logger.info('Preloading project: %s', project_dir)
-        with app.app_context():
+        with task_app.app_context():
             project_dict = db_access.insert_project(
                 title = project_title,
                 description = project_config.get('description'),
                 preloaded = True,
                 topics = project_config.get('topics', []),
-                directory = project_dir
+                directory = project_dir,
+                private = private
             )
-        project_id = project_dict['id']
+            project_id = project_dict['id']
+
+            # Create first document
+            db_access.create_document(project_id)
+
 
         # Iterate through datasets
         dataset_file_names = listdir(full_project_dir)
@@ -67,22 +74,22 @@ def preload_from_directory_tree(app):
         for dataset_file_name in dataset_file_names:
             app.logger.info('Ingesting dataset: %s', dataset_file_name)
             full_dataset_path = join(full_project_dir, dataset_file_name)
-            if not isfile(full_dataset_path) \
+            if (not isfile(full_dataset_path)) \
                 or dataset_file_name.startswith('.') \
-                or dataset_file_name.split('.')[1] in excluded_filetypes:
+                or (dataset_file_name.rsplit('.')[1] in excluded_filetypes):
                 continue
 
             dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
 
             # If dataset-level config for project
-            with app.app_context():
+            with task_app.app_context():
                 datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
                 for dataset in datasets:
-                    ingestion_result = ingestion_pipeline(dataset['id'], project_id).apply_async()
-                    ingestion_result.get()
-        relationship_result = relationship_pipeline(project_id).apply_async()
-        relationship_result.get()
+                    ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
+                    # ingestion_result.get()
+        # relationship_result = relationship_pipeline.apply(args=[ project_id ])
+        # relationship_result.get()
 
 
 if __name__ == '__main__':

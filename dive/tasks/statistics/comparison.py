@@ -17,6 +17,7 @@ from dive.tasks.ingestion.utilities import get_unique
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+
 def create_one_dimensional_contingency_table_from_spec(spec, project_id):
     comparison_variable = spec.get('comparisonVariable')
     dataset_id = spec.get("datasetId")
@@ -27,6 +28,7 @@ def create_one_dimensional_contingency_table_from_spec(spec, project_id):
 
     comparison_result = create_one_dimensional_contingency_table(df, comparison_variable, dep_variable)
     return comparison_result, 200
+
 
 def create_contingency_table_from_spec(spec, project_id):
     comparison_variables = spec.get("comparisonVariables")
@@ -66,15 +68,48 @@ def run_numerical_comparison_from_spec(spec, project_id):
     df = df.dropna()  # Remove unclean
 
     comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)
-    print comparison_result
     return comparison_result, 200
 
-'''
-Returns the formatted dict that is sent through the endpoint.
-df: the dataframe
-relevant_field_properties: the field properties we are trying to create summary statistics for
-'''
+def run_correlation_from_spec(spec, project_id):
+    dataset_id = spec.get("datasetId")
+    correlation_variables = spec.get("correlationVariables")
+    correlation_result = run_correlation(df, correlation_variables)
+    return correlation_result, 200
+
+def run_correlation(df, correlation_variables):
+    '''
+    Runs correlations between pairs of correlation_variables
+    df: the dataframe
+    correlation_variables: the numerical variables to do the correlation on. A list of names.
+    '''
+    correlation_result = {}
+    correlation_result['headers'] = correlation_variables
+    correlation_result['rows'] = []
+
+    data_columns = []
+    length = len(correlation_variables)
+
+    for correlation_variable in correlation_variables:
+        data_columns.append(df[correlation_variable])
+
+    for row in range(length):
+        row_data = []
+        for col in range(length):
+            if row > col:
+                row_data.append([None, None])
+            else:
+                row_data.append(stats.pearsonr(data_columns[row], data_columns[col]))
+        correlation_result['rows'].append({'field': correlation_variables[row], 'data': row_data})
+
+    return correlation_result
+
+
 def get_variable_summary_statistics(df, relevant_field_properties):
+    '''
+    Returns the formatted dict that is sent through the endpoint.
+    df: the dataframe
+    relevant_field_properties: the field properties we are trying to create summary statistics for
+    '''
     result_dict = {}
     result_dict['items'] = []
 
@@ -95,13 +130,13 @@ def get_variable_summary_statistics(df, relevant_field_properties):
     result_dict['numericalHeaders'] = numerical_headers
     return result_dict
 
-'''
-helper function to return visualization data in the right format for categorical variables
-data_column: represents the array of data
-variable_name: represents the name of the variable that is being visualized
-'''
 
 def return_data_list_categorical(data_column, variable_name):
+    '''
+    helper function to return visualization data in the right format for categorical variables
+    data_column: represents the array of data
+    variable_name: represents the name of the variable that is being visualized
+    '''
     unique_elements = get_unique(data_column)
 
     count_dict = {}
@@ -120,13 +155,14 @@ def return_data_list_categorical(data_column, variable_name):
 
     return data_array
 
-'''
-helper function to return visualization data in the right format for numerical variables
-FOR NOW, ONLY BINS INTO 5 DIFFERENT BINS
-data_column: represents the array of data
-variable_name: represents the name of the variable that is being visualized
-'''
+
 def return_data_list_numerical(data_column, variable_name):
+    '''
+    helper function to return visualization data in the right format for numerical variables
+    FOR NOW, ONLY BINS INTO 5 DIFFERENT BINS
+    data_column: represents the array of data
+    variable_name: represents the name of the variable that is being visualized
+    '''
     count_dict = {}
     data_array = []
 
@@ -148,14 +184,13 @@ def return_data_list_numerical(data_column, variable_name):
     return data_array
 
 
-
-'''
-helper function to find some statistics of the data
-    looks at count, max frequency, and number of unique values
-data_column: represents the array of data
-stats_dict: represents the statistical dictionary already in field_properties
-'''
 def get_summary_stats_categorical(data_column, stats_dict):
+    '''
+    helper function to find some statistics of the data
+        looks at count, max frequency, and number of unique values
+    data_column: represents the array of data
+    stats_dict: represents the statistical dictionary already in field_properties
+    '''
     stats = []
 
     if stats_dict.get('count'):
@@ -174,13 +209,14 @@ def get_summary_stats_categorical(data_column, stats_dict):
         stats.append(find_unique_values_and_max_frequency(data_column)[0])
     return stats
 
-'''
-helper function to find some statistics of the data
-    looks at count, max, min, mean, median, and standard deviation
-data_column: represents the array of data
-stats_dict: represents the statistical dictionary already in field_properties
-'''
+
 def get_summary_stats_numerical(data_column, stats_dict):
+    '''
+    helper function to find some statistics of the data
+        looks at count, max, min, mean, median, and standard deviation
+    data_column: represents the array of data
+    stats_dict: represents the statistical dictionary already in field_properties
+    '''
     stats = []
 
     if stats_dict.get('count'):
@@ -215,12 +251,13 @@ def get_summary_stats_numerical(data_column, stats_dict):
 
     return stats
 
-'''
-helper function to find the number of unique values in the list and the maximum
-frequency that an unique value has
-list: represents the list being analyzed
-'''
+
 def find_unique_values_and_max_frequency(list):
+    '''
+    helper function to find the number of unique values in the list and the maximum
+    frequency that an unique value has
+    list: represents the list being analyzed
+    '''
     seen = {}
     max = 0
     for val in list:
@@ -252,19 +289,20 @@ def parse_string_mapping_function(list_function):
     if list_function[0] == "FILTER":
         return (lambda x: x == list_function[1])
 
-'''
-helper function to return the appropriate independent variable value from the dataframe
-num: 0 represents parsing the column, 1 represents parsing the row
-index: represents the index of the dataframe we are extracting the value from
-variable_type_summary:
-   for cat variables: ['cat', field]
-   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-df : dataframe
-'''
 
 def parse_variable(num, index, variable_type_summary, df):
+    '''
+    helper function to return the appropriate independent variable value from the dataframe
+    num: 0 represents parsing the column, 1 represents parsing the row
+    index: represents the index of the dataframe we are extracting the value from
+    variable_type_summary:
+       for cat variables: ['cat', field]
+       for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+    df : dataframe
+    '''
     type_variable = variable_type_summary[num][0]
     passed_variable = variable_type_summary[num][1]
+
     if type_variable == 'cat':
         return df.get_value(index, passed_variable)
     elif type_variable == 'num':
@@ -272,19 +310,18 @@ def parse_variable(num, index, variable_type_summary, df):
         binning_names = variable_type_summary[num][3]
         return find_bin(df.get_value(index, passed_variable[0]), binning_edges, binning_names, passed_variable[1])
 
-'''
-df : dataframe
-variable_type_summary:
-   for cat variables: ['cat', field]
-   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-dep_variable :
-    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
-    for num variable: [type, numerical variable name, aggregation function name]
-unique_indep_values : [unique values for the one variable]
-'''
-
 
 def create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values):
+    '''
+    df : dataframe
+    variable_type_summary:
+       for cat variables: ['cat', field]
+       for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+    dep_variable :
+        for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+        for num variable: [type, numerical variable name, aggregation function name]
+    unique_indep_values : [unique values for the one variable]
+    '''
     result_dict = {}
     dep_var_dict = {}
     type_string = dep_variable[0]
@@ -294,8 +331,7 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
     weight_variable_name = dep_variable[2][1]
     weight_dict = {}
 
-
-    for index in range(len(df)):
+    for index in df.index:
         var = parse_variable(0, index, variable_type_summary, df)
         if dep_var_dict.get(var):
             dep_var_dict[var].append(df.get_value(index, dep_variable_name))
@@ -326,18 +362,18 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
     return (result_dict, aggregationMean)
 
 
-'''
-df : dataframe
-variable_type_summary:
-   for cat variables: ['cat', field]
-   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-unique_indep_values : [unique values for the one variable]
-'''
 def create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
+    '''
+    df : dataframe
+    variable_type_summary:
+       for cat variables: ['cat', field]
+       for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+    unique_indep_values : [unique values for the one variable]
+    '''
     result_dict = {}
     count_dict = {}
 
-    for index in range(len(df)):
+    for index in df.index:
         var = parse_variable(0, index, variable_type_summary, df)
         if count_dict.get(var):
             count_dict[var]+= 1
@@ -352,22 +388,22 @@ def create_one_dimensional_contingency_table_with_no_dependent_variable(df, vari
 
     return result_dict
 
-'''
-comparison_variable: represents the variable used to create the contingency table.
-Is either an independent_variable or categorical_variable
-    independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
-    categorical_variable: represents an independent categorical variable name. It is a string
-dep_variable :
-    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
-    for num variable: [type, numerical variable name, aggregation function name]
-
-supported mapping functions:
-    (FILTER, target) -> returns 1 if value == target, 0 otherwise
-supported aggregation functions:
-    SUM, MEAN
-'''
 
 def create_one_dimensional_contingency_table(df, comparison_variable, dep_variable):
+    '''
+    comparison_variable: represents the variable used to create the contingency table.
+    Is either an independent_variable or categorical_variable
+        independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
+        categorical_variable: represents an independent categorical variable name. It is a string
+    dep_variable :
+        for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+        for num variable: [type, numerical variable name, aggregation function name]
+
+    supported mapping functions:
+        (FILTER, target) -> returns 1 if value == target, 0 otherwise
+    supported aggregation functions:
+        SUM, MEAN
+    '''
     #a list of lists
     results_dict = {}
     formatted_results_dict = {}
@@ -411,18 +447,17 @@ def create_one_dimensional_contingency_table(df, comparison_variable, dep_variab
 
     return formatted_results_dict
 
-'''
-df : dataframe
-variable_type_summary:
-   for cat variables: ['cat', field]
-   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-dep_variable :
-    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
-    for num variable: [type, numerical variable name, aggregation function name]
-'''
-
 
 def create_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values):
+    '''
+    df : dataframe
+    variable_type_summary:
+       for cat variables: ['cat', field]
+       for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+    dep_variable :
+        for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+        for num variable: [type, numerical variable name, aggregation function name]
+    '''
     result_dict = {}
     dep_var_dict = {}
     dep_variable_type = dep_variable[0]
@@ -432,8 +467,7 @@ def create_contingency_table_with_dependent_variable(df, variable_type_summary, 
     weight_variable_name = dep_variable[2][1]
     weight_dict = {}
 
-
-    for index in range(len(df)):
+    for index in df.index:
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
         if dep_var_dict.get(row):
@@ -486,20 +520,21 @@ def create_contingency_table_with_dependent_variable(df, variable_type_summary, 
     return (result_dict, aggregationMean)
 
 
-'''
-df : dataframe
-variable_type_summary:
-   for cat variables: ['cat', field]
-   for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-unique_indep_values : [[unique values for columns], [unique values for rows]]
-'''
 def create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
+    '''
+    df : dataframe
+    variable_type_summary:
+       for cat variables: ['cat', field]
+       for num variables: ['num', [field, num_bins], binning_edges, binning_names]
+    unique_indep_values : [[unique values for columns], [unique values for rows]]
+    '''
     result_dict = {}
     count_dict = {}
 
-    for index in range(len(df)):
+    for index in df.index:
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
+        logger.info('%s %s %s', index, col, row)
         if count_dict.get(row):
             if count_dict[row].get(col):
                 count_dict[row][col]+= 1
@@ -526,22 +561,22 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
 
     return result_dict
 
-'''
-comparison_variables: represents the variables used to create the contingency table.
-Is a list of independent_variable and categorical_variable
-    independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
-    categorical_variable: represents an independent categorical variable name. It is a string
-dep_variable :
-    for cat variable: [type, numerical variable name, aggregation function name, filter function name]
-    for num variable: [type, numerical variable name, aggregation function name]
-
-supported mapping functions:
-    (FILTER, target) -> returns 1 if value == target, 0 otherwise
-supported aggregation functions:
-    SUM, MEAN
-'''
 
 def create_contingency_table(df, comparison_variables, dep_variable):
+    '''
+    comparison_variables: represents the variables used to create the contingency table.
+    Is a list of independent_variable and categorical_variable
+        independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
+        categorical_variable: represents an independent categorical variable name. It is a string
+    dep_variable :
+        for cat variable: [type, numerical variable name, aggregation function name, filter function name]
+        for num variable: [type, numerical variable name, aggregation function name]
+
+    supported mapping functions:
+        (FILTER, target) -> returns 1 if value == target, 0 otherwise
+    supported aggregation functions:
+        SUM, MEAN
+    '''
     #a list of lists
     results_dict = {}
     formatted_results_dict = {}
@@ -587,14 +622,14 @@ def create_contingency_table(df, comparison_variables, dep_variable):
 
     return formatted_results_dict
 
-'''
-helper function to get the formatted names and edges of the bins.
-The bins will be equally spaced, and rounded to 1 decimal place. The right edge is open.
-array: represents the array being binning_edges
-num_bins: represents how many bins we want to bin the data
-'''
 
 def find_binning_edges_equal_spaced(array, num_bins):
+    '''
+    helper function to get the formatted names and edges of the bins.
+    The bins will be equally spaced, and rounded to 1 decimal place. The right edge is open.
+    array: represents the array being binning_edges
+    num_bins: represents how many bins we want to bin the data
+    '''
     theMin = min(array)
     theMax = max(array)
 
@@ -611,14 +646,15 @@ def find_binning_edges_equal_spaced(array, num_bins):
 
     return (names, roundedEdges)
 
-'''
-helper function to find the name of the bin the target is in
-target: the number which we are trying to find the right bin
-binningEdges: an array of floats representing the edges of the bins
-binningNames: an array of strings representing the names of hte bins
-num_bins: a number represents how many bins there are
-'''
+
 def find_bin(target, binningEdges, binningNames, num_bins):
+    '''
+    helper function to find the name of the bin the target is in
+    target: the number which we are trying to find the right bin
+    binningEdges: an array of floats representing the edges of the bins
+    binningNames: an array of strings representing the names of hte bins
+    num_bins: a number represents how many bins there are
+    '''
     def searchIndex(nums, target, length, index):
         mid = length/2
         if length == 1:

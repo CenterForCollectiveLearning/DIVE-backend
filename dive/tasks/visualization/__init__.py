@@ -13,14 +13,16 @@ class GeneratingProcedure(Enum):
     VAL_AGG = 'val:agg'
     AGG_AGG = 'agg:agg'
     VAL_VAL_Q = 'val:val:q'
+    MULTIGROUP_AGG = 'multigroup:agg'
     MULTIGROUP_COUNT = 'multigroup:count'
 
-
+# TODO Remove this? Doesn't really make sense anymore
 class TypeStructure(Enum):
     C = 'c'
     Q = 'q'
     liC = '[c]'
     liQ = '[q]'
+    T_Q = 't:q'
     C_C = 'c:c'
     C_Q = 'c:q'
     liC_Q = '[c]:q'
@@ -66,7 +68,7 @@ class VizType(Enum):
     NETWORK = 'network'
     HIST = 'hist'
     BAR = 'bar'
-    STACKED_BAR = 'stackedbar'
+    STACKED_BAR = 'bar'
 
 
 class TermType(Enum):

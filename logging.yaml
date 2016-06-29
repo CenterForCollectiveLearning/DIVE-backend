@@ -22,7 +22,7 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: DEBUG
         formatter: detailed
-        filename: dive.log
+        filename: logs/dive.log
         encoding: utf8
         backupCount: 20
 

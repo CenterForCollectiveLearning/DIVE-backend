@@ -14,11 +14,9 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-@celery.task(bind=True, track_started=True, name='compute_dataset_properties')
-def compute_dataset_properties(self, dataset_id, project_id, path=None):
+def compute_dataset_properties(dataset_id, project_id, path=None):
     ''' Compute and return dictionary containing whole
     import pandas as pd-dataset properties '''
-    self.update_state(state=states.PENDING, meta={})
 
     if not path:
         with task_app.app_context():
@@ -31,14 +29,17 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
 
     field_types = []
     for (i, field_name) in enumerate(df):
+        logger.debug('Calculating types for field %s', field_name)
         field_values = df[field_name]
         field_type, field_type_scores = calculate_field_type(field_name, field_values)
         field_types.append(field_type)
 
-    time_series = detect_time_series(df, field_types)
-    if time_series:
-        time_series = True
-    
+    # Forgoing time series detection for now (expensive)
+    # time_series = detect_time_series(df, field_types)
+    # if time_series:
+    #     time_series = True
+    time_series = False
+
     structure = 'wide' if time_series else 'long'
 
     properties = {
@@ -51,21 +52,25 @@ def compute_dataset_properties(self, dataset_id, project_id, path=None):
         'is_time_series': time_series,
     }
 
-    self.update_state(state=states.SUCCESS)
-    return properties
+    return {
+        'desc': 'Done computing dataset properties',
+        'result': properties,
+    }
 
 
-@celery.task(bind=True, track_started=True, ignore_result=True, name="save_dataset_properties")
-def save_dataset_properties(self, properties, dataset_id, project_id):
-    self.update_state(state=states.PENDING)
+def save_dataset_properties(properties_result, dataset_id, project_id):
+    properties = properties_result['result']
     with task_app.app_context():
         existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
     if existing_dataset_properties:
-        logger.debug("Updating field property of dataset %s", dataset_id)
+        logger.info("Updating field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
     else:
-        logger.debug("Inserting field property of dataset %s", dataset_id)
+        logger.info("Inserting field property of dataset %s", dataset_id)
         with task_app.app_context():
             dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
-    self.update_state(state=states.SUCCESS)
+    return {
+        'desc': 'Done saving dataset properties',
+        'result': None
+    }

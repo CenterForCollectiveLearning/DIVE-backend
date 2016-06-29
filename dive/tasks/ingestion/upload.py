@@ -120,15 +120,16 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
                 offset = 0
                 continue
 
-        dataset = db_access.insert_dataset(project_id,
-            path = path,
-            dialect = dialect,
-            offset = offset,
-            title = file_doc['file_title'],
-            file_name = file_doc['file_name'],
-            type = file_doc['type']
-        )
-        datasets.append(dataset)
+        with task_app.app_context():
+            dataset = db_access.insert_dataset(project_id,
+                path = path,
+                dialect = dialect,
+                offset = offset,
+                title = file_doc['file_title'],
+                file_name = file_doc['file_name'],
+                type = file_doc['type']
+            )
+            datasets.append(dataset)
 
     return datasets
 
