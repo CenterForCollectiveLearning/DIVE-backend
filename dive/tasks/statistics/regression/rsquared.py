@@ -1,3 +1,5 @@
+from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
+
 def get_contribution_to_r_squared_data(regression_result):
     regressions_by_column = regression_result['regressions_by_column']
 

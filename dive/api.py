@@ -4,12 +4,15 @@ from dive.resources.fields import Field
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
-from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.statistics_resources import CorrelationsFromSpec, RegressionEstimator, \
     RegressionFromSpec, SummaryStatsFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, \
     ContributionToRSquared, CorrelationScatterplot
-from dive.resources.exported_regressions import ExportedRegressions, DataFromExportedRegression
+
+from dive.resources.exported_results import ExportedResults
+from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
+from dive.resources.exported_analyses import ExportedRegression, DataFromExportedRegression, \
+    ExportedCorrelation, DataFromExportedCorrelation, ExportedSummary, DataFromExportedSummary
 from dive.resources.transform import Reduce, Unpivot, Join
 
 from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
@@ -28,7 +31,6 @@ def add_resources(api):
 
     api.add_resource(UploadFile,                    '/datasets/v1/upload')
     api.add_resource(Datasets,                      '/datasets/v1/datasets')
-    # api.add_resource(PreloadedDatasets,           '/datasets/v1/datasets/preloaded')
     api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dataset_id>')
 
     api.add_resource(Reduce,                        '/datasets/v1/reduce')
@@ -55,8 +57,16 @@ def add_resources(api):
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
-    api.add_resource(ExportedRegressions,           '/exported_regressions/v1/exported_regressions')
-    api.add_resource(DataFromExportedRegression,    '/exported_regressions/v1/exported_regressions/<string:exported_spec_id>/data')
+    api.add_resource(ExportedResults,               '/exported_results/v1/exported_results')
+
+    api.add_resource(ExportedRegression,            '/exported_regression/v1/exported_regression')
+    api.add_resource(DataFromExportedRegression,    '/exported_regression/v1/exported_regression/<string:exported_spec_id>/data')
+
+    api.add_resource(ExportedCorrelation,           '/exported_correlation/v1/exported_correlation')
+    api.add_resource(DataFromExportedCorrelation,   '/exported_correlation/v1/exported_correlation/<string:exported_spec_id>/data')
+
+    api.add_resource(ExportedSummary,               '/exported_summary/v1/exported_summary')
+    api.add_resource(DataFromExportedSummary,       '/exported_summary/v1/exported_summary/<string:exported_spec_id>/data')
 
     api.add_resource(Documents,                     '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
@@ -65,6 +75,6 @@ def add_resources(api):
     api.add_resource(Register,                      '/auth/v1/register')
     api.add_resource(Login,                         '/auth/v1/login')
     api.add_resource(Logout,                        '/auth/v1/logout')
-    api.add_resource(User,                        '/auth/v1/user')
+    api.add_resource(User,                          '/auth/v1/user')
 
     return api
