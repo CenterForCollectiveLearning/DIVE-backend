@@ -95,14 +95,21 @@ def get_full_field_documents_from_field_names(all_fields, names):
     return fields
 
 
-def run_models(df, patsy_models, dependent_variable, regression_type='lr', degree=1, functions=[], estimator='ols', weights=None):
+def run_models(df, patsy_models, dependent_variable, regression_type='linear', degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
+
+    map_function_to_type = {
+        'linear': run_linear_regression,
+        'logistic': run_logistic_regression,
+        'polynomial': run_polynomial_regression
+    }
+
     # Iterate over and run each models
     for patsy_model in patsy_models:
         regression_result = {}
 
         # Run regression
-        model_result = multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights)
+        model_result = map_function_to_type[regression_type](df, patsy_model, dependent_variable, estimator, weights)
         model_results.append(model_result)
     return model_results
 
@@ -115,6 +122,92 @@ def parse_confidence_intervals(model_result):
         parsed_conf_int[field] = [ d[0], d[1] ]
     return parsed_conf_int
 
+def run_linear_regression(df, patsy_model, dependent_variable, estimator, weights):
+    y, X = dmatrices(patsy_model, df, return_type='dataframe')
+
+    model_result = sm.OLS(y, X).fit()
+
+    p_values = model_result.pvalues.to_dict()
+    t_values = model_result.tvalues.to_dict()
+    params = model_result.params.to_dict()
+    ste = model_result.bse.to_dict()
+    conf_ints = parse_confidence_intervals(model_result)
+
+    constants = {
+        'p_value': p_values.get('Intercept'),
+        't_value': t_values.get('Intercept'),
+        'coefficient': params.get('Intercept'),
+        'standard_error': ste.get('Intercept'),
+        'conf_int': conf_ints.get('Intercept')
+    }
+
+    regression_field_properties = {
+        'p_value': p_values,
+        't_value': t_values,
+        'coefficient': params,
+        'standard_error': ste,
+        'conf_int': conf_ints
+    }
+
+    total_regression_properties = {
+        'aic': model_result.aic,
+        'bic': model_result.bic,
+        'dof': model_result.nobs,
+        'r_squared': model_result.rsquared,
+        'r_squared_adj': model_result.rsquared_adj,
+        'f_test': model_result.fvalue,
+        # 'resid': model_result.resid.tolist()
+    }
+
+    regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
+
+    return regression_results
+
+def run_logistic_regression():
+    return
+
+def run_polynomial_regression():
+    return
+
+def restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties):
+    # Restructure field properties dict from
+    # { property: { field: value }} -> [ field: field, properties: { property: value } ]
+    
+    categorical_field_values = {}
+    properties_by_field_dict = {}
+
+    for prop_type, field_names_and_values in regression_field_properties.iteritems():
+        for field_name, value in field_names_and_values.iteritems():
+            if field_name in properties_by_field_dict:
+                properties_by_field_dict[field_name][prop_type] = value
+            else:
+                properties_by_field_dict[field_name] = { prop_type: value }
+
+    properties_by_field_collection = []
+    for field_name, properties in properties_by_field_dict.iteritems():
+        new_doc = {
+            'field': field_name
+        }
+        base_field, value_field = _get_fields_categorical_variable(field_name)
+        new_doc['base_field'] = base_field
+        new_doc['value_field'] = value_field
+        new_doc.update(properties)
+
+        # Update list mapping categorical fields to values
+        if value_field:
+            if base_field not in categorical_field_values:
+                categorical_field_values[base_field] = [ value_field ]
+            else:
+                categorical_field_values[base_field].append(value_field)
+
+        properties_by_field_collection.append(new_doc)
+
+    return {
+        'constants': constants,
+        'categorical_field_values': categorical_field_values,
+        'properties_by_field': properties_by_field_collection,
+        'total_regression_properties': total_regression_properties
+    }
 
 def multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights=None):
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
