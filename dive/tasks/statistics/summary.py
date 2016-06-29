@@ -18,6 +18,7 @@ from dive.tasks.ingestion.binning import get_num_bins
 from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
+from dive.tasks.ingestion.binning import get_bin_edges, get_bin_decimals
 logger = get_task_logger(__name__)
 
 
@@ -124,11 +125,10 @@ def return_data_list_numerical(data_column, variable_name):
     count_dict = {}
     data_array = []
 
-    num_bins = get_num_bins(data_column)
-    (names, roundedEdges) = find_binning_edges_equal_spaced(data_column, num_bins)
+    (rounded_edges, names) = get_binning_edges_and_names(data_column, {})
     data_array.append([variable_name, 'count'])
     for ele in data_column:
-        bin_name = find_bin(ele, roundedEdges, names, num_bins)
+        bin_name = find_bin(ele, rounded_edges, names, len(rounded_edges) - 1)
         if count_dict.get(bin_name):
             count_dict[bin_name] += 1
         else:
@@ -375,9 +375,10 @@ def create_one_dimensional_contingency_table(df, comparison_variable, dep_variab
         unique_indep_values = get_unique(df[comparison_variable[1]], True)
         variable_type_summary.append(('cat', comparison_variable[1]))
     elif comparison_variable[0] == 'q':
-        (names, binningEdges) = find_binning_edges_equal_spaced(df[comparison_variable[1]], comparison_variable[2])
+        (binningEdges, names) = get_binning_edges_and_names(df[comparison_variable[1]], comparison_variable[2])
+        num_bins = len(binningEdges) -1
         unique_indep_values = names
-        variable_type_summary.append(('num', [comparison_variable[1], comparison_variable[2]], binningEdges, names))
+        variable_type_summary.append(('num', [comparison_variable[1],num_bins], binningEdges, names))
 
     if dep_variable:
         (results_dict, aggregationMean) = create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values)
@@ -548,9 +549,10 @@ def create_contingency_table(df, comparison_variables, dep_variable):
             unique_indep_values.append(get_unique(df[var[1]], True))
             variable_type_summary.append(('cat', var[1]))
         elif var[0] == 'q':
-            (names, binningEdges) = find_binning_edges_equal_spaced(df[var[1]], var[2])
+            (binningEdges, names) = get_binning_edges_and_names(df[var[1]], var[2])
+            num_bins = len(binningEdges) - 1
             unique_indep_values.append(names)
-            variable_type_summary.append(('num', [var[1], var[2]], binningEdges, names))
+            variable_type_summary.append(('num', [var[1], num_bins], binningEdges, names))
 
     if dep_variable:
         (results_dict, aggregationMean) = create_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values)
@@ -580,29 +582,35 @@ def create_contingency_table(df, comparison_variables, dep_variable):
 
     return formatted_results_dict
 
+def get_binning_edges_and_names(array, config):
+    procedure = config.get('binning_procedure', 'freedman')
+    binning_type = config.get('binning_type', 'procedural')
+    if binning_type == 'procedural':
+        procedural = True
+    else:
+        procedural = False
 
-def find_binning_edges_equal_spaced(array, num_bins):
-    '''
-    helper function to get the formatted names and edges of the bins.
-    The bins will be equally spaced, and rounded to 1 decimal place. The right edge is open.
-    array: represents the array being binning_edges
-    num_bins: represents how many bins we want to bin the data
-    '''
-    theMin = min(array)
-    theMax = max(array)
+    precision = config.get('precision', None)
+    num_bins = config.get('num_bins', 3)
 
-    edges = np.linspace(theMin, theMax, num_bins+1)
+    if not precision:
+        precision = get_bin_decimals(array)
 
-    roundedEdges = []
-    for i in range(len(edges)-1):
-        roundedEdges.append( float('%.1f' % edges[i]))
-    roundedEdges.append(float('%.1f' % edges[-1])+0.1)
+    bin_edges = bin_edges_list = get_bin_edges(
+        array,
+        procedural=procedural,
+        procedure=procedure,
+        num_bins=num_bins,
+        num_decimals=precision
+    )
 
     names = []
-    for i in range(len(edges)-1):
-        names.append('%s-%s' % (str(roundedEdges[i]), str(roundedEdges[i+1])))
+    formatting_string = '%.' + str(precision) + 'f-%.' + str(precision) + 'f'
+    for i in range(len(bin_edges)-1):
+        names.append(formatting_string % (bin_edges[i], bin_edges[i+1]))
 
-    return (names, roundedEdges)
+    return (bin_edges, names)
+
 
 
 def find_bin(target, binningEdges, binningNames, num_bins):
