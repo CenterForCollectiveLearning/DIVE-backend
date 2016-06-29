@@ -192,8 +192,6 @@ def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weig
         'standard_error': ste
     }
 
-    print 'rsq', model_result.prsquared, 'llf', model_result.llf, 'llnull', model_result.llnull, 'llpval', model_result.llr_pvalue
-
     total_regression_properties = {
         'aic': model_result.aic,
         'bic': model_result.bic,
