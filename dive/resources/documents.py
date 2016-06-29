@@ -59,7 +59,8 @@ class Document(Resource):
             for block in document['content']['blocks']:
                 new_block = block
                 exported_spec_id = block['exportedSpecId']
-                exported_spec = db_access.get_public_exported_spec(exported_spec_id)
+                exported_spec_type = block['contentType']
+                exported_spec = db_access.get_public_exported_spec(exported_spec_id, exported_spec_type)
                 new_block['spec'] = exported_spec
                 new_blocks.append(new_block)
             new_document['content']['blocks'] = new_blocks

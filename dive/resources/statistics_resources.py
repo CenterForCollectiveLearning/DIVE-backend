@@ -80,6 +80,13 @@ class RegressionFromSpec(Resource):
         if regression_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             regression_data = regression_doc['data']
             regression_data['id'] = regression_doc['id']
+
+            exported_regression_doc = db_access.get_exported_regression_by_regression_id(project_id, regression_doc['id'])
+            if exported_regression_doc:
+                regression_data['exported'] = True
+                regression_data['exportedRegressionId'] = exported_regression_doc['id']
+            else:
+                regression_data['exported'] = False
             return jsonify(regression_data)
         else:
             regression_task = regression_pipeline.apply_async(
@@ -209,6 +216,13 @@ class CorrelationsFromSpec(Resource):
         if correlation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             correlation_data = correlation_doc['data']
             correlation_data['id'] = correlation_doc['id']
+
+            exported_correlation_doc = db_access.get_exported_correlation_by_correlation_id(project_id, correlation_doc['id'])
+            if exported_correlation_doc:
+                correlation_data['exported'] = True
+                correlation_data['exportedCorrelationId'] = exported_correlation_doc['id']
+            else:
+                correlation_data['exported'] = False
             return jsonify(correlation_data)
         else:
             correlation_task = correlation_pipeline.apply_async(
