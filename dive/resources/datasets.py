@@ -5,6 +5,7 @@ import os
 import json
 from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
+from flask.ext.login import login_required
 from celery import chain
 
 from dive.db import db_access
@@ -14,10 +15,8 @@ from dive.tasks.pipelines import full_pipeline, ingestion_pipeline, get_chain_ID
 from dive.tasks.ingestion.upload import upload_file
 from dive.tasks.handlers import error_handler
 
-
 import logging
 logger = logging.getLogger(__name__)
-
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv', 'tsv', 'xlsx', 'xls', 'json'])
 
@@ -28,7 +27,7 @@ def allowed_file(filename):
 
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
-uploadFileParser.add_argument('project_id', type=str, required=True)
+uploadFileParser.add_argument('project_id', type=str, required=True, location='json')
 class UploadFile(Resource):
     '''
     1) Saves file
@@ -36,7 +35,6 @@ class UploadFile(Resource):
     3) Returns dataset_id
     '''
     def post(self):
-        logger.info("In upload")
         form_data = json.loads(request.form.get('data'))
         project_id = str(form_data.get('project_id'))
         file_obj = request.files.get('file')
@@ -64,6 +62,7 @@ datasetsGetParser.add_argument('project_id', type=str, required=True)
 datasetsGetParser.add_argument('getStructure', type=bool, required=False, default=False)
 class Datasets(Resource):
     ''' Get dataset descriptions or samples '''
+    @login_required
     def get(self):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
@@ -95,6 +94,7 @@ datasetDeleteParser = reqparse.RequestParser()
 datasetDeleteParser.add_argument('project_id', type=str, required=True)
 class Dataset(Resource):
     # Get dataset descriptions or samples
+    @login_required
     def get(self, dataset_id):
         args = datasetGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
@@ -110,7 +110,7 @@ class Dataset(Resource):
         }
         return make_response(jsonify(response))
 
-
+    @login_required
     def delete(self, dataset_id):
         args = datasetDeleteParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')

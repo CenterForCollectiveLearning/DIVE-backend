@@ -47,7 +47,7 @@ def preload_from_directory_tree(app):
             project_config = yaml.load(project_config_file.read())
         project_title = project_config.get('title', project_dir)
         project_datasets = project_config.get('datasets')
-        private = project_config.get('private')
+        private = project_config.get('private', True)
 
         # Insert projects
         app.logger.info('Preloading project: %s', project_dir)
@@ -87,9 +87,9 @@ def preload_from_directory_tree(app):
 
                 for dataset in datasets:
                     ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
-                    ingestion_result.get()
-        relationship_result = relationship_pipeline.apply(args=[ project_id ])
-        relationship_result.get()
+                    # ingestion_result.get()
+        # relationship_result = relationship_pipeline.apply(args=[ project_id ])
+        # relationship_result.get()
 
 
 if __name__ == '__main__':

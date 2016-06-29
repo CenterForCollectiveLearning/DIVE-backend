@@ -41,7 +41,11 @@ def single_c_multi_q(c_field, q_fields):
                             { 'string': q_label_b, 'type': TermType.FIELD.value },
                             { 'string': 'by', 'type': TermType.PLAIN.value },
                             { 'string': agg_fn, 'type': TermType.OPERATION.value },
-                        ]
+                        ],
+                        'labels': {
+                            'x': q_label_a,
+                            'y': q_label_b
+                        }
                     }
                 }
                 specs.append(spec)
@@ -52,7 +56,72 @@ def single_c_multi_q(c_field, q_fields):
 def single_q_multi_c(c_fields, q_field):
     specs = []
     logger.debug('Multi C Single Q')
-    # TODO How do you deal with this?
+
+    for (c_field_a, c_field_b) in combinations(c_fields, 2):
+        c_label_a, c_label_b = c_field_a['name'], c_field_b['name']
+        q_label = q_field['name']
+
+        for agg_fn in aggregation_functions.keys():
+            spec_1 = {
+                'generating_procedure': GP.MULTIGROUP_AGG.value,
+                'type_structure': TS.liC_Q.value,
+                'viz_types': [ VT.STACKED_BAR.value ],
+                'field_ids': [ c_field_a['id'], c_field_b['id'], q_field['id'] ],
+                'args': {
+                    'grouped_field_a': c_field_a,
+                    'grouped_field_b': c_field_b,
+                    'agg_fn': agg_fn,
+                    'agg_field': q_field
+                },
+                'meta': {
+                    'desc': '%s of %s grouped by %s and %s' % (agg_fn, q_label, c_label_a, c_label_b),
+                    'construction': [
+                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'grouped by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_a, 'type': TermType.FIELD.value },
+                        { 'string': 'and', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_b, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': 'Grouping by %s then %s' % (c_label_b, c_label_a),
+                        'y': '%s of %s' % (agg_fn, q_label)
+                    }
+                }
+            }
+            spec_2 = {
+                'generating_procedure': GP.MULTIGROUP_AGG.value,
+                'type_structure': TS.liC_Q.value,
+                'viz_types': [ VT.STACKED_BAR.value ],
+                'field_ids': [ c_field_b['id'], c_field_a['id'], q_field['id'] ],
+                'args': {
+                    'grouped_field_a': c_field_b,
+                    'grouped_field_b': c_field_a,
+                    'agg_fn': agg_fn,
+                    'agg_field': q_field
+                },
+                'meta': {
+                    'desc': '%s of %s grouped by %s and %s' % (agg_fn, q_label, c_label_b, c_label_a),
+                    'construction': [
+                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'grouped by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_b, 'type': TermType.FIELD.value },
+                        { 'string': 'and', 'type': TermType.OPERATION.value },
+                        { 'string': c_label_a, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': 'Grouping by %s then %s' % (c_label_b, c_label_a),
+                        'y': '%s of %s' % (agg_fn, q_label)
+                    }
+                },
+
+            }
+            specs.append(spec_1)
+            specs.append(spec_2)
+
     # Two-field val:val:q with quantitative data
     for (c_field_a, c_field_b) in combinations(c_fields, 2):
         c_label_a, c_label_b = c_field_a['name'], c_field_b['name']

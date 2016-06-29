@@ -7,26 +7,17 @@ db interfaces to both the API and compute layers.
 '''
 
 from flask import abort
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.core import db
-from dive.db import ModelName
+from dive.db import ModelName, row_to_dict
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document, \
     Summary, Exported_Summary, Correlation, Exported_Correlation
-
+from dive.resources import ContentType
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def row_to_dict(r, custom_fields=[]):
-    d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
-    if custom_fields:
-        for custom_field in custom_fields:
-            d[custom_field] = getattr(r, custom_field)
-    return d
 
 
 ################
@@ -42,19 +33,18 @@ def get_projects(**kwargs):
     return [ row_to_dict(project) for project in projects ]
 
 def insert_project(**kwargs):
-    project = Project(**kwargs)
+    project = Project(
+        **kwargs
+    )
     db.session.add(project)
     db.session.commit()
     return row_to_dict(project)
 
 def update_project(project_id, **kwargs):
-    title = kwargs.get('title')
-    description = kwargs.get('description')
-
     project = Project.query.get_or_404(int(project_id))
 
     for k, v in kwargs.iteritems():
-        project[k] = v
+        setattr(project, k, v)
 
     db.session.add(project)
     db.session.commit()
@@ -122,7 +112,6 @@ def get_dataset_properties(project_id, dataset_id):
 
 # TODO Do an upsert?
 def insert_dataset_properties(project_id, dataset_id, **kwargs):
-    logger.debug("Insert data properties with project_id %s, and dataset_id %s", project_id, dataset_id)
     dataset_properties = Dataset_Properties(
         dataset_id = dataset_id,
         project_id = project_id,
@@ -139,7 +128,7 @@ def update_dataset_properties(project_id, dataset_id, **kwargs):
         ).one()
 
     for k, v in kwargs.iteritems():
-        dataset_properties[k] = v
+        setattr(dataset_properties, k, v)
 
     db.session.add(dataset_properties)
     db.session.commit()
@@ -182,7 +171,7 @@ def update_field_properties(project_id, dataset_id, name, **kwargs):
         name=name).one()
 
     for k, v in kwargs.iteritems():
-        field_properties[k] = v
+        setattr(field_properties, k, v)
 
     db.session.commit()
     return row_to_dict(field_properties)
@@ -250,7 +239,7 @@ def get_specs(project_id, dataset_id, **kwargs):
 
 
 from time import time
-def insert_specs(project_id, specs, selected_fields, conditionals, config):
+def insert_specs(project_id, specs, selected_fields, recommendation_types, conditionals, config):
     start_time = time()
     spec_objects = []
     for s in specs:
@@ -258,6 +247,7 @@ def insert_specs(project_id, specs, selected_fields, conditionals, config):
             project_id = project_id,
             selected_fields = selected_fields,
             conditionals = conditionals,
+            recommendation_types = recommendation_types,
             config = config,
             **s
         )
@@ -285,17 +275,30 @@ def delete_spec(project_id, exported_spec_id):
 ################
 # Exported Specifications
 ################
-def get_public_exported_spec(exported_spec_id):
+def get_public_exported_spec(exported_spec_id, spec_type):
+    print spec_type, ContentType.VISUALIZATION.value
     try:
-        exported_spec = Exported_Spec.query.filter_by(
-            id=exported_spec_id
-        ).one()
-        desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+        if spec_type == ContentType.VISUALIZATION.value:
+            exported_spec = Exported_Spec.query.filter_by(
+                id=exported_spec_id
+            ).one()
+            desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+            for desired_spec_key in desired_spec_keys:
+                value = getattr(exported_spec.spec, desired_spec_key)
+                setattr(exported_spec, desired_spec_key, value)
+            return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
 
-        for desired_spec_key in desired_spec_keys:
-            value = getattr(exported_spec.spec, desired_spec_key)
-            setattr(exported_spec, desired_spec_key, value)
-        return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
+        elif spec_type == ContentType.CORRELATION.value:
+            exported_spec = Exported_Correlation.query.filter_by(
+                id=exported_spec_id
+            ).one()
+            return row_to_dict(exported_spec)
+
+        elif spec_type == ContentType.REGRESSION.value:
+            exported_spec = Exported_Regression.query.filter_by(
+                id=exported_spec_id
+            ).one()
+            return row_to_dict(exported_spec)
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -453,23 +456,83 @@ def delete_correlation(project_id, correlation_id):
     return row_to_dict(correlation)
 
 ################
+# Summaries
+################
+def get_summary_by_id(summary_id, project_id):
+    summary = Summary.query.filter_by(id=summary_id, project_id=project_id).one()
+    if summary is None:
+        abort(404)
+    return row_to_dict(summary)
+
+
+def get_summary_from_spec(project_id, spec):
+    try:
+        summary = Summary.query.filter_by(project_id=project_id, spec=spec).one()
+    except NoResultFound:
+        return None
+    return row_to_dict(summary)
+
+
+def insert_summary(project_id, spec, data):
+    summary = Summary(
+        project_id = project_id,
+        spec = spec,
+        data = data
+    )
+    db.session.add(summary)
+    db.session.commit()
+    return row_to_dict(summary)
+
+def delete_summary(project_id, summary_id):
+    try:
+        summary = Summary.query.filter_by(project_id=project_id, id=summary_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    db.session.delete(summary)
+    db.session.commit()
+    return row_to_dict(summary)
+
+################
 # Exported Analyses
 ################
+
+# Regressions
 def get_exported_regression_by_id(project_id, exported_regression_id):
-    exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
-        project_id=project_id).one()
-    if exported_regression is None:
-        abort(404)
+    try:
+        exported_regression = Exported_Regression.query.filter_by(id=exported_regression_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_regression)
+
+def get_exported_regression_by_regression_id(project_id, regression_id):
+    try:
+        exported_regression = Exported_Regression.query.filter_by(regression_id=regression_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
     return row_to_dict(exported_regression)
 
 def get_exported_regressions(project_id):
     exported_regressions = Exported_Regression.query.filter_by(project_id=project_id).all()
-    return [ row_to_dict(exported_regression) for exported_regression in exported_regressions ]
+    for e in exported_regressions:
+        setattr(e, 'spec', e.regression.spec)
+        setattr(e, 'type', 'regression')
+    return [ row_to_dict(exported_regression, custom_fields=['type', 'spec']) for exported_regression in exported_regressions ]
 
-def insert_exported_regression(project_id, regression_id):
+def insert_exported_regression(project_id, regression_id, data, conditionals, config):
     exported_regression = Exported_Regression(
         project_id = project_id,
-        regression_id = regression_id
+        regression_id = regression_id,
+        data = data,
+        conditionals = conditionals,
+        config = config
     )
     db.session.add(exported_regression)
     db.session.commit()
@@ -487,6 +550,97 @@ def delete_exported_regression(project_id, exported_regression_id):
     db.session.commit()
     return row_to_dict(exported_regression)
 
+# Correlations
+def get_exported_correlation_by_id(project_id, exported_correlation_id):
+    try:
+        exported_correlation = Exported_Correlation.query.filter_by(id=exported_correlation_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_correlation)
+
+def get_exported_correlation_by_correlation_id(project_id, correlation_id):
+    try:
+        exported_correlation = Exported_Correlation.query.filter_by(correlation_id=correlation_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_correlation)
+
+def get_exported_correlations(project_id):
+    exported_correlations = Exported_Correlation.query.filter_by(project_id=project_id).all()
+    for e in exported_correlations:
+        setattr(e, 'spec', e.correlation.spec)
+        setattr(e, 'type', 'correlation')
+    return [ row_to_dict(exported_correlation, custom_fields=['type', 'spec']) for exported_correlation in exported_correlations ]
+
+def insert_exported_correlation(project_id, correlation_id, data, conditionals, config):
+    exported_correlation = Exported_Correlation(
+        project_id = project_id,
+        correlation_id = correlation_id,
+        data = data,
+        conditionals = conditionals,
+        config = config
+    )
+    db.session.add(exported_correlation)
+    db.session.commit()
+    return row_to_dict(exported_correlation)
+
+def delete_exported_correlation(project_id, exported_correlation_id):
+    try:
+        exported_correlation = Exported_Correlation.query.filter_by(project_id=project_id, id=exported_correlation_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(exported_correlation)
+    db.session.commit()
+    return row_to_dict(exported_correlation)
+
+
+# Summary
+def get_exported_summary_by_id(project_id, exported_summary_id):
+    exported_summary = Exported_Summary.query.filter_by(id=exported_summary_id,
+        project_id=project_id).one()
+    if exported_summary is None:
+        abort(404)
+    return row_to_dict(exported_summary)
+
+def get_exported_summarys(project_id):
+    exported_summarys = Exported_Summary.query.filter_by(project_id=project_id).all()
+    for e in exported_summarys:
+        setattr(e, 'spec', e.summary.spec)
+        setattr(e, 'type', 'summary')
+    return [ row_to_dict(exported_summary, custom_fields=['type', 'spec']) for exported_summary in exported_summarys ]
+
+def insert_exported_summary(project_id, summary_id, data, conditionals, config):
+    exported_summary = Exported_Summary(
+        project_id = project_id,
+        summary_id = summary_id,
+        data = data,
+        conditionals = conditionals,
+        config = config
+    )
+    db.session.add(exported_summary)
+    db.session.commit()
+    return row_to_dict(exported_summary)
+
+def delete_exported_summary(project_id, exported_summary_id):
+    try:
+        exported_summary = Exported_Summary.query.filter_by(project_id=project_id, id=exported_summary_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(exported_summary)
+    db.session.commit()
+    return row_to_dict(exported_summary)
 
 ################
 # Documents
