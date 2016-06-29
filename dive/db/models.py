@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
@@ -5,6 +6,8 @@ from constants import Role, User_Status
 from dive.core import db
 from dive.db import ModelName
 
+def make_uuid():
+    return unicode(uuid.uuid4())
 
 class Project(db.Model):
     __tablename__ = ModelName.PROJECT.value
@@ -15,10 +18,10 @@ class Project(db.Model):
     preloaded = db.Column(db.Boolean())
     directory = db.Column(db.Unicode(2000))
     private = db.Column(db.Boolean())
+    anonymous = db.Column(db.Boolean())
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    users = db.relationship('User')
-    # TODO Define relationships for other one-to-manys?
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
     # One-to-one with datasets
     datasets = db.relationship('Dataset',
@@ -141,6 +144,8 @@ class Spec(db.Model):
     case = db.Column(db.Unicode(250))
     generating_procedure = db.Column(db.Unicode(250))
     type_structure = db.Column(db.Unicode(250))
+    recommendation_type = db.Column(db.Unicode(20))
+    recommendation_types = db.Column(JSONB)
     viz_types = db.Column(JSONB)
     args = db.Column(JSONB)
     meta = db.Column(JSONB)
@@ -233,6 +238,9 @@ class Regression(db.Model):
 class Exported_Regression(db.Model):
     __tablename__ = ModelName.EXPORTED_REGRESSION.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     regression_id = db.Column(db.Integer, db.ForeignKey('regression.id',
         onupdate='CASCADE', ondelete='CASCADE'))
@@ -253,7 +261,7 @@ class Summary(db.Model):
     data = db.Column(JSONB)
 
     # One-to-many with exported specs
-    exported_regression = db.relationship('Exported_Summary',
+    exported_summary = db.relationship('Exported_Summary',
         backref='summary',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -270,6 +278,9 @@ class Summary(db.Model):
 class Exported_Summary(db.Model):
     __tablename__ = ModelName.EXPORTED_SUMMARY.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     summary_id = db.Column(db.Integer, db.ForeignKey('summary.id',
         onupdate='CASCADE', ondelete='CASCADE'))
@@ -308,6 +319,9 @@ class Correlation(db.Model):
 class Exported_Correlation(db.Model):
     __tablename__ = ModelName.EXPORTED_CORRELATION.value
     id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     correlation_id = db.Column(db.Integer, db.ForeignKey('correlation.id',
         onupdate='CASCADE', ondelete='CASCADE'))
@@ -356,11 +370,6 @@ class Group(db.Model):
     '''
     __tablename__ = ModelName.GROUP.value
     id = db.Column(db.Integer, primary_key=True)
-    # One-to-many with specs
-    users = db.relationship('User',
-        backref='dataset',
-        cascade='all, delete-orphan',
-        lazy='dynamic')
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
@@ -373,23 +382,47 @@ class User(db.Model):
     '''
     __tablename__ = ModelName.USER.value
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Unicode(50), unique=True)
+    username = db.Column(db.Unicode(50), unique=True)
     email = db.Column(db.Unicode(120), unique=True)
     password = db.Column(db.Unicode(120))
-    role = db.Column(db.SmallInteger, default=Role.USER.value)
-    status = db.Column(db.SmallInteger, default=User_Status.NEW.value)
-    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
-    update_date = db.Column(db.DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
 
-    group_id = db.Column(db.Integer, db.ForeignKey('group.id'))
-    group = db.relationship('Group')
+    authenticated = db.Column(db.Boolean(), default=True)
+    anonymous = db.Column(db.Boolean(), default=False)
+    active = db.Column(db.Boolean(), default=True)
+
+    api_key = db.Column(db.Unicode(2000), default=make_uuid)
+
+    role = db.Column(db.Unicode(20), default=Role.USER.value)
+    status = db.Column(db.Unicode(20), default=User_Status.NEW.value)
 
     projects = db.relationship('Project',
-        uselist=False,
+        backref='user',
         cascade='all, delete-orphan',
-        backref='user')
+        lazy='dynamic'
+    )
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
+
+    def __init__(self, username='', name='', email='', password='', role=''):
+        self.api_key = make_uuid()
+        self.username = username
+        self.email = email
+        self.password = password
+        self.role = role
+
+    def is_admin(self):
+        return (self.role == Role.ADMIN.value)
+
+    def is_authenticated(self):
+        return self.authenticated
+
+    def is_anonymous(self):
+        return self.anonymous
+
+    def is_active(self):
+        return self.active
+
+    def get_id(self):
+        return unicode(self.id)

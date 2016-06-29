@@ -5,6 +5,11 @@ class BaseConfig(object):
     HOST = '0.0.0.0'
     PORT = 8081
 
+    SECRET_KEY = 'dive'
+
+    SENTRY_DSN = 'https://c7323107b6834d55b8b776b10772988f:3a3b9f7d03dd4bcfbb5da3f1c04ee207@app.getsentry.com/75310'
+    SENTRY_USER_ATTRS = [ 'username', 'email' ]
+
     FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
 
     UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -17,7 +22,16 @@ class BaseConfig(object):
     RECOMPUTE_VIZ_SPECS = True
     RECOMPUTE_STATISTICS = True
 
+    PROPAGATE_EXCEPTIONS = True
+
     COMPRESS = True
+
+    SQLALCHEMY_POOL_SIZE=20
+    SQLALCHEMY_MAX_OVERFLOW=100
+
+    COOKIE_DOMAIN = None
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'amqp'
@@ -40,13 +54,14 @@ class BaseConfig(object):
         'dive.tasks.visualization.__init__',
         'dive.tasks.visualization.data',
         'dive.tasks.visualization.enumerate_specs',
+        'dive.tasks.visualization.score_specs',
+        'dive.tasks.visualization.spec_pipeline',
+        'dive.tasks.visualization.type_mapping',
         'dive.tasks.visualization.marginal_spec_functions.single_field_single_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.single_field_multi_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.multi_field_single_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.mixed_field_multi_type_specs',
         'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',
-        'dive.tasks.visualization.score_specs',
-        'dive.tasks.visualization.spec_pipeline',
         'dive.tasks.transformation.join',
         'dive.tasks.transformation.pivot',
         'dive.tasks.transformation.reduce',
@@ -63,6 +78,10 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
+
+    COOKIE_DOMAIN = '.usedive.com'
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     COMPRESS = False
 

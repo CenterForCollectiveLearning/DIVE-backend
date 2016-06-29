@@ -12,7 +12,10 @@ from scipy.stats import ttest_ind
 
 from dive.db import db_access
 from dive.data.access import get_data
+from dive.task_core import task_app
 from dive.tasks.ingestion.utilities import get_unique
+from dive.tasks.ingestion.binning import get_num_bins
+from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 from dive.tasks.ingestion.binning import get_bin_edges, get_bin_decimals
@@ -24,7 +27,8 @@ def create_one_dimensional_contingency_table_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = create_one_dimensional_contingency_table(df, comparison_variable, dep_variable)
@@ -36,19 +40,21 @@ def create_contingency_table_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = create_contingency_table(df, comparison_variables, dep_variable)
     return comparison_result, 200
 
-def get_variable_summary_statistics_from_spec(spec, project_id):
+def run_summary_from_spec(spec, project_id):
     summary_statistics_result = {}
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")
-    field_properties = db_access.get_field_properties(project_id, dataset_id)
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        field_properties = db_access.get_field_properties(project_id, dataset_id)
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     field_ids = set(field_ids)
@@ -488,7 +494,6 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
     for index in df.index:
         col = parse_variable(0, index, variable_type_summary, df)
         row = parse_variable(1, index, variable_type_summary, df)
-        logger.info('%s %s %s', index, col, row)
         if count_dict.get(row):
             if count_dict[row].get(col):
                 count_dict[row][col]+= 1
@@ -617,6 +622,7 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     num_bins: a number represents how many bins there are
     '''
     def searchIndex(nums, target, length, index):
+        length = int(length)
         mid = length/2
         if length == 1:
             if target <= nums[0]:
@@ -632,7 +638,7 @@ def find_bin(target, binningEdges, binningNames, num_bins):
             return searchIndex(nums[mid:], target, length-mid, index+mid)
 
     #subtraction of 1 since indexing starts at 0
-    return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
+    return binningNames[searchIndex(binningEdges, target, num_bins, 0) - 1]
 
 
 def run_numerical_comparison_from_spec(spec, project_id):
@@ -642,7 +648,8 @@ def run_numerical_comparison_from_spec(spec, project_id):
     if not (len(variable_names) >= 2 and dataset_id):
         return 'Not passed required parameters', 400
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     comparison_result = run_valid_comparison_tests(df, variable_names, independence)
@@ -680,10 +687,12 @@ def run_comparison_from_spec(spec, project_id):
     if not (dataset_id and dep):
         return 'Not passed required parameters', 400
 
-    fields = db_access.get_field_properties(project_id, dataset_id)
+    with task_app.app_context():
+        fields = db_access.get_field_properties(project_id, dataset_id)
 
     # 2) Access dataset
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     # 3) Run test based on parameters and arguments
@@ -801,3 +810,13 @@ def get_valid_tests(equal_var, independent, normal, num_samples):
             valid_tests['friedmanchisquare'] = stats.friedmanchisquare
 
     return valid_tests
+
+
+def save_summary(spec, result, project_id):
+    with task_app.app_context():
+        existing_summary_doc = db_access.get_summary_from_spec(project_id, spec)
+        if existing_summary_doc:
+            db_access.delete_summary(project_id, existing_summary_doc['id'])
+        result = replace_unserializable_numpy(result)
+        inserted_summary = db_access.insert_summary(project_id, spec, result)
+        return inserted_summary

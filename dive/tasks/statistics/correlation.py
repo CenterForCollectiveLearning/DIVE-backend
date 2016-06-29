@@ -13,7 +13,9 @@ from scipy.stats import ttest_ind
 
 from dive.db import db_access
 from dive.data.access import get_data
+from dive.task_core import task_app
 from dive.tasks.ingestion.utilities import get_unique
+from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -23,7 +25,8 @@ def run_correlation_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
     correlation_variables = spec.get("correlationVariables")
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
     correlation_result = run_correlation(df, correlation_variables)
@@ -55,10 +58,11 @@ def run_correlation(df, correlation_variables):
     return correlation_result
 
 
-def get_correlation_scatterplot_data(correlation_spec, project_id, max_points=500):
+def get_correlation_scatterplot_data(correlation_spec, project_id, max_points=300):
     correlation_variables = correlation_spec['correlationVariables']
     dataset_id = correlation_spec['datasetId']
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    with task_app.app_context():
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
     if len(df) > max_points:
         df = df.sample(n=max_points)
@@ -80,8 +84,10 @@ def get_correlation_scatterplot_data(correlation_spec, project_id, max_points=50
 
 
 def save_correlation(spec, result, project_id):
-    existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec)
-    if existing_correlation_doc:
-        db_access.delete_correlation(project_id, existing_correlation_doc['id'])
-    inserted_correlation = db_access.insert_correlation(project_id, spec, result)
-    return inserted_correlation
+    with task_app.app_context():
+        existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec)
+        if existing_correlation_doc:
+            db_access.delete_correlation(project_id, existing_correlation_doc['id'])
+        result = replace_unserializable_numpy(result)
+        inserted_correlation = db_access.insert_correlation(project_id, spec, result)
+        return inserted_correlation

@@ -2,13 +2,13 @@ import time
 from flask import current_app, request, make_response
 from flask.ext.restful import Resource, reqparse
 
-
 from dive.db import db_access
-from dive.resources.serialization import replace_unserializable_numpy, jsonify
-from dive.tasks.statistics.regression import run_regression_from_spec, save_regression, get_contribution_to_r_squared_data
-from dive.tasks.statistics.summary import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
-from dive.tasks.statistics.correlation import run_correlation_from_spec, get_correlation_scatterplot_data, save_correlation
-from dive.tasks.statistics.comparison_tests import run_anova_from_spec, run_numerical_comparison_from_spec
+from dive.resources.serialization import jsonify
+
+from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
+from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
+from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
+from dive.tasks.handlers import error_handler
 
 import logging
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ timeFromParamsPostParser.add_argument('sizeArray', type=int, location='json')
 timeFromParamsPostParser.add_argument('funcArraySize', type=int, location='json')
 class RegressionEstimator(Resource):
     def post(self):
-        args = request.json
+        args = timeFromParamsPostParser.parse_args()
         # TODO Implement required parameters
         numInputs = args.get('numInputs')
         sizeArray = args.get('sizeArray')
@@ -35,6 +35,19 @@ class RegressionEstimator(Resource):
         return make_response(jsonify(result))
 
 
+contributionToRSquaredGetParser = reqparse.RequestParser()
+contributionToRSquaredGetParser.add_argument('projectId', type=str)
+class ContributionToRSquared(Resource):
+    def get(self, regression_id):
+        args = contributionToRSquaredGetParser.parse_args()
+        project_id = args.get('projectId')
+        regression_doc = db_access.get_regression_by_id(regression_id, project_id)
+        regression_data = regression_doc['data']
+        data = get_contribution_to_r_squared_data(regression_data)
+        logger.info(data)
+        return jsonify({ 'data': data })
+
+
 #####################################################################
 # Endpoint returning regression data given a specification
 # INPUT: project_id, spec
@@ -42,7 +55,7 @@ class RegressionEstimator(Resource):
 #####################################################################
 regressionPostParser = reqparse.RequestParser()
 regressionPostParser.add_argument('projectId', type=str, location='json')
-regressionPostParser.add_argument('spec', type=str, location='json')
+regressionPostParser.add_argument('spec', type=dict, location='json')
 class RegressionFromSpec(Resource):
     def post(self):
         '''
@@ -57,7 +70,7 @@ class RegressionFromSpec(Resource):
             datasetId
         }
         '''
-        args = request.get_json()
+        args = regressionPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
 
@@ -65,43 +78,25 @@ class RegressionFromSpec(Resource):
         if regression_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             regression_data = regression_doc['data']
             regression_data['id'] = regression_doc['id']
+
+            exported_regression_doc = db_access.get_exported_regression_by_regression_id(project_id, regression_doc['id'])
+            if exported_regression_doc:
+                regression_data['exported'] = True
+                regression_data['exportedRegressionId'] = exported_regression_doc['id']
+            else:
+                regression_data['exported'] = False
+            return jsonify(regression_data)
         else:
-            regression_data, status = run_regression_from_spec(spec, project_id)
-            serializable_regression_data = replace_unserializable_numpy(regression_data)
-            regression_doc = save_regression(spec, serializable_regression_data, project_id)
-            regression_data['id'] = regression_doc['id']
+            regression_task = regression_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
 
-        logger.info(regression_data)
-        return make_response(jsonify(regression_data))
+            return jsonify({
+                'task_id': regression_task.task_id,
+                'compute': True
+            }, status=202)
 
-
-contributionToRSquaredGetParser = reqparse.RequestParser()
-contributionToRSquaredGetParser.add_argument('projectId', type=str)
-class ContributionToRSquared(Resource):
-    def get(self, regression_id):
-        args = contributionToRSquaredGetParser.parse_args()
-        project_id = args.get('projectId')
-        regression_doc = db_access.get_regression_by_id(regression_id, project_id)
-        regression_data = regression_doc['data']
-        data = get_contribution_to_r_squared_data(regression_data)
-        logger.info(data)
-        return make_response(jsonify({ 'data': data }))
-
-
-class NumericalComparisonFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            variable_names : list names
-            dataset_id : integer
-            independence : boolean
-        }
-        '''
-        args = request.get_json()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
 
 class AnovaFromSpec(Resource):
     def post(self):
@@ -118,6 +113,9 @@ class AnovaFromSpec(Resource):
         result, status = run_anova_from_spec(spec, project_id)
         return make_response(jsonify(result), status)
 
+summaryPostParser = reqparse.RequestParser()
+summaryPostParser.add_argument('projectId', type=str, location='json')
+summaryPostParser.add_argument('spec', type=dict, location='json')
 class SummaryStatsFromSpec(Resource):
     def post(self):
         '''
@@ -126,12 +124,29 @@ class SummaryStatsFromSpec(Resource):
             fieldIds : list
         }
         '''
-        args = request.get_json()
+        args = summaryPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = get_variable_summary_statistics_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
 
+        summary_doc = db_access.get_summary_from_spec(project_id, spec)
+        if summary_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            summary_data = summary_doc['data']
+            summary_data['id'] = summary_doc['id']
+            return jsonify(summary_data)
+        else:
+            summary_task = summary_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+
+            return jsonify({
+                'task_id': summary_task.task_id,
+                'compute': True
+            }, status=202)
+
+oneDimensionalTableFromSpecPostParser = reqparse.RequestParser()
+oneDimensionalTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
+oneDimensionalTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
 class OneDimensionalTableFromSpec(Resource):
     def post(self):
         '''
@@ -142,12 +157,29 @@ class OneDimensionalTableFromSpec(Resource):
             dependentVariable
         }
         '''
-        args = request.get_json()
+        args = oneDimensionalTableFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
 
+        table_doc = db_access.get_summary_from_spec(project_id, spec)
+        if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            table_data = table_doc['data']
+            table_data['id'] = table_doc['id']
+            return jsonify(table_data)
+        else:
+            table_task = one_dimensional_contingency_table_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+            return jsonify({
+                'task_id': table_task.task_id,
+                'compute': True
+            }, status=202)
+
+
+contingencyTableFromSpecPostParser = reqparse.RequestParser()
+contingencyTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
+contingencyTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
 class ContingencyTableFromSpec(Resource):
     def post(self):
         '''
@@ -158,12 +190,30 @@ class ContingencyTableFromSpec(Resource):
             dependentVariable
         }
         '''
-        args = request.get_json()
+        args = contingencyTableFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
-        result, status = create_contingency_table_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
 
+        table_doc = db_access.get_summary_from_spec(project_id, spec)
+
+        if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            table_data = table_doc['data']
+            table_data['id'] = table_doc['id']
+            return jsonify(table_data)
+        else:
+            table_task = contingency_table_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+            return jsonify({
+                'task_id': table_task.task_id,
+                'compute': True
+            }, status=202)
+
+
+correlationsFromSpecPostParser = reqparse.RequestParser()
+correlationsFromSpecPostParser.add_argument('projectId', type=str, location='json')
+correlationsFromSpecPostParser.add_argument('spec', type=dict, location='json')
 class CorrelationsFromSpec(Resource):
     def post(self):
         '''
@@ -172,7 +222,7 @@ class CorrelationsFromSpec(Resource):
             correlationVariables
         }
         '''
-        args = request.get_json()
+        args = correlationsFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
 
@@ -180,13 +230,24 @@ class CorrelationsFromSpec(Resource):
         if correlation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             correlation_data = correlation_doc['data']
             correlation_data['id'] = correlation_doc['id']
-        else:
-            correlation_data, status = run_correlation_from_spec(spec, project_id)
-            serializable_correlation_data = replace_unserializable_numpy(correlation_data)
-            correlation_doc = save_correlation(spec, serializable_correlation_data, project_id)
-            correlation_data['id'] = correlation_doc['id']
 
-        return make_response(jsonify(correlation_data))
+            exported_correlation_doc = db_access.get_exported_correlation_by_correlation_id(project_id, correlation_doc['id'])
+            if exported_correlation_doc:
+                correlation_data['exported'] = True
+                correlation_data['exportedCorrelationId'] = exported_correlation_doc['id']
+            else:
+                correlation_data['exported'] = False
+            return jsonify(correlation_data)
+        else:
+            correlation_task = correlation_pipeline.apply_async(
+                args = [spec, project_id],
+                link_error = error_handler.s()
+            )
+
+            return jsonify({
+                'task_id': correlation_task.task_id,
+                'compute': True
+            }, status=202)
 
 
 correlationScatterplotGetParser = reqparse.RequestParser()
@@ -198,21 +259,4 @@ class CorrelationScatterplot(Resource):
         correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id)
         correlation_spec = correlation_doc['spec']
         data = get_correlation_scatterplot_data(correlation_spec, project_id)
-        return make_response(jsonify({ 'data': data }))
-
-
-class ComparisonFromSpec(Resource):
-    def post(self):
-        args = request.get_json()
-        project_id = args.get('project_id')
-        spec = args.get('spec')
-        result, status = run_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
-
-
-class SegmentationFromSpec(Resource):
-    def post(self):
-        args = request.get_json()
-        project_id = args.get('project_id')
-        spec = args.get('spec')
-        return
+        return jsonify({ 'data': data })

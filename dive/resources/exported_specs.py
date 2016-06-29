@@ -27,7 +27,7 @@ class VisualizationFromExportedSpec(Resource):
             'spec': spec,
             'visualization': spec['data']
         }
-        return make_response(jsonify(result))
+        return jsonify(result)
 
 
 exportedSpecsGetParser = reqparse.RequestParser()
@@ -45,7 +45,7 @@ class ExportedSpecs(Resource):
         project_id = args.get('project_id').strip().strip('"')
 
         exported_specs = db_access.get_exported_specs(project_id)
-        return make_response(jsonify({'result': exported_specs, 'length': len(exported_specs)}))
+        return jsonify({'result': exported_specs, 'length': len(exported_specs)})
 
     def post(self):
         args = exportedSpecsPostParser.parse_args()
@@ -66,4 +66,4 @@ class ExportedSpecs(Resource):
             }
         else:
             result = db_access.insert_exported_spec(project_id, spec_id, data, conditionals, config)
-        return make_response(jsonify(result))
+        return jsonify(result)
