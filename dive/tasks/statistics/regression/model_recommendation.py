@@ -34,3 +34,12 @@ def construct_models(dependent_variable, independent_variables):
         patsy_models.append(model)
 
     return ( regression_variable_combinations, patsy_models )
+
+def recommend_regression_type(dependent_variable):
+    dependent_variable_to_regression_type = {
+        'c': 'logistic',
+        'q': 'linear',
+        't': 'linear'
+    }
+
+    return dependent_variable_to_regression_type[dependent_variable['general_type']]
