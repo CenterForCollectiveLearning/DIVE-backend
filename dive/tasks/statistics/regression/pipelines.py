@@ -6,6 +6,7 @@ from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.discrete import discrete_model
+from sklearn.linear_model import LogisticRegression
 
 from collections import OrderedDict
 from time import time
@@ -34,7 +35,6 @@ def run_regression_from_spec(spec, project_id):
     4) Run regressions described by those models
     5) Format results
     '''
-    # 1) Parse and validate arguments
     model = spec.get('model', 'lr')
     regression_type = spec.get('regressionType')
     independent_variables_names = spec.get('independentVariables', [])
@@ -57,6 +57,7 @@ def run_regression_from_spec(spec, project_id):
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type=regression_type)
 
     formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model)
+
     return formatted_results, 200
 
 
@@ -106,8 +107,6 @@ def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, 
         'logistic': run_logistic_regression,
         'polynomial': run_polynomial_regression
     }
-
-    print 'recommending', regression_type, 'regression'
 
     # Iterate over and run each models
     for patsy_model in patsy_models:
@@ -170,7 +169,6 @@ def run_linear_regression(df, patsy_model, dependent_variable, estimator, weight
 
 def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weights):
 
-    print 'in run logistic regression'
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
     model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
@@ -200,6 +198,7 @@ def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weig
     }
 
     regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
+
     return regression_results
 
 def run_polynomial_regression():
@@ -244,111 +243,6 @@ def restructure_field_properties_dict(constants, regression_field_properties, to
         'properties_by_field': properties_by_field_collection,
         'total_regression_properties': total_regression_properties
     }
-
-def multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights=None):
-    y, X = dmatrices(patsy_model, df, return_type='dataframe')
-
-    if dependent_variable['general_type'] in [ 'q', 't' ]:
-        model_result = sm.OLS(y, X).fit()
-
-        p_values = model_result.pvalues.to_dict()
-        t_values = model_result.tvalues.to_dict()
-        params = model_result.params.to_dict()
-        ste = model_result.bse.to_dict()
-        conf_ints = parse_confidence_intervals(model_result)
-
-        constants = {
-            'p_value': p_values.get('Intercept'),
-            't_value': t_values.get('Intercept'),
-            'coefficient': params.get('Intercept'),
-            'standard_error': ste.get('Intercept'),
-            'conf_int': conf_ints.get('Intercept')
-        }
-
-        regression_field_properties = {
-            'p_value': p_values,
-            't_value': t_values,
-            'coefficient': params,
-            'standard_error': ste,
-            'conf_int': conf_ints
-        }
-
-        total_regression_properties = {
-            'aic': model_result.aic,
-            'bic': model_result.bic,
-            'dof': model_result.nobs,
-            'r_squared': model_result.rsquared,
-            'r_squared_adj': model_result.rsquared_adj,
-            'f_test': model_result.fvalue,
-            # 'resid': model_result.resid.tolist()
-        }
-
-    elif dependent_variable['general_type'] == 'c':
-        model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
-
-        p_values = model_result.pvalues[0].to_dict()
-        t_values = model_result.tvalues[0].to_dict()
-        params = model_result.params[0].to_dict()
-        ste = model_result.bse[0].to_dict()
-
-        constants = {
-            'p_value': p_values.get('Intercept'),
-            't_value': t_values.get('Intercept'),
-            'coefficient': params.get('Intercept'),
-            'standard_error': ste.get('Intercept')
-        }
-
-        regression_field_properties = {
-            'p_value': p_values,
-            't_value': t_values,
-            'coefficient': params,
-            'standard_error': ste
-        }
-
-        total_regression_properties = {
-            'aic': model_result.aic,
-            'bic': model_result.bic,
-        }
-
-    categorical_field_values = {}
-
-    # Restructure field properties dict from
-    # { property: { field: value }} -> [ field: field, properties: { property: value } ]
-    properties_by_field_dict = {}
-
-    for prop_type, field_names_and_values in regression_field_properties.iteritems():
-        for field_name, value in field_names_and_values.iteritems():
-            if field_name in properties_by_field_dict:
-                properties_by_field_dict[field_name][prop_type] = value
-            else:
-                properties_by_field_dict[field_name] = { prop_type: value }
-
-    properties_by_field_collection = []
-    for field_name, properties in properties_by_field_dict.iteritems():
-        new_doc = {
-            'field': field_name
-        }
-        base_field, value_field = _get_fields_categorical_variable(field_name)
-        new_doc['base_field'] = base_field
-        new_doc['value_field'] = value_field
-        new_doc.update(properties)
-
-        # Update list mapping categorical fields to values
-        if value_field:
-            if base_field not in categorical_field_values:
-                categorical_field_values[base_field] = [ value_field ]
-            else:
-                categorical_field_values[base_field].append(value_field)
-
-        properties_by_field_collection.append(new_doc)
-
-    return {
-        'constants': constants,
-        'categorical_field_values': categorical_field_values,
-        'properties_by_field': properties_by_field_collection,
-        'total_regression_properties': total_regression_properties
-    }
-
 
 def _get_fields_categorical_variable(s):
     '''
