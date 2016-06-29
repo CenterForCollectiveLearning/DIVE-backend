@@ -192,9 +192,14 @@ def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weig
         'standard_error': ste
     }
 
+    print 'rsq', model_result.prsquared
+
     total_regression_properties = {
         'aic': model_result.aic,
         'bic': model_result.bic,
+        'r_squared': model_result.prsquared,
+        'r_squared_adj': model_result.prsquared
+        # 'f_test': model_result.f_test
     }
 
     regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
