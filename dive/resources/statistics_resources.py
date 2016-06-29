@@ -5,6 +5,8 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.serialization import jsonify
 
+from dive.tasks.statistics.comparison_tests import run_anova_from_spec
+from dive.tasks.statistics.comparison import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
 from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
@@ -112,6 +114,24 @@ class AnovaFromSpec(Resource):
         spec = args.get('spec')
         result, status = run_anova_from_spec(spec, project_id)
         return make_response(jsonify(result), status)
+
+
+
+class NumericalComparisonFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            variable_names : list names
+            dataset_id : integer
+            independence : boolean
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_numerical_comparison_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
+
 
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=str, location='json')
