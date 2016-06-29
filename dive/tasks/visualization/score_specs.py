@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from scipy.stats import entropy, normaltest, mode, pearsonr, linregress
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure
@@ -70,7 +71,7 @@ def get_statistical_properties(data, gp, ts):
     # Single quantitative field:
     if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.liC_Q.value]:
         if gp in [ GeneratingProcedure.VAL_AGG.value ]:
-            v = data.get('aggField')
+            v = data.get('agg_field')
         elif gp in [ GeneratingProcedure.IND_VAL.value ]:
             v = data.get('val')
         elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
@@ -84,8 +85,9 @@ def get_statistical_properties(data, gp, ts):
                 test_value = test_fn(v)
                 if np.isnan(test_value) or np.isinf(test_value):
                     test_value = None
-            except:
+            except Exception as e:
                 logger.debug('Failed scoring for test %s, gp %s, ts %s', test_name, gp, ts)
+                logger.debug(e)
 
             stat_docs.append({
                 'type': test_name,
@@ -100,8 +102,8 @@ def get_statistical_properties(data, gp, ts):
 
     elif ts in [TypeStructure.Q_Q.value]:
         stat_docs = []
-        v1 = data.get('fieldA')
-        v2 = data.get('fieldB')
+        v1 = data.get('field_a')
+        v2 = data.get('field_b')
         for test_name, test_fn in univariate_tests.iteritems():
             test_value = None
             try:
@@ -131,7 +133,9 @@ def get_relevance_score(spec, visualization_field_ids, selected_fields):
     score = 0
     for field in selected_fields:
         if field['field_id'] in visualization_field_ids:
-            score = score + 10
+            score = score + 1
+    if len(selected_fields):
+        score = score / len(selected_fields)
     return score
 
 

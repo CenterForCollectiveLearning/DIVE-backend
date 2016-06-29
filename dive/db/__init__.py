@@ -9,7 +9,19 @@ class ModelName(Enum):
     EXPORTED_SPEC = 'exported_spec'
     REGRESSION = 'regression'
     EXPORTED_REGRESSION = 'exported_regression'
+    SUMMARY = 'summary'
+    EXPORTED_SUMMARY = 'exported_summary'
+    CORRELATION = 'correlation'
+    EXPORTED_CORRELATION = 'exported_correlation'
     DOCUMENT = 'document'
     RELATIONSHIP = 'relationship'
     GROUP = 'group'
     USER = 'user'
+
+
+def row_to_dict(r, custom_fields=[]):
+    d = { c.name: getattr(r, c.name) for c in r.__table__.columns }
+    if custom_fields:
+        for custom_field in custom_fields:
+            d[custom_field] = getattr(r, custom_field)
+    return d
