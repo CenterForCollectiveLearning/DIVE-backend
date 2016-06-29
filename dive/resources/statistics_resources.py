@@ -97,6 +97,22 @@ class RegressionFromSpec(Resource):
                 'compute': True
             }, status=202)
 
+
+class AnovaFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = request.get_json()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_anova_from_spec(spec, project_id)
+        return make_response(jsonify(result), status)
+
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=str, location='json')
 summaryPostParser.add_argument('spec', type=dict, location='json')
