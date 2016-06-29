@@ -17,7 +17,7 @@ from patsy import dmatrices
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import celery, task_app
-from dive.tasks.statistics.regression.model_recommendation import construct_models
+from dive.tasks.statistics.regression.model_recommendation import construct_models, recommend_regression_type
 from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
 from dive.resources.serialization import replace_unserializable_numpy
 
@@ -95,14 +95,19 @@ def get_full_field_documents_from_field_names(all_fields, names):
     return fields
 
 
-def run_models(df, patsy_models, dependent_variable, regression_type='linear', degree=1, functions=[], estimator='ols', weights=None):
+def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
+
+    if not regression_type:
+        regression_type = recommend_regression_type(dependent_variable)
 
     map_function_to_type = {
         'linear': run_linear_regression,
         'logistic': run_logistic_regression,
         'polynomial': run_polynomial_regression
     }
+
+    print 'recommending', regression_type, 'regression'
 
     # Iterate over and run each models
     for patsy_model in patsy_models:
@@ -195,7 +200,6 @@ def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weig
     }
 
     regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
-    print 'regression results!', regression_results
     return regression_results
 
 def run_polynomial_regression():
@@ -356,7 +360,6 @@ def _get_fields_categorical_variable(s):
     if '[' in s:
         base_field = s.split('[')[0]
         value_field = s.split('[T.')[1].strip(']')
-        print base_field, value_field
     return base_field, value_field
 
 
