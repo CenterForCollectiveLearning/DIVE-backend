@@ -163,8 +163,40 @@ def run_linear_regression(df, patsy_model, dependent_variable, estimator, weight
 
     return regression_results
 
-def run_logistic_regression():
-    return
+def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weights):
+
+    print 'in run logistic regression'
+    y, X = dmatrices(patsy_model, df, return_type='dataframe')
+
+    model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
+
+    p_values = model_result.pvalues[0].to_dict()
+    t_values = model_result.tvalues[0].to_dict()
+    params = model_result.params[0].to_dict()
+    ste = model_result.bse[0].to_dict()
+
+    constants = {
+        'p_value': p_values.get('Intercept'),
+        't_value': t_values.get('Intercept'),
+        'coefficient': params.get('Intercept'),
+        'standard_error': ste.get('Intercept')
+    }
+
+    regression_field_properties = {
+        'p_value': p_values,
+        't_value': t_values,
+        'coefficient': params,
+        'standard_error': ste
+    }
+
+    total_regression_properties = {
+        'aic': model_result.aic,
+        'bic': model_result.bic,
+    }
+
+    regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
+    print 'regression results!', regression_results
+    return regression_results
 
 def run_polynomial_regression():
     return
