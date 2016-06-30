@@ -11,8 +11,6 @@ def get_contribution_to_r_squared_data(regression_result):
         r_squared_adj = column_properties['r_squared_adj']
         fields = regression_by_column['regressed_fields']
 
-        print fields
-
         if len(fields) not in considered_fields_length_to_names:
             considered_fields_length_to_names[len(fields)] = [ fields ]
         else:

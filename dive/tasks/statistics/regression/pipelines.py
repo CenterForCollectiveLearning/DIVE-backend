@@ -236,8 +236,12 @@ def _get_fields_categorical_variable(s):
 
 def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model):
     # Initialize returned data structures
-    independent_variable_names = [ iv['name'] for iv in independent_variables ]
-    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
+    unique_considered_independent_variables = set()
+    for considered_independent_variables in considered_independent_variables_per_model:
+        for considered_independent_variable in considered_independent_variables:
+            unique_considered_independent_variables.add(considered_independent_variable['name'])
+
+    regression_fields_dict = OrderedDict([(ivn, None) for ivn in unique_considered_independent_variables])
     regression_results = {
         'regressions_by_column': [],
     }
