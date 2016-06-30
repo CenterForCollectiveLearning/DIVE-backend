@@ -1,20 +1,58 @@
+import numpy as np
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
+import statsmodels.api as sm
+from sklearn import linear_model
+from sklearn.feature_selection import SelectFromModel
+
+from dive.tasks.statistics.regression import ModelSelectionType as MST
+
 
 def create_patsy_model(dependent_variable, independent_variables):
     '''
     Construct and return patsy formula (object representation)
+
+    TODO: Take both names and field documents
     '''
     lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
     rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
     return ModelDesc(lhs, rhs)
 
 
-def construct_models(dependent_variable, independent_variables):
+def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
+    patsy_models = []
+    for regression_variable_combination in regression_variable_combinations:
+        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        patsy_models.append(model)
+    return patsy_models
+
+
+def construct_models(df, dependent_variable, independent_variables, model_limit=8, selection_type=MST.FORWARD_R2.value):
     '''
     Given dependent and independent variables, return list of patsy model.
 
+    Classify into different systems:
+        1) Whether data is involved
+        2) Whether the final regressions are actually run in the process
+
     regression_variable_combinations = [ [x], [x, y], [y, z] ]
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
+    '''
+    model_selection_name_to_function = {
+        MST.ALL_BUT_ONE.value: all_but_one,
+        MST.LASSO.value: lasso,
+        MST.FORWARD_R2.value: forward_r2,
+    }
+    model_selection_function = model_selection_name_to_function[selection_type]
+    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables)
+    patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
+
+    print regression_variable_combinations, patsy_models
+    return ( regression_variable_combinations, patsy_models )
+
+
+def all_but_one(df, dependent_variable, independent_variables, model_limit=8):
+    '''
+    Return one model with all variables, and N-1 models with one variable left out
     '''
     # Create list of independent variables, one per regression
     regression_variable_combinations = []
@@ -27,10 +65,74 @@ def construct_models(dependent_variable, independent_variables):
             regression_variable_combinations.append(all_fields_except_considered_field)
     regression_variable_combinations.append(independent_variables)
 
-    # Create patsy models
-    patsy_models = []
-    for regression_variable_combination in regression_variable_combinations:
-        model = create_patsy_model(dependent_variable, regression_variable_combination)
-        patsy_models.append(model)
+    return regression_variable_combinations
 
-    return ( regression_variable_combinations, patsy_models )
+
+def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
+    '''
+    Return forward selection model based on r-squared.
+
+    For now: linear model
+    '''
+    # Create list of independent variables, one per regression
+    regression_variable_combinations = []
+
+    MARGINAL_THRESHOLD = 0.1
+
+    last_variable_set = []
+    last_r2 = 0
+    remaining_variables = independent_variables
+
+    for number_considered_variables in range(0, len(independent_variables)):
+        r2s = []
+        for variable in remaining_variables:
+            considered_variables = last_variable_set + [ variable ]
+
+            patsy_model = create_patsy_model(dependent_variable, considered_variables)
+            y, X = dmatrices(patsy_model, df, return_type='dataframe')
+            model_result = sm.OLS(y, X).fit()
+            r_squared_adj = model_result.rsquared_adj
+            r2s.append(r_squared_adj)
+
+        max_r2 = max(r2s)
+        marginal_r2 = max_r2 - last_r2
+        print marginal_r2
+        print [ v['name'] for v in last_variable_set ]
+
+        if marginal_r2 < MARGINAL_THRESHOLD:
+            break
+
+        last_r2 = max_r2
+        max_index = r2s.index(max_r2)
+        max_variable = remaining_variables[max_index]
+        last_variable_set.append(max_variable)
+        remaining_variables.remove(max_variable)
+        regression_variable_combinations.append(last_variable_set)
+
+    return regression_variable_combinations
+
+
+def lasso(df, dependent_variable, independent_variables, model_limit=8):
+    '''
+    Return one model with all variables, and N-1 models with one variable left out
+    '''
+    # Create list of independent variables, one per regression
+    regression_variable_combinations = []
+
+    full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
+    y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
+
+    clf.fit(X, y)
+    fit_coef = clf.coef_
+    column_means = np.apply_along_axis(np.mean, 1, X)
+
+    clf = linear_model.Lasso(alpha = 0.1)
+
+    regression_variable_combination = []
+    for i, independent_variable in enumerate(independent_variables):
+        if abs(fit_coef[i]) >= column_means[i]:
+            regression_variable_combination.append(independent_variable)
+        print independent_variable['name'], fit_coef[i], (abs(fit_coef[i]) < column_means[i])
+    regression_variable_combinations.append(regression_variable_combination)
+
+    return regression_variable_combinations

@@ -51,7 +51,7 @@ def run_regression_from_spec(spec, project_id):
         load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id)
 
     considered_independent_variables_per_model, patsy_models = \
-        construct_models(dependent_variable, independent_variables)
+        construct_models(df, dependent_variable, independent_variables)
 
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type=regression_type)
 
