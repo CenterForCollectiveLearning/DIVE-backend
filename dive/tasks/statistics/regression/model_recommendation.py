@@ -6,6 +6,8 @@ from sklearn.feature_selection import SelectFromModel
 
 from dive.tasks.statistics.regression import ModelSelectionType as MST
 
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
 def create_patsy_model(dependent_variable, independent_variables):
     '''
@@ -23,6 +25,8 @@ def convert_regression_variable_combinations_to_patsy_models(dependent_variable,
     for regression_variable_combination in regression_variable_combinations:
         model = create_patsy_model(dependent_variable, regression_variable_combination)
         patsy_models.append(model)
+
+    print patsy_models
     return patsy_models
 
 
@@ -44,9 +48,12 @@ def construct_models(df, dependent_variable, independent_variables, model_limit=
     }
     model_selection_function = model_selection_name_to_function[selection_type]
     regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables)
+
+    rvcs_parsed = []
+    for rvc in regression_variable_combinations:
+        rvcs_parsed.append([v['name'] for v in rvc])
     patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
 
-    print regression_variable_combinations, patsy_models
     return ( regression_variable_combinations, patsy_models )
 
 
@@ -74,13 +81,12 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
 
     For now: linear model
     '''
-    # Create list of independent variables, one per regression
     regression_variable_combinations = []
 
     MARGINAL_THRESHOLD = 0.1
 
+    last_r2 = 0.0
     last_variable_set = []
-    last_r2 = 0
     remaining_variables = independent_variables
 
     for number_considered_variables in range(0, len(independent_variables)):
@@ -96,18 +102,16 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
 
         max_r2 = max(r2s)
         marginal_r2 = max_r2 - last_r2
-        print marginal_r2
-        print [ v['name'] for v in last_variable_set ]
+        max_variable = remaining_variables[r2s.index(max_r2)]
 
         if marginal_r2 < MARGINAL_THRESHOLD:
             break
 
         last_r2 = max_r2
-        max_index = r2s.index(max_r2)
-        max_variable = remaining_variables[max_index]
         last_variable_set.append(max_variable)
         remaining_variables.remove(max_variable)
-        regression_variable_combinations.append(last_variable_set)
+
+        regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
 
     return regression_variable_combinations
 
