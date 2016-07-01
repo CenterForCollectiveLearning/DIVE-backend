@@ -100,23 +100,9 @@ class RegressionFromSpec(Resource):
             }, status=202)
 
 
-class AnovaFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            dataset_id
-            independent_variables - list names, must be categorical
-            dependent_variables - list names, must be numerical
-        }
-        '''
-        args = request.get_json()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        result, status = run_anova_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
-
-
-
+numericalComparisonPostParser = reqparse.RequestParser()
+numericalComparisonPostParser.add_argument('projectId', type=str, location='json')
+numericalComparisonPostParser.add_argument('spec', type=dict, location='json')
 class NumericalComparisonFromSpec(Resource):
     def post(self):
         '''
@@ -126,11 +112,30 @@ class NumericalComparisonFromSpec(Resource):
             independence : boolean
         }
         '''
-        args = request.get_json()
+        args = numericalComparisonPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
+        return jsonify(result)
+
+
+anovaPostParser = reqparse.RequestParser()
+anovaPostParser.add_argument('projectId', type=str, location='json')
+anovaPostParser.add_argument('spec', type=dict, location='json')
+class AnovaFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = anovaPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_anova_from_spec(spec, project_id)
+        return jsonify(result)
 
 
 summaryPostParser = reqparse.RequestParser()

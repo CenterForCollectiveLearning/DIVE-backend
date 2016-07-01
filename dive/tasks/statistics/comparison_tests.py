@@ -15,18 +15,21 @@ from scipy.stats import ttest_ind
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.tasks.ingestion.utilities import get_unique
+from dive.tasks.statistics.utilities import get_design_matrices
+
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-'''
-For now, spec will be form:
-    datasetId
-    independentVariables - list names, must be categorical
-    dependentVariables - list names, must be numerical
-    numBins - number of bins for the independent quantitative variables (if they exist)
-'''
+
 def run_anova_from_spec(spec, project_id):
+    '''
+    For now, spec will be form:
+        datasetId
+        independentVariables - list names, must be categorical
+        dependentVariables - list names, must be numerical
+        numBins - number of bins for the independent quantitative variables (if they exist)
+    '''
     anova_result = {}
 
     dependent_variables = spec.get('dependentVariables', [])
@@ -39,15 +42,15 @@ def run_anova_from_spec(spec, project_id):
     anova_result = run_anova(df, independent_variables, dependent_variables)
     return anova_result, 200
 
-'''
-Returns either a dictionary with the anova stats are an empty list (if the anova test
-is not valid)
-df : dataframe
-independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
-depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
-'''
 
 def run_anova(df, independent_variables, dependent_variables):
+    '''
+    Returns either a dictionary with the anova stats are an empty list (if the anova test
+    is not valid)
+    df : dataframe
+    independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+    depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+    '''
     num_independent_variables = len(independent_variables)
     num_dependent_variables = len(dependent_variables)
 
@@ -57,14 +60,15 @@ def run_anova(df, independent_variables, dependent_variables):
 
     return []
 
-'''
-Adds the binned names as a column to the data
-The key for the binned data is of format _bins_(name of variable)
-df : dataframe
-independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
-depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
-'''
+
 def transform_data(df, independent_variables, dependent_variables):
+    '''
+    Adds the binned names as a column to the data
+    The key for the binned data is of format _bins_(name of variable)
+    df : dataframe
+    independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+    depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+    '''
     transformed_data = {}
     for independent_variable in independent_variables:
         transformed_data[independent_variable[1]] = df[independent_variable[1]]
@@ -83,33 +87,15 @@ def transform_data(df, independent_variables, dependent_variables):
     for dependent_variable in dependent_variables:
         transformed_data[dependent_variable] = df[dependent_variable]
 
-    return transformed_data
+    return pd.DataFrame.from_dict(transformed_data)
 
-'''
-Creates the appropriate patsy formula for anova
-df : dataframe
-independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
-depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
-'''
-def create_comparison_formula(dependent_variable, independent_variables):
-    formula = '%s ~ ' % dependent_variable
-    terms = []
-    for independent_variable in independent_variables:
-        terms.append(get_formatted_name(independent_variable))
-    if len(independent_variables) == 2:
-        concatenated_terms = ' * '.join(terms)
-    else:
-        concatenated_terms = ' + '.join(terms)
-    formula = formula + concatenated_terms
-    formula = formula.encode('ascii')
-    logger.info("Regression formula %s:", formula)
-    return formula
-'''
-If there are two independent variables, returns a string for the comparison_name and a string for how it would have appeared
-in the anova table result
-independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
-'''
+
 def create_comparison_names(independent_variables):
+    '''
+    If there are two independent variables, returns a string for the comparison_name and a string for how it would have appeared
+    in the anova table result
+    independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+    '''
     if len(independent_variables) != 2:
         return (None, None)
     first_variable = independent_variables[0]
@@ -118,11 +104,12 @@ def create_comparison_names(independent_variables):
     name = '%s:%s' % (independent_variables[0][1], independent_variables[1][1])
     return (formatted_name, name)
 
-'''
-Returns the formatted name of the variable
-variable: of form [type, name, num_bins (0 means will be treated as continuous)]
-'''
+
 def get_formatted_name(variable):
+    '''
+    Returns the formatted name of the variable
+    variable: of form [type, name, num_bins (0 means will be treated as continuous)]
+    '''
     if variable[0] == 'q':
         if variable[2]:
             return '_bins_%s' % variable[1]
@@ -131,24 +118,22 @@ def get_formatted_name(variable):
     else:
         return 'C(%s)' % variable[1]
 
-'''
-Returns the formatted dictionary with the anova results
-transformed_data: a dictionary with the added binned columns
-independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
-depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
-'''
+
 def anova(transformed_data, independent_variables, dependent_variable):
-    formatted_independent_variables = []
-    formatted_formula_string = create_comparison_formula(dependent_variable, independent_variables)
+    '''
+    Returns the formatted dictionary with the anova results
+    transformed_data: a dictionary with the added binned columns
+    independent_variables : list of independent_variable's, where each independent_variable is of form [type, name, num_bins (0 means will be treated as continuous)]
+    depedendent_variables : list of dependent_variable's, where each dependent_variable is of form [type, name]
+    '''
 
     formatted_comparison_name, comparison_name = create_comparison_names(independent_variables)
-
-    for independent_variable in independent_variables:
-        formatted_independent_variable = get_formatted_name(independent_variable)
-        formatted_independent_variables.append(formatted_independent_variable)
-
-    data_linear_model = ols(formatted_formula_string, data=transformed_data).fit()
+    independent_variable_names = [ iv[1] for iv in independent_variables ]
+    y, X = get_design_matrices(transformed_data, dependent_variable, independent_variable_names)
+    data_linear_model = sm.OLS(y, X).fit()
     anova_table = sm.stats.anova_lm(data_linear_model).transpose()
+
+    print 'ANOVA TABLE', anova_table
 
     column_headers = ['df', 'sum_sq', 'mean_sq', 'F', 'PR(>F)']
 
@@ -160,10 +145,10 @@ def anova(transformed_data, independent_variables, dependent_variable):
     stats_residual = []
     stats_compare = []
 
-    for formatted_independent_variable in formatted_independent_variables:
+    for independent_variable_name in independent_variable_names:
         stats_variable = []
         for header in column_headers:
-            stats_variable.append(anova_table[formatted_independent_variable][header])
+            stats_variable.append(anova_table[independent_variable_name][header])
 
         stats_main.append(stats_variable)
 
@@ -182,14 +167,13 @@ def anova(transformed_data, independent_variables, dependent_variable):
     return results
 
 
-'''
-helper function to get the formatted names and edges of the bins.
-The bins will be equally spaced, and rounded to 1 decimal place. The right edge is open.
-array: represents the array being binning_edges
-num_bins: represents how many bins we want to bin the data
-'''
-
 def find_binning_edges_equal_spaced(array, num_bins):
+    '''
+    helper function to get the formatted names and edges of the bins.
+    The bins will be equally spaced, and rounded to 1 decimal place. The right edge is open.
+    array: represents the array being binning_edges
+    num_bins: represents how many bins we want to bin the data
+    '''
     theMin = min(array)
     theMax = max(array)
 
@@ -206,14 +190,15 @@ def find_binning_edges_equal_spaced(array, num_bins):
 
     return (names, roundedEdges)
 
-'''
-helper function to find the name of the bin the target is in
-target: the number which we are trying to find the right bin
-binningEdges: an array of floats representing the edges of the bins
-binningNames: an array of strings representing the names of hte bins
-num_bins: a number represents how many bins there are
-'''
+
 def find_bin(target, binningEdges, binningNames, num_bins):
+    '''
+    helper function to find the name of the bin the target is in
+    target: the number which we are trying to find the right bin
+    binningEdges: an array of floats representing the edges of the bins
+    binningNames: an array of strings representing the names of hte bins
+    num_bins: a number represents how many bins there are
+    '''
     def searchIndex(nums, target, length, index):
         mid = length/2
         if length == 1:
