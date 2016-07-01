@@ -1,4 +1,30 @@
 from scipy import stats
+from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
+
+
+def get_design_matrices(df, dependent_variable, independent_variables):
+    patsy_model = create_patsy_model(dependent_variable, independent_variables)
+    y, X = dmatrices(patsy_model, df, return_type='dataframe')
+    return (y, X)
+
+
+def create_patsy_model(dependent_variable, independent_variables):
+    '''
+    Construct and return patsy formula (object representation)
+    '''
+    lhs_var = dependent_variable
+    rhs_vars = independent_variables
+    if 'name' in dependent_variable:
+        lhs_var = dependent_variable['name']
+    if 'name' in independent_variables[0]:
+        rhs_vars = [ iv['name'] for iv in independent_variables ]
+
+    print lhs_var
+    print rhs_vars
+
+    lhs = [ Term([LookupFactor(lhs_var)]) ]
+    rhs = [ Term([]) ] + [ Term([LookupFactor(rhs_var)]) for rhs_var in rhs_vars ]
+    return ModelDesc(lhs, rhs)
 
 
 def variations_equal(THRESHOLD, *args):

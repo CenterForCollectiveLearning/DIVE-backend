@@ -55,6 +55,7 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
+
 def run_numerical_comparison_from_spec(spec, project_id):
     comparison_result = {}
 
@@ -69,6 +70,7 @@ def run_numerical_comparison_from_spec(spec, project_id):
 
     comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)
     return comparison_result, 200
+
 
 def run_correlation_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
@@ -686,14 +688,16 @@ def run_valid_comparison_tests(df, variable_names, independence):
         args.append(df[name])
 
     results = []
-    normal = sets_normal(.25,*args)
+    normal = sets_normal(.25, *args)
     numDataSets = len(args)
-    equalVar = variations_equal(.25,*args)
+    variations_equal = variations_equal(.25, *args)
 
-    ################we are assuming independence right now
-    valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
-    for test in valid_tests:
-        results.append({'test':test, 'values':valid_tests[test](*args)})
+    # Assuming independence
+    valid_tests = get_valid_tests(variations_equal, True, normal, numDataSets)
+    results = [ {
+        'test': test,
+        'values': valid_tests[test](*args)
+    } for test in valid_tests]
 
     return results
 
