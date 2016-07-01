@@ -1,12 +1,4 @@
-from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
-
-def create_patsy_model(dependent_variable, independent_variables):
-    '''
-    Construct and return patsy formula (object representation)
-    '''
-    lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-    rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
-    return ModelDesc(lhs, rhs)
+from dive.tasks.statistics.utilities import create_patsy_model
 
 
 def construct_models(dependent_variable, independent_variables):
