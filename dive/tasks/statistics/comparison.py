@@ -13,6 +13,7 @@ from scipy.stats import ttest_ind
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.tasks.ingestion.utilities import get_unique
+from dive.tasks.statistics.utilities import variations_equal, sets_normal
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -766,22 +767,6 @@ def ttest(df, fields, indep, dep):
 ##################
 #Functions to determine which tests could be run
 ##################
-
-#return a boolean, if p-value less than threshold, returns false
-def variations_equal(THRESHOLD, *args):
-    return stats.levene(*args)[1]>THRESHOLD
-
-#if normalP is less than threshold, not considered normal
-def sets_normal(THRESHOLD, *args):
-    normal = True;
-    for arg in args:
-        if len(arg) < 8:
-            return False
-        if stats.normaltest(arg)[1] < THRESHOLD:
-            normal = False;
-
-    return normal
-
 def get_valid_tests(equal_var, independent, normal, num_samples):
     '''
     Get valid tests given number of samples and statistical characterization of
