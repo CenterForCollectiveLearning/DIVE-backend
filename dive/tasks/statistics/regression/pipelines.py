@@ -54,7 +54,7 @@ def run_regression_from_spec(spec, project_id):
     considered_independent_variables_per_model, patsy_models = \
         construct_models(dependent_variable, independent_variables)
 
-    raw_results = run_models(df, patsy_models, dependent_variable, regression_type=regression_type)
+    raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
     formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model)
 
@@ -101,6 +101,7 @@ def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, 
 
     if not regression_type:
         regression_type = recommend_regression_type(dependent_variable)
+        print 'no regression type supplied', regression_type
 
     map_function_to_type = {
         'linear': run_linear_regression,
@@ -171,7 +172,7 @@ def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weig
 
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
-    model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
+    model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False, method="nm")
 
     p_values = model_result.pvalues[0].to_dict()
     t_values = model_result.tvalues[0].to_dict()
@@ -306,7 +307,7 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'values': values
         })
     regression_results['fields'] = regression_fields_collection
-
+    print 'regression', regression_results
     return regression_results
 
 
