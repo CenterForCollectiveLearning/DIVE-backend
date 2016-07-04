@@ -5,8 +5,14 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.serialization import jsonify
 
+
+# Sync tasks
+from dive.tasks.statistics.comparison.numeric import run_numerical_comparison_from_spec
+from dive.tasks.statistics.comparison.anova import run_anova_from_spec
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
+
+# Async tasks
 from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
 from dive.tasks.handlers import error_handler
 
@@ -98,6 +104,45 @@ class RegressionFromSpec(Resource):
                 'task_id': regression_task.task_id,
                 'compute': True
             }, status=202)
+
+
+numericalComparisonPostParser = reqparse.RequestParser()
+numericalComparisonPostParser.add_argument('projectId', type=str, location='json')
+numericalComparisonPostParser.add_argument('spec', type=dict, location='json')
+class NumericalComparisonFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            variable_names : list names
+            dataset_id : integer
+            independence : boolean
+        }
+        '''
+        args = numericalComparisonPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_numerical_comparison_from_spec(spec, project_id)
+        return jsonify(result)
+
+
+anovaPostParser = reqparse.RequestParser()
+anovaPostParser.add_argument('projectId', type=str, location='json')
+anovaPostParser.add_argument('spec', type=dict, location='json')
+class AnovaFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = anovaPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_anova_from_spec(spec, project_id)
+        return jsonify(result)
+
 
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=str, location='json')

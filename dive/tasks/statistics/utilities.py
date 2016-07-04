@@ -1,7 +1,48 @@
 from scipy import stats
+from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 
 
-def variations_equal(THRESHOLD, *args):
+def get_design_matrices(df, dependent_variable, independent_variables, interactions=[]):
+    patsy_model = create_patsy_model(dependent_variable, independent_variables, interactions=interactions)
+    y, X = dmatrices(patsy_model, df, return_type='dataframe')
+    return (y, X)
+
+
+def create_patsy_model(dependent_variable, independent_variables, interactions=[]):
+    '''
+    Construct and return patsy formula (object representation)
+    '''
+    lhs_var = dependent_variable
+    rhs_vars = independent_variables
+    if 'name' in dependent_variable:
+        lhs_var = dependent_variable['name']
+    if 'name' in independent_variables[0]:
+        rhs_vars = [ iv['name'] for iv in independent_variables ]
+
+    # Parsing interaction terms
+    if interactions:
+        first_interaction = interactions[0]
+        if 'name' in first_interaction:
+            new_interactions = []
+            for interaction in interactions:
+                new_interactions.append([term['name'] for term in interaction])
+            rhs_interactions = new_interactions
+        else:
+            rhs_interactions = interactions
+
+    lhs = [ Term([LookupFactor(lhs_var)]) ]
+    rhs = [ Term([]) ] + [ Term([LookupFactor(rhs_var)]) for rhs_var in rhs_vars ]
+
+
+    if interactions:
+        rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]
+
+    model = ModelDesc(lhs, rhs)
+    print model
+    return model
+
+
+def are_variations_equal(THRESHOLD, *args):
     '''
     Return a boolean, if p-value less than threshold, returns false
     '''
@@ -14,6 +55,8 @@ def sets_normal(THRESHOLD, *args):
     '''
     normal = True;
     for arg in args:
+        if len(arg) < 8:
+            return False
         if stats.normaltest(arg)[1] < THRESHOLD:
             normal = False;
 
