@@ -4,8 +4,9 @@ from dive.resources.fields import Field
 from dive.resources.projects import Project, Projects
 from dive.resources.field_properties import FieldProperties
 from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
-from dive.resources.statistics_resources import CorrelationsFromSpec, RegressionEstimator, \
-    RegressionFromSpec, SummaryStatsFromSpec, \
+
+from dive.resources.statistics_resources import AnovaFromSpec, CorrelationsFromSpec, RegressionEstimator, \
+    RegressionFromSpec, SummaryStatsFromSpec, NumericalComparisonFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, \
     ContributionToRSquared, CorrelationScatterplot
 
@@ -13,6 +14,7 @@ from dive.resources.exported_results import ExportedResults
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.resources.exported_analyses import ExportedRegression, DataFromExportedRegression, \
     ExportedCorrelation, DataFromExportedCorrelation, ExportedSummary, DataFromExportedSummary
+
 from dive.resources.transform import Reduce, Unpivot, Join
 
 from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
@@ -52,7 +54,10 @@ def add_resources(api):
     api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
     api.add_resource(SummaryStatsFromSpec,          '/statistics/v1/summary_stats')
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
+
+    api.add_resource(AnovaFromSpec,                 '/statistics/v1/anova')
     api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
+    api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
