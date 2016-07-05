@@ -48,6 +48,8 @@ def run_regression_from_spec(spec, project_id):
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
 
+    print 'regression type', regression_type
+
     dependent_variable, independent_variables, df = \
         load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id)
 
@@ -98,10 +100,6 @@ def get_full_field_documents_from_field_names(all_fields, names):
 
 def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
-
-    if not regression_type:
-        regression_type = recommend_regression_type(dependent_variable)
-        print 'no regression type supplied', regression_type
 
     map_function_to_type = {
         'linear': run_linear_regression,
