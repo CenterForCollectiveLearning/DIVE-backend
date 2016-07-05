@@ -29,7 +29,7 @@ def get_anova_boxplot_data(spec, project_id):
     independent_variables = spec.get('independentVariables', [])
     dataset_id = spec.get('datasetId')
 
-    quantiles = [0.01, 0.25, 0.5, 0.75, 0.99]
+    quantiles = [0.00, 0.25, 0.75, 1.00]
 
     dependent_variable_names = dependent_variables
     independent_variable_names = [ iv[1] for iv in independent_variables ]
@@ -39,6 +39,8 @@ def get_anova_boxplot_data(spec, project_id):
 
     variable_subset = dependent_variable_names + independent_variable_names
     df_quantiles = df[variable_subset].groupby(independent_variable_names).quantile(quantiles)
+    df_median = df[variable_subset].groupby(independent_variable_names).median()
+    df_mean = df[variable_subset].groupby(independent_variable_names).mean()
 
     one_way = (len(independent_variable_names) == 1)
 
@@ -55,13 +57,20 @@ def get_anova_boxplot_data(spec, project_id):
     # Sort OrderedDict
     results_grouped_by_highest_level = OrderedDict(results_grouped_by_highest_level)
 
-    final_data_array = [ independent_variable_names + quantiles ]
+    # https://github.com/google/google-visualization-issues/issues/782
+    final_data_array = [ dependent_variable_names + [ '', '', '', '', 'Median', 'Mean' ] ]
     for grouped_field_value, quantile_value in results_grouped_by_highest_level.iteritems():
         quantile_value_sorted = OrderedDict(quantile_value)
         data_element = [ grouped_field_value ]
+
         for quantile in sorted(quantile_value.keys()):
             value = quantile_value[quantile]
             data_element.append(value)
+
+        median = df_median[dependent_variable_names[0]][grouped_field_value]
+        mean = df_mean[dependent_variable_names[0]][grouped_field_value]
+
+        data_element += [ median, mean ]
         final_data_array.append(data_element)
 
     return final_data_array, 200
