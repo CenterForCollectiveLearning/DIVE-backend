@@ -159,7 +159,6 @@ class AnovaBoxplotFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
 
-        print spec
         result, status = get_anova_boxplot_data(spec, project_id)
         return jsonify(result)
 
