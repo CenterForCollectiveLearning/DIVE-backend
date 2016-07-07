@@ -18,7 +18,7 @@ from patsy import dmatrices
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import celery, task_app
-from dive.tasks.statistics.regression.model_recommendation import construct_models, recommend_regression_type
+from dive.tasks.statistics.regression.model_recommendation import construct_models
 from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
 from dive.resources.serialization import replace_unserializable_numpy
 
@@ -47,8 +47,6 @@ def run_regression_from_spec(spec, project_id):
 
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
-
-    print 'regression type', regression_type
 
     dependent_variable, independent_variables, df = \
         load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id)
@@ -167,7 +165,6 @@ def run_linear_regression(df, patsy_model, dependent_variable, estimator, weight
     return regression_results
 
 def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weights):
-
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
     model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False, method="nm")
@@ -305,7 +302,6 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'values': values
         })
     regression_results['fields'] = regression_fields_collection
-    print 'regression', regression_results
     return regression_results
 
 
