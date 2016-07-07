@@ -6,6 +6,7 @@ from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.discrete import discrete_model
+from sklearn.linear_model import LogisticRegression
 
 from collections import OrderedDict
 from time import time
@@ -34,8 +35,8 @@ def run_regression_from_spec(spec, project_id):
     4) Run regressions described by those models
     5) Format results
     '''
-    # 1) Parse and validate arguments
-    regression_type = spec.get('model', 'lr')
+    model = spec.get('model', 'lr')
+    regression_type = spec.get('regressionType')
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     estimator = spec.get('estimator', 'ols')
@@ -53,9 +54,10 @@ def run_regression_from_spec(spec, project_id):
     considered_independent_variables_per_model, patsy_models = \
         construct_models(dependent_variable, independent_variables)
 
-    raw_results = run_models(df, patsy_models, dependent_variable, regression_type=regression_type)
+    raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
     formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model)
+
     return formatted_results, 200
 
 
@@ -94,14 +96,21 @@ def get_full_field_documents_from_field_names(all_fields, names):
     return fields
 
 
-def run_models(df, patsy_models, dependent_variable, regression_type='lr', degree=1, functions=[], estimator='ols', weights=None):
+def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
+
+    map_function_to_type = {
+        'linear': run_linear_regression,
+        'logistic': run_logistic_regression,
+        'polynomial': run_polynomial_regression
+    }
+
     # Iterate over and run each models
     for patsy_model in patsy_models:
         regression_result = {}
 
         # Run regression
-        model_result = multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights)
+        model_result = map_function_to_type[regression_type](df, patsy_model, dependent_variable, estimator, weights)
         model_results.append(model_result)
     return model_results
 
@@ -114,76 +123,94 @@ def parse_confidence_intervals(model_result):
         parsed_conf_int[field] = [ d[0], d[1] ]
     return parsed_conf_int
 
-
-def multivariate_linear_regression(df, patsy_model, dependent_variable, estimator, weights=None):
+def run_linear_regression(df, patsy_model, dependent_variable, estimator, weights):
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
-    if dependent_variable['general_type'] in [ 'q', 't' ]:
-        model_result = sm.OLS(y, X).fit()
+    model_result = sm.OLS(y, X).fit()
 
-        p_values = model_result.pvalues.to_dict()
-        t_values = model_result.tvalues.to_dict()
-        params = model_result.params.to_dict()
-        ste = model_result.bse.to_dict()
-        conf_ints = parse_confidence_intervals(model_result)
+    p_values = model_result.pvalues.to_dict()
+    t_values = model_result.tvalues.to_dict()
+    params = model_result.params.to_dict()
+    ste = model_result.bse.to_dict()
+    conf_ints = parse_confidence_intervals(model_result)
 
-        constants = {
-            'p_value': p_values.get('Intercept'),
-            't_value': t_values.get('Intercept'),
-            'coefficient': params.get('Intercept'),
-            'standard_error': ste.get('Intercept'),
-            'conf_int': conf_ints.get('Intercept')
-        }
+    constants = {
+        'p_value': p_values.get('Intercept'),
+        't_value': t_values.get('Intercept'),
+        'coefficient': params.get('Intercept'),
+        'standard_error': ste.get('Intercept'),
+        'conf_int': conf_ints.get('Intercept')
+    }
 
-        regression_field_properties = {
-            'p_value': p_values,
-            't_value': t_values,
-            'coefficient': params,
-            'standard_error': ste,
-            'conf_int': conf_ints
-        }
+    regression_field_properties = {
+        'p_value': p_values,
+        't_value': t_values,
+        'coefficient': params,
+        'standard_error': ste,
+        'conf_int': conf_ints
+    }
 
-        total_regression_properties = {
-            'aic': model_result.aic,
-            'bic': model_result.bic,
-            'dof': model_result.nobs,
-            'r_squared': model_result.rsquared,
-            'r_squared_adj': model_result.rsquared_adj,
-            'f_test': model_result.fvalue,
-            # 'resid': model_result.resid.tolist()
-        }
+    total_regression_properties = {
+        'aic': model_result.aic,
+        'bic': model_result.bic,
+        'dof': model_result.nobs,
+        'r_squared': model_result.rsquared,
+        'r_squared_adj': model_result.rsquared_adj,
+        'f_test': model_result.fvalue,
+        # 'resid': model_result.resid.tolist()
+    }
 
-    elif dependent_variable['general_type'] == 'c':
-        model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False)
+    regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
 
-        p_values = model_result.pvalues[0].to_dict()
-        t_values = model_result.tvalues[0].to_dict()
-        params = model_result.params[0].to_dict()
-        ste = model_result.bse[0].to_dict()
+    return regression_results
 
-        constants = {
-            'p_value': p_values.get('Intercept'),
-            't_value': t_values.get('Intercept'),
-            'coefficient': params.get('Intercept'),
-            'standard_error': ste.get('Intercept')
-        }
+def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weights):
+    y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
-        regression_field_properties = {
-            'p_value': p_values,
-            't_value': t_values,
-            'coefficient': params,
-            'standard_error': ste
-        }
+    model_result = discrete_model.MNLogit(y, X).fit(maxiter=100, disp=False, method="nm")
 
-        total_regression_properties = {
-            'aic': model_result.aic,
-            'bic': model_result.bic,
-        }
+    p_values = model_result.pvalues[0].to_dict()
+    t_values = model_result.tvalues[0].to_dict()
+    params = model_result.params[0].to_dict()
+    ste = model_result.bse[0].to_dict()
 
-    categorical_field_values = {}
+    constants = {
+        'p_value': p_values.get('Intercept'),
+        't_value': t_values.get('Intercept'),
+        'coefficient': params.get('Intercept'),
+        'standard_error': ste.get('Intercept')
+    }
 
+    regression_field_properties = {
+        'p_value': p_values,
+        't_value': t_values,
+        'coefficient': params,
+        'standard_error': ste
+    }
+
+    total_regression_properties = {
+        'aic': model_result.aic,
+        'bic': model_result.bic,
+        'r_squared': model_result.prsquared,
+        'r_squared_adj': model_result.prsquared,
+        'llf': model_result.llf,
+        'llnull': model_result.llnull,
+        'llr_pvalue': model_result.llr_pvalue
+        # 'f_test': model_result.f_test
+    }
+
+    regression_results = restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties)
+
+    return regression_results
+
+def run_polynomial_regression():
+    return
+
+def restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties):
     # Restructure field properties dict from
     # { property: { field: value }} -> [ field: field, properties: { property: value } ]
+    
+    categorical_field_values = {}
     properties_by_field_dict = {}
 
     for prop_type, field_names_and_values in regression_field_properties.iteritems():
@@ -219,7 +246,6 @@ def multivariate_linear_regression(df, patsy_model, dependent_variable, estimato
         'total_regression_properties': total_regression_properties
     }
 
-
 def _get_fields_categorical_variable(s):
     '''
     Parse base and value fields out of statsmodels categorical encoding
@@ -230,7 +256,6 @@ def _get_fields_categorical_variable(s):
     if '[' in s:
         base_field = s.split('[')[0]
         value_field = s.split('[T.')[1].strip(']')
-        print base_field, value_field
     return base_field, value_field
 
 
@@ -277,7 +302,6 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'values': values
         })
     regression_results['fields'] = regression_fields_collection
-
     return regression_results
 
 
