@@ -9,6 +9,7 @@ from dive.resources.serialization import jsonify
 # Sync tasks
 from dive.tasks.statistics.comparison.numeric import run_numerical_comparison_from_spec
 from dive.tasks.statistics.comparison.anova import run_anova_from_spec
+from dive.tasks.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
 
@@ -141,6 +142,26 @@ class AnovaFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_anova_from_spec(spec, project_id)
+        return jsonify(result)
+
+
+anovaBoxplotPostParser = reqparse.RequestParser()
+anovaBoxplotPostParser.add_argument('projectId', type=str, location='json')
+anovaBoxplotPostParser.add_argument('spec', type=dict, location='json')
+class AnovaBoxplotFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = anovaBoxplotPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+
+        result, status = get_anova_boxplot_data(spec, project_id)
         return jsonify(result)
 
 
