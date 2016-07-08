@@ -253,6 +253,11 @@ class Exported_Regression(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
+class Interaction_Term(db.Model):
+    __tablename__ = ModelName.INTERACTION_TERM.value
+    id = db.Column(db.Integer, primary_key=True)
+    variables = db.Column(JSONB)
+
 class Summary(db.Model):
     __tablename__ = ModelName.SUMMARY.value
     id = db.Column(db.Integer, primary_key=True)
