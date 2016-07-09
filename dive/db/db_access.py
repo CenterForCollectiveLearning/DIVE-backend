@@ -564,6 +564,38 @@ def insert_interaction_term(project_id, dataset_id, variables):
     db.session.commit()
     return row_to_dict(interaction_term)
 
+def get_interaction_term_by_project_id(project_id):
+    try:
+        interaction_term = Interaction_Term.query.filter_by(project_id=project_id)
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    print interaction_term
+    return row_to_dict(interaction_term)
+
+def get_interaction_term_by_dataset_id(dataset_id):
+    try:
+        interaction_term = Interaction_Term.query.filter_by(dataset_id=dataset_id)
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    print interaction_term
+    return row_to_dict(interaction_term)    
+
+def delete_interaction_term(interaction_term_id):
+    try:
+        interaction_term = Interaction_Term.query.filter_by(id=interaction_term_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(interaction_term)
+    db.commit()
+    return row_to_dict(interaction_term)
+
 # Correlations
 def get_exported_correlation_by_id(project_id, exported_correlation_id):
     try:
