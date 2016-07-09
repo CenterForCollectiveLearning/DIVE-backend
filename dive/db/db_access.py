@@ -551,7 +551,7 @@ def delete_exported_regression(project_id, exported_regression_id):
     return row_to_dict(exported_regression)
 
 ###################
-# Interaction Term
+# Interaction Terms
 ###################
 
 def insert_interaction_term(project_id, dataset_id, variables):
@@ -596,7 +596,10 @@ def delete_interaction_term(interaction_term_id):
     db.commit()
     return row_to_dict(interaction_term)
 
+##############
 # Correlations
+##############
+
 def get_exported_correlation_by_id(project_id, exported_correlation_id):
     try:
         exported_correlation = Exported_Correlation.query.filter_by(id=exported_correlation_id,
