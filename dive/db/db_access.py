@@ -12,8 +12,8 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from dive.core import db
 from dive.db import ModelName, row_to_dict
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document, \
-    Summary, Exported_Summary, Correlation, Exported_Correlation
+    Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Group, User, \
+    Relationship, Document, Summary, Exported_Summary, Correlation, Exported_Correlation
 from dive.resources import ContentType
 
 import logging
@@ -549,6 +549,20 @@ def delete_exported_regression(project_id, exported_regression_id):
     db.session.delete(exported_regression)
     db.session.commit()
     return row_to_dict(exported_regression)
+
+###################
+# Interaction Term
+###################
+
+def insert_interaction_term(project_id, dataset_id, variables):
+    interaction_term = Interaction_Term(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        variables=variables
+    )
+    db.session.add(interaction_term)
+    db.session.commit()
+    return row_to_dict(interaction_term)
 
 # Correlations
 def get_exported_correlation_by_id(project_id, exported_correlation_id):
