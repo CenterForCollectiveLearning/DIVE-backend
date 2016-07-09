@@ -54,6 +54,10 @@ class ContributionToRSquared(Resource):
         logger.info(data)
         return jsonify({ 'data': data })
 
+interactionTermPostParser = reqparse.RequestParser()
+class InteractionTerms(Resource):
+    def post(self, project_id, dataset_id):
+        return
 
 #####################################################################
 # Endpoint returning regression data given a specification
