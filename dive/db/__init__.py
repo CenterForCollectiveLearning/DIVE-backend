@@ -9,6 +9,7 @@ class ModelName(Enum):
     EXPORTED_SPEC = 'exported_spec'
     REGRESSION = 'regression'
     EXPORTED_REGRESSION = 'exported_regression'
+    INTERACTION_TERM = 'interaction_term'
     SUMMARY = 'summary'
     EXPORTED_SUMMARY = 'exported_summary'
     CORRELATION = 'correlation'
