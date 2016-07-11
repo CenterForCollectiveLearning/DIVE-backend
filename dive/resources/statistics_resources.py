@@ -55,9 +55,19 @@ class ContributionToRSquared(Resource):
         return jsonify({ 'data': data })
 
 interactionTermPostParser = reqparse.RequestParser()
+interactionTermPostParser.add_argument('interactionTermIds', type=list, location='json')
+interactionTermPostParser.add_argument('projectId', type=int, location='json')
+interactionTermPostParser.add_argument('datasetId', type=int, location='json')
 class InteractionTerms(Resource):
-    def post(self, project_id, dataset_id):
-        return
+    def post(self):
+        args = interactionTermPostParser.parse_args()
+        project_id = args.get('projectId')
+        dataset_id = args.get('datasetId')
+        interaction_term = args.get('interactionTermIds')
+
+        
+
+        return jsonify({ 'data': 'got through' })
 
 #####################################################################
 # Endpoint returning regression data given a specification
@@ -81,6 +91,7 @@ class RegressionFromSpec(Resource):
             datasetId
         }
         '''
+
         args = regressionPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
