@@ -257,6 +257,7 @@ class Interaction_Term(db.Model):
     __tablename__ = ModelName.INTERACTION_TERM.value
     id = db.Column(db.Integer, primary_key=True)
     variables = db.Column(JSONB)
+    names = db.Column(JSONB)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)

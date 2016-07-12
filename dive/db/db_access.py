@@ -190,6 +190,13 @@ def update_field_properties_type_by_id(project_id, field_id, field_type, general
     db.session.commit()
     return row_to_dict(field_properties)
 
+def get_variable_names_by_id(id_list):
+    name_list = []
+    for variable_id in id_list:
+        name = Field_Properties.query.filter_by(id=variable_id).one().name
+        name_list.append(name)
+    return name_list
+
 ################
 # Relationships
 ################
@@ -554,34 +561,21 @@ def delete_exported_regression(project_id, exported_regression_id):
 ###################
 
 def insert_interaction_term(project_id, dataset_id, variables):
+    names = get_variable_names_by_id(variables)
     interaction_term = Interaction_Term(
         project_id=project_id,
         dataset_id=dataset_id,
-        variables=variables
+        variables=variables,
+        names=names
     )
     db.session.add(interaction_term)
     db.session.commit()
-    return row_to_dict(interaction_term)
+    return row_to_dict(interaction_term)  
 
-def get_interaction_term_by_project_id(project_id):
-    try:
-        interaction_term = Interaction_Term.query.filter_by(project_id=project_id)
-    except NoResultFound, e:
-        return None
-    except MultipleResultsFound, e:
-        raise e
-    print interaction_term
-    return row_to_dict(interaction_term)
-
-def get_interaction_term_by_dataset_id(dataset_id):
-    try:
-        interaction_term = Interaction_Term.query.filter_by(dataset_id=dataset_id)
-    except NoResultFound, e:
-        return None
-    except MultipleResultsFound, e:
-        raise e
-    print interaction_term
-    return row_to_dict(interaction_term)    
+def get_interaction_terms(project_id, dataset_id):
+    result = Interaction_Term.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
+    interaction_terms = [ row_to_dict(r) for r in result ]
+    return interaction_terms
 
 def delete_interaction_term(interaction_term_id):
     try:
@@ -594,13 +588,6 @@ def delete_interaction_term(interaction_term_id):
     db.session.delete(interaction_term)
     db.commit()
     return row_to_dict(interaction_term)
-
-def get_variable_names_by_id(idList):
-    name_list = []
-    for variable_id in idList:
-        name = Field_Properties.query.filter_by(id=variable_id).one().name
-        name_list.append(name)
-    return name_list
 
 ##############
 # Correlations
