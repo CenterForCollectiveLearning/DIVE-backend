@@ -55,6 +55,7 @@ class ContributionToRSquared(Resource):
         logger.info(data)
         return jsonify({ 'data': data })
 
+# For interaction term creation
 interactionTermPostParser = reqparse.RequestParser()
 interactionTermPostParser.add_argument('interactionTermIds', type=list, location='json')
 interactionTermPostParser.add_argument('projectId', type=int, location='json')
@@ -66,9 +67,9 @@ class InteractionTerms(Resource):
         dataset_id = args.get('datasetId')
         interaction_term_ids = args.get('interactionTermIds')
         data = db_access.insert_interaction_term(project_id, dataset_id, interaction_term_ids)
-        
-        name_list = db_access.get_variable_names_by_id(data['variables'])
-        data['names'] = name_list
+
+        # name_list = db_access.get_variable_names_by_id(data['variables'])
+        # data['names'] = name_list
         return jsonify(data)
 
 #####################################################################
