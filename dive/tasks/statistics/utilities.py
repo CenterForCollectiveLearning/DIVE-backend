@@ -38,7 +38,6 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
         rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]
 
     model = ModelDesc(lhs, rhs)
-    print 'model', model
     return model
 
 def are_variations_equal(THRESHOLD, *args):

@@ -7,6 +7,7 @@ def construct_models(dependent_variable, independent_variables, interaction_term
     regression_variable_combinations = [ [x], [x, y], [y, z] ]
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
     '''
+
     # Create list of independent variables, one per regression
     regression_variable_combinations = []
     if len(independent_variables) == 2:
@@ -18,6 +19,8 @@ def construct_models(dependent_variable, independent_variables, interaction_term
             regression_variable_combinations.append(all_fields_except_considered_field)
     regression_variable_combinations.append(independent_variables)
 
+    print 'combos', regression_variable_combinations
+    
     # Create patsy models
     patsy_models = []
     for regression_variable_combination in regression_variable_combinations:
