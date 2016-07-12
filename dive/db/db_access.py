@@ -577,6 +577,17 @@ def get_interaction_terms(project_id, dataset_id):
     interaction_terms = [ row_to_dict(r) for r in result ]
     return interaction_terms
 
+def get_interaction_term_properties(interaction_term_ids):
+    properties_list = []
+    for interaction_term_id in interaction_term_ids:
+        term_properties = []
+        variable_ids = Interaction_Term.query.filter_by(id=interaction_term_id).one().variables
+        for variable_id in variable_ids:
+            data = Field_Properties.query.filter_by(id=variable_id).one()
+            term_properties.append(row_to_dict(data))
+        properties_list.append(term_properties)
+    return properties_list
+
 def delete_interaction_term(interaction_term_id):
     try:
         interaction_term = Interaction_Term.query.filter_by(id=interaction_term_id).one()
@@ -588,6 +599,7 @@ def delete_interaction_term(interaction_term_id):
     db.session.delete(interaction_term)
     db.commit()
     return row_to_dict(interaction_term)
+
 
 ##############
 # Correlations

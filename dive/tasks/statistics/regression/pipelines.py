@@ -39,6 +39,7 @@ def run_regression_from_spec(spec, project_id):
     regression_type = spec.get('regressionType')
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
+    interaction_term_ids = spec.get('interactionTerms', [])
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)  # need to find quantitative, categorical
     weights = spec.get('weights', None)
@@ -48,11 +49,13 @@ def run_regression_from_spec(spec, project_id):
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
 
-    dependent_variable, independent_variables, df = \
-        load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id)
+    dependent_variable, independent_variables, interaction_terms, df = \
+        load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id)
+
+    print 'interaction terms', interaction_terms
 
     considered_independent_variables_per_model, patsy_models = \
-        construct_models(dependent_variable, independent_variables)
+        construct_models(dependent_variable, independent_variables, interaction_terms)
 
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
@@ -61,13 +64,14 @@ def run_regression_from_spec(spec, project_id):
     return formatted_results, 200
 
 
-def load_data(dependent_variable_name, independent_variables_names, dataset_id, project_id):
+def load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id):
     '''
     Load DF and full field documents
     '''
     # Map variables to field documents
     with task_app.app_context():
         all_fields = db_access.get_field_properties(project_id, dataset_id)
+        interaction_terms = db_access.get_interaction_term_properties(interaction_term_ids)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
     independent_variables = []
@@ -84,7 +88,7 @@ def load_data(dependent_variable_name, independent_variables_names, dataset_id, 
         df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna(axis=0, how='any')
 
-    return dependent_variable, independent_variables, df
+    return dependent_variable, independent_variables, interaction_terms, df
 
 
 def get_full_field_documents_from_field_names(all_fields, names):

@@ -1,7 +1,6 @@
 from dive.tasks.statistics.utilities import create_patsy_model
 
-
-def construct_models(dependent_variable, independent_variables):
+def construct_models(dependent_variable, independent_variables, interaction_terms):
     '''
     Given dependent and independent variables, return list of patsy model.
 
