@@ -31,7 +31,7 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
     for (i, field_name) in enumerate(df):
         logger.debug('Calculating types for field %s', field_name)
         field_values = df[field_name]
-        field_type, field_type_scores = calculate_field_type(field_name, field_values)
+        field_type, field_type_scores = calculate_field_type(field_name, field_values, i, n_cols)
         field_types.append(field_type)
 
     # Forgoing time series detection for now (expensive)

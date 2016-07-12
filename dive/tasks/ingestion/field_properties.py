@@ -15,6 +15,7 @@ from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.tasks.ingestion import DataType, specific_to_general_type
 from dive.tasks.ingestion.type_detection import calculate_field_type
+from dive.tasks.ingestion.id_detection import detect_id
 from dive.tasks.ingestion.utilities import get_unique
 from dive.tasks.visualization.data import get_bin_agg_data, get_val_count_data
 
@@ -67,7 +68,8 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
         field_values = df[field_name]
 
         # Field types
-        field_type, field_type_scores = calculate_field_type(field_name, field_values)
+        field_type, field_type_scores = calculate_field_type(field_name, field_values, i, num_fields)
+
 
         # Map to general field types
         general_type = specific_to_general_type[field_type]
@@ -81,11 +83,8 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
         else:
             unique_values = None
 
-        # Stats
         stats = calculate_field_stats(field_type, field_values)
-
-        # ID
-        is_id = True if ((field_type is DataType.INTEGER.value) and is_unique) else False
+        is_id = detect_id(field_name, field_type, is_unique)
 
         # Binning
         viz_data = None
@@ -164,7 +163,6 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
             if detect_unique_list(field_b_unique_corresponding_values):
                 all_field_properties[all_field_properties.index(field_a)]['child'] = field_b['name']
                 all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
-
 
     logger.debug("Done computing field properties")
 
