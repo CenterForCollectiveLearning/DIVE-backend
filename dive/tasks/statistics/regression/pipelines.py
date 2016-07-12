@@ -57,7 +57,7 @@ def run_regression_from_spec(spec, project_id):
 
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
-    formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model)
+    formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
 
     return formatted_results, 200
 
@@ -261,13 +261,14 @@ def _get_fields_categorical_variable(s):
     return base_field, value_field
 
 
-def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model):
+def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms):
     # Initialize returned data structures
     independent_variable_names = [ iv['name'] for iv in independent_variables ]
     regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
     regression_results = {
         'regressions_by_column': [],
     }
+
     for model_result, considered_independent_variables in zip(model_results, considered_independent_variables_per_model):
         # Move categorical field values to higher level
         for field_name, field_values in model_result['categorical_field_values'].iteritems():
@@ -303,6 +304,15 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'name': field,
             'values': values
         })
+    print interaction_terms
+    for terms in interaction_terms:
+        print 'terms', terms
+        regression_fields_collection.append({
+            'name': "%s:%s" % (terms[0]['name'], terms[1]['name']),
+            'values': None
+        })
+
+    print 'regression fields', regression_fields_collection
     regression_results['fields'] = regression_fields_collection
     return regression_results
 
