@@ -86,6 +86,7 @@ class RegressionFromSpec(Resource):
         spec: {
             independentVariables
             dependentVariable
+            interactionTerms
             model
             estimator
             degree
