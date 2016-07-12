@@ -21,7 +21,6 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
 
     # Parsing interaction terms
     if interactions:
-        print 'found interactions'
         first_interaction = interactions[0][0]
         if 'name' in first_interaction:
             new_interactions = []

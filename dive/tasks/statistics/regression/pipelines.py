@@ -304,15 +304,12 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'name': field,
             'values': values
         })
-    print interaction_terms
     for terms in interaction_terms:
-        print 'terms', terms
         regression_fields_collection.append({
             'name': "%s:%s" % (terms[0]['name'], terms[1]['name']),
             'values': None
         })
 
-    print 'regression fields', regression_fields_collection
     regression_results['fields'] = regression_fields_collection
     return regression_results
 
