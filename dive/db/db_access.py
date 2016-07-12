@@ -190,7 +190,6 @@ def update_field_properties_type_by_id(project_id, field_id, field_type, general
     db.session.commit()
     return row_to_dict(field_properties)
 
-
 ################
 # Relationships
 ################
@@ -595,6 +594,13 @@ def delete_interaction_term(interaction_term_id):
     db.session.delete(interaction_term)
     db.commit()
     return row_to_dict(interaction_term)
+
+def get_variable_names_by_id(idList):
+    name_list = []
+    for variable_id in idList:
+        name = Field_Properties.query.filter_by(id=variable_id).one().name
+        name_list.append(name)
+    return name_list
 
 ##############
 # Correlations
