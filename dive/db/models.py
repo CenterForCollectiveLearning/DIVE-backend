@@ -118,6 +118,7 @@ class Field_Properties(db.Model):
     unique_values = db.Column(JSONB)
     child = db.Column(db.Unicode(250))
     is_child = db.Column(db.Boolean())
+    viz_data = db.Column(JSONB)
     stats = db.Column(JSONB)
     manual = db.Column(db.Boolean())
 

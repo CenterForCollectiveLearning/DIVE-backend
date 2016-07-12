@@ -16,6 +16,7 @@ from dive.data.access import get_data
 from dive.tasks.ingestion import DataType, specific_to_general_type
 from dive.tasks.ingestion.type_detection import calculate_field_type
 from dive.tasks.ingestion.utilities import get_unique
+from dive.tasks.visualization.data import get_bin_agg_data, get_val_count_data
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -81,32 +82,54 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
             unique_values = None
 
         # Stats
-        stats = {}  # calculate_field_stats(field_type, field_values)
+        stats = calculate_field_stats(field_type, field_values)
 
         # ID
         is_id = True if ((field_type is DataType.INTEGER.value) and is_unique) else False
 
+        # Binning
+        viz_data = None
+        if general_type is 'q':
+            binning_spec = {
+                'binning_field': { 'name': field_name },
+                'agg_field_a': { 'name': field_name },
+                'agg_fn': 'count',
+            }
+            try:
+                viz_data = get_bin_agg_data(df, {}, binning_spec, {})
+            except:
+                pass
+        elif general_type is 'c':
+            val_count_spec = {
+                'field_a': { 'name': field_name },
+            }
+            try:
+                viz_data = get_val_count_data(df, {}, val_count_spec, {})
+            except:
+                pass
+
         # Normality
         # Skip for now
         normality = None
-        # if general_type is 'q':
-        #     try:
-        #         d = field_values.astype(np.float)
-        #         normality_test_result = sc_stats.normaltest(d)
-        #         if normality_test_result:
-        #             statistic = normality_test_result.statistic
-        #             pvalue = normality_test_result.pvalue
-        #             if pvalue < 0.05:
-        #                 normality = True
-        #             else:
-        #                 normality = False
-        #     except ValueError:
-        #         normality = None
+        if general_type is 'q':
+            try:
+                d = field_values.astype(np.float)
+                normality_test_result = sc_stats.normaltest(d)
+                if normality_test_result:
+                    statistic = normality_test_result.statistic
+                    pvalue = normality_test_result.pvalue
+                    if pvalue < 0.05:
+                        normality = True
+                    else:
+                        normality = False
+            except ValueError:
+                normality = None
 
         all_field_properties[i].update({
             'index': i,
             'name': field_name,
             'type': field_type,
+            'viz_data': viz_data,
             'general_type': general_type,
             'type_scores': field_type_scores,
             'is_id': is_id,
