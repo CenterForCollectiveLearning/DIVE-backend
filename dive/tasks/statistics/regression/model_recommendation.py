@@ -21,7 +21,7 @@ def construct_models(dependent_variable, independent_variables, interaction_term
     # Create patsy models
     patsy_models = []
     for regression_variable_combination in regression_variable_combinations:
-        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        model = create_patsy_model(dependent_variable, regression_variable_combination, interaction_terms)
         patsy_models.append(model)
 
     return ( regression_variable_combinations, patsy_models )

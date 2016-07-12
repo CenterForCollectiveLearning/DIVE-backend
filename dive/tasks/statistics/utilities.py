@@ -21,7 +21,8 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
 
     # Parsing interaction terms
     if interactions:
-        first_interaction = interactions[0]
+        print 'found interactions'
+        first_interaction = interactions[0][0]
         if 'name' in first_interaction:
             new_interactions = []
             for interaction in interactions:
@@ -33,13 +34,12 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
     lhs = [ Term([LookupFactor(lhs_var)]) ]
     rhs = [ Term([]) ] + [ Term([LookupFactor(rhs_var)]) for rhs_var in rhs_vars ]
 
-
     if interactions:
         rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]
 
     model = ModelDesc(lhs, rhs)
+    print 'model', model
     return model
-
 
 def are_variations_equal(THRESHOLD, *args):
     '''

@@ -52,8 +52,6 @@ def run_regression_from_spec(spec, project_id):
     dependent_variable, independent_variables, interaction_terms, df = \
         load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id)
 
-    print 'interaction terms', interaction_terms
-
     considered_independent_variables_per_model, patsy_models = \
         construct_models(dependent_variable, independent_variables, interaction_terms)
 
