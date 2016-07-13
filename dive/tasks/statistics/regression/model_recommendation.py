@@ -3,7 +3,7 @@ import numpy as np
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
 from sklearn import linear_model
-from sklearn.feature_selection import SelectFromModel
+# from sklearn.feature_selection import SelectFromModel
 
 from dive.tasks.statistics.regression import ModelSelectionType as MST
 
@@ -24,11 +24,11 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,
-        MST.FORWARD_R2.value: forward_r2,
+        MST.FORWARD_R2.value: forward_r2
     }
 
     model_selection_function = model_selection_name_to_function[selection_type]
-    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables)
+    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables, interaction_terms)
 
     rvcs_parsed = []
     for rvc in regression_variable_combinations:
@@ -56,11 +56,12 @@ def create_patsy_model(dependent_variable, independent_variables):
     rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
     return ModelDesc(lhs, rhs)
 
-def all_but_one(df, dependent_variable, independent_variables, model_limit=8):
+def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
     '''
     Return one model with all variables, and N-1 models with one variable left out
     '''
     # Create list of independent variables, one per regression
+    print 'all but one', interaction_terms
     regression_variable_combinations = []
     if len(independent_variables) == 2:
         for i, considered_field in enumerate(independent_variables):
