@@ -120,7 +120,7 @@ class Field_Properties(db.Model):
     is_child = db.Column(db.Boolean())
     viz_data = db.Column(JSONB)
     stats = db.Column(JSONB)
-    manual = db.Column(db.Boolean())
+    manual = db.Column(JSONB)
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)

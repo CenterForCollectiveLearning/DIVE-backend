@@ -12,7 +12,8 @@ from itertools import permutations
 
 from dive.db import db_access
 from dive.task_core import celery, task_app
-from dive.data.access import get_data
+from dive.data.access import get_data, coerce_types
+from dive.data.in_memory_data import InMemoryData as IMD
 from dive.tasks.ingestion import DataType, specific_to_general_type
 from dive.tasks.ingestion.type_detection import calculate_field_type
 from dive.tasks.ingestion.id_detection import detect_id
@@ -59,20 +60,34 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
         df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     num_fields = len(df.columns)
-    all_field_properties = [ {} for i in range(num_fields) ]
+    field_properties = [ {} for i in range(num_fields) ]
 
-    # Single-field types
+    # 1) Detect field types
+    for (i, field_name) in enumerate(df):
+        field_values = df[field_name]
+        logger.debug('Computing field properties for field %s', field_name)
+        field_type, field_type_scores = calculate_field_type(field_name, field_values, i, num_fields)
+        general_type = specific_to_general_type[field_type]
+
+        print field_name, field_type, general_type
+        field_properties[i].update({
+            'index': i,
+            'name': field_name,
+            'type': field_type,
+            'general_type': general_type,
+            'type_scores': field_type_scores,
+        })
+
+    coerced_df = coerce_types(df, field_properties)
+    IMD.insertData(dataset_id, coerced_df)
+
+    # 2) Rest
     for (i, field_name) in enumerate(df):
         logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]
-
-        # Field types
-        field_type, field_type_scores = calculate_field_type(field_name, field_values, i, num_fields)
-
-
-        # Map to general field types
-        general_type = specific_to_general_type[field_type]
+        field_type = field_properties[i]['type']
+        general_type = field_properties[i]['general_type']
 
         # Uniqueness
         is_unique = detect_unique_list(field_values)
@@ -88,7 +103,7 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
 
         # Binning
         viz_data = None
-        if general_type is 'q':
+        if general_type in ['q', 't']:
             binning_spec = {
                 'binning_field': { 'name': field_name },
                 'agg_field_a': { 'name': field_name },
@@ -124,13 +139,8 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
             except ValueError:
                 normality = None
 
-        all_field_properties[i].update({
-            'index': i,
-            'name': field_name,
-            'type': field_type,
+        field_properties[i].update({
             'viz_data': viz_data,
-            'general_type': general_type,
-            'type_scores': field_type_scores,
             'is_id': is_id,
             'stats': stats,
             'normality': normality,
@@ -138,7 +148,7 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
             'unique_values': unique_values,
             'child': None,
             'is_child': False,
-            'manual': False
+            'manual': {}
         })
 
     logger.debug("Detecting hierarchical relationships")
@@ -148,7 +158,7 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
     # in another field a complete set of t?
     if compute_hierarchical_relationships:
         MAX_UNIQUE_VALUES_THRESHOLD = 100
-        for field_a, field_b in permutations(all_field_properties, 2):
+        for field_a, field_b in permutations(field_properties, 2):
             logger.debug('%s - %s', field_a['name'], field_b['name'])
             if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
                 continue
@@ -161,14 +171,14 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
                 field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
 
             if detect_unique_list(field_b_unique_corresponding_values):
-                all_field_properties[all_field_properties.index(field_a)]['child'] = field_b['name']
-                all_field_properties[all_field_properties.index(field_b)]['is_child'] = True
+                field_properties[field_properties.index(field_a)]['child'] = field_b['name']
+                field_properties[field_properties.index(field_b)]['is_child'] = True
 
     logger.debug("Done computing field properties")
 
     return {
-        'desc': 'Done computing field properties for %s fields' % len(all_field_properties),
-        'result': all_field_properties
+        'desc': 'Done computing field properties for %s fields' % len(field_properties),
+        'result': field_properties
     }
 
 

@@ -72,9 +72,9 @@ for data_type in categorical_types:
 
 class DataTypeWeights(Enum):
     # Fundamental
-    INTEGER = 4
+    INTEGER = 8
     STRING = 1
-    DECIMAL = 7
+    DECIMAL = 6
     BOOLEAN = 7
 
     # Special strings
