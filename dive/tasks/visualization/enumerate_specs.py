@@ -130,6 +130,7 @@ def get_baseline_viz_specs(field_properties):
             single_c_specs = single_c(field)
             specs.extend(single_c_specs)
         elif general_type == 'q':
+            if field['is_id']: continue
             single_q_specs = single_q(field)
             specs.extend(single_q_specs)
         elif general_type == 't':

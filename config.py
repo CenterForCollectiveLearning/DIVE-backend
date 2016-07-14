@@ -46,6 +46,7 @@ class BaseConfig(object):
         'dive.tasks.handlers',
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
+        'dive.tasks.ingestion.id_detection',        
         'dive.tasks.ingestion.type_detection',
         'dive.tasks.ingestion.type_classes',
         'dive.tasks.ingestion.field_properties',
