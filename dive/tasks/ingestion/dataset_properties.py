@@ -27,12 +27,12 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
     n_rows, n_cols = df.shape
     field_names = df.columns.values.tolist()
 
-    field_types = []
-    for (i, field_name) in enumerate(df):
-        logger.debug('Calculating types for field %s', field_name)
-        field_values = df[field_name]
-        field_type, field_type_scores = calculate_field_type(field_name, field_values, i, n_cols)
-        field_types.append(field_type)
+    # field_types = []
+    # for (i, field_name) in enumerate(df):
+    #     logger.debug('Calculating types for field %s', field_name)
+    #     field_values = df[field_name]
+    #     field_type, field_type_scores = calculate_field_type(field_name, field_values, i, n_cols)
+    #     field_types.append(field_type)
 
     # Forgoing time series detection for now (expensive)
     # time_series = detect_time_series(df, field_types)
@@ -46,7 +46,7 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
         'n_rows': n_rows,
         'n_cols': n_cols,
         'field_names': field_names,
-        'field_types': field_types,
+        # 'field_types': field_types,
         'field_accessors': [ i for i in range(0, n_cols) ],
         'structure': structure,
         'is_time_series': time_series,
