@@ -11,10 +11,6 @@ def detect_id(field_name, field_type, is_unique):
 
     is_id = False
 
-    # Unique integers
-    if (field_type in [ DataType.INTEGER.value ]) and (is_unique):
-        is_id = True
-
     # Unique strings with ID, name, or subject
     if (field_type in [ DataType.STRING.value ]) and (is_unique):
         for id_in_string in ID_IN_STRINGS:
