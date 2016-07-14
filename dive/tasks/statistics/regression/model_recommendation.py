@@ -20,9 +20,9 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
     model_selection_function = model_selection_name_to_function[selection_type]
     regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables, interaction_terms)
 
-    rvcs_parsed = []
-    for rvc in regression_variable_combinations:
-        rvcs_parsed.append([v['name'] for v in rvc])
+    # rvcs_parsed = []
+    # for rvc in regression_variable_combinations:
+    #     rvcs_parsed.append([v['name'] for v in rvc])
     patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
 
     return ( regression_variable_combinations, patsy_models )
@@ -33,7 +33,6 @@ def convert_regression_variable_combinations_to_patsy_models(dependent_variable,
         model = create_patsy_model(dependent_variable, regression_variable_combination)
         patsy_models.append(model)
 
-    print patsy_models
     return patsy_models
 
 def create_patsy_model(dependent_variable, independent_variables):
@@ -81,9 +80,7 @@ def check_independent_variables(interaction_term, regression_variable_combinatio
         for term in interaction_term:
             if variable['name'] == term['name']:
                 matches = matches + 1
-
-    result = matches == len(interaction_term)
-    return result
+    return matches == len(interaction_term)
 
 # def match_
 
