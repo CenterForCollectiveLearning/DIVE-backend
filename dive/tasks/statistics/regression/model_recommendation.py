@@ -33,6 +33,7 @@ def convert_regression_variable_combinations_to_patsy_models(dependent_variable,
         model = create_patsy_model(dependent_variable, regression_variable_combination)
         patsy_models.append(model)
 
+    print 'patsymodels', patsy_models
     return patsy_models
 
 def create_patsy_model(dependent_variable, independent_variables):
@@ -42,7 +43,15 @@ def create_patsy_model(dependent_variable, independent_variables):
     TODO: Take both names and field documents
     '''
     lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-    rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
+    rhs = [ Term([]) ]
+
+    for iv in independent_variables:
+        if type(iv) is list:
+            desc = [ Term([LookupFactor(term['name']) for term in iv]) ]
+            rhs += desc
+        else:
+            rhs += [ Term([LookupFactor(iv['name'])]) ]
+
     return ModelDesc(lhs, rhs)
 
 def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
@@ -71,8 +80,8 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
                     additional_combinations.append(new_combination)
 
     regression_variable_combinations = regression_variable_combinations + additional_combinations
+    print 'reg var combos', regression_variable_combinations, 'add', additional_combinations
     return regression_variable_combinations
-
 
 def check_independent_variables(interaction_term, regression_variable_combination):
     matches = 0
@@ -81,9 +90,6 @@ def check_independent_variables(interaction_term, regression_variable_combinatio
             if variable['name'] == term['name']:
                 matches = matches + 1
     return matches == len(interaction_term)
-
-# def match_
-
 
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     '''
