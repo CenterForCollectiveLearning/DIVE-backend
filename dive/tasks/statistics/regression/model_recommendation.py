@@ -10,17 +10,7 @@ from dive.tasks.statistics.regression import ModelSelectionType as MST
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-def construct_models(df, dependent_variable, independent_variables, interaction_terms, selection_type=MST.ALL_BUT_ONE.value):
-     '''
-    Given dependent and independent variables, return list of patsy model.
-
-    Classify into different systems:
-        1) Whether data is involved
-        2) Whether the final regressions are actually run in the process
-
-    regression_variable_combinations = [ [x], [x, y], [y, z] ]
-    models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
-    '''
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,
@@ -61,7 +51,6 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
     Return one model with all variables, and N-1 models with one variable left out
     '''
     # Create list of independent variables, one per regression
-    print 'all but one', interaction_terms
     regression_variable_combinations = []
     if len(independent_variables) == 2:
         for i, considered_field in enumerate(independent_variables):
@@ -72,7 +61,32 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
             regression_variable_combinations.append(all_fields_except_considered_field)
     regression_variable_combinations.append(independent_variables)
 
+    additional_combinations = []
+    if interaction_terms:
+        for rvc in regression_variable_combinations:
+            for interaction_term in interaction_terms:
+                contains_all_interaction_variables = check_independent_variables(interaction_term, rvc)
+                if contains_all_interaction_variables:
+                    new_combination = rvc[:]
+                    new_combination.append(interaction_term)
+                    additional_combinations.append(new_combination)
+
+    regression_variable_combinations = regression_variable_combinations + additional_combinations
     return regression_variable_combinations
+
+
+def check_independent_variables(interaction_term, regression_variable_combination):
+    matches = 0
+    for variable in regression_variable_combination:
+        for term in interaction_term:
+            if variable['name'] == term['name']:
+                matches = matches + 1
+
+    result = matches == len(interaction_term)
+    return result
+
+# def match_
+
 
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     '''
