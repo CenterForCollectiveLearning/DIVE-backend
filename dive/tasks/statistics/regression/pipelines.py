@@ -281,7 +281,13 @@ def format_results(model_results, dependent_variable, independent_variables, con
             regression_stats = test_regression_fit(model_result['total_regression_properties']['resid'], dep_data)
 
         # Format results
-        field_names = [ civ['name'] for civ in considered_independent_variables ]
+        field_names = []
+        for civ in considered_independent_variables:
+            if type(civ) is list:
+                field = [ var['name'] for var in civ ]
+                field_names.append(':'.join(field))
+            else:
+                field_names.append(civ['name'])
 
         regression_result = {
             'regressed_fields': field_names,
@@ -304,9 +310,9 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'name': field,
             'values': values
         })
-    for terms in interaction_terms:
+    for term in interaction_terms:
         regression_fields_collection.append({
-            'name': "%s:%s" % (terms[0]['name'], terms[1]['name']),
+            'name': "%s:%s" % (term[0]['name'], term[1]['name']),
             'values': None
         })
 
