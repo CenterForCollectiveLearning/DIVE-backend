@@ -78,7 +78,7 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
     if interaction_terms:
         for rvc in regression_variable_combinations:
             for interaction_term in interaction_terms:
-                if contains_all_interaction_variables(interaction_term, rvc):
+                if rvc_contains_all_interaction_variables(interaction_term, rvc):
                     new_combination = rvc[:]
                     new_combination.append(interaction_term)
                     combinations_with_interactions.append(new_combination)
@@ -87,15 +87,6 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
     
     return regression_variable_combinations
 
-def contains_all_interaction_variables(interaction_term, regression_variable_combination):
-    matches = 0
-
-    for variable in regression_variable_combination:
-        for term in interaction_term:
-            if variable['name'] == term['name']:
-                matches = matches + 1
-
-    return matches == len(interaction_term)
 
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     '''
@@ -162,3 +153,12 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
 
     return regression_variable_combinations
 
+def rvc_contains_all_interaction_variables(interaction_term, regression_variable_combination):
+    matches = 0
+
+    for variable in regression_variable_combination:
+        for term in interaction_term:
+            if variable['name'] == term['name']:
+                matches += 1
+
+    return matches == len(interaction_term)
