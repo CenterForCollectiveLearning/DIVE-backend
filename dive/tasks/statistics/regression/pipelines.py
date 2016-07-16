@@ -25,7 +25,6 @@ from dive.resources.serialization import replace_unserializable_numpy
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-
 def run_regression_from_spec(spec, project_id):
     '''
     Wrapper function for five discrete steps:
@@ -61,7 +60,6 @@ def run_regression_from_spec(spec, project_id):
 
     return formatted_results, 200
 
-
 def load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id):
     '''
     Load DF and full field documents
@@ -88,7 +86,6 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
 
     return dependent_variable, independent_variables, interaction_terms, df
 
-
 def get_full_field_documents_from_field_names(all_fields, names):
     fields = []
     for name in names:
@@ -96,7 +93,6 @@ def get_full_field_documents_from_field_names(all_fields, names):
         if matched_field:
             fields.append(matched_field)
     return fields
-
 
 def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
@@ -115,7 +111,6 @@ def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, 
         model_result = map_function_to_type[regression_type](df, patsy_model, dependent_variable, estimator, weights)
         model_results.append(model_result)
     return model_results
-
 
 def parse_confidence_intervals(model_result):
     conf_int = model_result.conf_int().transpose().to_dict()
@@ -260,7 +255,6 @@ def _get_fields_categorical_variable(s):
         value_field = s.split('[T.')[1].strip(']')
     return base_field, value_field
 
-
 def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms):
     # Initialize returned data structures
     independent_variable_names = [ iv['name'] for iv in independent_variables ]
@@ -318,7 +312,6 @@ def format_results(model_results, dependent_variable, independent_variables, con
 
     regression_results['fields'] = regression_fields_collection
     return regression_results
-
 
 def save_regression(spec, result, project_id):
     with task_app.app_context():

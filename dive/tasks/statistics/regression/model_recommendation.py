@@ -88,7 +88,6 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
     
     return regression_variable_combinations
 
-
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     '''
     Return forward selection model based on r-squared.
