@@ -10,6 +10,16 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
+    '''
+    Given dependent and independent variables, return list of patsy model.
+
+    Classify into different systems:
+        1) Whether data is involved
+        2) Whether the final regressions are actually run in the process
+
+    regression_variable_combinations = [ [x], [x, y], [y, z] ]
+    models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
+    '''
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,
@@ -79,7 +89,7 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
 
 def contains_all_interaction_variables(interaction_term, regression_variable_combination):
     matches = 0
-    
+
     for variable in regression_variable_combination:
         for term in interaction_term:
             if variable['name'] == term['name']:
