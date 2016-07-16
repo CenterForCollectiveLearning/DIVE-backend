@@ -5,6 +5,7 @@ import statsmodels.api as sm
 from sklearn import linear_model
 
 from dive.tasks.statistics.regression import ModelSelectionType as MST
+from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -152,13 +153,3 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
     regression_variable_combinations.append(regression_variable_combination)
 
     return regression_variable_combinations
-
-def rvc_contains_all_interaction_variables(interaction_term, regression_variable_combination):
-    matches = 0
-
-    for variable in regression_variable_combination:
-        for term in interaction_term:
-            if variable['name'] == term['name']:
-                matches += 1
-
-    return matches == len(interaction_term)
