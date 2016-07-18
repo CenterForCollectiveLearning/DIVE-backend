@@ -60,6 +60,9 @@ interactionTermPostParser = reqparse.RequestParser()
 interactionTermPostParser.add_argument('interactionTermIds', type=list, location='json')
 interactionTermPostParser.add_argument('projectId', type=int, location='json')
 interactionTermPostParser.add_argument('datasetId', type=int, location='json')
+
+interactionTermDeleteParser = reqparse.RequestParser()
+interactionTermDeleteParser.add_argument('id', type=str, required=True)
 class InteractionTerms(Resource):
     def post(self):
         args = interactionTermPostParser.parse_args()
@@ -68,6 +71,12 @@ class InteractionTerms(Resource):
         interaction_term_ids = args.get('interactionTermIds')
         data = db_access.insert_interaction_term(project_id, dataset_id, interaction_term_ids)
         return jsonify(data)
+
+    def delete(self):
+        args = interactionTermDeleteParser.parse_args()
+        interaction_term_id = args.get('id')
+        deleted_term = db_access.delete_interaction_term(interaction_term_id)
+        return jsonify(deleted_term)
 
 #####################################################################
 # Endpoint returning regression data given a specification

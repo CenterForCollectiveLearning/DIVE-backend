@@ -597,7 +597,7 @@ def delete_interaction_term(interaction_term_id):
         raise e
 
     db.session.delete(interaction_term)
-    db.commit()
+    db.session.commit()
     return row_to_dict(interaction_term)
 
 
