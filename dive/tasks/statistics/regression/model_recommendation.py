@@ -4,11 +4,13 @@ from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
 from sklearn import linear_model
 
+from dive.tasks.statistics.utilities import create_patsy_model
 from dive.tasks.statistics.regression import ModelSelectionType as MST
 from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+
 
 def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
     '''
@@ -34,6 +36,7 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
 
     return ( regression_variable_combinations, patsy_models )
 
+
 def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
     patsy_models = []
     for regression_variable_combination in regression_variable_combinations:
@@ -42,23 +45,6 @@ def convert_regression_variable_combinations_to_patsy_models(dependent_variable,
 
     return patsy_models
 
-def create_patsy_model(dependent_variable, independent_variables):
-    '''
-    Construct and return patsy formula (object representation)
-
-    TODO: Take both names and field documents
-    '''
-    lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-    rhs = [ Term([]) ]
-
-    for iv in independent_variables:
-        if type(iv) is list:
-            desc = [ Term([LookupFactor(term['name']) for term in iv]) ]
-            rhs += desc
-        else:
-            rhs += [ Term([LookupFactor(iv['name'])]) ]
-
-    return ModelDesc(lhs, rhs)
 
 def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
     '''
@@ -85,8 +71,9 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
                     combinations_with_interactions.append(new_combination)
 
     regression_variable_combinations = regression_variable_combinations + combinations_with_interactions
-    
+
     return regression_variable_combinations
+
 
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     '''
@@ -127,6 +114,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
         regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
 
     return regression_variable_combinations
+
 
 def lasso(df, dependent_variable, independent_variables, model_limit=8):
     '''

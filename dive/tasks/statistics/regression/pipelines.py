@@ -206,7 +206,7 @@ def run_polynomial_regression():
 def restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties):
     # Restructure field properties dict from
     # { property: { field: value }} -> [ field: field, properties: { property: value } ]
-    
+
     categorical_field_values = {}
     properties_by_field_dict = {}
 
