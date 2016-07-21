@@ -12,6 +12,7 @@ from dive.tasks.statistics.comparison.anova import run_anova_from_spec
 from dive.tasks.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
+# from dive.tasks.statistics.regression.interaction_terms import 
 
 # Async tasks
 from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
@@ -54,6 +55,28 @@ class ContributionToRSquared(Resource):
         logger.info(data)
         return jsonify({ 'data': data })
 
+# For interaction term creation
+interactionTermPostParser = reqparse.RequestParser()
+interactionTermPostParser.add_argument('interactionTermIds', type=list, location='json')
+interactionTermPostParser.add_argument('projectId', type=int, location='json')
+interactionTermPostParser.add_argument('datasetId', type=int, location='json')
+
+interactionTermDeleteParser = reqparse.RequestParser()
+interactionTermDeleteParser.add_argument('id', type=str, required=True)
+class InteractionTerms(Resource):
+    def post(self):
+        args = interactionTermPostParser.parse_args()
+        project_id = args.get('projectId')
+        dataset_id = args.get('datasetId')
+        interaction_term_ids = args.get('interactionTermIds')
+        data = db_access.insert_interaction_term(project_id, dataset_id, interaction_term_ids)
+        return jsonify(data)
+
+    def delete(self):
+        args = interactionTermDeleteParser.parse_args()
+        interaction_term_id = args.get('id')
+        deleted_term = db_access.delete_interaction_term(interaction_term_id)
+        return jsonify(deleted_term)
 
 #####################################################################
 # Endpoint returning regression data given a specification
@@ -69,6 +92,7 @@ class RegressionFromSpec(Resource):
         spec: {
             independentVariables
             dependentVariable
+            interactionTerms
             model
             estimator
             degree
@@ -77,6 +101,7 @@ class RegressionFromSpec(Resource):
             datasetId
         }
         '''
+
         args = regressionPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
