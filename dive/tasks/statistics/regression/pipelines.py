@@ -252,15 +252,30 @@ def _get_fields_categorical_variable(s):
     '''
     base_field = s
     value_field = None
-    if '[' in s:
-        s_count = s.count('[')
-        if s_count == 1:
-            base_field = s.split('[')[0]
-            value_field = s.split('[T.')[1].strip(']')
-        elif s_count == 2:
+
+    logger.info(s)
+    bracket_count = s.count('[')
+    colon_count = s.count(':')
+    if bracket_count:
+        if bracket_count == 1:
+            if colon_count == 0:
+                base_field = s.split('[')[0]
+                value_field = s.split('[T.')[1].strip(']')
+            elif colon_count == 1:
+                q_first = (s.split(':')[0].count('[') == 0)
+                if q_first:
+                    q_field, full_c_field = s.split(':')
+                    base_field = '%s:%s' % (q_field, full_c_field.split('[')[0])
+                else:
+                    full_c_field, q_field = s.split(':')
+                    base_field = '%s:%s' % (full_c_field.split('[')[0], q_field)
+                value_field = s.split('[T.')[1].strip(']')
+                logger.info('%s: %s', base_field, value_field)
+
+        elif bracket_count == 2:
             first_term, second_term = s.split(':')
-            base_field = '%s:%s' % (first_term.split('[')[0].strip(), second_term.split('[')[0].strip())
-            value_field = '%s:%s' % (first_term.split('[T.')[1].strip('] '), second_term.split('[T.')[1].strip('] '))
+            base_field = '%s:%s' % (first_term.split('[')[0], second_term.split('[')[0])
+            value_field = '%s:%s' % (first_term.split('[T.')[1].strip(']'), second_term.split('[T.')[1].strip(']'))
 
     return base_field, value_field
 
