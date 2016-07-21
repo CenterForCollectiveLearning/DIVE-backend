@@ -69,7 +69,6 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
                     new_combination = rvc[:]
                     new_combination.append(interaction_term)
                     combinations_with_interactions.append(new_combination)
-
     regression_variable_combinations = regression_variable_combinations + combinations_with_interactions
 
     return regression_variable_combinations

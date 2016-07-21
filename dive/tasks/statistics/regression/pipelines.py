@@ -246,13 +246,22 @@ def restructure_field_properties_dict(constants, regression_field_properties, to
 def _get_fields_categorical_variable(s):
     '''
     Parse base and value fields out of statsmodels categorical encoding
-    e.g. 'department[T.Engineering]' -> [ department, Engineering ]
+    e.g.
+        1) 'department[T.Engineering]' -> [ department, Engineering ]
+        2) 'department[T.Engineering]:gender[T.Male]' -> [ department:gender, Engineering:Male ]
     '''
     base_field = s
     value_field = None
     if '[' in s:
-        base_field = s.split('[')[0]
-        value_field = s.split('[T.')[1].strip(']')
+        s_count = s.count('[')
+        if s_count == 1:
+            base_field = s.split('[')[0]
+            value_field = s.split('[T.')[1].strip(']')
+        elif s_count == 2:
+            first_term, second_term = s.split(':')
+            base_field = '%s:%s' % (first_term.split('[')[0].strip(), second_term.split('[')[0].strip())
+            value_field = '%s:%s' % (first_term.split('[T.')[1].strip('] '), second_term.split('[T.')[1].strip('] '))
+
     return base_field, value_field
 
 def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms):
@@ -304,11 +313,14 @@ def format_results(model_results, dependent_variable, independent_variables, con
             'name': field,
             'values': values
         })
+
     for term in interaction_terms:
-        regression_fields_collection.append({
-            'name': "%s:%s" % (term[0]['name'], term[1]['name']),
-            'values': None
-        })
+        formatted_interaction_term_string = '%s:%s' % (term[0]['name'], term[1]['name'])
+        if formatted_interaction_term_string not in regression_fields_dict:
+            regression_fields_collection.append({
+                'name': formatted_interaction_term_string,
+                'values': None
+            })
 
     regression_results['fields'] = regression_fields_collection
     return regression_results
