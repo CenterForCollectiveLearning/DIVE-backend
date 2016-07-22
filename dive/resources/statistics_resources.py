@@ -5,10 +5,16 @@ from flask.ext.restful import Resource, reqparse
 from dive.db import db_access
 from dive.resources.serialization import jsonify
 
-from dive.tasks.statistics.comparison_tests import run_anova_from_spec
-from dive.tasks.statistics.comparison import run_comparison_from_spec, get_variable_summary_statistics_from_spec, run_numerical_comparison_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec
+
+# Sync tasks
+from dive.tasks.statistics.comparison.numeric import run_numerical_comparison_from_spec
+from dive.tasks.statistics.comparison.anova import run_anova_from_spec
+from dive.tasks.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
+# from dive.tasks.statistics.regression.interaction_terms import 
+
+# Async tasks
 from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
 from dive.tasks.handlers import error_handler
 
@@ -49,6 +55,28 @@ class ContributionToRSquared(Resource):
         logger.info(data)
         return jsonify({ 'data': data })
 
+# For interaction term creation
+interactionTermPostParser = reqparse.RequestParser()
+interactionTermPostParser.add_argument('interactionTermIds', type=list, location='json')
+interactionTermPostParser.add_argument('projectId', type=int, location='json')
+interactionTermPostParser.add_argument('datasetId', type=int, location='json')
+
+interactionTermDeleteParser = reqparse.RequestParser()
+interactionTermDeleteParser.add_argument('id', type=str, required=True)
+class InteractionTerms(Resource):
+    def post(self):
+        args = interactionTermPostParser.parse_args()
+        project_id = args.get('projectId')
+        dataset_id = args.get('datasetId')
+        interaction_term_ids = args.get('interactionTermIds')
+        data = db_access.insert_interaction_term(project_id, dataset_id, interaction_term_ids)
+        return jsonify(data)
+
+    def delete(self):
+        args = interactionTermDeleteParser.parse_args()
+        interaction_term_id = args.get('id')
+        deleted_term = db_access.delete_interaction_term(interaction_term_id)
+        return jsonify(deleted_term)
 
 #####################################################################
 # Endpoint returning regression data given a specification
@@ -64,6 +92,7 @@ class RegressionFromSpec(Resource):
         spec: {
             independentVariables
             dependentVariable
+            interactionTerms
             model
             estimator
             degree
@@ -72,11 +101,14 @@ class RegressionFromSpec(Resource):
             datasetId
         }
         '''
+
         args = regressionPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
 
         regression_doc = db_access.get_regression_from_spec(project_id, spec)
+
+        # check to see if regression is in db; if so, send back data
         if regression_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             regression_data = regression_doc['data']
             regression_data['id'] = regression_doc['id']
@@ -100,23 +132,9 @@ class RegressionFromSpec(Resource):
             }, status=202)
 
 
-class AnovaFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            dataset_id
-            independent_variables - list names, must be categorical
-            dependent_variables - list names, must be numerical
-        }
-        '''
-        args = request.get_json()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        result, status = run_anova_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
-
-
-
+numericalComparisonPostParser = reqparse.RequestParser()
+numericalComparisonPostParser.add_argument('projectId', type=str, location='json')
+numericalComparisonPostParser.add_argument('spec', type=dict, location='json')
 class NumericalComparisonFromSpec(Resource):
     def post(self):
         '''
@@ -126,11 +144,50 @@ class NumericalComparisonFromSpec(Resource):
             independence : boolean
         }
         '''
-        args = request.get_json()
+        args = numericalComparisonPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
         result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return make_response(jsonify(result), status)
+        return jsonify(result)
+
+
+anovaPostParser = reqparse.RequestParser()
+anovaPostParser.add_argument('projectId', type=str, location='json')
+anovaPostParser.add_argument('spec', type=dict, location='json')
+class AnovaFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = anovaPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+        result, status = run_anova_from_spec(spec, project_id)
+        return jsonify(result)
+
+
+anovaBoxplotPostParser = reqparse.RequestParser()
+anovaBoxplotPostParser.add_argument('projectId', type=str, location='json')
+anovaBoxplotPostParser.add_argument('spec', type=dict, location='json')
+class AnovaBoxplotFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = anovaBoxplotPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+
+        result, status = get_anova_boxplot_data(spec, project_id)
+        return jsonify(result)
 
 
 summaryPostParser = reqparse.RequestParser()

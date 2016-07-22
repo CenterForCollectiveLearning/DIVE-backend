@@ -7,8 +7,8 @@ from dive.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedu
 
 from dive.resources.statistics_resources import AnovaFromSpec, CorrelationsFromSpec, RegressionEstimator, \
     RegressionFromSpec, SummaryStatsFromSpec, NumericalComparisonFromSpec, \
-    OneDimensionalTableFromSpec, ContingencyTableFromSpec, \
-    ContributionToRSquared, CorrelationScatterplot
+    OneDimensionalTableFromSpec, ContingencyTableFromSpec, InteractionTerms, \
+    ContributionToRSquared, CorrelationScatterplot, AnovaBoxplotFromSpec
 
 from dive.resources.exported_results import ExportedResults
 from dive.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
@@ -50,12 +50,15 @@ def add_resources(api):
     api.add_resource(ExportedSpecs,                 '/exported_specs/v1/exported_specs')
     api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<string:exported_spec_id>/visualization')
 
+    api.add_resource(InteractionTerms,              '/statistics/v1/interaction_term')
+
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
     api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
     api.add_resource(SummaryStatsFromSpec,          '/statistics/v1/summary_stats')
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
 
     api.add_resource(AnovaFromSpec,                 '/statistics/v1/anova')
+    api.add_resource(AnovaBoxplotFromSpec,          '/statistics/v1/anova_boxplot')
     api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
     api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')

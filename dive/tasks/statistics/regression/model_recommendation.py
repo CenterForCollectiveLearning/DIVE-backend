@@ -1,36 +1,17 @@
+# from dive.tasks.statistics.utilities import create_patsy_model
 import numpy as np
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
 from sklearn import linear_model
-from sklearn.feature_selection import SelectFromModel
 
+from dive.tasks.statistics.utilities import create_patsy_model
 from dive.tasks.statistics.regression import ModelSelectionType as MST
+from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-def create_patsy_model(dependent_variable, independent_variables):
-    '''
-    Construct and return patsy formula (object representation)
-
-    TODO: Take both names and field documents
-    '''
-    lhs = [ Term([LookupFactor(dependent_variable['name'])]) ]
-    rhs = [ Term([]) ] + [ Term([LookupFactor(iv['name'])]) for iv in independent_variables ]
-    return ModelDesc(lhs, rhs)
-
-
-def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
-    patsy_models = []
-    for regression_variable_combination in regression_variable_combinations:
-        model = create_patsy_model(dependent_variable, regression_variable_combination)
-        patsy_models.append(model)
-
-    print patsy_models
-    return patsy_models
-
-
-def construct_models(df, dependent_variable, independent_variables, model_limit=8, selection_type=MST.FORWARD_R2.value):
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
     '''
     Given dependent and independent variables, return list of patsy model.
 
@@ -44,20 +25,27 @@ def construct_models(df, dependent_variable, independent_variables, model_limit=
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,
-        MST.FORWARD_R2.value: forward_r2,
+        MST.FORWARD_R2.value: forward_r2
     }
-    model_selection_function = model_selection_name_to_function[selection_type]
-    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables)
 
-    rvcs_parsed = []
-    for rvc in regression_variable_combinations:
-        rvcs_parsed.append([v['name'] for v in rvc])
+    model_selection_function = model_selection_name_to_function[selection_type]
+    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables, interaction_terms)
+
     patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
 
     return ( regression_variable_combinations, patsy_models )
 
 
-def all_but_one(df, dependent_variable, independent_variables, model_limit=8):
+def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
+    patsy_models = []
+    for regression_variable_combination in regression_variable_combinations:
+        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        patsy_models.append(model)
+
+    return patsy_models
+
+
+def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
     '''
     Return one model with all variables, and N-1 models with one variable left out
     '''
@@ -71,6 +59,16 @@ def all_but_one(df, dependent_variable, independent_variables, model_limit=8):
             all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
             regression_variable_combinations.append(all_fields_except_considered_field)
     regression_variable_combinations.append(independent_variables)
+
+    combinations_with_interactions = []
+    if interaction_terms:
+        for rvc in regression_variable_combinations:
+            for interaction_term in interaction_terms:
+                if rvc_contains_all_interaction_variables(interaction_term, rvc):
+                    new_combination = rvc[:]
+                    new_combination.append(interaction_term)
+                    combinations_with_interactions.append(new_combination)
+    regression_variable_combinations = regression_variable_combinations + combinations_with_interactions
 
     return regression_variable_combinations
 

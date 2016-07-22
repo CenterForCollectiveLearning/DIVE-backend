@@ -118,8 +118,9 @@ class Field_Properties(db.Model):
     unique_values = db.Column(JSONB)
     child = db.Column(db.Unicode(250))
     is_child = db.Column(db.Boolean())
+    viz_data = db.Column(JSONB)
     stats = db.Column(JSONB)
-    manual = db.Column(db.Boolean())
+    manual = db.Column(JSONB)
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
@@ -248,6 +249,23 @@ class Exported_Regression(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
     project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+class Interaction_Term(db.Model):
+    __tablename__ = ModelName.INTERACTION_TERM.value
+    id = db.Column(db.Integer, primary_key=True)
+    variables = db.Column(JSONB)
+    names = db.Column(JSONB)
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,

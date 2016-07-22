@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 locale.setlocale(locale.LC_NUMERIC, '')
 
+
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
@@ -31,45 +32,33 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     return result
 
 
-def get_data(project_id=None, dataset_id=None, nrows=None, profile=False):
-    '''
-    Generally return data in different formats
-
-    TODO Change to get_data_as_dataframe
-    TODO fill_na arguments
-    '''
-    if profile:
-        start_time = time()
+def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if IMD.hasData(dataset_id):
         return IMD.getData(dataset_id)
 
-    if dataset_id and project_id:
-        dataset = db_access.get_dataset(project_id, dataset_id)
-        path = dataset['path']
-        dialect = dataset['dialect']
+    dataset = db_access.get_dataset(project_id, dataset_id)
+    dialect = dataset['dialect']
 
+    if not field_properties:
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
-        df = pd.read_table(
-            path,
-            skiprows = dataset['offset'],
-            sep = dialect['delimiter'],
-            engine = 'c',
-            # dtype = field_to_type_mapping,
-            escapechar = dialect['escapechar'],
-            doublequote = dialect['doublequote'],
-            quotechar = dialect['quotechar'],
-            parse_dates = True,
-            nrows = nrows,
-            thousands = ','
-        )
+    df = pd.read_table(
+        dataset['path'],
+        skiprows = dataset['offset'],
+        sep = dialect['delimiter'],
+        engine = 'c',
+        # dtype = field_to_type_mapping,
+        escapechar = dialect['escapechar'],
+        doublequote = dialect['doublequote'],
+        quotechar = dialect['quotechar'],
+        parse_dates = True,
+        nrows = nrows,
+        thousands = ','
+    )
+    sanitized_df = sanitize_df(df)
+    coerced_df = coerce_types(sanitized_df, field_properties)
 
-        sanitized_df = sanitize_df(df)
-        coerced_df = coerce_types(sanitized_df, field_properties)
-
-        IMD.insertData(dataset_id, coerced_df)
-    if profile:
-        logger.debug('[ACCESS] Getting dataset %s took %.3fs', dataset_id, (time() - start_time))
+    IMD.insertData(dataset_id, coerced_df)
     return coerced_df
 
 
@@ -113,7 +102,7 @@ def coerce_types(df, field_properties):
 
 def sanitize_df(df):
     # General Sanitation
-    invalid_chars = [ 'n/a', 'na', 'NA', 'NaN', 'n/\a', '.', '\n', '\r\n' ]
+    invalid_chars = [ 'None', '', 'n/a', 'na', 'NA', 'NaN', 'n/\a', '.', '\n', '\r\n' ]
     for invalid_char in invalid_chars:
         df.replace(invalid_char, np.nan)
     return df

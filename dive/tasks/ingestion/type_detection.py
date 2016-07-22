@@ -20,60 +20,98 @@ FIELD_TYPES = [
     CountryNameType, ContinentNameType
 ]
 
-def calculate_field_type(field_name, field_values, field_types=FIELD_TYPES, num_samples=20, random=True):
+header_strings = {
+    'is': {
+        DataType.YEAR.value: ['y', 'Y', 'year', 'Year', 'YEAR'],
+        DataType.MONTH.value: ['m', 'M', 'month', 'Month', 'MONTH'],
+        DataType.DAY.value: ['d', 'D', 'day', 'Days', 'DAY'],
+        DataType.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+    },
+    'in': {
+        DataType.YEAR.value: ['year', 'Year', 'YEAR', 'YOB'],
+        DataType.MONTH.value: ['month', 'Month', 'MONTH'],
+        DataType.DAY.value: ['day', 'Days', 'DAY'],
+        DataType.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+    },
+    'pre': {
+        DataType.BOOLEAN.value: ['is']
+    },
+    'post': {
+    }
+}
+
+def get_type_scores_from_field_name(field_name):
+    type_scores = defaultdict(int)
+    type_scores[DataType.STRING.value] = 0  # Default to string
+
+    for datatype, strings in header_strings['is'].iteritems():
+        for s in strings:
+            if field_name is s:
+                type_scores[datatype] += 7000
+
+    for datatype, strings in header_strings['in'].iteritems():
+        for s in strings:
+            if s in field_name:
+                type_scores[datatype] += 7000
+
+    for datatype, strings in header_strings['pre'].iteritems():
+        for s in strings:
+            if field_name.startswith(s):
+                type_scores[datatype] += 7000
+
+    for datatype, strings in header_strings['post'].iteritems():
+        for s in strings:
+            if field_name.endswith(s):
+                type_scores[datatype] += 7000
+    return type_scores
+
+
+def get_type_scores_from_field_values(field_values, field_types):
+    type_scores = defaultdict(int)
+    type_scores[DataType.STRING.value] = 0  # Default to string
+
+    type_instances = []
+    for field_type in field_types:
+        for type_instance in field_type.instances():
+            type_instances.append(type_instance)
+
+    # Detection from values
+    # N_values * N_types iterations (no hierarchical tests)
+    for field_value in field_values:
+        for type_instance in type_instances:
+            if type_instance.test(field_value):
+                type_scores[type_instance.name] += type_instance.weight
+    return type_scores
+
+
+def calculate_field_type(field_name, field_values, field_position, num_fields, field_types=FIELD_TYPES, num_samples=1000, random=True):
     '''
     For each field, returns highest-scoring field type of first num_samples non-empty
     instances.
     '''
     num_samples = min(len(field_values), num_samples)
-    if random:
-        field_sample = random_sample(field_values, num_samples)
-    else:
-        field_sample = field_values[:num_samples]
+    field_sample = random_sample(field_values, num_samples) if random else field_values[:num_samples]
 
-    type_instances = []
-    for field_type in field_types:
-        for inst in field_type.instances():
-            type_instances.append(inst)
+    logger.info('Sample size: %s', num_samples)
+    type_scores_from_name = get_type_scores_from_field_name(field_name)
+    type_scores_from_values = get_type_scores_from_field_values(field_sample, field_types)
 
-    header_strings = {
-        DataType.YEAR.value: ['year', 'Year'],
-        DataType.MONTH.value: ['month', 'Month'],
-        DataType.DAY.value: ['day', 'Days'],
-        DataType.BOOLEAN.value: ['is'],
-        DataType.DATETIME.value: ['date', 'Date', 'time', 'Time']
-    }
+    logger.info(field_name)
+    logger.info(type_scores_from_name)
+    logger.info(type_scores_from_values)
 
-    # Tabulate field scores
-    field_type_scores = defaultdict(int)
-    # Default to string
-    field_type_scores[StringType().name] = 0
-
-    # Detection from field names
-    for datatype, strings in header_strings.iteritems():
-        # Only look at beginning of string for certain field types
-        if datatype in [ DataType.BOOLEAN.value ]:
-            for s in strings:
-                if field_name.startswith(s):
-                    field_type_scores[datatype] += 20
-
-        # Look anywhere for other field types
-        else:
-            for s in strings:
-                if s in field_name:
-                    field_type_scores[datatype] += 20
-
-    # Detection from values
-    for field_value in field_sample:
-        for type_instance in type_instances:
-            if type_instance.test(field_value):
-                field_type_scores[type_instance.name] += type_instance.weight
+    # Combine type score dictionaries
+    final_type_scores = defaultdict(int)
+    for t, score in type_scores_from_name.iteritems():
+        final_type_scores[t] += score
+    for t, score in type_scores_from_values.iteritems():
+        final_type_scores[t] += score
 
     # Normalize field scores
     score_tuples = []
     normalized_type_scores = {}
-    total_score = sum(field_type_scores.values())
-    for type_name, score in field_type_scores.iteritems():
+    total_score = sum(final_type_scores.values())
+    for type_name, score in final_type_scores.iteritems():
         score_tuples.append((type_name, score))
         normalized_type_scores[type_name] = float(score) / total_score
 

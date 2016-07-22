@@ -13,6 +13,7 @@ from scipy.stats import ttest_ind
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.tasks.ingestion.utilities import get_unique
+from dive.tasks.statistics.utilities import variations_equal, sets_normal
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -55,6 +56,7 @@ def get_variable_summary_statistics_from_spec(spec, project_id):
     summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
     return summary_statistics_result, 200
 
+
 def run_numerical_comparison_from_spec(spec, project_id):
     comparison_result = {}
 
@@ -69,6 +71,7 @@ def run_numerical_comparison_from_spec(spec, project_id):
 
     comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)
     return comparison_result, 200
+
 
 def run_correlation_from_spec(spec, project_id):
     dataset_id = spec.get("datasetId")
@@ -686,14 +689,16 @@ def run_valid_comparison_tests(df, variable_names, independence):
         args.append(df[name])
 
     results = []
-    normal = sets_normal(.25,*args)
+    normal = sets_normal(.25, *args)
     numDataSets = len(args)
-    equalVar = variations_equal(.25,*args)
+    variations_equal = variations_equal(.25, *args)
 
-    ################we are assuming independence right now
-    valid_tests = get_valid_tests(equalVar, True, normal, numDataSets)
-    for test in valid_tests:
-        results.append({'test':test, 'values':valid_tests[test](*args)})
+    # Assuming independence
+    valid_tests = get_valid_tests(variations_equal, True, normal, numDataSets)
+    results = [ {
+        'test': test,
+        'values': valid_tests[test](*args)
+    } for test in valid_tests]
 
     return results
 
@@ -762,22 +767,6 @@ def ttest(df, fields, indep, dep):
 ##################
 #Functions to determine which tests could be run
 ##################
-
-#return a boolean, if p-value less than threshold, returns false
-def variations_equal(THRESHOLD, *args):
-    return stats.levene(*args)[1]>THRESHOLD
-
-#if normalP is less than threshold, not considered normal
-def sets_normal(THRESHOLD, *args):
-    normal = True;
-    for arg in args:
-        if len(arg) < 8:
-            return False
-        if stats.normaltest(arg)[1] < THRESHOLD:
-            normal = False;
-
-    return normal
-
 def get_valid_tests(equal_var, independent, normal, num_samples):
     '''
     Get valid tests given number of samples and statistical characterization of
