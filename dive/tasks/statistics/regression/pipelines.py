@@ -293,7 +293,9 @@ def format_results(model_results, dependent_variable, independent_variable_names
         'independent_variable_ids': []
     }
 
-    independent_variable_names, independent_variable_ids = get_field_names_from_considered_independent_variables(considered_independent_variables_per_model)
+    independent_variable_ids = []
+    if len(independent_variable_names) == 0:
+        independent_variable_names, independent_variable_ids = get_field_names_from_considered_independent_variables(considered_independent_variables_per_model)
     
     regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
 

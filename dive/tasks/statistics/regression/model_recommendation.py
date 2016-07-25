@@ -120,7 +120,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
         remaining_variables.remove(max_variable)
 
         regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
-        
+
     return regression_variable_combinations
 
 
@@ -145,6 +145,7 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
         if abs(fit_coef[i]) >= column_means[i]:
             regression_variable_combination.append(independent_variable)
         print independent_variable['name'], fit_coef[i], (abs(fit_coef[i]) < column_means[i])
+    
     regression_variable_combinations.append(regression_variable_combination)
 
     return regression_variable_combinations
