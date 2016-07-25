@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, OrderedDict
 
 def get_variable_type_counts(dependent_variables, independent_variables):
     '''
@@ -46,4 +46,4 @@ def get_field_names_from_considered_independent_variables(independent_variables)
             variable_names.append(variable['name'])
 
     #get rid of duplicates
-    return list(set(variable_names))
+    return list(OrderedDict.fromkeys(variable_names))
