@@ -20,6 +20,7 @@ from dive.data.access import get_data
 from dive.task_core import celery, task_app
 from dive.tasks.statistics.regression.model_recommendation import construct_models
 from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
+from dive.tasks.statistics.regression.helpers import get_full_field_documents_from_field_names, get_field_names_from_considered_independent_variables
 from dive.resources.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
@@ -36,7 +37,7 @@ def run_regression_from_spec(spec, project_id):
     '''
     model = spec.get('model', 'lr')
     regression_type = spec.get('regressionType')
-    independent_variables_names = spec.get('independentVariables', [])
+    independent_variable_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     interaction_term_ids = spec.get('interactionTerms', [])
     estimator = spec.get('estimator', 'ols')
@@ -49,35 +50,37 @@ def run_regression_from_spec(spec, project_id):
         return 'Not passed required parameters', 400
 
     dependent_variable, independent_variables, interaction_terms, df = \
-        load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id)
+        load_data(dependent_variable_name, independent_variable_names, interaction_term_ids, dataset_id, project_id)
 
     considered_independent_variables_per_model, patsy_models = \
         construct_models(df, dependent_variable, independent_variables, interaction_terms)
 
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
-    formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
+    formatted_results = format_results(raw_results, dependent_variable, independent_variable_names, considered_independent_variables_per_model, interaction_terms)
 
     return formatted_results, 200
 
-def load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id):
+
+def load_data(dependent_variable_name, independent_variable_names, interaction_term_ids, dataset_id, project_id):
     '''
     Load DF and full field documents
     '''
     # Map variables to field documents
+
     with task_app.app_context():
         all_fields = db_access.get_field_properties(project_id, dataset_id)
         interaction_terms = db_access.get_interaction_term_properties(interaction_term_ids)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
     independent_variables = []
-    if independent_variables_names:
-        independent_variables = get_full_field_documents_from_field_names(all_fields, independent_variables_names)
+    if independent_variable_names:
+        independent_variables = get_full_field_documents_from_field_names(all_fields, independent_variable_names)
     else:
         for field in all_fields:
             if (not (field['general_type'] == 'c' and field['is_unique']) \
                 and field['name'] != dependent_variable_name):
-                independent_variables.append(field)
+                independent_variables.append(field)    
 
     # 2) Access dataset
     with task_app.app_context():
@@ -86,13 +89,6 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
 
     return dependent_variable, independent_variables, interaction_terms, df
 
-def get_full_field_documents_from_field_names(all_fields, names):
-    fields = []
-    for name in names:
-        matched_field = next((f for f in all_fields if f['name'] == name), None)
-        if matched_field:
-            fields.append(matched_field)
-    return fields
 
 def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
@@ -112,6 +108,7 @@ def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, 
         model_results.append(model_result)
     return model_results
 
+
 def parse_confidence_intervals(model_result):
     conf_int = model_result.conf_int().transpose().to_dict()
 
@@ -119,6 +116,7 @@ def parse_confidence_intervals(model_result):
     for field, d in conf_int.iteritems():
         parsed_conf_int[field] = [ d[0], d[1] ]
     return parsed_conf_int
+
 
 def run_linear_regression(df, patsy_model, dependent_variable, estimator, weights):
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
@@ -161,6 +159,7 @@ def run_linear_regression(df, patsy_model, dependent_variable, estimator, weight
 
     return regression_results
 
+
 def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weights):
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
 
@@ -200,8 +199,10 @@ def run_logistic_regression(df, patsy_model, dependent_variable, estimator, weig
 
     return regression_results
 
+
 def run_polynomial_regression():
     return
+
 
 def restructure_field_properties_dict(constants, regression_field_properties, total_regression_properties):
     # Restructure field properties dict from
@@ -243,6 +244,7 @@ def restructure_field_properties_dict(constants, regression_field_properties, to
         'total_regression_properties': total_regression_properties
     }
 
+
 def _get_fields_categorical_variable(s):
     '''
     Parse base and value fields out of statsmodels categorical encoding
@@ -279,13 +281,23 @@ def _get_fields_categorical_variable(s):
 
     return base_field, value_field
 
-def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms):
+
+def format_results(model_results, dependent_variable, independent_variable_names, considered_independent_variables_per_model, interaction_terms):
     # Initialize returned data structures
-    independent_variable_names = [ iv['name'] for iv in independent_variables ]
+    # independent_variable_names = [ iv['name'] for iv in independent_variables ]
+    if not independent_variable_names:
+        # independent_variable_names
+        print 'no independent variable names', independent_variable_names
+        independent_variable_names = get_field_names_from_considered_independent_variables(considered_independent_variables_per_model)
+
+    print 'var names', independent_variable_names
+
     regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
     regression_results = {
         'regressions_by_column': [],
     }
+
+    print '***FORMAT RESULTS***'
 
     for model_result, considered_independent_variables in zip(model_results, considered_independent_variables_per_model):
         # Move categorical field values to higher level
@@ -339,6 +351,7 @@ def format_results(model_results, dependent_variable, independent_variables, con
 
     regression_results['fields'] = regression_fields_collection
     return regression_results
+
 
 def save_regression(spec, result, project_id):
     with task_app.app_context():

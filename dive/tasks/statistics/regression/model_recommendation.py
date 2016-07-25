@@ -6,13 +6,13 @@ from sklearn import linear_model
 
 from dive.tasks.statistics.utilities import create_patsy_model
 from dive.tasks.statistics.regression import ModelSelectionType as MST
-from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables
+from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables, get_full_field_documents_from_field_names
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.FORWARD_R2.value):
     '''
     Given dependent and independent variables, return list of patsy model.
 
@@ -23,6 +23,7 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
     regression_variable_combinations = [ [x], [x, y], [y, z] ]
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
     '''
+
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,
@@ -80,6 +81,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
 
     For now: linear model
     '''
+
     regression_variable_combinations = []
 
     MARGINAL_THRESHOLD = 0.1
@@ -112,6 +114,11 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
 
         regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
 
+
+    for rvc in regression_variable_combinations:
+        for rv in rvc:
+            print 'rv', rv['name']
+        print 'rvc'
     return regression_variable_combinations
 
 

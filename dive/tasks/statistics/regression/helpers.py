@@ -19,6 +19,16 @@ def get_variable_type_counts(dependent_variables, independent_variables):
 
     return variable_types
 
+
+def get_full_field_documents_from_field_names(all_fields, names):
+    fields = []
+    for name in names:
+        matched_field = next((f for f in all_fields if f['name'] == name), None)
+        if matched_field:
+            fields.append(matched_field)
+    return fields
+
+
 def rvc_contains_all_interaction_variables(interaction_term, regression_variable_combination):
     matches = 0
 
@@ -28,3 +38,12 @@ def rvc_contains_all_interaction_variables(interaction_term, regression_variable
                 matches += 1
 
     return matches == len(interaction_term)
+
+def get_field_names_from_considered_independent_variables(independent_variables):
+    variable_names = []
+    for combinations in independent_variables:
+        for variable in combinations:
+            variable_names.append(variable['name'])
+
+    #get rid of duplicates
+    return list(set(variable_names))
