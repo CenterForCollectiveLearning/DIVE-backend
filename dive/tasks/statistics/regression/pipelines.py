@@ -50,8 +50,6 @@ def run_regression_from_spec(spec, project_id):
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
 
-    print 'independent variables', independent_variable_names
-
     dependent_variable, independent_variables, interaction_terms, df = \
         load_data(dependent_variable_name, independent_variable_names, interaction_term_ids, dataset_id, project_id)
 
@@ -297,8 +295,6 @@ def format_results(model_results, dependent_variable, independent_variable_names
 
     independent_variable_names, independent_variable_ids = get_field_names_from_considered_independent_variables(considered_independent_variables_per_model)
     
-    print 'ind var', independent_variable_ids
-
     regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
 
     for model_result, considered_independent_variables in zip(model_results, considered_independent_variables_per_model):
@@ -353,8 +349,6 @@ def format_results(model_results, dependent_variable, independent_variable_names
 
     regression_results['fields'] = regression_fields_collection
     regression_results['independent_variable_ids'] = independent_variable_ids
-
-    print 'returning regression results', regression_results
 
     return regression_results
 

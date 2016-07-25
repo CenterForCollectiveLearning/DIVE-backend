@@ -17,7 +17,6 @@ def recommend_selection_type(independent_variable_names):
     else:
         selection_type = MST.ALL_BUT_ONE.value
 
-    print 'selection type', selection_type
     return selection_type
 
 def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
@@ -32,8 +31,6 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
     '''
 
-    print 'selection type in construct models', selection_type
-    
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,
@@ -123,12 +120,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
         remaining_variables.remove(max_variable)
 
         regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
-
-
-    for rvc in regression_variable_combinations:
-        for rv in rvc:
-            print 'rv', rv['name']
-        print 'rvc'
+        
     return regression_variable_combinations
 
 
