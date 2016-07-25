@@ -285,19 +285,16 @@ def _get_fields_categorical_variable(s):
 def format_results(model_results, dependent_variable, independent_variable_names, considered_independent_variables_per_model, interaction_terms):
     # Initialize returned data structures
     # independent_variable_names = [ iv['name'] for iv in independent_variables ]
-    if not independent_variable_names:
-        # independent_variable_names
-        print 'no independent variable names', independent_variable_names
-        independent_variable_names = get_field_names_from_considered_independent_variables(considered_independent_variables_per_model)
-
-    print 'var names', independent_variable_names
-
-    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
     regression_results = {
         'regressions_by_column': [],
+        'independent_variable_ids': []
     }
 
-    print '***FORMAT RESULTS***'
+    independent_variable_names, independent_variable_ids = get_field_names_from_considered_independent_variables(considered_independent_variables_per_model)
+    
+    print 'ind var', independent_variable_ids
+
+    regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
 
     for model_result, considered_independent_variables in zip(model_results, considered_independent_variables_per_model):
         # Move categorical field values to higher level
@@ -350,6 +347,10 @@ def format_results(model_results, dependent_variable, independent_variable_names
             })
 
     regression_results['fields'] = regression_fields_collection
+    regression_results['independent_variable_ids'] = independent_variable_ids
+
+    print 'returning regression results', regression_results
+
     return regression_results
 
 

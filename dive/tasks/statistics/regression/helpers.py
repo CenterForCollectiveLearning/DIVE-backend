@@ -41,9 +41,11 @@ def rvc_contains_all_interaction_variables(interaction_term, regression_variable
 
 def get_field_names_from_considered_independent_variables(independent_variables):
     variable_names = []
+    variable_ids = []
     for combinations in independent_variables:
         for variable in combinations:
             variable_names.append(variable['name'])
+            variable_ids.append(variable['id'])
 
     #get rid of duplicates
-    return list(OrderedDict.fromkeys(variable_names))
+    return list(OrderedDict.fromkeys(variable_names)), list(OrderedDict.fromkeys(variable_ids))
