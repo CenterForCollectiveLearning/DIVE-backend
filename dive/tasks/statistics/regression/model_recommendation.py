@@ -11,8 +11,16 @@ from dive.tasks.statistics.regression.helpers import rvc_contains_all_interactio
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+def recommend_selection_type(independent_variable_names):
+    if len(independent_variable_names) == 0:
+        selection_type = MST.FORWARD_R2.value
+    else:
+        selection_type = MST.ALL_BUT_ONE.value
 
-def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.FORWARD_R2.value):
+    print 'selection type', selection_type
+    return selection_type
+
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
     '''
     Given dependent and independent variables, return list of patsy model.
 
@@ -24,6 +32,8 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
     '''
 
+    print 'selection type in construct models', selection_type
+    
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
         MST.LASSO.value: lasso,

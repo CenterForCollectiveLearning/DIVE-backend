@@ -18,7 +18,8 @@ from patsy import dmatrices
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import celery, task_app
-from dive.tasks.statistics.regression.model_recommendation import construct_models
+from dive.tasks.statistics.regression import ModelSelectionType as MST
+from dive.tasks.statistics.regression.model_recommendation import recommend_selection_type, construct_models
 from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
 from dive.tasks.statistics.regression.helpers import get_full_field_documents_from_field_names, get_field_names_from_considered_independent_variables
 from dive.resources.serialization import replace_unserializable_numpy
@@ -49,11 +50,15 @@ def run_regression_from_spec(spec, project_id):
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
 
+    print 'independent variables', independent_variable_names
+
     dependent_variable, independent_variables, interaction_terms, df = \
         load_data(dependent_variable_name, independent_variable_names, interaction_term_ids, dataset_id, project_id)
 
+    selection_type = recommend_selection_type(independent_variable_names)
+
     considered_independent_variables_per_model, patsy_models = \
-        construct_models(df, dependent_variable, independent_variables, interaction_terms)
+        construct_models(df, dependent_variable, independent_variables, interaction_terms, selection_type)
 
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
