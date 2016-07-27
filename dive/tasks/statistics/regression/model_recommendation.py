@@ -19,7 +19,7 @@ def recommend_selection_type(independent_variable_names):
 
     return selection_type
 
-def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=None):
     '''
     Given dependent and independent variables, return list of patsy model.
 
@@ -30,11 +30,15 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
     regression_variable_combinations = [ [x], [x, y], [y, z] ]
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
     '''
+    if not selection_type:
+        selection_type = MST.FORWARD_R2.value
 
     model_selection_name_to_function = {
         MST.ALL_BUT_ONE.value: all_but_one,
+        MST.FORWARD_R2.value: forward_r2,
         MST.LASSO.value: lasso,
-        MST.FORWARD_R2.value: forward_r2
+        MST.RIDGE.value: ridge,
+        MST.LARS.value: lars
     }
 
     model_selection_function = model_selection_name_to_function[selection_type]
@@ -131,14 +135,16 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
     # Create list of independent variables, one per regression
     regression_variable_combinations = []
 
+    print 'independent vars in lasso', independent_variables
+
     full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
     y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
+    
+    clf = linear_model.Lasso(alpha = 0.1)
 
     clf.fit(X, y)
     fit_coef = clf.coef_
     column_means = np.apply_along_axis(np.mean, 1, X)
-
-    clf = linear_model.Lasso(alpha = 0.1)
 
     regression_variable_combination = []
     for i, independent_variable in enumerate(independent_variables):
@@ -149,3 +155,26 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
     regression_variable_combinations.append(regression_variable_combination)
 
     return regression_variable_combinations
+
+def ridge():
+    return
+
+def lars(df, dependent_variable, independent_variables, interaction_terms):
+
+    print 'ind vars in lars', independent_variables
+    full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
+
+    regression_variable_combinations = []
+
+    y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
+
+    clf = linear_model.LassoLars(alpha=.1)
+    clf.fit(X, y)
+
+    print 'clf', clf
+
+    print 'clf coeff', clf.coef_
+
+
+    return regression_variable_combinations
+

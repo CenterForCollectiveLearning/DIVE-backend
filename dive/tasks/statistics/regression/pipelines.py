@@ -18,7 +18,6 @@ from patsy import dmatrices
 from dive.db import db_access
 from dive.data.access import get_data
 from dive.task_core import celery, task_app
-from dive.tasks.statistics.regression import ModelSelectionType as MST
 from dive.tasks.statistics.regression.model_recommendation import recommend_selection_type, construct_models
 from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
 from dive.tasks.statistics.regression.helpers import get_full_field_documents_from_field_names, get_field_names_from_considered_independent_variables
@@ -41,11 +40,14 @@ def run_regression_from_spec(spec, project_id):
     independent_variable_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     interaction_term_ids = spec.get('interactionTerms', [])
+    selection_type = spec.get('selectionType', None)
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)  # need to find quantitative, categorical
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
+
+    print 'selection type', selection_type
 
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
@@ -53,7 +55,7 @@ def run_regression_from_spec(spec, project_id):
     dependent_variable, independent_variables, interaction_terms, df = \
         load_data(dependent_variable_name, independent_variable_names, interaction_term_ids, dataset_id, project_id)
 
-    selection_type = recommend_selection_type(independent_variable_names)
+    # selection_type = recommend_selection_type(independent_variable_names)
 
     considered_independent_variables_per_model, patsy_models = \
         construct_models(df, dependent_variable, independent_variables, interaction_terms, selection_type)
