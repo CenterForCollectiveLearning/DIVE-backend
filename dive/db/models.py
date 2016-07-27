@@ -23,11 +23,18 @@ class Project(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
-    # One-to-one with datasets
     datasets = db.relationship('Dataset',
-        uselist=False,
         cascade='all, delete-orphan',
         backref='project')
+
+    specs = db.relationship('Spec',
+        cascade='all, delete-orphan',
+        backref='project')
+
+    documents = db.relationship('Document',
+        cascade='all, delete-orphan',
+        backref='project')
+
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
@@ -75,6 +82,7 @@ class Dataset(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
+
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
@@ -110,6 +118,7 @@ class Field_Properties(db.Model):
     name = db.Column(db.Unicode(250))  # Have these here, vs. in dataset_properties?
     type = db.Column(db.Unicode(250))
     general_type = db.Column(db.Unicode(250))
+    color = db.Column(db.Unicode(250))
     type_scores = db.Column(JSONB)
     index = db.Column(db.Integer)  # TODO Tie this down with a foreign key?
     normality = db.Column(JSONB)
@@ -168,7 +177,6 @@ class Spec(db.Model):
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
@@ -204,7 +212,6 @@ class Document(db.Model):
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = db.relationship(Project)
 
     creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
