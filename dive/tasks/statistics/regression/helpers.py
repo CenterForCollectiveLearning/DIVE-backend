@@ -49,3 +49,17 @@ def get_field_names_from_considered_independent_variables(independent_variables)
 
     #get rid of duplicates
     return list(OrderedDict.fromkeys(variable_names)), list(OrderedDict.fromkeys(variable_ids))
+
+def create_variable_combinations(independent_variables):
+    regression_variable_combinations = []
+
+    if len(independent_variables) == 2:
+        for i, considered_field in enumerate(independent_variables):
+            regression_variable_combinations.append([ considered_field ])
+    if len(independent_variables) > 2:
+        for i, considered_field in enumerate(independent_variables):
+            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
+            regression_variable_combinations.append(all_fields_except_considered_field)
+    regression_variable_combinations.append(independent_variables)
+
+    return regression_variable_combinations

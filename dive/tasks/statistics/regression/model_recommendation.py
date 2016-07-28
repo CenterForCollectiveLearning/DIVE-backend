@@ -6,7 +6,7 @@ from sklearn import linear_model
 
 from dive.tasks.statistics.utilities import create_patsy_model
 from dive.tasks.statistics.regression import ModelSelectionType as MST
-from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables, get_full_field_documents_from_field_names
+from dive.tasks.statistics.regression.helpers import rvc_contains_all_interaction_variables, get_full_field_documents_from_field_names, create_variable_combinations
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -135,46 +135,65 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
     # Create list of independent variables, one per regression
     regression_variable_combinations = []
 
-    print 'independent vars in lasso', independent_variables
-
     full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
     y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
     
     clf = linear_model.Lasso(alpha = 0.1)
+    y_pred = clf.fit(X, y).predict(X)
+    fit_coef = clf.coef_
+    column_means = np.apply_along_axis(np.mean, 1, X)
 
+    regression_variables = []
+    for i, independent_variable in enumerate(independent_variables):
+        if abs(fit_coef[i]) > 0:
+            regression_variables.append(independent_variable)
+    
+    regression_variable_combinations = create_variable_combinations(regression_variables)
+
+    return regression_variable_combinations
+
+def ridge(df, dependent_variable, independent_variables, interaction_terms):
+
+    full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
+
+    y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
+
+    clf = linear_model.Ridge(alpha=.1)
     clf.fit(X, y)
     fit_coef = clf.coef_
     column_means = np.apply_along_axis(np.mean, 1, X)
 
-    regression_variable_combination = []
+    y_pred = clf.predict(X)
+
+    regression_variables = []
     for i, independent_variable in enumerate(independent_variables):
-        if abs(fit_coef[i]) >= column_means[i]:
-            regression_variable_combination.append(independent_variable)
-        print independent_variable['name'], fit_coef[i], (abs(fit_coef[i]) < column_means[i])
-    
-    regression_variable_combinations.append(regression_variable_combination)
+        print 'ind var', independent_variable
+        if abs(fit_coef[i]) > 0:
+            regression_variables.append(independent_variable)
+
+    regression_variable_combinations = create_variable_combinations(regression_variables)
 
     return regression_variable_combinations
 
-def ridge():
-    return
-
 def lars(df, dependent_variable, independent_variables, interaction_terms):
 
-    print 'ind vars in lars', independent_variables
     full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
-
-    regression_variable_combinations = []
 
     y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
 
     clf = linear_model.LassoLars(alpha=.1)
     clf.fit(X, y)
+    fit_coef = clf.coef_
+    column_means = np.apply_along_axis(np.mean, 1, X)
 
-    print 'clf', clf
+    y_pred = clf.predict(X)
 
-    print 'clf coeff', clf.coef_
+    regression_variables = []
+    for i, independent_variable in enumerate(independent_variables):
+        if abs(fit_coef[i]) > 0:
+            regression_variables.append(independent_variable)
 
+    regression_variable_combinations = create_variable_combinations(regression_variables)
 
     return regression_variable_combinations
 
