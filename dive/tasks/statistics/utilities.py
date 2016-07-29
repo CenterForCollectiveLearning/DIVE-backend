@@ -1,6 +1,9 @@
 from scipy import stats
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
+
 
 def get_design_matrices(df, dependent_variable, independent_variables, interactions=[]):
     patsy_model = create_patsy_model(dependent_variable, independent_variables, interactions=interactions)
@@ -16,10 +19,19 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
     rhs_vars = independent_variables
     if 'name' in dependent_variable:
         lhs_var = dependent_variable['name']
-    if 'name' in independent_variables[0]:
-        rhs_vars = [ iv['name'] for iv in independent_variables ]
 
-    # Parsing interaction terms
+    if 'name' in independent_variables[0]:
+        new_rhs_vars = []
+        for iv in independent_variables:
+            if type(iv) is list:
+                new_rhs_vars.append([x['name'] for x in iv])
+            else:
+                if 'name' in iv:
+                    new_rhs_vars.append(iv['name'])
+                else:
+                    new_rhs_vars.append(iv)
+        rhs_vars = new_rhs_vars
+
     if interactions:
         first_interaction = interactions[0]
         if 'name' in first_interaction:
@@ -31,8 +43,13 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
             rhs_interactions = interactions
 
     lhs = [ Term([LookupFactor(lhs_var)]) ]
-    rhs = [ Term([]) ] + [ Term([LookupFactor(rhs_var)]) for rhs_var in rhs_vars ]
 
+    rhs = [ Term([]) ]
+    for rhs_var in rhs_vars:
+        if type(rhs_var) is list:
+            rhs += [ Term([ LookupFactor(term) for term in rhs_var ]) ]
+        else:
+            rhs += [ Term([LookupFactor(rhs_var)]) ]
 
     if interactions:
         rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]

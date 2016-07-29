@@ -12,8 +12,8 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from dive.core import db
 from dive.db import ModelName, row_to_dict
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Group, User, Relationship, Document, \
-    Summary, Exported_Summary, Correlation, Exported_Correlation
+    Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Group, User, \
+    Relationship, Document, Summary, Exported_Summary, Correlation, Exported_Correlation
 from dive.resources import ContentType
 
 import logging
@@ -211,6 +211,12 @@ def update_field_properties_is_id_by_id(project_id, field_id, field_is_id):
     db.session.commit()
     return row_to_dict(field_properties)
 
+def get_variable_names_by_id(id_list):
+    name_list = []
+    for variable_id in id_list:
+        name = Field_Properties.query.filter_by(id=variable_id).one().name
+        name_list.append(name)
+    return name_list
 
 ################
 # Relationships
@@ -571,7 +577,55 @@ def delete_exported_regression(project_id, exported_regression_id):
     db.session.commit()
     return row_to_dict(exported_regression)
 
+###################
+# Interaction Terms
+###################
+
+def insert_interaction_term(project_id, dataset_id, variables):
+    names = get_variable_names_by_id(variables)
+    interaction_term = Interaction_Term(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        variables=variables,
+        names=names
+    )
+    db.session.add(interaction_term)
+    db.session.commit()
+    return row_to_dict(interaction_term)  
+
+def get_interaction_terms(project_id, dataset_id):
+    result = Interaction_Term.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
+    interaction_terms = [ row_to_dict(r) for r in result ]
+    return interaction_terms
+
+def get_interaction_term_properties(interaction_term_ids):
+    properties_list = []
+    for interaction_term_id in interaction_term_ids:
+        term_properties = []
+        variable_ids = Interaction_Term.query.filter_by(id=interaction_term_id).one().variables
+        for variable_id in variable_ids:
+            data = Field_Properties.query.filter_by(id=variable_id).one()
+            term_properties.append(row_to_dict(data))
+        properties_list.append(term_properties)
+    return properties_list
+
+def delete_interaction_term(interaction_term_id):
+    try:
+        interaction_term = Interaction_Term.query.filter_by(id=interaction_term_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(interaction_term)
+    db.session.commit()
+    return row_to_dict(interaction_term)
+
+
+##############
 # Correlations
+##############
+
 def get_exported_correlation_by_id(project_id, exported_correlation_id):
     try:
         exported_correlation = Exported_Correlation.query.filter_by(id=exported_correlation_id,
