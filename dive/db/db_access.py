@@ -30,7 +30,12 @@ def get_project(project_id):
 
 def get_projects(**kwargs):
     projects = Project.query.filter_by(**kwargs).all()
-    return [ row_to_dict(project) for project in projects ]
+    for project in projects:
+        setattr(project, 'included_datasets', [ row_to_dict(d) for d in project.datasets ])
+        setattr(project, 'num_datasets', len(project.datasets))
+        setattr(project, 'num_specs', len(project.specs))
+        setattr(project, 'num_documents', len(project.documents))
+    return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents' ]) for project in projects ]
 
 def insert_project(**kwargs):
     project = Project(
