@@ -27,6 +27,7 @@ class FieldProperties(Resource):
         group_by = args.get('group_by')
 
         field_properties = db_access.get_field_properties(project_id, dataset_id)
+        interaction_terms = db_access.get_interaction_terms(project_id, dataset_id)
 
         if group_by:
             result = {}
@@ -38,5 +39,6 @@ class FieldProperties(Resource):
                     result[fp_group_by] = [fp]
         else:
             result = {'fieldProperties': field_properties}
-
+        
+        result['interactionTerms'] = interaction_terms
         return make_response(jsonify(result))

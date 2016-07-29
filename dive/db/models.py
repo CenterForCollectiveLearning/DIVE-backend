@@ -261,6 +261,23 @@ class Exported_Regression(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
+class Interaction_Term(db.Model):
+    __tablename__ = ModelName.INTERACTION_TERM.value
+    id = db.Column(db.Integer, primary_key=True)
+    variables = db.Column(JSONB)
+    names = db.Column(JSONB)
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
 class Summary(db.Model):
     __tablename__ = ModelName.SUMMARY.value
     id = db.Column(db.Integer, primary_key=True)

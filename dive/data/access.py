@@ -41,7 +41,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
 
     if not field_properties:
         field_properties = db_access.get_field_properties(project_id, dataset_id)
-    logger.info('FIELD PROPERTIES in get_data: %s', field_properties)
 
     df = pd.read_table(
         dataset['path'],

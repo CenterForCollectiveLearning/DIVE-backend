@@ -18,3 +18,13 @@ def get_variable_type_counts(dependent_variables, independent_variables):
         variable_types['independent'][independent_variable_type] += 1
 
     return variable_types
+
+def rvc_contains_all_interaction_variables(interaction_term, regression_variable_combination):
+    matches = 0
+
+    for variable in regression_variable_combination:
+        for term in interaction_term:
+            if variable['name'] == term['name']:
+                matches += 1
+
+    return matches == len(interaction_term)
