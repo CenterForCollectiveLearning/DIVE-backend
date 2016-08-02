@@ -12,10 +12,10 @@ from dive.tasks.statistics.comparison.anova import run_anova_from_spec
 from dive.tasks.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
-# from dive.tasks.statistics.regression.interaction_terms import 
+# from dive.tasks.statistics.regression.interaction_terms import
 
 # Async tasks
-from dive.tasks.pipelines import regression_pipeline, summary_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
+from dive.tasks.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
 from dive.tasks.handlers import error_handler
 
 import logging
@@ -193,7 +193,7 @@ class AnovaBoxplotFromSpec(Resource):
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=str, location='json')
 summaryPostParser.add_argument('spec', type=dict, location='json')
-class SummaryStatsFromSpec(Resource):
+class AggregationStatsFromSpec(Resource):
     def post(self):
         '''
         spec: {
@@ -205,7 +205,7 @@ class SummaryStatsFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
 
-        summary_doc = db_access.get_summary_from_spec(project_id, spec)
+        summary_doc = db_access.get_aggregation_from_spec(project_id, spec)
         if summary_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             summary_data = summary_doc['data']
             summary_data['id'] = summary_doc['id']
@@ -238,7 +238,7 @@ class OneDimensionalTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
 
-        table_doc = db_access.get_summary_from_spec(project_id, spec)
+        table_doc = db_access.get_aggregation_from_spec(project_id, spec)
         if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             table_data = table_doc['data']
             table_data['id'] = table_doc['id']
@@ -271,7 +271,7 @@ class ContingencyTableFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
 
-        table_doc = db_access.get_summary_from_spec(project_id, spec)
+        table_doc = db_access.get_aggregation_from_spec(project_id, spec)
 
         if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             table_data = table_doc['data']

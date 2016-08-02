@@ -14,7 +14,7 @@ logger = get_task_logger(__name__)
 
 
 def create_one_dimensional_contingency_table_from_spec(spec, project_id):
-    comparison_variable = spec.get('comparisonVariable')
+    aggregation_variable = spec.get('aggregationVariable')
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
@@ -22,12 +22,12 @@ def create_one_dimensional_contingency_table_from_spec(spec, project_id):
         df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    comparison_result = create_one_dimensional_contingency_table(df, comparison_variable, dep_variable)
-    return comparison_result, 200
+    aggregation_result = create_one_dimensional_contingency_table(df, aggregation_variable, dep_variable)
+    return aggregation_result, 200
 
 
 def create_contingency_table_from_spec(spec, project_id):
-    comparison_variables = spec.get("comparisonVariables")
+    aggregation_variables = spec.get("aggregationVariables")
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
@@ -35,11 +35,11 @@ def create_contingency_table_from_spec(spec, project_id):
         df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = df.dropna()  # Remove unclean
 
-    comparison_result = create_contingency_table(df, comparison_variables, dep_variable)
-    return comparison_result, 200
+    aggregation_result = create_contingency_table(df, aggregation_variables, dep_variable)
+    return aggregation_result, 200
 
-def run_summary_from_spec(spec, project_id):
-    summary_statistics_result = {}
+def run_aggregation_from_spec(spec, project_id):
+    aggregation_statistics_result = {}
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")
 
@@ -50,35 +50,8 @@ def run_summary_from_spec(spec, project_id):
 
     field_ids = set(field_ids)
     relevant_field_properties = filter(lambda field: field['id'] in field_ids, field_properties)
-    summary_statistics_result = get_variable_summary_statistics(df, relevant_field_properties)
-    return summary_statistics_result, 200
-
-
-def get_variable_summary_statistics(df, relevant_field_properties):
-    '''
-    Returns the formatted dict that is sent through the endpoint.
-    df: the dataframe
-    relevant_field_properties: the field properties we are trying to create summary statistics for
-    '''
-    result_dict = {}
-    result_dict['items'] = []
-
-    categorical_headers = ['count', 'max frequency', 'unique values']
-    numerical_headers = ['count', 'max', 'min', 'mean', 'median', 'standard deviation']
-
-    for field_property in relevant_field_properties:
-        stats = field_property['stats']
-        name = field_property['name']
-        type = field_property['general_type']
-        data_column = df[name]
-        if  type == 'c':
-            result_dict['items'].append({'type': type, 'field':name, 'stats': get_summary_stats_categorical(data_column, stats), 'viz_data': return_data_list_categorical(data_column, name)})
-        elif field_property['general_type'] == 'q':
-            result_dict['items'].append({'type': type, 'field':name, 'stats': get_summary_stats_numerical(data_column, stats), 'viz_data': return_data_list_numerical(data_column, name)})
-
-    result_dict['categoricalHeaders'] = categorical_headers
-    result_dict['numericalHeaders'] = numerical_headers
-    return result_dict
+    aggregation_statistics_result = get_variable_aggregation_statistics(df, relevant_field_properties)
+    return aggregation_statistics_result, 200
 
 
 def return_data_list_categorical(data_column, variable_name):
@@ -134,7 +107,7 @@ def return_data_list_numerical(data_column, variable_name):
     return data_array
 
 
-def get_summary_stats_categorical(data_column, stats_dict):
+def get_aggregation_stats_categorical(data_column, stats_dict):
     '''
     helper function to find some statistics of the data
         looks at count, max frequency, and number of unique values
@@ -160,7 +133,7 @@ def get_summary_stats_categorical(data_column, stats_dict):
     return stats
 
 
-def get_summary_stats_numerical(data_column, stats_dict):
+def get_aggregation_stats_numerical(data_column, stats_dict):
     '''
     helper function to find some statistics of the data
         looks at count, max, min, mean, median, and standard deviation
@@ -240,31 +213,31 @@ def parse_string_mapping_function(list_function):
         return (lambda x: x == list_function[1])
 
 
-def parse_variable(num, index, variable_type_summary, df):
+def parse_variable(num, index, variable_type_aggregation, df):
     '''
     helper function to return the appropriate independent variable value from the dataframe
     num: 0 represents parsing the column, 1 represents parsing the row
     index: represents the index of the dataframe we are extracting the value from
-    variable_type_summary:
+    variable_type_aggregation:
        for cat variables: ['cat', field]
        for num variables: ['num', [field, num_bins], binning_edges, binning_names]
     df : dataframe
     '''
-    type_variable = variable_type_summary[num][0]
-    passed_variable = variable_type_summary[num][1]
+    type_variable = variable_type_aggregation[num][0]
+    passed_variable = variable_type_aggregation[num][1]
 
     if type_variable == 'cat':
         return df.get_value(index, passed_variable)
     elif type_variable == 'num':
-        binning_edges = variable_type_summary[num][2]
-        binning_names = variable_type_summary[num][3]
+        binning_edges = variable_type_aggregation[num][2]
+        binning_names = variable_type_aggregation[num][3]
         return find_bin(df.get_value(index, passed_variable[0]), binning_edges, binning_names, passed_variable[1])
 
 
-def create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values):
+def create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values):
     '''
     df : dataframe
-    variable_type_summary:
+    variable_type_aggregation:
        for cat variables: ['cat', field]
        for num variables: ['num', [field, num_bins], binning_edges, binning_names]
     dep_variable :
@@ -282,7 +255,7 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
     weight_dict = {}
 
     for index in df.index:
-        var = parse_variable(0, index, variable_type_summary, df)
+        var = parse_variable(0, index, variable_type_aggregation, df)
         if dep_var_dict.get(var):
             dep_var_dict[var].append(df.get_value(index, dep_variable_name))
             if weight_variable_name != 'UNIFORM':
@@ -312,10 +285,10 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
     return (result_dict, aggregationMean)
 
 
-def create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
+def create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_aggregation, unique_indep_values):
     '''
     df : dataframe
-    variable_type_summary:
+    variable_type_aggregation:
        for cat variables: ['cat', field]
        for num variables: ['num', [field, num_bins], binning_edges, binning_names]
     unique_indep_values : [unique values for the one variable]
@@ -324,7 +297,7 @@ def create_one_dimensional_contingency_table_with_no_dependent_variable(df, vari
     count_dict = {}
 
     for index in df.index:
-        var = parse_variable(0, index, variable_type_summary, df)
+        var = parse_variable(0, index, variable_type_aggregation, df)
         if count_dict.get(var):
             count_dict[var]+= 1
         else:
@@ -339,9 +312,9 @@ def create_one_dimensional_contingency_table_with_no_dependent_variable(df, vari
     return result_dict
 
 
-def create_one_dimensional_contingency_table(df, comparison_variable, dep_variable):
+def create_one_dimensional_contingency_table(df, aggregation_variable, dep_variable):
     '''
-    comparison_variable: represents the variable used to create the contingency table.
+    aggregation_variable: represents the variable used to create the contingency table.
     Is either an independent_variable or categorical_variable
         independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
         categorical_variable: represents an independent categorical variable name. It is a string
@@ -358,24 +331,24 @@ def create_one_dimensional_contingency_table(df, comparison_variable, dep_variab
     results_dict = {}
     formatted_results_dict = {}
     unique_indep_values = []
-    variable_type_summary = []
+    variable_type_aggregation = []
 
     aggregationMean = False
 
-    if comparison_variable[0] == 'c':
-        unique_indep_values = get_unique(df[comparison_variable[1]], True)
-        variable_type_summary.append(('cat', comparison_variable[1]))
-    elif comparison_variable[0] == 'q':
-        (binningEdges, names) = get_binning_edges_and_names(df[comparison_variable[1]], comparison_variable[2])
+    if aggregation_variable[0] == 'c':
+        unique_indep_values = get_unique(df[aggregation_variable[1]], True)
+        variable_type_aggregation.append(('cat', aggregation_variable[1]))
+    elif aggregation_variable[0] == 'q':
+        (binningEdges, names) = get_binning_edges_and_names(df[aggregation_variable[1]], aggregation_variable[2])
         num_bins = len(binningEdges) -1
         unique_indep_values = names
-        variable_type_summary.append(('num', [comparison_variable[1],num_bins], binningEdges, names))
+        variable_type_aggregation.append(('num', [aggregation_variable[1],num_bins], binningEdges, names))
 
     if dep_variable:
-        (results_dict, aggregationMean) = create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values)
+        (results_dict, aggregationMean) = create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values)
 
     else:
-        results_dict = create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
+        results_dict = create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_aggregation, unique_indep_values)
 
 
     formatted_results_dict["column_headers"] = ["VARIABLE", "AGGREGATION"]
@@ -399,10 +372,10 @@ def create_one_dimensional_contingency_table(df, comparison_variable, dep_variab
     return formatted_results_dict
 
 
-def create_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values):
+def create_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values):
     '''
     df : dataframe
-    variable_type_summary:
+    variable_type_aggregation:
        for cat variables: ['cat', field]
        for num variables: ['num', [field, num_bins], binning_edges, binning_names]
     dep_variable :
@@ -419,8 +392,8 @@ def create_contingency_table_with_dependent_variable(df, variable_type_summary, 
     weight_dict = {}
 
     for index in df.index:
-        col = parse_variable(0, index, variable_type_summary, df)
-        row = parse_variable(1, index, variable_type_summary, df)
+        col = parse_variable(0, index, variable_type_aggregation, df)
+        row = parse_variable(1, index, variable_type_aggregation, df)
         if dep_var_dict.get(row):
             if dep_var_dict[row].get(col):
                 dep_var_dict[row][col].append(df.get_value(index, dep_variable_name))
@@ -471,10 +444,10 @@ def create_contingency_table_with_dependent_variable(df, variable_type_summary, 
     return (result_dict, aggregationMean)
 
 
-def create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values):
+def create_contingency_table_with_no_dependent_variable(df, variable_type_aggregation, unique_indep_values):
     '''
     df : dataframe
-    variable_type_summary:
+    variable_type_aggregation:
        for cat variables: ['cat', field]
        for num variables: ['num', [field, num_bins], binning_edges, binning_names]
     unique_indep_values : [[unique values for columns], [unique values for rows]]
@@ -483,8 +456,8 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
     count_dict = {}
 
     for index in df.index:
-        col = parse_variable(0, index, variable_type_summary, df)
-        row = parse_variable(1, index, variable_type_summary, df)
+        col = parse_variable(0, index, variable_type_aggregation, df)
+        row = parse_variable(1, index, variable_type_aggregation, df)
         if count_dict.get(row):
             if count_dict[row].get(col):
                 count_dict[row][col]+= 1
@@ -512,9 +485,9 @@ def create_contingency_table_with_no_dependent_variable(df, variable_type_summar
     return result_dict
 
 
-def create_contingency_table(df, comparison_variables, dep_variable):
+def create_contingency_table(df, aggregation_variables, dep_variable):
     '''
-    comparison_variables: represents the variables used to create the contingency table.
+    aggregation_variables: represents the variables used to create the contingency table.
     Is a list of independent_variable and categorical_variable
         independent_variable : represents an independent numerical variable. It is of form [numerical variable name, number of bins]
         categorical_variable: represents an independent categorical variable name. It is a string
@@ -531,24 +504,24 @@ def create_contingency_table(df, comparison_variables, dep_variable):
     results_dict = {}
     formatted_results_dict = {}
     unique_indep_values = []
-    variable_type_summary = []
+    variable_type_aggregation = []
 
     aggregationMean = False
 
-    for var in comparison_variables:
+    for var in aggregation_variables:
         if var[0] == 'c':
             unique_indep_values.append(get_unique(df[var[1]], True))
-            variable_type_summary.append(('cat', var[1]))
+            variable_type_aggregation.append(('cat', var[1]))
         elif var[0] == 'q':
             (binningEdges, names) = get_binning_edges_and_names(df[var[1]], var[2])
             num_bins = len(binningEdges) - 1
             unique_indep_values.append(names)
-            variable_type_summary.append(('num', [var[1], num_bins], binningEdges, names))
+            variable_type_aggregation.append(('num', [var[1], num_bins], binningEdges, names))
 
     if dep_variable:
-        (results_dict, aggregationMean) = create_contingency_table_with_dependent_variable(df, variable_type_summary, dep_variable, unique_indep_values)
+        (results_dict, aggregationMean) = create_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values)
     else:
-        results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_summary, unique_indep_values)
+        results_dict = create_contingency_table_with_no_dependent_variable(df, variable_type_aggregation, unique_indep_values)
 
     if not aggregationMean:
         formatted_results_dict["column_headers"] = unique_indep_values[0] + ['Row Totals']
@@ -632,11 +605,11 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     return binningNames[searchIndex(binningEdges, target, num_bins, 0) - 1]
 
 
-def save_summary(spec, result, project_id):
+def save_aggregation(spec, result, project_id):
     with task_app.app_context():
-        existing_summary_doc = db_access.get_summary_from_spec(project_id, spec)
-        if existing_summary_doc:
-            db_access.delete_summary(project_id, existing_summary_doc['id'])
+        existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec)
+        if existing_aggregation_doc:
+            db_access.delete_aggregation(project_id, existing_aggregation_doc['id'])
         result = replace_unserializable_numpy(result)
-        inserted_summary = db_access.insert_summary(project_id, spec, result)
-        return inserted_summary
+        inserted_aggregation = db_access.insert_aggregation(project_id, spec, result)
+        return inserted_aggregation

@@ -68,7 +68,7 @@ class BaseConfig(object):
         'dive.tasks.transformation.reduce',
         'dive.tasks.statistics.regression',
         'dive.tasks.statistics.comparison',
-        'dive.tasks.statistics.summary',
+        'dive.tasks.statistics.aggregation',
     ]
 
 class DevelopmentConfig(BaseConfig):

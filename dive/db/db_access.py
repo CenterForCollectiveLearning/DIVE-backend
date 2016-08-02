@@ -13,7 +13,7 @@ from dive.core import db
 from dive.db import ModelName, row_to_dict
 from dive.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Group, User, \
-    Relationship, Document, Summary, Exported_Summary, Correlation, Exported_Correlation
+    Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation
 from dive.resources import ContentType
 
 import logging
@@ -485,41 +485,41 @@ def delete_correlation(project_id, correlation_id):
 ################
 # Summaries
 ################
-def get_summary_by_id(summary_id, project_id):
-    summary = Summary.query.filter_by(id=summary_id, project_id=project_id).one()
-    if summary is None:
+def get_aggregation_by_id(aggregation_id, project_id):
+    aggregation = Aggregation.query.filter_by(id=aggregation_id, project_id=project_id).one()
+    if aggregation is None:
         abort(404)
-    return row_to_dict(summary)
+    return row_to_dict(aggregation)
 
 
-def get_summary_from_spec(project_id, spec):
+def get_aggregation_from_spec(project_id, spec):
     try:
-        summary = Summary.query.filter_by(project_id=project_id, spec=spec).one()
+        aggregation = Aggregation.query.filter_by(project_id=project_id, spec=spec).one()
     except NoResultFound:
         return None
-    return row_to_dict(summary)
+    return row_to_dict(aggregation)
 
 
-def insert_summary(project_id, spec, data):
-    summary = Summary(
+def insert_aggregation(project_id, spec, data):
+    aggregation = Aggregation(
         project_id = project_id,
         spec = spec,
         data = data
     )
-    db.session.add(summary)
+    db.session.add(aggregation)
     db.session.commit()
-    return row_to_dict(summary)
+    return row_to_dict(aggregation)
 
-def delete_summary(project_id, summary_id):
+def delete_aggregation(project_id, aggregation_id):
     try:
-        summary = Summary.query.filter_by(project_id=project_id, id=summary_id).one()
+        aggregation = Aggregation.query.filter_by(project_id=project_id, id=aggregation_id).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
         raise e
-    db.session.delete(summary)
+    db.session.delete(aggregation)
     db.session.commit()
-    return row_to_dict(summary)
+    return row_to_dict(aggregation)
 
 ################
 # Exported Analyses
@@ -591,7 +591,7 @@ def insert_interaction_term(project_id, dataset_id, variables):
     )
     db.session.add(interaction_term)
     db.session.commit()
-    return row_to_dict(interaction_term)  
+    return row_to_dict(interaction_term)
 
 def get_interaction_terms(project_id, dataset_id):
     result = Interaction_Term.query.filter_by(project_id=project_id, dataset_id=dataset_id).all()
@@ -678,44 +678,44 @@ def delete_exported_correlation(project_id, exported_correlation_id):
     return row_to_dict(exported_correlation)
 
 
-# Summary
-def get_exported_summary_by_id(project_id, exported_summary_id):
-    exported_summary = Exported_Summary.query.filter_by(id=exported_summary_id,
+# Aggregation
+def get_exported_aggregation_by_id(project_id, exported_aggregation_id):
+    exported_aggregation = Exported_Aggregation.query.filter_by(id=exported_aggregation_id,
         project_id=project_id).one()
-    if exported_summary is None:
+    if exported_aggregation is None:
         abort(404)
-    return row_to_dict(exported_summary)
+    return row_to_dict(exported_aggregation)
 
-def get_exported_summarys(project_id):
-    exported_summarys = Exported_Summary.query.filter_by(project_id=project_id).all()
-    for e in exported_summarys:
-        setattr(e, 'spec', e.summary.spec)
-        setattr(e, 'type', 'summary')
-    return [ row_to_dict(exported_summary, custom_fields=['type', 'spec']) for exported_summary in exported_summarys ]
+def get_exported_aggregations(project_id):
+    exported_aggregations = Exported_Aggregation.query.filter_by(project_id=project_id).all()
+    for e in exported_aggregations:
+        setattr(e, 'spec', e.aggregation.spec)
+        setattr(e, 'type', 'aggregation')
+    return [ row_to_dict(exported_aggregation, custom_fields=['type', 'spec']) for exported_aggregation in exported_aggregations ]
 
-def insert_exported_summary(project_id, summary_id, data, conditionals, config):
-    exported_summary = Exported_Summary(
+def insert_exported_aggregation(project_id, aggregation_id, data, conditionals, config):
+    exported_aggregation = Exported_Aggregation(
         project_id = project_id,
-        summary_id = summary_id,
+        aggregation_id = aggregation_id,
         data = data,
         conditionals = conditionals,
         config = config
     )
-    db.session.add(exported_summary)
+    db.session.add(exported_aggregation)
     db.session.commit()
-    return row_to_dict(exported_summary)
+    return row_to_dict(exported_aggregation)
 
-def delete_exported_summary(project_id, exported_summary_id):
+def delete_exported_aggregation(project_id, exported_aggregation_id):
     try:
-        exported_summary = Exported_Summary.query.filter_by(project_id=project_id, id=exported_summary_id).one()
+        exported_aggregation = Exported_Aggregation.query.filter_by(project_id=project_id, id=exported_aggregation_id).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
         raise e
 
-    db.session.delete(exported_summary)
+    db.session.delete(exported_aggregation)
     db.session.commit()
-    return row_to_dict(exported_summary)
+    return row_to_dict(exported_aggregation)
 
 ################
 # Documents
