@@ -99,24 +99,24 @@ class DataFromExportedCorrelation(Resource):
         return jsonify(correlation['data'])
 
 
-exportedSummaryGetParser = reqparse.RequestParser()
-exportedSummaryGetParser.add_argument('project_id', type=str, required=True)
+exportedAggregationGetParser = reqparse.RequestParser()
+exportedAggregationGetParser.add_argument('project_id', type=str, required=True)
 
-exportedSummaryPostParser = reqparse.RequestParser()
-exportedSummaryPostParser.add_argument('project_id', type=str, required=True, location='json')
-exportedSummaryPostParser.add_argument('summary_id', type=str, required=True, location='json')
-exportedSummaryPostParser.add_argument('conditionals', type=dict, required=True, location='json')
-exportedSummaryPostParser.add_argument('config', type=dict, required=True, location='json')
-class ExportedSummary(Resource):
+exportedAggregationPostParser = reqparse.RequestParser()
+exportedAggregationPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedAggregationPostParser.add_argument('summary_id', type=str, required=True, location='json')
+exportedAggregationPostParser.add_argument('conditionals', type=dict, required=True, location='json')
+exportedAggregationPostParser.add_argument('config', type=dict, required=True, location='json')
+class ExportedAggregation(Resource):
     def get(self):
-        args = exportedSummaryGetParser.parse_args()
+        args = exportedAggregationGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
         exported_summarys = db_access.get_exported_regressions(project_id)
         return jsonify({'result': exported_regressions, 'length': len(exported_summarys)})
 
     def post(self):
-        args = exportedSummaryPostParser.parse_args()
+        args = exportedAggregationPostParser.parse_args()
         project_id = args.get('project_id')
         summary_id = args.get('summary_id')
         data = args.get('data')
@@ -124,19 +124,19 @@ class ExportedSummary(Resource):
         config = args.get('config')
 
         result = db_access.insert_exported_summary(project_id, summary_id, conditionals, config)
-        result['spec'] = db_access.get_summary_by_id(summary_id, project_id)['spec'] 
+        result['spec'] = db_access.get_aggregation_by_id(summary_id, project_id)['spec'] 
         return jsonify(result)
 
 
-dataFromExportedSummaryGetParser = reqparse.RequestParser()
-dataFromExportedSummaryGetParser.add_argument('project_id', type=str, required=True)
-class DataFromExportedSummary(Resource):
+dataFromExportedAggregationGetParser = reqparse.RequestParser()
+dataFromExportedAggregationGetParser.add_argument('project_id', type=str, required=True)
+class DataFromExportedAggregation(Resource):
     def get(self, exported_correlation_id):
-        args = dataFromExportedSummaryGetParser.parse_args()
+        args = dataFromExportedAggregationGetParser.parse_args()
         project_id = args.get('project_id')
 
         exported_correlation = db_access.get_exported_summary(project_id, exported_summary_id)
         summary_id = exported_spec['summary_id']
-        summary = db_access.get_summary_by_id(summary_id, project_id)
+        summary = db_access.get_aggregation_by_id(summary_id, project_id)
 
         return jsonify(summary['data'])
