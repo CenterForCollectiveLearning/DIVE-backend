@@ -16,7 +16,7 @@ from dive.tasks.transformation.pivot import unpivot_dataset
 from dive.tasks.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.tasks.visualization.enumerate_specs import enumerate_viz_specs
 
-from dive.tasks.statistics.summary import run_summary_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_summary
+from dive.tasks.statistics.aggregation import run_aggregation_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_aggregation
 from dive.tasks.statistics.correlation import run_correlation_from_spec, save_correlation
 from dive.tasks.statistics.regression.pipelines import run_regression_from_spec, save_regression
 
@@ -219,17 +219,17 @@ def regression_pipeline(self, spec, project_id):
 
 
 @celery.task(bind=True)
-def summary_pipeline(self, spec, project_id):
-    logger.info("In summary pipeline with and project_id %s", project_id)
+def aggregation_pipeline(self, spec, project_id):
+    logger.info("In aggregation pipeline with and project_id %s", project_id)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical summary'})
-    summary_data, status = run_summary_from_spec(spec, project_id)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical aggregation'})
+    aggregation_data, status = run_aggregation_from_spec(spec, project_id)
 
-    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical summary'})
-    summary_doc = save_summary(spec, summary_data, project_id)
-    summary_data['id'] = summary_doc['id']
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical aggregation'})
+    aggregation_doc = save_aggregation(spec, aggregation_data, project_id)
+    aggregation_data['id'] = aggregation_doc['id']
 
-    return { 'result': summary_data }
+    return { 'result': aggregation_data }
 
 
 @celery.task(bind=True)
@@ -240,7 +240,7 @@ def one_dimensional_contingency_table_pipeline(self, spec, project_id):
     table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
-    table_doc = save_summary(spec, table_data, project_id)
+    table_doc = save_aggregation(spec, table_data, project_id)
     table_data['id'] = table_doc['id']
 
     return { 'result': table_data }
@@ -254,7 +254,7 @@ def contingency_table_pipeline(self, spec, project_id):
     table_data, status = create_contingency_table_from_spec(spec, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
-    table_doc = save_summary(spec, table_data, project_id)
+    table_doc = save_aggregation(spec, table_data, project_id)
     table_data['id'] = table_doc['id']
 
     return { 'result': table_data }
