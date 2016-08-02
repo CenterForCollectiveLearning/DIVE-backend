@@ -278,15 +278,15 @@ class Interaction_Term(db.Model):
     update_date = db.Column(db.DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-class Summary(db.Model):
-    __tablename__ = ModelName.SUMMARY.value
+class Aggregation(db.Model):
+    __tablename__ = ModelName.AGGREGATION.value
     id = db.Column(db.Integer, primary_key=True)
 
     spec = db.Column(JSONB)
     data = db.Column(JSONB)
 
     # One-to-many with exported specs
-    exported_summary = db.relationship('Exported_Summary',
+    exported_summary = db.relationship('Exported_Aggregation',
         backref='summary',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -300,8 +300,8 @@ class Summary(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class Exported_Summary(db.Model):
-    __tablename__ = ModelName.EXPORTED_SUMMARY.value
+class Exported_Aggregation(db.Model):
+    __tablename__ = ModelName.EXPORTED_AGGREGATION.value
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(JSONB)
     conditionals = db.Column(JSONB)
