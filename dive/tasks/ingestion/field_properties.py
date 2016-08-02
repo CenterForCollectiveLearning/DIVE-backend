@@ -35,7 +35,7 @@ quantitative_stats_functions = {
     'var': np.var
 }
 
-total_palette_25 = [
+total_palette = [
     '#000000',
     '#404040',
     '#858585',
