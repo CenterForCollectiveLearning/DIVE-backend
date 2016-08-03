@@ -15,6 +15,8 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
     '''
     Construct and return patsy formula (object representation)
     '''
+
+    # 1) Handling passing in [{'name': X}] vs [X]
     lhs_var = dependent_variable
     rhs_vars = independent_variables
     if 'name' in dependent_variable:
@@ -42,6 +44,7 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
         else:
             rhs_interactions = interactions
 
+    # 2) Constructing model
     lhs = [ Term([LookupFactor(lhs_var)]) ]
 
     rhs = [ Term([]) ]
@@ -55,6 +58,7 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
         rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]
 
     model = ModelDesc(lhs, rhs)
+    logger.info(model)
     return model
 
 

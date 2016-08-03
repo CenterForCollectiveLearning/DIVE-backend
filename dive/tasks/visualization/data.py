@@ -559,6 +559,9 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         final_data['visualize'] = data_array
         final_data['bins'] = bins
 
+    logger.info(bin_num_to_formatted_edges)
+    logger.info(agg_df)
+    logger.info(len(agg_df.ix[:, 0].tolist()))
     if 'table' in data_formats:
         table_data = []
         if aggregation_function_name == 'count':
