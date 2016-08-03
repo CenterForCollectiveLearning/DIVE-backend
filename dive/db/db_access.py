@@ -309,7 +309,7 @@ def get_public_exported_spec(exported_spec_id, spec_type):
             exported_spec = Exported_Spec.query.filter_by(
                 id=exported_spec_id
             ).one()
-            desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+            desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'args', 'dataset_id' ]
             for desired_spec_key in desired_spec_keys:
                 value = getattr(exported_spec.spec, desired_spec_key)
                 setattr(exported_spec, desired_spec_key, value)
@@ -362,7 +362,7 @@ def get_exported_specs(project_id):
         filter_by(project_id=project_id).\
         all()
 
-    desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+    desired_spec_keys = [ 'args', 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
 
     final_specs = []
     for exported_spec in exported_specs:
@@ -389,7 +389,7 @@ def insert_exported_spec(project_id, spec_id, data, conditionals, config):
     if spec is None:
         abort(404)
 
-    desired_spec_keys = [ 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
+    desired_spec_keys = [ 'args', 'generating_procedure', 'type_structure', 'viz_types', 'meta', 'dataset_id' ]
     for desired_spec_key in desired_spec_keys:
         value = getattr(spec, desired_spec_key)
         setattr(exported_spec, desired_spec_key, value)
