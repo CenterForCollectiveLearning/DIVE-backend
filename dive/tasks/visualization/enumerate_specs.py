@@ -34,8 +34,6 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
         raw_field_properties = db_access.get_field_properties(project_id, dataset_id)
         field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 
-    logger.info('Number of fields: %s', len(field_properties))
-
     if selected_fields:
         selected_field_docs, c_fields, c_fields_not_selected, q_fields, q_fields_not_selected, t_fields, t_fields_not_selected = \
             get_selected_fields(field_properties, selected_fields)
