@@ -31,7 +31,7 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
     # Get field properties
     with task_app.app_context():
         desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'name', 'id']
-        raw_field_properties = db_access.get_field_properties(project_id, dataset_id)
+        raw_field_properties = db_access.get_field_properties(project_id, dataset_id, is_id=False)
         field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 
     if selected_fields:
@@ -108,10 +108,6 @@ def get_selected_fields(field_properties, selected_fields):
             else:
                 t_fields_not_selected.append(field)
 
-    logger.info('n_c = %s, n_q = %s, n_t = %s', len(c_fields), len(q_fields), len(t_fields))
-    logger.info('c_fields: %s', [f['name'] for f in c_fields])
-    logger.info('q_fields: %s', [f['name'] for f in q_fields])
-    logger.info('t_fields: %s', [f['name'] for f in t_fields])
     return selected_field_docs, c_fields, c_fields_not_selected, q_fields, q_fields_not_selected, t_fields, t_fields_not_selected
 
 
@@ -136,7 +132,6 @@ def get_baseline_viz_specs(field_properties):
             specs.extend(single_t_specs)
         else:
             raise ValueError('Not valid general_type', general_type)
-    logger.info('Got %s baseline specs', len(specs))
     return specs
 
 
@@ -169,7 +164,6 @@ def get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_
                 single_cq_specs = single_cq(c_field, q_field)
                 specs.extend(single_cq_specs)
 
-    logger.debug('Got %s subset specs', len(specs))
     return specs
 
 def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected):
@@ -240,7 +234,6 @@ def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_f
     if (n_c == 0) and (n_t == 0) and (n_q == 1):
         specs.extend(single_q(q_fields[0]))
 
-    logger.debug('Got %s exact specs', len(specs))
     return specs
 
 
@@ -281,5 +274,4 @@ def get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, 
             specs.extend(single_tq_specs)
 
 
-    logger.debug('Got %s expanded specs', len(specs))
     return specs
