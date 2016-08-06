@@ -10,6 +10,7 @@ from dive.resources.serialization import jsonify
 from dive.tasks.statistics.comparison.numeric import run_numerical_comparison_from_spec
 from dive.tasks.statistics.comparison.anova import run_anova_from_spec
 from dive.tasks.statistics.comparison.anova_boxplot import get_anova_boxplot_data
+from dive.tasks.statistics.comparison.pairwise_comparison import get_pairwise_comparison_data
 from dive.tasks.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.tasks.statistics.correlation import get_correlation_scatterplot_data
 # from dive.tasks.statistics.regression.interaction_terms import
@@ -189,6 +190,24 @@ class AnovaBoxplotFromSpec(Resource):
         result, status = get_anova_boxplot_data(spec, project_id)
         return jsonify(result)
 
+pairwiseComparisonPostParser = reqparse.RequestParser()
+pairwiseComparisonPostParser.add_argument('projectId', type=str, location='json')
+pairwiseComparisonPostParser.add_argument('spec', type=dict, location='json')
+class PairwiseComparisonFromSpec(Resource):
+    def post(self):
+        '''
+        spec: {
+            dataset_id
+            independent_variables - list names, must be categorical
+            dependent_variables - list names, must be numerical
+        }
+        '''
+        args = pairwiseComparisonPostParser.parse_args()
+        project_id = args.get('projectId')
+        spec = args.get('spec')
+
+        result, status = get_pairwise_comparison_data(spec, project_id)
+        return jsonify(result)
 
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=str, location='json')
