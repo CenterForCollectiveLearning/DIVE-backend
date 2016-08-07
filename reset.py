@@ -9,7 +9,7 @@ If tables are dropped, need to run migration script again.
 import os
 import shutil
 import contextlib
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 
 
 def drop_tables(db):

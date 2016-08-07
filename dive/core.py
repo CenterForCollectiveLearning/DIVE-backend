@@ -2,9 +2,9 @@ import os
 import sys
 from celery import Celery
 from flask import Flask, request
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import LoginManager
-from flask.ext.cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_cors import CORS
 from flask.ext.compress import Compress
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
@@ -76,7 +76,7 @@ def create_api(app):
     '''
     Attach API endpoints / resources to app
     '''
-    from flask.ext.restful import Api
+    from flask_restful import Api
     api = Api(catch_all_404s=True)
 
     from api import add_resources
