@@ -8,7 +8,7 @@ import locale
 import os
 import numpy as np
 import pandas as pd
-from flask.ext.restful import abort
+from flask_restful import abort
 
 from dive.task_core import celery, task_app
 from dive.data.in_memory_data import InMemoryData as IMD

@@ -103,3 +103,11 @@ Deployment
 ```bash
 $ export ENV=production
 ```
+
+```
+conda env export > environment.yml
+conda env create -f environment.yml
+
+conda list -e > conda-requirements.txt
+conda create --name dive --file spec-file.txt
+```
