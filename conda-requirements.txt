@@ -24,6 +24,7 @@ et_xmlfile=1.0.1=py27_0
 flask=0.11.1=py27_0
 flask-cors=2.1.2=py27_0
 futures=3.0.5=py27_0
+gunicorn=19.1.0=py27_0
 itsdangerous=0.24=py27_0
 jdcal=1.2=py27_1
 jinja2=2.8=py27_1
@@ -40,6 +41,7 @@ openpyxl=2.3.2=py27_0
 openssl=1.0.2h=1
 raven=5.3.1=py27_0
 pandas=0.18.1=np111py27_0
+pastedeploy=1.5.2=py27_1
 patsy=0.4.1=py27_0
 pip=8.1.2=py27_0
 psycopg2=2.6.1=py27_1
