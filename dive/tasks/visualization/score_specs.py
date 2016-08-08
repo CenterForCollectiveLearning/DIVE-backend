@@ -74,10 +74,11 @@ def get_statistical_properties(data, gp, ts):
             v = data.get('agg_field')
         elif gp in [ GeneratingProcedure.IND_VAL.value ]:
             v = data.get('val')
-        elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
+        elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
             v = data.get('agg')
         elif gp in [ GeneratingProcedure.VAL_COUNT.value ]:
             v = data.get('count')
+
 
         for test_name, test_fn in univariate_tests.iteritems():
             test_value = None

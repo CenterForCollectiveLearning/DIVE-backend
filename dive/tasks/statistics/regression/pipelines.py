@@ -16,7 +16,7 @@ from math import log10, floor
 from patsy import dmatrices
 
 from dive.db import db_access
-from dive.data.access import get_data
+from dive.data.access import get_data, get_conditioned_data
 from dive.task_core import celery, task_app
 from dive.tasks.statistics.regression.model_recommendation import construct_models
 from dive.tasks.statistics.utilities import sets_normal, difference_of_two_lists
@@ -25,7 +25,7 @@ from dive.resources.serialization import replace_unserializable_numpy
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-def run_regression_from_spec(spec, project_id):
+def run_regression_from_spec(spec, project_id, conditionals=[]):
     '''
     Wrapper function for five discrete steps:
     1) Parse arguments (in this function)
@@ -50,6 +50,8 @@ def run_regression_from_spec(spec, project_id):
 
     dependent_variable, independent_variables, interaction_terms, df = \
         load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id)
+
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     considered_independent_variables_per_model, patsy_models = \
         construct_models(df, dependent_variable, independent_variables, interaction_terms)
@@ -340,7 +342,7 @@ def format_results(model_results, dependent_variable, independent_variables, con
     regression_results['fields'] = regression_fields_collection
     return regression_results
 
-def save_regression(spec, result, project_id):
+def save_regression(spec, result, project_id, conditionals=[]):
     with task_app.app_context():
         existing_regression_doc = db_access.get_regression_from_spec(project_id, spec)
         if existing_regression_doc:
