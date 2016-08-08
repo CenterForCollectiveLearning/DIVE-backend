@@ -11,7 +11,7 @@ from math import log10, floor
 from scipy.stats import ttest_ind
 
 from dive.db import db_access
-from dive.data.access import get_data
+from dive.data.access import get_data, get_conditioned_data
 from dive.tasks.ingestion.utilities import get_unique
 from dive.tasks.statistics.utilities import are_variations_equal, sets_normal
 
@@ -19,7 +19,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def run_numerical_comparison_from_spec(spec, project_id):
+def run_numerical_comparison_from_spec(spec, project_id, conditionals={}):
     comparison_result = {}
 
     variable_names = spec.get('variableNames', [])
@@ -29,6 +29,7 @@ def run_numerical_comparison_from_spec(spec, project_id):
         return 'Not passed required parameters', 400
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
     comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from dive.db import db_access
-from dive.data.access import get_data
+from dive.data.access import get_data, get_conditioned_data
 from dive.task_core import task_app
 from dive.tasks.ingestion.utilities import get_unique
 from dive.tasks.ingestion.binning import get_num_bins
@@ -13,32 +13,34 @@ from dive.tasks.ingestion.binning import get_bin_edges, get_bin_decimals
 logger = get_task_logger(__name__)
 
 
-def create_one_dimensional_contingency_table_from_spec(spec, project_id):
+def create_one_dimensional_contingency_table_from_spec(spec, project_id, conditionals=[]):
     aggregation_variable = spec.get('aggregationVariable')
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
     aggregation_result = create_one_dimensional_contingency_table(df, aggregation_variable, dep_variable)
     return aggregation_result, 200
 
 
-def create_contingency_table_from_spec(spec, project_id):
+def create_contingency_table_from_spec(spec, project_id, conditionals=[]):
     aggregation_variables = spec.get("aggregationVariables")
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
     aggregation_result = create_contingency_table(df, aggregation_variables, dep_variable)
     return aggregation_result, 200
 
-def run_aggregation_from_spec(spec, project_id):
+def run_aggregation_from_spec(spec, project_id, conditionals=[]):
     aggregation_statistics_result = {}
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")
@@ -46,6 +48,7 @@ def run_aggregation_from_spec(spec, project_id):
     with task_app.app_context():
         field_properties = db_access.get_field_properties(project_id, dataset_id)
         df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
     field_ids = set(field_ids)
@@ -605,7 +608,7 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     return binningNames[searchIndex(binningEdges, target, num_bins, 0) - 1]
 
 
-def save_aggregation(spec, result, project_id):
+def save_aggregation(spec, result, project_id, conditionals=[]):
     with task_app.app_context():
         existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec)
         if existing_aggregation_doc:

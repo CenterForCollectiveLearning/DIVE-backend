@@ -152,17 +152,31 @@ def get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_
         for c_field_1, c_field_2 in combinations(c_fields, 2):
             multi_c_specs = multi_c([c_field_1, c_field_2])
             specs.extend(multi_c_specs)
+        if (n_c >= 3) and n_q:
+            for q_field in q_fields:
+                single_q_multi_c_specs = single_q_multi_c(c_fields, q_field)
+                specs.extend(single_q_multi_c_specs)
 
     if n_q >= 2:
         for q_field_1, q_field_2 in combinations(q_fields, 2):
             multi_q_specs = multi_q([q_field_1, q_field_2])
             specs.extend(multi_q_specs)
+        if (n_q >= 3) and n_c:
+            for c_field in c_fields:
+                single_c_multi_q_specs = single_c_multi_q(c_field, q_fields)
+                specs.extend(single_c_multi_q_specs)
 
-    if (n_c and n_q) and (n_c != 1) and (n_q != 1):
+    if (n_c and n_q) and ((n_c != 1) or (n_q != 1)):
         for c_field in c_fields:
             for q_field in q_fields:
                 single_cq_specs = single_cq(c_field, q_field)
                 specs.extend(single_cq_specs)
+
+    if (n_t and n_q) and ((n_t != 1) or (n_q != 1)):
+        for t_field in t_fields:
+            for q_field in q_fields:
+                single_tq_specs = single_tq(t_field, q_field)
+                specs.extend(single_tq_specs)
 
     return specs
 
