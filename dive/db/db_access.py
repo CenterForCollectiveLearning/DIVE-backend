@@ -418,27 +418,28 @@ def get_regression_by_id(regression_id, project_id):
     return row_to_dict(regression)
 
 
-def get_regression_from_spec(project_id, spec):
+def get_regression_from_spec(project_id, spec, **kwargs):
     try:
-        regression = Regression.query.filter_by(project_id=project_id, spec=spec).one()
+        regression = Regression.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound:
         return None
     return row_to_dict(regression)
 
 
-def insert_regression(project_id, spec, data):
+def insert_regression(project_id, spec, data, **kwargs):
     regression = Regression(
         project_id = project_id,
         spec = spec,
-        data = data
+        data = data,
+        **kwargs
     )
     db.session.add(regression)
     db.session.commit()
     return row_to_dict(regression)
 
-def delete_regression(project_id, regression_id):
+def delete_regression(project_id, regression_id, **kwargs):
     try:
-        regression = Regression.query.filter_by(project_id=project_id, id=regression_id).one()
+        regression = Regression.query.filter_by(project_id=project_id, id=regression_id, **kwargs).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -454,27 +455,28 @@ def get_correlation_by_id(correlation_id, project_id):
     return row_to_dict(correlation)
 
 
-def get_correlation_from_spec(project_id, spec):
+def get_correlation_from_spec(project_id, spec, **kwargs):
     try:
-        correlation = Correlation.query.filter_by(project_id=project_id, spec=spec).one()
+        correlation = Correlation.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound:
         return None
     return row_to_dict(correlation)
 
 
-def insert_correlation(project_id, spec, data):
+def insert_correlation(project_id, spec, data, **kwargs):
     correlation = Correlation(
         project_id = project_id,
         spec = spec,
-        data = data
+        data = data,
+        **kwargs
     )
     db.session.add(correlation)
     db.session.commit()
     return row_to_dict(correlation)
 
-def delete_correlation(project_id, correlation_id):
+def delete_correlation(project_id, correlation_id, **kwargs):
     try:
-        correlation = Correlation.query.filter_by(project_id=project_id, id=correlation_id).one()
+        correlation = Correlation.query.filter_by(project_id=project_id, id=correlation_id, **kwargs).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -486,34 +488,35 @@ def delete_correlation(project_id, correlation_id):
 ################
 # Summaries
 ################
-def get_aggregation_by_id(aggregation_id, project_id):
-    aggregation = Aggregation.query.filter_by(id=aggregation_id, project_id=project_id).one()
+def get_aggregation_by_id(aggregation_id, project_id, **kwargs):
+    aggregation = Aggregation.query.filter_by(id=aggregation_id, project_id=project_id, **kwargs).one()
     if aggregation is None:
         abort(404)
     return row_to_dict(aggregation)
 
 
-def get_aggregation_from_spec(project_id, spec):
+def get_aggregation_from_spec(project_id, spec, **kwargs):
     try:
-        aggregation = Aggregation.query.filter_by(project_id=project_id, spec=spec).one()
+        aggregation = Aggregation.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound:
         return None
     return row_to_dict(aggregation)
 
 
-def insert_aggregation(project_id, spec, data):
+def insert_aggregation(project_id, spec, data, **kwargs):
     aggregation = Aggregation(
         project_id = project_id,
         spec = spec,
-        data = data
+        data = data,
+        **kwargs
     )
     db.session.add(aggregation)
     db.session.commit()
     return row_to_dict(aggregation)
 
-def delete_aggregation(project_id, aggregation_id):
+def delete_aggregation(project_id, aggregation_id, **kwargs):
     try:
-        aggregation = Aggregation.query.filter_by(project_id=project_id, id=aggregation_id).one()
+        aggregation = Aggregation.query.filter_by(project_id=project_id, id=aggregation_id, **kwargs).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:

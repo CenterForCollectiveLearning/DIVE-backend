@@ -85,11 +85,11 @@ def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=
     return result
 
 
-def save_correlation(spec, result, project_id, conditionals=[]):
+def save_correlation(spec, result, project_id, conditionals={}):
     with task_app.app_context():
-        existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec)
+        existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec, conditionals=conditionals)
         if existing_correlation_doc:
-            db_access.delete_correlation(project_id, existing_correlation_doc['id'])
+            db_access.delete_correlation(project_id, existing_correlation_doc['id'], conditionals=conditionals)
         result = replace_unserializable_numpy(result)
-        inserted_correlation = db_access.insert_correlation(project_id, spec, result)
+        inserted_correlation = db_access.insert_correlation(project_id, spec, result, conditionals=conditionals)
         return inserted_correlation

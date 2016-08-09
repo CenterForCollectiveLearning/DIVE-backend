@@ -110,7 +110,7 @@ class RegressionFromSpec(Resource):
         spec = args.get('spec')
         conditionals = args.get('conditionals', {})
 
-        regression_doc = db_access.get_regression_from_spec(project_id, spec)
+        regression_doc = db_access.get_regression_from_spec(project_id, spec, conditionals=conditionals)
 
         # check to see if regression is in db; if so, send back data
         if regression_doc and not current_app.config['RECOMPUTE_STATISTICS']:
@@ -235,7 +235,7 @@ class AggregationStatsFromSpec(Resource):
         project_id = args.get('projectId')
         spec = args.get('spec')
 
-        summary_doc = db_access.get_aggregation_from_spec(project_id, spec)
+        summary_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
         if summary_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             summary_data = summary_doc['data']
             summary_data['id'] = summary_doc['id']
@@ -270,7 +270,7 @@ class OneDimensionalTableFromSpec(Resource):
         spec = args.get('spec')
         conditionals = args.get('conditionals')
 
-        table_doc = db_access.get_aggregation_from_spec(project_id, spec)
+        table_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
         if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             table_data = table_doc['data']
             table_data['id'] = table_doc['id']
@@ -305,7 +305,7 @@ class ContingencyTableFromSpec(Resource):
         spec = args.get('spec')
         conditionals = args.get('conditionals', {})
 
-        table_doc = db_access.get_aggregation_from_spec(project_id, spec)
+        table_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
 
         if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             table_data = table_doc['data']
@@ -339,7 +339,7 @@ class CorrelationsFromSpec(Resource):
         spec = args.get('spec')
         conditionals = args.get('conditionals')
 
-        correlation_doc = db_access.get_correlation_from_spec(project_id, spec)
+        correlation_doc = db_access.get_correlation_from_spec(project_id, spec, conditionals=conditionals)
         if correlation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
             correlation_data = correlation_doc['data']
             correlation_data['id'] = correlation_doc['id']
@@ -373,7 +373,7 @@ class CorrelationScatterplot(Resource):
         project_id = args.get('projectId')
         correlation_id = args.get('correlationId')
         conditionals = args.get('conditionals')
-        correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id)
+        correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id, conditionals=conditionals)
         correlation_spec = correlation_doc['spec']
         data = get_correlation_scatterplot_data(correlation_spec, project_id, conditionals)
         return jsonify({ 'data': data })

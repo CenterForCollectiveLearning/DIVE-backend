@@ -608,11 +608,11 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     return binningNames[searchIndex(binningEdges, target, num_bins, 0) - 1]
 
 
-def save_aggregation(spec, result, project_id, conditionals=[]):
+def save_aggregation(spec, result, project_id, conditionals={}):
     with task_app.app_context():
-        existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec)
+        existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
         if existing_aggregation_doc:
-            db_access.delete_aggregation(project_id, existing_aggregation_doc['id'])
+            db_access.delete_aggregation(project_id, existing_aggregation_doc['id'], conditionals=conditionals)
         result = replace_unserializable_numpy(result)
-        inserted_aggregation = db_access.insert_aggregation(project_id, spec, result)
+        inserted_aggregation = db_access.insert_aggregation(project_id, spec, result, conditionals=conditionals)
         return inserted_aggregation
