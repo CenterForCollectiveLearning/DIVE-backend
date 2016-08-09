@@ -373,7 +373,7 @@ class CorrelationScatterplot(Resource):
         project_id = args.get('projectId')
         correlation_id = args.get('correlationId')
         conditionals = args.get('conditionals')
-        correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id, conditionals=conditionals)
+        correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id)
         correlation_spec = correlation_doc['spec']
         data = get_correlation_scatterplot_data(correlation_spec, project_id, conditionals)
         return jsonify({ 'data': data })
