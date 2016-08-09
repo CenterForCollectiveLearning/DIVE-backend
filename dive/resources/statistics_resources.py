@@ -366,14 +366,17 @@ class CorrelationsFromSpec(Resource):
 correlationScatterplotPostParser = reqparse.RequestParser()
 correlationScatterplotPostParser.add_argument('projectId', type=str, location='json')
 correlationScatterplotPostParser.add_argument('correlationId', type=str, location='json')
-correlationScatterplotPostParser.add_argument('conditionals', type=str, location='json', default={})
+correlationScatterplotPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class CorrelationScatterplot(Resource):
     def post(self):
         args = correlationScatterplotPostParser.parse_args()
         project_id = args.get('projectId')
         correlation_id = args.get('correlationId')
         conditionals = args.get('conditionals')
+
         correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id)
+
         correlation_spec = correlation_doc['spec']
         data = get_correlation_scatterplot_data(correlation_spec, project_id, conditionals)
+
         return jsonify({ 'data': data })
