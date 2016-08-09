@@ -6,7 +6,7 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 
 from dive.db import db_access
-from dive.data.access import get_data
+from dive.data.access import get_data, get_conditioned_data
 from dive.tasks.ingestion.utilities import get_unique
 from dive.tasks.statistics.utilities import get_design_matrices, are_variations_equal
 
@@ -14,7 +14,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def run_anova_from_spec(spec, project_id):
+def run_anova_from_spec(spec, project_id, conditionals={}):
     '''
     For now, spec will be form:
         datasetId
@@ -29,6 +29,7 @@ def run_anova_from_spec(spec, project_id):
     dataset_id = spec.get('datasetId')
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
     anova_result = run_anova(df, independent_variables, dependent_variables)

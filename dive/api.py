@@ -53,7 +53,7 @@ def add_resources(api):
     api.add_resource(InteractionTerms,              '/statistics/v1/interaction_term')
 
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
-    api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared/<string:regression_id>')
+    api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared')
     api.add_resource(AggregationStatsFromSpec,          '/statistics/v1/aggregation_stats')
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
 
@@ -63,7 +63,7 @@ def add_resources(api):
     api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
     api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
-    api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot/<string:correlation_id>')
+    api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
 
     api.add_resource(ExportedResults,               '/exported_results/v1/exported_results')

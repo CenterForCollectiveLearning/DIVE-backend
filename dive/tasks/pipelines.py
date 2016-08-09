@@ -205,14 +205,14 @@ def ingestion_pipeline(self, dataset_id, project_id):
 
 
 @celery.task(bind=True)
-def regression_pipeline(self, spec, project_id):
+def regression_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In regression pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regressions'})
-    regression_data, status = run_regression_from_spec(spec, project_id)
+    regression_data, status = run_regression_from_spec(spec, project_id, conditionals=conditionals)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving regression results'})
-    regression_doc = save_regression(spec, regression_data, project_id)
+    regression_doc = save_regression(spec, regression_data, project_id, conditionals=conditionals)
     regression_data['id'] = regression_doc['id']
 
     return { 'result': regression_data }
@@ -220,55 +220,55 @@ def regression_pipeline(self, spec, project_id):
 
 @celery.task(bind=True)
 def aggregation_pipeline(self, spec, project_id):
-    logger.info("In aggregation pipeline with and project_id %s", project_id)
+    logger.info("In aggregation pipeline with and project_id %s", project_id, conditionals=[])
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical aggregation'})
-    aggregation_data, status = run_aggregation_from_spec(spec, project_id)
+    aggregation_data, status = run_aggregation_from_spec(spec, project_id, conditionals=conditionals)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical aggregation'})
-    aggregation_doc = save_aggregation(spec, aggregation_data, project_id)
+    aggregation_doc = save_aggregation(spec, aggregation_data, project_id, conditionals=conditionals)
     aggregation_data['id'] = aggregation_doc['id']
 
     return { 'result': aggregation_data }
 
 
 @celery.task(bind=True)
-def one_dimensional_contingency_table_pipeline(self, spec, project_id):
+def one_dimensional_contingency_table_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In one dimensional contingency table pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating one dimensional aggregation table'})
-    table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id)
+    table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
-    table_doc = save_aggregation(spec, table_data, project_id)
+    table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
     table_data['id'] = table_doc['id']
 
     return { 'result': table_data }
 
 
 @celery.task(bind=True)
-def contingency_table_pipeline(self, spec, project_id):
+def contingency_table_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In contingency table pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating aggregation table'})
-    table_data, status = create_contingency_table_from_spec(spec, project_id)
+    table_data, status = create_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
-    table_doc = save_aggregation(spec, table_data, project_id)
+    table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
     table_data['id'] = table_doc['id']
 
     return { 'result': table_data }
 
 
 @celery.task(bind=True)
-def correlation_pipeline(self, spec, project_id):
+def correlation_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In correlation pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical correlation'})
-    correlation_data, status = run_correlation_from_spec(spec, project_id)
+    correlation_data, status = run_correlation_from_spec(spec, project_id, conditionals=conditionals)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical correlation'})
-    correlation_doc = save_correlation(spec, correlation_data, project_id)
+    correlation_doc = save_correlation(spec, correlation_data, project_id, conditionals=conditionals)
     correlation_data['id'] = correlation_doc['id']
 
     return { 'result': correlation_data }

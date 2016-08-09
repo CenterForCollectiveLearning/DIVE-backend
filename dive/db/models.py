@@ -227,6 +227,8 @@ class Regression(db.Model):
 
     spec = db.Column(JSONB)
     data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     # One-to-many with exported specs
     exported_regression = db.relationship('Exported_Regression',
@@ -284,6 +286,8 @@ class Aggregation(db.Model):
 
     spec = db.Column(JSONB)
     data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     # One-to-many with exported specs
     exported_summary = db.relationship('Exported_Aggregation',
@@ -319,12 +323,58 @@ class Exported_Aggregation(db.Model):
                         onupdate=datetime.utcnow)
 
 
+class Comparison(db.Model):
+    __tablename__ = ModelName.COMPARISON.value
+    id = db.Column(db.Integer, primary_key=True)
+
+    spec = db.Column(JSONB)
+    data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
+
+    # One-to-many with exported specs
+    exported_comparison = db.relationship('Exported_Comparison',
+        backref='correlation',
+        cascade='all, delete-orphan',
+        lazy='dynamic')
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
+class Exported_Comparison(db.Model):
+    __tablename__ = ModelName.EXPORTED_COMPARISON.value
+    id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
+
+    comparison_id = db.Column(db.Integer, db.ForeignKey('comparison.id',
+        onupdate='CASCADE', ondelete='CASCADE'))
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    project = db.relationship(Project)
+
+    creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    update_date = db.Column(db.DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
+
 class Correlation(db.Model):
     __tablename__ = ModelName.CORRELATION.value
     id = db.Column(db.Integer, primary_key=True)
 
     spec = db.Column(JSONB)
     data = db.Column(JSONB)
+    conditionals = db.Column(JSONB)
+    config = db.Column(JSONB)
 
     # One-to-many with exported specs
     exported_correlation = db.relationship('Exported_Correlation',
