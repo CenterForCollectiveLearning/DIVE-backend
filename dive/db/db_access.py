@@ -411,8 +411,8 @@ def delete_exported_spec(project_id, exported_spec_id):
 ################
 # Analyses
 ################
-def get_regression_by_id(regression_id, project_id):
-    regression = Regression.query.filter_by(id=regression_id, project_id=project_id).one()
+def get_regression_by_id(regression_id, project_id, **kwargs):
+    regression = Regression.query.filter_by(id=regression_id, project_id=project_id, **kwargs).one()
     if regression is None:
         abort(404)
     return row_to_dict(regression)
@@ -448,8 +448,8 @@ def delete_regression(project_id, regression_id, **kwargs):
     db.session.commit()
     return row_to_dict(regression)
 
-def get_correlation_by_id(correlation_id, project_id):
-    correlation = Correlation.query.filter_by(id=correlation_id, project_id=project_id).one()
+def get_correlation_by_id(correlation_id, project_id, **kwargs):
+    correlation = Correlation.query.filter_by(id=correlation_id, project_id=project_id, **kwargs).one()
     if correlation is None:
         abort(404)
     return row_to_dict(correlation)
