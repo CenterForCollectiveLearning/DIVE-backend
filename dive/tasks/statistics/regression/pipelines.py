@@ -344,9 +344,9 @@ def format_results(model_results, dependent_variable, independent_variables, con
 
 def save_regression(spec, result, project_id, conditionals=[]):
     with task_app.app_context():
-        existing_regression_doc = db_access.get_regression_from_spec(project_id, spec)
+        existing_regression_doc = db_access.get_regression_from_spec(project_id, spec, conditionals=conditionals)
         if existing_regression_doc:
-            db_access.delete_regression(project_id, existing_regression_doc['id'])
+            db_access.delete_regression(project_id, existing_regression_doc['id'], conditionals=conditionals)
         result = replace_unserializable_numpy(result)
-        inserted_regression = db_access.insert_regression(project_id, spec, result)
+        inserted_regression = db_access.insert_regression(project_id, spec, result, conditionals=conditionals)
         return inserted_regression
