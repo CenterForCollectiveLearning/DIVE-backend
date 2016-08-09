@@ -244,9 +244,15 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
             if mean_aggregration:
                 sem = sem_df[k].get(secondary_field_value, None)
                 if sem is None or np.isnan(sem):
-                    data_array_element_with_interval.append('%.3f' % aggregation_value)
+                    if aggregation_value:
+                        data_array_element_with_interval.append('%.3f' % aggregation_value)
+                    else:
+                        data_array_element_with_interval.append('')
                 else:
-                    data_array_element_with_interval.append('%.3f ± %.3f' % (aggregation_value, sem))
+                    if aggregation_value:
+                        data_array_element_with_interval.append('%.3f ± %.3f' % (aggregation_value, sem))
+                    else:
+                        data_array_element_with_interval.append('')
 
                 data_array_element.append(lower_confidence_df[k].get(secondary_field_value, None) )
                 data_array_element.append(upper_confidence_df[k].get(secondary_field_value, None) )

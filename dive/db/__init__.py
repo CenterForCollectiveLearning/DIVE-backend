@@ -14,6 +14,8 @@ class ModelName(Enum):
     EXPORTED_AGGREGATION = 'exported_summary'
     CORRELATION = 'correlation'
     EXPORTED_CORRELATION = 'exported_correlation'
+    COMPARISON = 'comparison'
+    EXPORTED_COMPARISON = 'exported_comparison'
     DOCUMENT = 'document'
     RELATIONSHIP = 'relationship'
     GROUP = 'group'
