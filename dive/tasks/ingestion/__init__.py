@@ -72,9 +72,9 @@ for data_type in categorical_types:
 
 class DataTypeWeights(Enum):
     # Fundamental
-    INTEGER = 6
-    STRING = 1
-    DECIMAL = 4
+    INTEGER = 8
+    STRING = 2
+    DECIMAL = 6
     BOOLEAN = 7
 
     # Special strings
@@ -91,12 +91,12 @@ class DataTypeWeights(Enum):
     CONTINENT_NAME = 10
 
     # Temporal
-    DATETIME = 5
-    DATE = 5
-    TIME = 5
-    YEAR = 5
-    MONTH = 5
-    DAY = 5
+    DATETIME = 1
+    DATE = 1
+    TIME = 1
+    YEAR = 1
+    MONTH = 1
+    DAY = 1
 
 
 class PseudoType(Enum):

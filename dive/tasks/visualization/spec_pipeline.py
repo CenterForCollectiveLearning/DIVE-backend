@@ -13,6 +13,7 @@ from dive.tasks.ingestion import specific_to_general_type
 from dive.tasks.visualization import GeneratingProcedure as GP, TypeStructure as TS, TermType as TT
 from dive.tasks.visualization.data import get_viz_data_from_enumerated_spec
 from dive.tasks.visualization.score_specs import score_spec
+from dive.resources.serialization import replace_unserializable_numpy
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -45,12 +46,13 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     '''
     viz_specs_with_data = []
 
+    enumerated_viz_specs = enumerated_viz_specs[:30]
+
     start_time = time()
     # Get dataframe
     if project_id and dataset_id:
         with task_app.app_context():
-            df = get_data(project_id=project_id, dataset_id=dataset_id, profile=True)
-            df = df.dropna()
+            df = get_data(project_id=project_id, dataset_id=dataset_id)
             conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     precomputed = {
@@ -68,7 +70,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
             data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config,
                 df=conditioned_df,
                 precomputed=precomputed,
-                data_formats=['score', 'visualize']
+                data_formats=['score', 'table', 'visualize']
             )
 
         except Exception as e:
@@ -78,10 +80,11 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
         if not data:
             logger.info('No data for spec with generating procedure %s', spec['generating_procedure'])
             continue
+
         viz_spec_with_data['data'] = data
         viz_specs_with_data.append(viz_spec_with_data)
 
-    logger.info('Attaching data to %s specs took %.3fs', len(viz_specs_with_data), time() - start_time)
+    logger.debug('Attaching data to %s specs took %.3fs', len(viz_specs_with_data), time() - start_time)
     return viz_specs_with_data
 
 
@@ -122,12 +125,15 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
     return sorted_viz_specs
 
 
-def save_viz_specs(specs, dataset_id, project_id, selected_fields, conditionals, config):
+def save_viz_specs(specs, dataset_id, project_id, selected_fields, recommendation_types, conditionals, config):
     with task_app.app_context():
+        specs = replace_unserializable_numpy(specs)
+
         # Delete existing specs with same parameters
-        existing_specs = db_access.get_specs(project_id, dataset_id, selected_fields=selected_fields, conditionals=conditionals, config=config)
+        existing_specs = db_access.get_specs(
+            project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals, config=config)
         if existing_specs:
             for spec in existing_specs:
                 db_access.delete_spec(project_id, spec['id'])
-        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, conditionals, config)
+        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, recommendation_types, conditionals, config)
     return inserted_specs

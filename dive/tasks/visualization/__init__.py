@@ -68,7 +68,7 @@ class VizType(Enum):
     NETWORK = 'network'
     HIST = 'hist'
     BAR = 'bar'
-    STACKED_BAR = 'stackedbar'
+    STACKED_BAR = 'bar'
 
 
 class TermType(Enum):

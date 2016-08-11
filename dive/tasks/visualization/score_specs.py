@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from scipy.stats import entropy, normaltest, mode, pearsonr, linregress
 from dive.tasks.visualization import GeneratingProcedure, TypeStructure
@@ -73,10 +74,11 @@ def get_statistical_properties(data, gp, ts):
             v = data.get('agg_field')
         elif gp in [ GeneratingProcedure.IND_VAL.value ]:
             v = data.get('val')
-        elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
+        elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
             v = data.get('agg')
         elif gp in [ GeneratingProcedure.VAL_COUNT.value ]:
             v = data.get('count')
+
 
         for test_name, test_fn in univariate_tests.iteritems():
             test_value = None
@@ -132,7 +134,9 @@ def get_relevance_score(spec, visualization_field_ids, selected_fields):
     score = 0
     for field in selected_fields:
         if field['field_id'] in visualization_field_ids:
-            score = score + 10
+            score = score + 1
+    if len(selected_fields):
+        score = score / len(selected_fields)
     return score
 
 
