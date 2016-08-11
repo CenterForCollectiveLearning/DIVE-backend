@@ -1,7 +1,7 @@
 from flask import make_response, jsonify, current_app, url_for
 from flask.ext.restful import Resource, reqparse, marshal_with
 
-from celery import states, chain, group
+from celery import states
 from celery.result import result_from_tuple, ResultSet
 
 from dive.task_core import celery
@@ -38,26 +38,32 @@ class TaskResult(Resource):
     '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
+        state = {
+            'currentTask': '',
+            'state': task.state
+        }
+
+        logger.debug('%s: %s', task_id, task.state)
 
         if task.state == states.PENDING:
             if (task.info) and (task.info.get('desc')):
                 logger.info(task.info.get('desc'))
-                state = {
-                    'currentTask': task.info.get('desc'),
-                    'state': task.state,
-                }
-            else:
-                state = {
-                    'currentTask': '',
-                    'state': task.state,
-                }
+                state['currentTask'] = task.info.get('desc'),
+
         elif task.state == states.SUCCESS:
-            state = {
-                'result': task.info.get('result'),
-                'state': task.state,
-            }
+            if task.info:
+                state['result'] = task.info.get('result')
+
+        elif task.state == states.FAILURE:
+            if task.info:
+                try:
+                    state['error'] = task.info.get('error')
+                except Exception as e:
+                    state['error'] = 'Unknown error occurred'
 
         response = jsonify(state)
         if task.state == states.PENDING:
             response.status_code = 202
+        elif task.state == states.FAILURE:
+            response.status_code = 500
         return response

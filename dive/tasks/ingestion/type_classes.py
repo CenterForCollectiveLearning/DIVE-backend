@@ -1,6 +1,7 @@
 '''
 From https://github.com/okfn/messytables/blob/master/messytables/types.py
 '''
+import re
 import locale
 import decimal
 import datetime
@@ -65,12 +66,16 @@ class SpecificCellType(CellType):
 
 class IntegerType(CellType):
     ''' Integer field '''
-    regex = "^-?[0-9]+$"
     name = DataType.INTEGER.value
     weight = DataTypeWeights.INTEGER.value
     result_type = int
+    regex = re.compile("^-?[0-9]+$")
 
     def cast(self, value):
+        logger.info(value)
+        if regex.match(value):
+            return int(value)
+
         if value in ('', None):
             return None
         try:
@@ -127,8 +132,8 @@ class BooleanType(CellType):
     weight = DataTypeWeights.BOOLEAN.value
     result_type = bool
 
-    true_values = ('yes', 'true', '0')
-    false_values = ('no', 'false', '1')
+    true_values = ('yes', 'true')
+    false_values = ('no', 'false')
 
     def __init__(self, true_values=None, false_values=None):
         if true_values is not None:

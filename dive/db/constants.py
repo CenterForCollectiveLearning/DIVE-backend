@@ -6,10 +6,9 @@ USER = 1
 
 # Users
 class Role(Enum):
-    ADMIN = 'admin'
-    USER = 'user'
+    ADMIN = u'admin'
+    USER = u'user'
 
 # User Status
-
 class User_Status(Enum):
-    NEW = 'new'
+    NEW = u'new'
