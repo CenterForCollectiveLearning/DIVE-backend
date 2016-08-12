@@ -1,5 +1,5 @@
 # from flask import send_file
-# from flask.ext.restful import Resource, reqparse
+# from flask_restful import Resource, reqparse
 #
 # import cairosvg
 # import cairocffi as cairo

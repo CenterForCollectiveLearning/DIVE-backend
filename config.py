@@ -28,15 +28,16 @@ class BaseConfig(object):
 
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
 
     COOKIE_DOMAIN = None
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
-    CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
+    CELERY_BROKER_URL = 'librabbitmq://admin:password@%s/dive' % 'rabbitmq'
     CELERY_RESULT_BACKEND = 'amqp'
 
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@localhost:5432/dive'
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@%s:5432/dive' % 'localhost'
 
     ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
     ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
@@ -46,7 +47,7 @@ class BaseConfig(object):
         'dive.tasks.handlers',
         'dive.tasks.ingestion.upload',
         'dive.tasks.ingestion.dataset_properties',
-        'dive.tasks.ingestion.id_detection',        
+        'dive.tasks.ingestion.id_detection',
         'dive.tasks.ingestion.type_detection',
         'dive.tasks.ingestion.type_classes',
         'dive.tasks.ingestion.field_properties',

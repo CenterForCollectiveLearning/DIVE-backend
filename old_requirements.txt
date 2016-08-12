@@ -33,7 +33,6 @@ futures==3.0.3
 gnureadline==6.3.3
 greenlet==0.4.5
 gunicorn==19.4.5
-html5lib==0.9999999
 itsdangerous==0.24
 jdcal==1.2
 Jinja2==2.8
@@ -61,7 +60,6 @@ PyYAML==3.11
 raven==5.13.0
 requests==2.8.1
 scikit-learn==0.16.1
-scipy==0.16.0
 simplegeneric==0.8.1
 simplejson==3.8.1
 six==1.10.0

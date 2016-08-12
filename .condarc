@@ -1,0 +1,12 @@
+channels:
+  - anaconda
+  - asmeurer
+  - binstar
+  - bioconda
+  - birdhouse
+  - conda-forge
+  - menpo
+  - NSIDC
+  - orchardmile
+always_yes: True
+show_channel_urls: True

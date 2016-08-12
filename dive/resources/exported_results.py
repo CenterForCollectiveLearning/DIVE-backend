@@ -1,4 +1,4 @@
-from flask.ext.restful import Resource, reqparse
+from flask_restful import Resource, reqparse
 
 from dive.db import db_access
 from dive.resources.serialization import jsonify
