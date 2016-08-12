@@ -1,8 +1,14 @@
 import os
 from os import walk
 from os.path import join, dirname, abspath
+from dive.base.serialization import dive_json_dumps, dive_json_loads
+from kombu.serialization import register
 env = os.environ.get
 base_dir_path = lambda x: abspath(join(dirname(__file__), x))
+
+register('divejson', dive_json_dumps, dive_json_loads,
+    content_type='application/x-myjson',
+    content_encoding='utf-8')
 
 class BaseConfig(object):
     # General
@@ -34,9 +40,9 @@ class BaseConfig(object):
 
     # Worker
     CELERY_ALWAYS_EAGER = False
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_RESULT_SERIALIZER = 'json'
+    # CELERY_ACCEPT_CONTENT = ['divejson']
+    # CELERY_TASK_SERIALIZER = 'divejson'
+    # CELERY_RESULT_SERIALIZER = 'divejson'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://admin:password@localhost/dive'  # 'amqp'
     CELERY_IMPORTS = []
@@ -64,10 +70,11 @@ class ProductionConfig(BaseConfig):
     # Flask
     DEBUG = False
     COMPRESS = False
-    COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', '.usedive.com')
-    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
-    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+    # COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', '.usedive.com')
+    # REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    # SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
+    # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 's3')
     if STORAGE_TYPE == 'file':
         STORAGE_PATH = env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
@@ -77,9 +84,12 @@ class ProductionConfig(BaseConfig):
         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
 
     # Analytics
-    SENTRY_DSN = ''
+    SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
+    # Worker
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL')
+    CELERY_RESULT_BACKEND = env('DIVE_RESULT_BACKEND')
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False

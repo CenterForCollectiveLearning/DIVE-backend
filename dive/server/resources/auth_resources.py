@@ -7,7 +7,7 @@ from dive.base.core import login_manager, db
 from dive.base.db import row_to_dict
 from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth
 from dive.base.db.models import User
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)

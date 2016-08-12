@@ -34,7 +34,7 @@ def create_app(**kwargs):
         app.config.from_object('config.TestingConfig')
     elif mode == 'PRODUCTION':
         app.config.from_object('config.ProductionConfig')
-        sentry.init_app(app)
+        # sentry.init_app(app)
 
     if app.config.get('COMPRESS', True):
         compress.init_app(app)

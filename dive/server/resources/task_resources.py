@@ -5,7 +5,7 @@ from celery import states
 from celery.result import result_from_tuple, ResultSet
 
 from dive.worker.core import celery
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
 
 import logging

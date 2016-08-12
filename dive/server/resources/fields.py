@@ -8,7 +8,7 @@ from flask.ext.restful import Resource, reqparse
 
 from dive.base.db import db_access
 from dive.worker.ingestion import quantitative_types, categorical_types, temporal_types, specific_to_general_type
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)

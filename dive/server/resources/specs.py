@@ -2,7 +2,7 @@ from flask import request, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.base.db import db_access
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 from dive.worker.visualization import GeneratingProcedure
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.pipelines import viz_spec_pipeline

@@ -15,7 +15,7 @@ from dive.base.db import db_access
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
-from dive.worker.serialization import replace_unserializable_numpy
+from dive.base.serialization import replace_unserializable_numpy
 from dive.worker.ingestion import DataType, specific_to_general_type
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
