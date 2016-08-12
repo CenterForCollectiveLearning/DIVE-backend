@@ -1,90 +1,89 @@
 import os
+from os import walk
+from os.path import join, dirname, abspath
+env = os.environ.get
+base_dir_path = lambda x: abspath(join(dirname(__file__), x))
 
 class BaseConfig(object):
-    DEBUG = False
-    HOST = '0.0.0.0'
-    PORT = 8081
-
+    # General
+    SITE_TITLE = 'dive'
     SECRET_KEY = 'dive'
+    PREFERRED_URL_SCHEME = 'http'
 
-    SENTRY_DSN = 'https://c7323107b6834d55b8b776b10772988f:3a3b9f7d03dd4bcfbb5da3f1c04ee207@app.getsentry.com/75310'
-    SENTRY_USER_ATTRS = [ 'username', 'email' ]
-
-    FIELD_RELATIONSHIP_DISTANCE_THRESHOLD = 0.8
-
-    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
-    UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)
-
-    PRELOADED_DIR = os.path.join(os.path.dirname(__file__), 'preloaded')
-    PRELOADED_DIR = os.path.abspath(PRELOADED_DIR)
-
-    RECOMPUTE_FIELD_PROPERTIES = True
-    RECOMPUTE_VIZ_SPECS = True
-    RECOMPUTE_STATISTICS = True
-
-    PROPAGATE_EXCEPTIONS = True
-
+    # Flask
+    HOST = '0.0.0.0'
+    DEBUG = True
+    PORT = 8081
     COMPRESS = True
-
-    SQLALCHEMY_POOL_SIZE=20
-    SQLALCHEMY_MAX_OVERFLOW=100
+    PROPAGATE_EXCEPTIONS = True
 
     COOKIE_DOMAIN = None
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
+    # Resources
+    STORAGE_TYPE = 'file'
+    STORAGE_PATH = base_dir_path('uploads')
+    PRELOADED_PATH = base_dir_path('preloaded')
+    ALEMBIC_DIR = base_dir_path('migrate')
+
+    # DB
+    SQLALCHEMY_POOL_SIZE=20
+    SQLALCHEMY_MAX_OVERFLOW=100
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@localhost/dive'
+
+    # Worker
+    CELERY_ALWAYS_EAGER = False
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
-    CELERY_RESULT_BACKEND = 'amqp'
+    CELERY_RESULT_BACKEND = 'db+postgresql://admin:password@localhost/dive'  # 'amqp'
+    CELERY_IMPORTS = []
+    for root, dirs, files in walk("./dive/worker"):
+        path = root.split('/')
+        dir_path = '.'.join(path[1:])
+        for f in files:
+            if f.endswith('.py') and f != '__init__.py':
+                CELERY_IMPORTS.append('%s.%s' % (dir_path, f[:-3]))
 
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@localhost:5432/dive'
+    RECOMPUTE_FIELD_PROPERTIES = True
+    RECOMPUTE_VIZ_SPECS = True
+    RECOMPUTE_STATISTICS = True
 
-    ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
-    ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
-
-    CELERY_IMPORTS = [
-        'dive.tasks.pipelines',
-        'dive.tasks.handlers',
-        'dive.tasks.ingestion.upload',
-        'dive.tasks.ingestion.dataset_properties',
-        'dive.tasks.ingestion.id_detection',        
-        'dive.tasks.ingestion.type_detection',
-        'dive.tasks.ingestion.type_classes',
-        'dive.tasks.ingestion.field_properties',
-        'dive.tasks.ingestion.relationships',
-        'dive.tasks.transformation.reduce',
-        'dive.tasks.visualization.__init__',
-        'dive.tasks.visualization.data',
-        'dive.tasks.visualization.enumerate_specs',
-        'dive.tasks.visualization.score_specs',
-        'dive.tasks.visualization.spec_pipeline',
-        'dive.tasks.visualization.type_mapping',
-        'dive.tasks.visualization.marginal_spec_functions.single_field_single_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.single_field_multi_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.multi_field_single_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.mixed_field_multi_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',
-        'dive.tasks.transformation.join',
-        'dive.tasks.transformation.pivot',
-        'dive.tasks.transformation.reduce',
-        'dive.tasks.statistics.regression',
-        'dive.tasks.statistics.comparison',
-        'dive.tasks.statistics.aggregation',
-    ]
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
 
 class ProductionConfig(BaseConfig):
-    DEBUG = True
+    # General
+    SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
+    SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
+    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'http')
+
+    # Flask
+    DEBUG = False
+    COMPRESS = False
+    COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', '.usedive.com')
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 's3')
+    if STORAGE_TYPE == 'file':
+        STORAGE_PATH = env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
+    else:
+        AWS_KEY_ID = env('DIVE_AWS_KEY_ID')
+        AWS_SECRET = env('DIVE_AWS_SECRET')
+        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+
+    # Analytics
+    SENTRY_DSN = 'https://c7323107b6834d55b8b776b10772988f:3a3b9f7d03dd4bcfbb5da3f1c04ee207@app.getsentry.com/75310'
+    SENTRY_USER_ATTRS = [ 'username', 'email' ]
+
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
 
-    COOKIE_DOMAIN = '.usedive.com'
-    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
-    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
-
-    COMPRESS = False
 
 class TestingConfig(BaseConfig):
-    TESTING = True
+    DEBUG = True
