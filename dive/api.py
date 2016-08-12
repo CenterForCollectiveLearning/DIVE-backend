@@ -20,7 +20,7 @@ from dive.resources.transform import Reduce, Unpivot, Join
 from dive.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
 from dive.resources.auth_resources import Register, Login, Logout, User
 
-from flask.ext.restful import Resource
+from flask_restful import Resource
 
 class Test(Resource):
     def get(self):

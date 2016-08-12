@@ -14,17 +14,13 @@ import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import current_app
 
-from messytables.error import ReadError
-from messytables import any_tableset, headers_guess
-
-import logging
-logger = logging.getLogger(__name__)
-
 from dive.db import db_access
 from dive.task_core import celery, task_app
 from dive.data.access import get_data
 from dive.data.in_memory_data import InMemoryData as IMD
 
+import logging
+logger = logging.getLogger(__name__)
 
 def upload_file(project_id, file):
     '''
@@ -54,15 +50,6 @@ def upload_file(project_id, file):
 
     datasets = save_dataset(project_id, file_title, file_name, file_type, path)
     return datasets
-
-
-def get_offset_and_headers(f):
-    f.seek(0)
-    table_set = any_tableset(f)
-    row_set = table_set.tables[0]
-
-    offset, headers = headers_guess(row_set.sample)
-    return offset, headers
 
 
 def get_dialect(f):
@@ -113,18 +100,11 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
         # Insert into database
         with open(path, 'rb') as f:
             dialect = get_dialect(f)
-            try:
-                offset, headers = get_offset_and_headers(f)
-            except ReadError:
-                logger.error('Error getting offset for %s', file_name, exc_info=True)
-                offset = 0
-                continue
 
         with task_app.app_context():
             dataset = db_access.insert_dataset(project_id,
                 path = path,
                 dialect = dialect,
-                offset = offset,
                 title = file_doc['file_title'],
                 file_name = file_doc['file_name'],
                 type = file_doc['type']

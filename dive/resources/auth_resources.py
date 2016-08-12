@@ -1,6 +1,6 @@
 from flask import current_app, request, make_response
-from flask.ext.restful import Resource, reqparse
-from flask.ext.login import current_user, login_user, logout_user
+from flask_restful import Resource, reqparse
+from flask_login import current_user, login_user, logout_user
 from datetime import timedelta, datetime
 
 from dive.core import login_manager, db

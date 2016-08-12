@@ -1,5 +1,5 @@
 from flask import make_response, jsonify, current_app, url_for
-from flask.ext.restful import Resource, reqparse, marshal_with
+from flask_restful import Resource, reqparse, marshal_with
 
 from celery import states
 from celery.result import result_from_tuple, ResultSet

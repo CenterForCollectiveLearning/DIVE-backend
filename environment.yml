@@ -1,0 +1,73 @@
+name: dive
+dependencies:
+- anaconda::pyyaml=3.11=py27_4
+- anaconda::yaml=0.1.6=0
+- asmeurer::blinker=1.2=py27_0
+- bioconda::flask-sqlalchemy=2.1=py27_0
+- blaze::flask-cors=2.1.2=py27_0
+- click=6.6=py27_0
+- conda-forge::colorlog=2.7.0=py27_0
+- contextlib2=0.5.3=py27_0
+- davidbgonzalez::alembic=0.7.6=py27_0
+- davidbgonzalez::flask-migrate=1.4.0=py27_0
+- davidbgonzalez::flask-script=2.0.5=py27_0
+- davidbgonzalez::mako=1.0.1=py27_0
+- distribute=0.6.45=py27_1
+- elevatedirect::flask-restful=0.3.4=0
+- flask=0.11.1=py27_0
+- itsdangerous=0.24=py27_0
+- jinja2=2.8=py27_1
+- libgfortran=3.0.0=1
+- libxml2=2.9.2=0
+- libxslt=1.1.28=0
+- lxml=3.6.1=py27_0
+- markupsafe=0.23=py27_2
+- menpo::flask-compress=1.0.2=py27_0
+- mkl=11.3.3=0
+- numpy=1.11.1=py27_0
+- openssl=1.0.2h=1
+- orchardmile::raven=5.3.1=py27_0
+- pandas=0.18.1=np111py27_0
+- patsy=0.4.1=py27_0
+- pip=8.1.2=py27_0
+- prometeia::amqp=1.4.9=py27_0
+- prometeia::anyjson=0.3.3=py27_0
+- prometeia::billiard=3.3.0.23=py27_0
+- prometeia::celery=3.1.23=py27_0
+- prometeia::kombu=3.0.35=py27_0
+- psutil=4.3.0=py27_0
+- python=2.7.12=1
+- python-dateutil=2.5.3=py27_0
+- pytz=2016.6.1=py27_0
+- readline=6.2=2
+- scikit-learn=0.17.1=np111py27_2
+- scipy=0.18.0=np111py27_0
+- setuptools=25.1.6=py27_0
+- six=1.10.0=py27_0
+- sqlalchemy=1.0.13=py27_0
+- sqlite=3.13.0=0
+- statsmodels=0.6.1=np111py27_1
+- tk=8.5.18=0
+- wakari::flask-login=0.2.9=py27_33
+- werkzeug=0.11.10=py27_0
+- wheel=0.29.0=py27_0
+- zlib=1.2.8=3
+- pip:
+  - alembic==0.7.6
+  - amqp==1.4.9
+  - anyjson==0.3.3
+  - billiard==3.3.0.23
+  - blinker==1.2
+  - celery==3.1.23
+  - colorlog==2.7.0
+  - flask-compress==1.0.2
+  - flask-cors==2.1.2
+  - flask-login==0.2.9
+  - flask-migrate==1.4.0
+  - flask-script==2.0.5
+  - flask-sqlalchemy==2.1
+  - kombu==3.0.35
+  - mako==1.0.1
+  - pyyaml==3.11
+  - raven==5.3.1
+prefix: /home/kzh/miniconda2/envs/dive

@@ -1,7 +1,7 @@
 import json
 
 from flask import make_response
-from flask.ext.restful import Resource, reqparse, marshal, fields, marshal_with
+from flask_restful import Resource, reqparse, marshal, fields, marshal_with
 
 from dive.db import db_access
 from dive.resources.serialization import jsonify

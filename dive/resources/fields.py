@@ -4,7 +4,7 @@ Endpoints for updating fields
 import os
 import json
 from flask import request, make_response
-from flask.ext.restful import Resource, reqparse
+from flask_restful import Resource, reqparse
 
 from dive.db import db_access
 from dive.tasks.ingestion import quantitative_types, categorical_types, temporal_types, specific_to_general_type
