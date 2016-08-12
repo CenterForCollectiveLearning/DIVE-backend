@@ -1,1 +1,8 @@
-PRODUCTION
+export MODE="PRODUCTION"
+export SITE_TITLE="dive"
+export SECRET_KEY="dive"
+export DIVE_COOKIE_DOMAIN=".usedive.com"
+export STORAGE_TYPE="file"
+export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
+export DIVE_RESULT_BACKEND="amqp"
+export SENTRY_DSN="https://c7323107b6834d55b8b776b10772988f:3a3b9f7d03dd4bcfbb5da3f1c04ee207@app.getsentry.com/75310"

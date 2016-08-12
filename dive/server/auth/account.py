@@ -1,7 +1,7 @@
 from dive.base.core import login_manager
 from dive.base.db.models import User
 from dive.base.db.accounts import is_authorized_user
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 
 from flask.ext.login import current_user
 from functools import wraps, update_wrapper

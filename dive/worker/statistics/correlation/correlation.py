@@ -15,7 +15,7 @@ from dive.base.db import db_access
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import task_app
 from dive.worker.ingestion.utilities import get_unique
-from dive.worker.serialization import replace_unserializable_numpy
+from dive.base.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)

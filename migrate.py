@@ -2,13 +2,20 @@
 Basic migration script
 https://flask-migrate.readthedocs.org/en/latest/
 '''
+import os
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
 
 app = Flask(__name__)
-app.config.from_object('config.DevelopmentConfig')
+mode = os.environ.get('MODE', 'DEVELOPMENT')
+if mode == 'DEVELOPMENT':
+    app.config.from_object('config.DevelopmentConfig')
+elif mode == 'TESTING':
+    app.config.from_object('config.TestingConfig')
+elif mode == 'PRODUCTION':
+    app.config.from_object('config.ProductionConfig')
 
 db = SQLAlchemy(app)
 from dive.base.db.models import *

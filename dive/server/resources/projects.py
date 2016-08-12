@@ -9,7 +9,7 @@ from flask.ext.login import login_required
 from dive.base.db import db_access
 from dive.base.db.accounts import load_account
 from dive.server.auth.account import project_auth
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)

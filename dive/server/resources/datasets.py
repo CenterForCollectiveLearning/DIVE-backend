@@ -9,7 +9,7 @@ from flask.ext.login import login_required
 from celery import chain
 
 from dive.base.db import db_access
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 from dive.base.data.access import get_dataset_sample
 from dive.worker.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
 from dive.worker.ingestion.upload import upload_file

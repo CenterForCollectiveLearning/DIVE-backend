@@ -17,7 +17,7 @@ from dive.worker.visualization.spec_pipeline import attach_data_to_viz_specs, fi
 from dive.worker.visualization.enumerate_specs import enumerate_viz_specs
 
 from dive.worker.statistics.aggregation import run_aggregation_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_aggregation
-from dive.worker.statistics.correlation import run_correlation_from_spec, save_correlation
+from dive.worker.statistics.correlation.correlation import run_correlation_from_spec, save_correlation
 from dive.worker.statistics.regression.pipelines import run_regression_from_spec, save_regression
 
 

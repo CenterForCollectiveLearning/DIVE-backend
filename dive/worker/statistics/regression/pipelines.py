@@ -20,7 +20,7 @@ from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import celery, task_app
 from dive.worker.statistics.regression.model_recommendation import construct_models
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
-from dive.worker.serialization import replace_unserializable_numpy
+from dive.base.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)

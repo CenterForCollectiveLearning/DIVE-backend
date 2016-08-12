@@ -3,7 +3,7 @@ from flask import current_app, request, make_response
 from flask.ext.restful import Resource, reqparse
 
 from dive.base.db import db_access
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 
 
 # Sync tasks
@@ -12,7 +12,7 @@ from dive.worker.statistics.comparison.anova import run_anova_from_spec
 from dive.worker.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.worker.statistics.comparison.pairwise_comparison import get_pairwise_comparison_data
 from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
-from dive.worker.statistics.correlation import get_correlation_scatterplot_data
+from dive.worker.statistics.correlation.correlation import get_correlation_scatterplot_data
 # from dive.worker.statistics.regression.interaction_terms import
 
 # Async tasks
