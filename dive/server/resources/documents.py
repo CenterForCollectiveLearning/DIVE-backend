@@ -4,7 +4,7 @@ from flask import make_response, current_app
 from flask.ext.restful import Resource, reqparse
 
 from dive.base.db import db_access
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)

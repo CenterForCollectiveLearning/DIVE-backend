@@ -4,7 +4,7 @@ from flask import make_response
 from flask.ext.restful import Resource, reqparse, marshal, fields, marshal_with
 
 from dive.base.db import db_access
-from dive.server.utilities import jsonify
+from dive.base.serialization import jsonify
 from dive.worker.ingestion.field_properties import compute_field_properties
 
 import logging
