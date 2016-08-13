@@ -20,7 +20,6 @@ from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import celery, task_app
 from dive.worker.statistics.regression.model_recommendation import construct_models
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
-from dive.base.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -345,6 +344,5 @@ def save_regression(spec, result, project_id, conditionals=[]):
         existing_regression_doc = db_access.get_regression_from_spec(project_id, spec, conditionals=conditionals)
         if existing_regression_doc:
             db_access.delete_regression(project_id, existing_regression_doc['id'], conditionals=conditionals)
-        result = replace_unserializable_numpy(result)
         inserted_regression = db_access.insert_regression(project_id, spec, result, conditionals=conditionals)
         return inserted_regression

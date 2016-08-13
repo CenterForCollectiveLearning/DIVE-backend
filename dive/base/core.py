@@ -1,6 +1,8 @@
 import os
 import sys
+import pandas.json as pjson
 
+import psycopg2.extras
 from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
@@ -19,6 +21,10 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 cors = CORS()
 compress = Compress()
+
+psycopg2.extras.register_default_json(
+    loads=pjson.loads
+)
 
 def create_app(**kwargs):
     '''

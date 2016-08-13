@@ -1,13 +1,13 @@
 import os
 from os import walk
 from os.path import join, dirname, abspath
-from dive.base.serialization import dive_json_dumps, dive_json_loads
+from dive.base.serialization import pjson_dumps, pjson_loads
 from kombu.serialization import register
 env = os.environ.get
 base_dir_path = lambda x: abspath(join(dirname(__file__), x))
 
-register('divejson', dive_json_dumps, dive_json_loads,
-    content_type='application/x-myjson',
+register('pjson', pjson_dumps, pjson_loads,
+    content_type='application/x-pjson',
     content_encoding='utf-8')
 
 class BaseConfig(object):
@@ -40,9 +40,9 @@ class BaseConfig(object):
 
     # Worker
     CELERY_ALWAYS_EAGER = False
-    # CELERY_ACCEPT_CONTENT = ['divejson']
-    # CELERY_TASK_SERIALIZER = 'divejson'
-    # CELERY_RESULT_SERIALIZER = 'divejson'
+    CELERY_ACCEPT_CONTENT = [ 'pjson' ]
+    CELERY_TASK_SERIALIZER = 'pjson'
+    CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://admin:password@localhost/dive'  # 'amqp'
     CELERY_IMPORTS = []
@@ -82,6 +82,10 @@ class ProductionConfig(BaseConfig):
         AWS_KEY_ID = env('DIVE_AWS_KEY_ID')
         AWS_SECRET = env('DIVE_AWS_SECRET')
         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+
+    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
 
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
