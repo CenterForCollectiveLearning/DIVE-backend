@@ -15,7 +15,6 @@ from dive.base.db import db_access
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
-from dive.base.serialization import replace_unserializable_numpy
 from dive.worker.ingestion import DataType, specific_to_general_type
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
@@ -279,7 +278,6 @@ def save_field_properties(all_properties_result, dataset_id, project_id):
     field_properties_with_id = []
     for field_properties in all_properties:
         name = field_properties['name']
-        field_properties = replace_unserializable_numpy(field_properties)
 
         with task_app.app_context():
             existing_field_properties = db_access.get_field_properties(project_id, dataset_id, name=name)
