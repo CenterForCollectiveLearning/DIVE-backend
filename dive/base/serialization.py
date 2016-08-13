@@ -3,7 +3,21 @@ import pandas as pd
 import numpy as np
 from math import isnan, isinf
 from flask import current_app
+import datetime
+import pandas.json as pjson
 
+test = {
+  'date': datetime.datetime.now(),
+  'np_float': np.float(0.3232),
+  'nested': { 'x': 1},
+  'list': [1,2,3],
+  'set': set([1,2,3]),
+  'ndarray': np.array([1]),
+  'pd_dataframe': pd.DataFrame({'a': [1,2,3]}),
+  'np_nan': np.nan,
+  'np_inf': np.inf,
+  'pd_nat': pd.NaT
+}
 
 def to_camel_case(snake_str):
     if '_' in snake_str:
@@ -13,30 +27,8 @@ def to_camel_case(snake_str):
         return snake_str
 
 
-def object_handler(obj):
-    if hasattr(obj, 'isoformat'):
-       return obj.isoformat()
-
-
 def replace_unserializable_numpy(obj):
-    if isinstance(obj, dict):
-        return dict((k, replace_unserializable_numpy(v)) for k, v in obj.items())
-    elif isinstance(obj, (np.ndarray, list, tuple)):
-        return map(replace_unserializable_numpy, obj)
-    elif isinstance(obj, (pd.DataFrame, pd.Series)):
-        return replace_unserializable_numpy(obj.to_dict())
-    elif isinstance(obj, float) or isinstance(obj, int):
-        if np.isnan(obj) or np.isinf(obj):
-            return None
-        return obj
-    elif isinstance(obj, np.float32) or isinstance(obj, np.float64):
-        if isnan(obj) or isinf(obj):
-            return None
-        return obj.item()
-    elif isinstance(obj, str) or isinstance(obj, unicode):
-        return obj.replace('nan', 'null').replace('NaN', 'null')
-    else:
-        return obj
+    return pjson(obj)
 
 
 def pre_serialize(obj):
@@ -62,14 +54,8 @@ def pre_serialize(obj):
     return obj
 
 
-def jsonify(args, status=200):
-    args = pre_serialize(args)
-    json_string = json.dumps(
-        args,
-        allow_nan=False,
-        default=object_handler,
-        check_circular=False
-    )
+def jsonify(obj, status=200):
+    json_string = pjson.dumps(obj)
     return current_app.response_class(json_string, mimetype='application/json', status=status)
 
 

@@ -1,27 +1,122 @@
-'''
-Script to preload projects given a directory tree with the following structure:
-
-/PRELOADED_PATH
-    metadata.yml (active: [])
-    /project
-        metadata.yml (OPTIONAL; title: str, description: str, permissions: [], topics: [], source: str, datasets: [])
-        dataset
-
-'''
 import yaml
+import shutil
+import contextlib
 from os import listdir, curdir
 from os.path import isfile, join, isdir
+from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.migrate import Migrate, MigrateCommand
+from flask.ext.script import Manager
 
+from dive.base.core import create_app
 from dive.base.db import db_access
+from dive.base.db.accounts import register_user
+from dive.base.db.constants import Role
+from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Group, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.worker.ingestion.upload import save_dataset
 
-
 excluded_filetypes = ['json', 'py', 'yaml']
 
+app = create_app()
+db = SQLAlchemy(app)
+manager = Manager(app)
+migrate = Migrate(app, db, compare_type=True)
+manager.add_command('db', MigrateCommand)
 
-def preload_from_directory_tree(app):
+from dive.base.db.models import *
+
+@manager.command
+def drop():
+    app.logger.info("Dropping tables")
+    db.reflect()
+    db.drop_all()
+
+@manager.command
+def create():
+    app.logger.info("Creating tables")
+
+    db.create_all()
+    db.session.commit()
+
+@manager.command
+def remove_uploads():
+    app.logger.info("Removing data directories in upload folder")
+    print app.config
+    if os.path.isdir(app.config['STORAGE_PATH']):
+        STORAGE_PATH = os.path.join(os.curdir, app.config['STORAGE_PATH'])
+        shutil.rmtree(STORAGE_PATH)
+
+@manager.command
+def recreate():
+    app.logger.info("Recreating tables")
+    drop()
+    create()
+
+@manager.command
+def delete_specs():
+    from dive.base.db.models import Spec
+    all_specs = Spec.query.all()
+    map(db.session.delete, all_specs)
+    db.session.commit()
+
+users = [
+    {
+        'username': 'diveadmin',
+        'password': '5f4dcc3b5aa765d61d8327deb882cf99', # 'password',
+        'email': 'usedive@gmail.com',
+        'role': Role.ADMIN.value
+    },
+    {
+        'username': 'testuser',
+        'password': 'b9f5bcd98fe1627e37cd87a27b4a7fd6',  # 'dive',
+        'email': 'dive@usedive.com',
+        'role': Role.ADMIN.value
+    },
+    {
+        'username': 'deloitte',
+        'password': '8d777f385d3dfec8815d20f7496026dc',  # 'data',
+        'email': 'whoiskevinhu@gmail.com',
+        'role': Role.USER.value
+    },
+    {
+        'username': 'colgate',
+        'password': '8d777f385d3dfec8815d20f7496026dc',  # 'data',
+        'email': 'whoiskevinhu@gmail.com',
+        'role': Role.USER.value
+    },
+    {
+        'username': 'diveuser',
+        'password': 'b9f5bcd98fe1627e37cd87a27b4a7fd6',  # ''
+        'email': 'user@user.com',
+        'role': Role.USER.value
+    },
+]
+
+@manager.command
+def create_users():
+    with app.app_context():
+        for user in users:
+            app.logger.info('Created user: %s', user['username'])
+            register_user(
+                user['username'],
+                user['email'],
+                user['password'],
+                user['role']
+            )
+
+@manager.command
+def migrate():
+    migrate = Migrate(app, db, compare_type=True)
+    manager.add_command('db', MigrateCommand)
+    return
+
+@manager.command
+def force_migrate():
+    return
+
+@manager.command
+def preload():
     preloaded_dir = app.config['PRELOADED_PATH']
     top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
     top_level_config = yaml.load(top_level_config_file.read())
@@ -87,13 +182,11 @@ def preload_from_directory_tree(app):
 
                 for dataset in datasets:
                     ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
-                    
+
                     # ingestion_result.get()
         # relationship_result = relationship_pipeline.apply(args=[ project_id ])
         # relationship_result.get()
 
 
-if __name__ == '__main__':
-    from dive.base.core import create_app
-    app = create_app()
-    preload_from_directory_tree(app)
+if __name__ == "__main__":
+    manager.run()
