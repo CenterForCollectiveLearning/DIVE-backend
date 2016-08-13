@@ -1,61 +1,27 @@
 import json
-import pandas as pd
-import numpy as np
-from math import isnan, isinf
 from flask import current_app
-import datetime
 import pandas.json as pjson
 
-test = {
-  'date': datetime.datetime.now(),
-  'np_float': np.float(0.3232),
-  'nested': { 'x': 1},
-  'list': [1,2,3],
-  'set': set([1,2,3]),
-  'ndarray': np.array([1]),
-  'pd_dataframe': pd.DataFrame({'a': [1,2,3]}),
-  'np_nan': np.nan,
-  'np_inf': np.inf,
-  'pd_nat': pd.NaT
-}
 
-def to_camel_case(snake_str):
+def string_to_camel_case(snake_str):
     if '_' in snake_str:
         components = snake_str.split('_')
-        return components[0] + "".join(x.title() for x in components[1:])
+        return components[0] + ''.join(x.title() for x in components[1:])
     else:
         return snake_str
 
 
-def replace_unserializable_numpy(obj):
-    return pjson(obj)
-
-
-def pre_serialize(obj):
+def dict_to_camel_case(obj):
     if isinstance(obj, dict):
-        if obj:
-            first_key = obj.keys()[0]
-            if isinstance(first_key, basestring):
-                return dict((to_camel_case(k), pre_serialize(v)) for k, v in obj.iteritems())
-        else:
-            return obj
+        return dict((string_to_camel_case(k), dict_to_camel_case(v)) for k, v in obj.iteritems())
     elif isinstance(obj, list) or isinstance(obj, tuple):
-        return map(pre_serialize, obj)
-    elif isinstance(obj, float):
-        # Faster than np.isnan
-        if isnan(obj) or isinf(obj):
-            return None
-        else:
-            return obj
-    elif isinstance(obj, np.ndarray):
-        return map(pre_serialize, obj)
-    elif (obj is pd.NaT):
-        return None
-    return obj
+        return map(dict_to_camel_case, obj)
+    else:
+        return obj
 
 
 def jsonify(obj, status=200):
-    json_string = pjson.dumps(obj)
+    json_string = pjson.dumps(dict_to_camel_case(obj))
     return current_app.response_class(json_string, mimetype='application/json', status=status)
 
 
