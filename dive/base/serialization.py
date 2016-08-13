@@ -25,34 +25,12 @@ def jsonify(obj, status=200):
     return current_app.response_class(json_string, mimetype='application/json', status=status)
 
 
-# Use everywhere, including in writing to Postgres?
+# Custom AMQP json encoding
 # http://stackoverflow.com/questions/21631878/celery-is-there-a-way-to-write-custom-json-encoder-decoder
-from datetime import datetime
-class DiveEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return {
-                '__type__': '__datetime__',
-                'epoch': int(mktime(obj.timetuple()))
-            }
-        else:
-            return json.JSONEncoder.default(self, obj)
-
-def dive_decoder(obj):
-    if '__type__' in obj:
-        if obj['__type__'] == '__datetime__':
-            return datetime.fromtimestamp(obj['epoch'])
-    return obj
-
 # Encoder function
-def dive_json_dumps(obj):
-    return json.dumps(obj,
-        cls=DiveEncoder,
-        allow_nan=False,
-        default=object_handler,
-        check_circular=False
-    )
+def pjson_dumps(obj):
+    return pjson.dumps(obj)
 
 # Decoder function
-def dive_json_loads(obj):
-    return json.loads(obj, object_hook=dive_decoder)
+def pjson_loads(s):
+    return pjson.loads(str(s))
