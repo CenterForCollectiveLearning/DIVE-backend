@@ -83,6 +83,10 @@ class ProductionConfig(BaseConfig):
         AWS_SECRET = env('DIVE_AWS_SECRET')
         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
 
+    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
+
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]

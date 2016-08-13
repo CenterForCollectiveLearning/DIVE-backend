@@ -56,6 +56,7 @@ def create_app(**kwargs):
 
 
 def ensure_directories(app):
+    print app.config
     if not os.path.isdir(app.config['STORAGE_PATH']):
         app.logger.info("Creating Upload directory")
         os.mkdir(app.config['STORAGE_PATH'])
