@@ -7,6 +7,7 @@ from dive.base.db import db_access
 from dive.base.serialization import jsonify
 from dive.worker.ingestion.field_properties import compute_field_properties
 
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class FieldProperties(Resource):
                 else:
                     result[fp_group_by] = [fp]
         else:
-            result = {'fieldProperties': field_properties}
-        
+            result = {'field_properties': field_properties}
+
         result['interactionTerms'] = interaction_terms
         return make_response(jsonify(result))
