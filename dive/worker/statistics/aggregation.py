@@ -6,7 +6,6 @@ from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import task_app
 from dive.worker.ingestion.utilities import get_unique
 from dive.worker.ingestion.binning import get_num_bins
-from dive.base.serialization import replace_unserializable_numpy
 
 from celery.utils.log import get_task_logger
 from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals
@@ -533,20 +532,21 @@ def create_contingency_table(df, aggregation_variables, dep_variable):
     formatted_results_dict["row_headers"] = unique_indep_values[1]
     formatted_results_dict["rows"] = []
     if not aggregationMean:
-        formatted_results_dict['column_totals'] = np.zeros(len(unique_indep_values[0]) + 1)
+        column_totals = np.zeros(len(unique_indep_values[0]) + 1)
 
     for row in unique_indep_values[1]:
         values = [ results_dict[row][col] for col in unique_indep_values[0] ]
 
         if not aggregationMean:
             values.append(sum(values))
-            formatted_results_dict['column_totals'] += values
+            column_totals += values
 
         formatted_results_dict["rows"].append({
             "field": row,
             "values": values
         })
 
+    formatted_results_dict['column_totals'] = list(column_totals)
     return formatted_results_dict
 
 def get_binning_edges_and_names(array, config):
@@ -613,6 +613,5 @@ def save_aggregation(spec, result, project_id, conditionals={}):
         existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
         if existing_aggregation_doc:
             db_access.delete_aggregation(project_id, existing_aggregation_doc['id'], conditionals=conditionals)
-        result = replace_unserializable_numpy(result)
         inserted_aggregation = db_access.insert_aggregation(project_id, spec, result, conditionals=conditionals)
         return inserted_aggregation

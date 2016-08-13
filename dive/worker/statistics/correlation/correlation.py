@@ -15,7 +15,7 @@ from dive.base.db import db_access
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import task_app
 from dive.worker.ingestion.utilities import get_unique
-from dive.base.serialization import replace_unserializable_numpy
+
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -90,6 +90,5 @@ def save_correlation(spec, result, project_id, conditionals={}):
         existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec, conditionals=conditionals)
         if existing_correlation_doc:
             db_access.delete_correlation(project_id, existing_correlation_doc['id'], conditionals=conditionals)
-        result = replace_unserializable_numpy(result)
         inserted_correlation = db_access.insert_correlation(project_id, spec, result, conditionals=conditionals)
         return inserted_correlation

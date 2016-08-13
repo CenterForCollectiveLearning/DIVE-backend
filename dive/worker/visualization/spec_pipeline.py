@@ -13,7 +13,7 @@ from dive.worker.ingestion import specific_to_general_type
 from dive.worker.visualization import GeneratingProcedure as GP, TypeStructure as TS, TermType as TT
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.visualization.score_specs import score_spec
-from dive.base.serialization import replace_unserializable_numpy
+
 
 from celery import states
 from celery.utils.log import get_task_logger
@@ -127,7 +127,6 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
 
 def save_viz_specs(specs, dataset_id, project_id, selected_fields, recommendation_types, conditionals, config):
     with task_app.app_context():
-        specs = replace_unserializable_numpy(specs)
 
         # Delete existing specs with same parameters
         existing_specs = db_access.get_specs(
