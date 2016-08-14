@@ -116,6 +116,21 @@ def upload_file(project_id, file):
     if not os.path.isdir(project_dir):
         os.mkdir(os.path.join(project_dir))
 
+    # print file, file.read(), file.stream
+    dialect = get_dialect(file)
+    file.seek(0)
+    df = pd.read_table(
+        file,
+        sep = dialect['delimiter'],
+        engine = 'c',
+        escapechar = dialect['escapechar'],
+        doublequote = dialect['doublequote'],
+        quotechar = dialect['quotechar'],
+        parse_dates = True,
+        thousands = ',')
+    df.to_sql(file.filename, current_app.config['SQLALCHEMY_DATABASE_URI'])
+
+
     if file_type in ['csv', 'tsv', 'txt', 'json'] or file_type.startswith('xls'):
         try:
             file.save(path)
