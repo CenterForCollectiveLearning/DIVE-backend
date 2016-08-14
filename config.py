@@ -83,17 +83,23 @@ class ProductionConfig(BaseConfig):
         AWS_SECRET = env('DIVE_AWS_SECRET')
         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
 
+    # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
-    CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
 
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
     # Worker
+    # https://www.cloudamqp.com/docs/celery.html
     CELERY_BROKER_URL = env('DIVE_AMQP_URL')
-    CELERY_RESULT_BACKEND = env('DIVE_RESULT_BACKEND')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    BROKER_POOL_LIMIT = 1 # Will decrease connection usage
+    BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
+    BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
+    CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
+    CELERY_EVENT_QUEUE_EXPIRES = 60
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
