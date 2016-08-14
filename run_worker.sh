@@ -1,4 +1,6 @@
 celery worker \
   --app=dive.worker.core \
   -l debug \
-  --autoreload
+  --without-gossip
+  --without-mingle
+  --without-heartbeat
