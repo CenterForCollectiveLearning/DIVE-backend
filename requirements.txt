@@ -7,6 +7,7 @@ Babel==2.1.1
 backports.ssl-match-hostname==3.4.0.2
 billiard==3.3.0.23
 blinker==1.4
+boto==2.42.0
 cairocffi==0.7.2
 CairoSVG==1.0.17
 celery==3.1.23
@@ -59,7 +60,7 @@ patsy==0.4.1
 pdfkit==0.5.0
 pexpect==4.0.1
 pickleshare==0.5
-psycopg2==2.6.1
+psycopg2==2.6.2
 ptyprocess==0.5
 pycparser==2.14
 pyparsing==2.1.5
