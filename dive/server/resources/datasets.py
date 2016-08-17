@@ -34,6 +34,7 @@ class UploadFile(Resource):
     2) Triggers data ingestion tasks
     3) Returns dataset_id
     '''
+    @login_required
     def post(self):
         form_data = json.loads(request.form.get('data'))
         project_id = str(form_data.get('project_id'))
