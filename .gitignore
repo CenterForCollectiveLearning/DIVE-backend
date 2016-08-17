@@ -10,7 +10,6 @@ __pycache__/
 venv/
 
 uploads/
-
 migrations/
 preloaded/
 
