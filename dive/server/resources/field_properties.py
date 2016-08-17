@@ -2,6 +2,7 @@ import json
 
 from flask import make_response
 from flask.ext.restful import Resource, reqparse, marshal, fields, marshal_with
+from flask.ext.login import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
@@ -21,6 +22,7 @@ class FieldProperties(Resource):
     Args: project_id, dataset_id
     Returns: properties corresponding to that dataset_id
     '''
+    @login_required
     def get(self):
         args = fieldPropertiesGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')

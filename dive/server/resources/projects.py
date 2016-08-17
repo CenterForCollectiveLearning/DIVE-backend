@@ -5,7 +5,6 @@ from flask import make_response, current_app
 from flask.ext.restful import Resource, reqparse, marshal_with
 from flask.ext.login import login_required
 
-
 from dive.base.db import db_access
 from dive.base.db.accounts import load_account
 from dive.server.auth.account import project_auth
@@ -33,7 +32,7 @@ class Project(Resource):
         result = db_access.get_project(project_id)
         return jsonify(result)
 
-
+    @login_required
     def put(self, project_id):
         args = projectPutParser.parse_args()
         title = args.get('title')
@@ -41,6 +40,7 @@ class Project(Resource):
         result = db_access.update_project(project_id, title=title, description=description)
         return jsonify(result)
 
+    @login_required
     def delete(self, project_id):
         result = db_access.delete_project(project_id)
         project_dir = os.path.join(current_app.config['STORAGE_PATH'], str(result['id']))
@@ -89,6 +89,7 @@ class Projects(Resource):
         return jsonify({'projects': db_access.get_projects(**query_args)})
 
     # Create project, initialize directories and collections
+    @login_required
     def post(self):
         args = projectsPostParser.parse_args()
         title = args.get('title')

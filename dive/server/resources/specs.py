@@ -1,5 +1,6 @@
 from flask import request, current_app
 from flask.ext.restful import Resource, reqparse
+from flask.ext.login import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
@@ -27,6 +28,7 @@ specPostParser.add_argument('recommendation_types', type=list, location='json', 
 specPostParser.add_argument('conditionals', type=dict, location='json', default={})
 specPostParser.add_argument('config', type=dict, location='json', default={})
 class Specs(Resource):
+    @login_required
     def post(self):
         args = specPostParser.parse_args()
         project_id = args.get('project_id')

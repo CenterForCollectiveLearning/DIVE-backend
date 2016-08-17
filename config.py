@@ -34,9 +34,10 @@ class BaseConfig(object):
     ALEMBIC_DIR = base_dir_path('migrate')
 
     # DB
+    DATABASE_URI = 'admin:password@localhost/dive'
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@localhost/dive'
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
 
     # Worker
     CELERY_ALWAYS_EAGER = False
@@ -44,7 +45,7 @@ class BaseConfig(object):
     CELERY_TASK_SERIALIZER = 'pjson'
     CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
-    CELERY_RESULT_BACKEND = 'db+postgresql://admin:password@localhost/dive'  # 'amqp'
+    CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
     CELERY_IMPORTS = []
     for root, dirs, files in walk("./dive/worker"):
         path = root.split('/')
@@ -70,9 +71,9 @@ class ProductionConfig(BaseConfig):
     # Flask
     DEBUG = False
     COMPRESS = False
-    # COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', '.usedive.com')
-    # REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
-    # SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+    COOKIE_DOMAIN = None  # env('DIVE_COOKIE_DOMAIN', '.usedive.com')
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 's3')
@@ -93,8 +94,8 @@ class ProductionConfig(BaseConfig):
 
     # Worker
     # https://www.cloudamqp.com/docs/celery.html
-    CELERY_BROKER_URL = env('DIVE_AMQP_URL')
-    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    # CELERY_BROKER_URL = env('DIVE_AMQP_URL')
+    # CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
