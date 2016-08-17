@@ -5,6 +5,7 @@ import os
 import json
 from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
+from flask.ext.login import login_required
 
 from dive.base.db import db_access
 from dive.worker.ingestion import quantitative_types, categorical_types, temporal_types, specific_to_general_type
@@ -23,6 +24,7 @@ fieldPostParser.add_argument('project_id', type=str, required=True, location='js
 fieldPostParser.add_argument('type', type=object_type, location='json')
 fieldPostParser.add_argument('isId', type=bool, location='json')
 class Field(Resource):
+    @login_required
     def post(self, field_id):
         args = fieldPostParser.parse_args()
         project_id = args.get('project_id')
@@ -42,5 +44,5 @@ class Field(Resource):
         if field_is_id != None:
             field_property_document = \
                 db_access.update_field_properties_is_id_by_id(project_id, field_id, field_is_id)
-            
+
         return make_response(jsonify(field_property_document))
