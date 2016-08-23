@@ -1,1 +1,1 @@
-celery -A worker.core flower
+celery -A dive.worker.core flower
