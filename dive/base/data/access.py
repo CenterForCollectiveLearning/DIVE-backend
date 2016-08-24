@@ -12,6 +12,7 @@ from flask.ext.restful import abort
 
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.db import db_access
+from dive.worker.core import task_app
 from time import time
 
 import logging
