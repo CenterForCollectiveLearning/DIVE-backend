@@ -1,5 +1,19 @@
 from enum import Enum
 
+class AuthStatus(Enum):
+    SUCCESS = 'success'
+    ERROR = 'error'
+
+class AuthMessage(Enum):
+    USERNAME_NOT_FOUND = 'Username not found'
+    EMAIL_NOT_FOUND = 'E-mail not found'
+    INCORRECT_CREDENTIALS = 'Incorrect credentials'
+
+class AuthErrorType(Enum):
+    EMAIL = 'email'
+    USERNAME = 'username'
+    GENERAL = 'general'
+
 class ModelName(Enum):
     PROJECT = 'project'
     DATASET = 'dataset'
