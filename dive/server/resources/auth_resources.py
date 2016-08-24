@@ -4,7 +4,7 @@ from flask.ext.login import current_user, login_user, logout_user
 from datetime import timedelta, datetime
 
 from dive.base.core import login_manager, db
-from dive.base.db import row_to_dict
+from dive.base.db import AuthStatus, AuthMessage, row_to_dict
 from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth
 from dive.base.db.models import User
 from dive.base.serialization import jsonify
@@ -74,15 +74,20 @@ class Login(Resource):
         password = args.get('password')
         rememberMe = args.get('rememberMe')
 
-        user, auth_status = check_user_auth(password, email=email, username=username)
-        if auth_status:
+        user_auth_object = check_user_auth(password, email=email, username=username)
+        user = user_auth_object['user']
+        status = user_auth_object['status']
+        message = user_auth_object['message']
+        error_type = user_auth_object['error_type']
+
+        if status == AuthStatus.SUCCESS.value:
             login_user(user, remember=rememberMe)
             if user.username:
                 message = 'Welcome back %s!' % user.username
             else:
                 message = 'Welcome back!'
             response = jsonify({
-                'status': 'success',
+                'status': status,
                 'message': message,
                 'user': row_to_dict(user)
             })
@@ -92,10 +97,10 @@ class Login(Resource):
             return response
         else:
             return jsonify({
-                'status': 'error',
+                'status': status,
                 'message': {
-                    'login': 'Incorrect username, e-mail, or password'
-                }
+                    'login': message,
+                },
             }, status=401)
 
 
