@@ -2,7 +2,7 @@ from flask import abort
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.base.core import db, login_manager
-from dive.base.db import ModelName, row_to_dict
+from dive.base.db import ModelName, AuthStatus, AuthMessage, AuthErrorType, row_to_dict
 from dive.base.db.models import User, Project
 from dive.base.db.constants import Role
 
@@ -67,16 +67,53 @@ def delete_user(user_id, password, name=None):
     db.session.commit()
     return user
 
-
 def check_user_auth(password, email=None, username=None):
-    if not (email or username):
-        return 'Need to provide either username or email', False
+    '''
+    Returns object { 'status': str, 'message': str, 'user': obj}
+
+    TODO: How to best structure this?
+    TODO: Multiple returns?
+    '''
+    status = AuthStatus.SUCCESS.value
+    message = ''
     user = None
-    if email:
-        user = User.query.filter_by(email=email, password=password).first()
-    if username:
-        user = User.query.filter_by(username=username, password=password).first()
-    if user:
-        return user, True
+    error_type = None
+
+    if not (email or username):
+        status = AuthStatus.ERROR.value
     else:
-        return None, False
+        if email:
+            if User.query.filter_by(email=email).count():
+                user = User.query.filter_by(email=email, password=password).first()
+            else:
+                result = {
+                    'user': None,
+                    'status': AuthStatus.ERROR.value,
+                    'message': AuthMessage.EMAIL_NOT_FOUND.value,
+                    'error_type': AuthErrorType.EMAIL.value
+                }
+                return result
+
+        if username:
+            if User.query.filter_by(username=username).count():
+                user = User.query.filter_by(username=username, password=password).first()
+            else:
+                result = {
+                    'user': None,
+                    'status': AuthStatus.ERROR.value,
+                    'message': AuthMessage.USERNAME_NOT_FOUND.value,
+                    'error_type': AuthErrorType.USERNAME.value
+                }
+                return result
+
+        if not user:
+            message = AuthMessage.INCORRECT_CREDENTIALS.value
+            error_type = AuthErrorType.GENERAL.value
+            status = AuthStatus.ERROR.value
+
+    return {
+        'status': status,
+        'message': message,
+        'user': user,
+        'error_type': error_type
+    }
