@@ -3,7 +3,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.base.core import db, login_manager
 from dive.base.db import ModelName, AuthStatus, AuthMessage, AuthErrorType, row_to_dict
-from dive.base.db.models import User, Project
+from dive.base.db.models import Team, User, Project
 from dive.base.db.constants import Role
 
 
@@ -18,7 +18,7 @@ def is_authorized_user(current_user, project_id):
 
     print current_user, project_id
 
-    if current_user.is_admin() or not matching_project.private:
+    if current_user.is_global_admin() or not matching_project.private:
         return True
 
     if matching_project.private:
@@ -44,13 +44,44 @@ def validate_registration(username, email):
     return 'Valid registration', True
 
 
-def register_user(username, email, password, role=Role.USER.value):
+def team_exists(team_name):
+    return (Team.query.filter_by(name=team_name).count() > 0)
+
+def create_team(team_name):
+    t = Team(name=team_name)
+    db.session.add(t)
+    db.session.commit()
+
+def register_user(username, email, password, admin=[], teams=[], create_teams=True):
     user = User(
         username=username,
         email=email,
-        password=password,
-        role=role
+        password=password
     )
+
+    if admin:
+        for admin_team_name in admin:
+            if team_exists(admin_team_name):
+                t = Team.query.filter_by(name=admin_team_name).one()
+            else:
+                if create_teams:
+                    t = Team(name=admin_team_name)
+                    db.session.add(t)
+                    db.session.commit()
+            if t:
+                user.admin.append(t)
+    if teams:
+        for team_name in teams:
+            if team_exists(team_name):
+                t = Team.query.filter_by(name=team_name).one()
+            else:
+                if create_teams:
+                    t = Team(name=team_name)
+                    db.session.add(t)
+                    db.session.commit()
+            if t:
+                user.teams.append(t)
+
     db.session.add(user)
     db.session.commit()
     return user  # Not turning to dictionary because of flask-login

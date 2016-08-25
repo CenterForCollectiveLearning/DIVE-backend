@@ -32,7 +32,7 @@ class ModelName(Enum):
     EXPORTED_COMPARISON = 'exported_comparison'
     DOCUMENT = 'document'
     RELATIONSHIP = 'relationship'
-    GROUP = 'group'
+    TEAM = 'team'
     USER = 'user'
 
 
