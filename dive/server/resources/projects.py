@@ -81,9 +81,9 @@ class Projects(Resource):
 
         if 'user_id' in args and user_id:
             user = load_account(user_id)
-            if user.is_admin():
+            if user.is_global_admin():
                 del query_args['private']
-            if not user.is_admin() and not preloaded:
+            if not user.is_global_admin() and not preloaded:
                 query_args['user_id'] = user_id
 
         return jsonify({'projects': db_access.get_projects(**query_args)})

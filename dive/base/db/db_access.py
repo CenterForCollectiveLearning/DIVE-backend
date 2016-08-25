@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from dive.base.core import db
 from dive.base.db import ModelName, row_to_dict
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Group, User, \
+    Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Team, User, \
     Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation
 from dive.server.resources import ContentType
 
