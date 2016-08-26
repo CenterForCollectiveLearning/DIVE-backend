@@ -211,6 +211,21 @@ def update_field_properties_is_id_by_id(project_id, field_id, field_is_id):
     db.session.commit()
     return row_to_dict(field_properties)
 
+def update_field_properties_color_by_id(project_id, field_id, field_color):
+    field_properties = Field_Properties.query.filter_by(
+        id=field_id,
+        project_id=project_id,
+        ).one()
+
+    field_properties.color = field_color
+    field_properties.manual.update({
+        'color': True
+    })
+
+    db.session.commit()
+    return row_to_dict(field_properties)
+
+
 def get_variable_names_by_id(id_list):
     name_list = []
     for variable_id in id_list:
