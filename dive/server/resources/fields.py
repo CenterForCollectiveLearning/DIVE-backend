@@ -23,6 +23,7 @@ fieldPostParser = reqparse.RequestParser()
 fieldPostParser.add_argument('project_id', type=str, required=True, location='json')
 fieldPostParser.add_argument('type', type=object_type, location='json')
 fieldPostParser.add_argument('isId', type=bool, location='json')
+fieldPostParser.add_argument('color', type=str, location='json')
 class Field(Resource):
     @login_required
     def post(self, field_id):
@@ -30,6 +31,7 @@ class Field(Resource):
         project_id = args.get('project_id')
         field_type = args.get('type')
         field_is_id = args.get('isId')
+        field_color = args.get('color')
 
         if field_type:
             if (field_type not in quantitative_types) \
@@ -44,5 +46,9 @@ class Field(Resource):
         if field_is_id != None:
             field_property_document = \
                 db_access.update_field_properties_is_id_by_id(project_id, field_id, field_is_id)
+
+        if field_color != None:
+            field_property_document = \
+                db_access.update_field_properties_color_by_id(project_id, field_id, field_color)
 
         return make_response(jsonify(field_property_document))
