@@ -81,7 +81,7 @@ def users():
 @manager.command
 def preload():
     preloaded_dir = app.config['PRELOADED_PATH']
-    top_level_config_file = open(join(preloaded_dir, 'user_fixtures.yaml'), 'rt')
+    top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
     top_level_config = yaml.load(top_level_config_file.read())
 
     # If 'active' flag present, read only those projects. Else iterate through all.
