@@ -11,7 +11,7 @@ from dive.base.core import create_app
 from dive.base.db import db_access
 from dive.base.db.accounts import register_user
 from dive.base.db.constants import Role
-from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Group, User
+from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.worker.ingestion.upload import save_dataset
@@ -29,6 +29,7 @@ from dive.base.db.models import *
 @manager.command
 def drop():
     app.logger.info("Dropping tables")
+    shutil.rmtree('migrations')
     db.reflect()
     db.drop_all()
 
@@ -60,65 +61,27 @@ def delete_specs():
     map(db.session.delete, all_specs)
     db.session.commit()
 
-users = [
-    {
-        'username': 'diveadmin',
-        'password': '5f4dcc3b5aa765d61d8327deb882cf99', # 'password',
-        'email': 'usedive@gmail.com',
-        'role': Role.ADMIN.value
-    },
-    {
-        'username': 'testuser',
-        'password': 'b9f5bcd98fe1627e37cd87a27b4a7fd6',  # 'dive',
-        'email': 'dive@usedive.com',
-        'role': Role.ADMIN.value
-    },
-    {
-        'username': 'deloitte',
-        'password': '8d777f385d3dfec8815d20f7496026dc',  # 'data',
-        'email': 'whoiskevinhu@gmail.com',
-        'role': Role.USER.value
-    },
-    {
-        'username': 'colgate',
-        'password': '8d777f385d3dfec8815d20f7496026dc',  # 'data',
-        'email': 'whoiskevinhu@gmail.com',
-        'role': Role.USER.value
-    },
-    {
-        'username': '""',
-        'password': 'b9f5bcd98fe1627e37cd87a27b4a7fd6',  # ''
-        'email': 'user@user.com',
-        'role': Role.USER.value
-    },
-]
-
 @manager.command
-def create_users():
+def users():
     with app.app_context():
+        user_fixture_file = open('user_fixtures.yaml', 'rt')
+        users = yaml.load(user_fixture_file.read())
+
         for user in users:
             app.logger.info('Created user: %s', user['username'])
             register_user(
                 user['username'],
                 user['email'],
                 user['password'],
-                user['role']
+                admin=user['admin'],
+                teams=user['teams'],
+                create_teams=True
             )
-
-@manager.command
-def migrate():
-    migrate = Migrate(app, db, compare_type=True)
-    manager.add_command('db', MigrateCommand)
-    return
-
-@manager.command
-def force_migrate():
-    return
 
 @manager.command
 def preload():
     preloaded_dir = app.config['PRELOADED_PATH']
-    top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
+    top_level_config_file = open(join(preloaded_dir, 'user_fixtures.yaml'), 'rt')
     top_level_config = yaml.load(top_level_config_file.read())
 
     # If 'active' flag present, read only those projects. Else iterate through all.
