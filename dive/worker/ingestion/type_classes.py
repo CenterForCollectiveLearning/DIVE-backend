@@ -2,6 +2,7 @@
 From https://github.com/okfn/messytables/blob/master/messytables/types.py
 '''
 import re
+import numpy as np
 import locale
 import decimal
 import datetime
@@ -31,8 +32,11 @@ class CellType(object):
         if isinstance(value, self.result_type):
             return True
         try:
-            self.cast(value)
-            return True
+            cast_value = self.cast(value)
+            if cast_value is not None:
+                return True
+            else:
+                return False
         except:
             return False
 
@@ -72,7 +76,6 @@ class IntegerType(CellType):
     regex = re.compile("^-?[0-9]+$")
 
     def cast(self, value):
-        logger.info(value)
         if regex.match(value):
             return int(value)
 
@@ -113,7 +116,7 @@ class DecimalType(CellType):
     result_type = decimal.Decimal
 
     def cast(self, value):
-        if value in ('', None):
+        if value in ('', None) or np.isnan(value):
             return None
         try:
             return decimal.Decimal(value)
