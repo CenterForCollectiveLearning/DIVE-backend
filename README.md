@@ -72,7 +72,7 @@ pip install -r requirements.txt
 
 Start Celery worker
 ---------
-1. Start celery worker: `./worker.sh`
+1. Start celery worker: `./run_worker.sh`
 2. Start celery monitor (flower): `celery -A base.core flower`
 
 
