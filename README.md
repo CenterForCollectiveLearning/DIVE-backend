@@ -26,11 +26,8 @@ Install [Homebrew](http://brew.sh/) if you don't already have it. Then, run the 
 ```
 brew install postgres
 brew install rabbitmq
-brew install libmagic
-brew install Caskroom/cask/xquartz
-brew install cairo
 ```
-Install postgres.app
+OR Install postgres.app
 ---------
 Install postgres.app by following the instructions here: (http://postgresapp.com/).
 
@@ -94,8 +91,8 @@ python manager.py db upgrade
 
 Run API
 ---------
-1. To run development Flask server, run `python run.py`.
-2. To run production Gunicorn server, run `./run.sh`.
+1. To run development Flask server, run `python run_server.py`.
+2. To run production Gunicorn server, run `./run_server.sh`.
 
 Deployment
 --------
