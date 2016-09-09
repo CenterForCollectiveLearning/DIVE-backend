@@ -90,7 +90,7 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_dec
     min_v = min(v)
     max_v = max(v)
 
-    if procedural and not num_bins:
+    if procedural:
         num_bins = get_num_bins(v, procedure=procedure)
 
     rounding_string = '%.' + str(num_decimals) + 'f'
