@@ -15,16 +15,22 @@ from werkzeug.local import LocalProxy
 from setup_logging import setup_logging
 setup_logging()
 
-# Initialize app-based objects
-sentry = Sentry()
-db = SQLAlchemy()
-login_manager = LoginManager()
-cors = CORS()
-compress = Compress()
-
 psycopg2.extras.register_default_json(
     loads=pjson.loads
 )
+
+class CustomSQLAlchemy(SQLAlchemy):
+    def apply_driver_hacks(self, app, info, options):
+        if not "json_serializer" in options:
+            options["json_serializer"] = pjson.dumps
+        return super(CustomSQLAlchemy, self).apply_driver_hacks(app, info, options)
+
+# Initialize app-based objects
+sentry = Sentry()
+db = CustomSQLAlchemy()
+login_manager = LoginManager()
+cors = CORS()
+compress = Compress()
 
 def create_app(**kwargs):
     '''
@@ -44,6 +50,7 @@ def create_app(**kwargs):
 
     if app.config.get('COMPRESS', True):
         compress.init_app(app)
+
     db.init_app(app)
     login_manager.init_app(app)
 
