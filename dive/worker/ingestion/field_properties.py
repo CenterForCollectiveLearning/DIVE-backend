@@ -151,22 +151,24 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
         viz_data = None
         if general_type in ['q', 't']:
             binning_spec = {
-                'binning_field': { 'name': field_name },
+                'binning_field': { 'name': field_name, 'type': field_type },
                 'agg_field_a': { 'name': field_name },
-                'agg_fn': 'count',
+                'agg_fn': 'count'
             }
             try:
                 viz_data = get_bin_agg_data(df, {}, binning_spec, {})
-            except:
-                pass
+            except Exception as e:
+                logger.error("Error getting viz data for field, %s", e, exc_info=True)
+                continue
         elif general_type is 'c':
             val_count_spec = {
-                'field_a': { 'name': field_name },
+                'field_a': { 'name': field_name }
             }
             try:
                 viz_data = get_val_count_data(df, {}, val_count_spec, {})
-            except:
-                pass
+            except Exception as e:
+                logger.error("Error getting viz data for field, %s", e, exc_info=True)
+                continue
 
         # Normality
         # Skip for now
