@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import pandas as pd
 from csvkit import sniffer
 from random import sample as random_sample
@@ -84,6 +85,15 @@ def get_type_scores_from_field_values(field_values, field_types):
     return type_scores
 
 
+def detect_contiguous_integers(field_values):
+    sorted_unique_list = sorted(np.unique(field_values))
+    for i in range(len(sorted_unique_list) - 1):
+        diff = abs(sorted_unique_list[i + 1] - sorted_unique_list[i])
+        if diff > 1:
+            return False
+    return True
+
+
 def calculate_field_type(field_name, field_values, field_position, num_fields, field_types=FIELD_TYPES, num_samples=1000, random=True):
     '''
     For each field, returns highest-scoring field type of first num_samples non-empty
@@ -116,6 +126,10 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, f
         normalized_type_scores[type_name] = float(score) / total_score
 
     final_field_type = max(score_tuples, key=lambda t: t[1])[0]
+    if final_field_type == DataType.INTEGER.value:
+        if detect_contiguous_integers(field_sample):
+            final_field_type = DataType.ORDINAL.value
+
     return (final_field_type, normalized_type_scores)
 
 

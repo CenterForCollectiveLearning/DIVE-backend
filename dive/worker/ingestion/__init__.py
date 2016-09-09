@@ -4,6 +4,7 @@ class DataType(Enum):
 
     # Fundamental
     INTEGER = 'integer'
+    ORDINAL = 'ordinal'
     STRING = 'string'
     DECIMAL = 'decimal'
     BOOLEAN = 'boolean'
@@ -16,10 +17,10 @@ class DataType(Enum):
     LATITUDE = 'latitude'
     LONGITUDE = 'longitude'
     CITY = 'city'
-    COUNTRY_CODE_2 = 'countryCode2'
-    COUNTRY_CODE_3 = 'countryCode3'
-    COUNTRY_NAME = 'countryName'
-    CONTINENT_NAME = 'continentName'
+    COUNTRY_CODE_2 = 'country_code_2'
+    COUNTRY_CODE_3 = 'country_code_3'
+    COUNTRY_NAME = 'country_name'
+    CONTINENT_NAME = 'continent_name'
 
     # Temporal
     DATETIME = 'datetime'
@@ -49,6 +50,7 @@ temporal_types = [
 ]
 
 categorical_types = [
+    DataType.ORDINAL.value,
     DataType.STRING.value,
     DataType.BOOLEAN.value,
     DataType.TEXT.value,
@@ -73,6 +75,7 @@ for data_type in categorical_types:
 class DataTypeWeights(Enum):
     # Fundamental
     INTEGER = 8
+    ORDINAL = 10
     STRING = 2
     DECIMAL = 6
     BOOLEAN = 7
