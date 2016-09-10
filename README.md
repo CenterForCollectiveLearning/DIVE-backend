@@ -37,7 +37,6 @@ Setup postgres
 ---------
 Make sure that you have a postgres server instance running. Create the dive database by running:
 ```
-sudo -u postgres -i
 createuser admin -P
 createdb dive -O admin
 ```
