@@ -23,9 +23,9 @@ $ sudo apt-get install -y postgres git python2.7 python-pip build-essential pyth
 Install System Dependencies (Mac / brew)
 ---------
 Install [Homebrew](http://brew.sh/) if you don't already have it. Then, run the following code:
-```
-brew install postgres
-brew install rabbitmq
+```bash
+$ brew install postgres
+$ brew install rabbitmq
 ```
 OR Install postgres.app
 ---------
@@ -36,9 +36,9 @@ Download and open the app to start postgres.
 Setup postgres
 ---------
 Make sure that you have a postgres server instance running. Create the dive database by running:
-```
-createuser admin -P
-createdb dive -O admin
+```bash
+$ createuser admin -P
+$ createdb dive -O admin
 ```
 
 Start RabbitMQ
@@ -48,10 +48,10 @@ Start RabbitMQ
 `sudo rabbitmq-server -detached`
 
 3. Create a RabbitMQ user and virtual host:
-```
-sudo rabbitmqctl add_user admin password
-sudo rabbitmqctl add_vhost dive
-sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
+```bash
+$ sudo rabbitmqctl add_user admin password
+$ sudo rabbitmqctl add_vhost dive
+$ sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
 ```
 
 
@@ -64,9 +64,9 @@ Install and get into a virtual environment
 Install Python Dependencies
 ---------
 Within a virtual environment, install dependencies in `requirements.txt`. But due to a dependency issue in numexpr, we need to install numpy first.
-```
-pip install numpy
-pip install -r requirements.txt
+```bash
+$ pip install numpy
+$ pip install -r requirements.txt
 ```
 
 Start Celery worker
@@ -83,9 +83,9 @@ python manager.py db init
 ```
 
 Then, review and edit the migration script. Finally, each time models are changed, run the following:
-```
-python manager.py db migrate
-python manager.py db upgrade
+```bash
+$ python manager.py db migrate
+$ python manager.py db upgrade
 ```
 
 Run API
