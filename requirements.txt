@@ -8,8 +8,6 @@ backports.ssl-match-hostname==3.4.0.2
 billiard==3.3.0.23
 blinker==1.4
 boto==2.42.0
-cairocffi==0.7.2
-CairoSVG==1.0.17
 celery==3.1.23
 certifi==2015.9.6.2
 cffi==1.2.1
