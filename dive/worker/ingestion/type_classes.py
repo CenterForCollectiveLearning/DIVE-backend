@@ -9,7 +9,10 @@ import datetime
 import dateutil.parser as dparser
 from dateparser import DATE_FORMATS, is_date
 
-from dive.worker.ingestion import DataType, DataTypeWeights
+from dive.worker.ingestion.constants import DataType, DataTypeWeights
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 string_types = (str, unicode)
@@ -22,22 +25,26 @@ class CellType(object):
     type. '''
 
     guessing_weight = 1
-    # the type that the result will have
     name = None
 
     def test(self, value):
         ''' Test if the value is of the given type. The
         default implementation calls ``cast`` and checks if
         that throws an exception. True or False'''
+
+        # Simplest isinstance test
         if isinstance(value, self.result_type):
             return True
+
+        # Casting
         try:
             cast_value = self.cast(value)
             if cast_value is not None:
                 return True
             else:
                 return False
-        except:
+        except Exception as e:
+            # logger.error(e, exc_info=False)
             return False
 
     @classmethod
@@ -49,17 +56,11 @@ class CellType(object):
         a quasi-random exception if conversion fails. '''
         return value
 
-    def __eq__(self, other):
-        return self.__class__ == other.__class__
-
-    def __hash__(self):
-        return hash(self.__class__)
-
-    def __repr__(self):
-        return self.__class__.__name__.rsplit('Type', 1)[0]
-
 
 class SpecificCellType(CellType):
+    '''
+    Cells in which testing involves sampling from examples
+    '''
     examples = []
 
     def test(self, value):
@@ -69,18 +70,17 @@ class SpecificCellType(CellType):
 
 
 class IntegerType(CellType):
-    ''' Integer field '''
     name = DataType.INTEGER.value
     weight = DataTypeWeights.INTEGER.value
+
     result_type = int
     regex = re.compile("^-?[0-9]+$")
 
     def cast(self, value):
-        if regex.match(value):
+        # print 'Casting integer', value, int(value), float(value), locale.atoi(value), int(value), value.is_integer
+        if self.regex.match(value):
             return int(value)
 
-        if value in ('', None):
-            return None
         try:
             value = float(value)
         except:
@@ -93,7 +93,6 @@ class IntegerType(CellType):
 
 
 class StringType(CellType):
-    ''' A string or other unconverted type. '''
     name = DataType.STRING.value
     weight = DataTypeWeights.STRING.value
     result_type = unicode
@@ -116,8 +115,6 @@ class DecimalType(CellType):
     result_type = decimal.Decimal
 
     def cast(self, value):
-        if value in ('', None) or np.isnan(value):
-            return None
         try:
             return decimal.Decimal(value)
         except:
@@ -186,16 +183,6 @@ class DateType(CellType):
         if self.format is None:
             return value
         return datetime.datetime.strptime(value, self.format)
-
-    def __eq__(self, other):
-        return (isinstance(other, DateType) and
-                self.format == other.format)
-
-    def __repr__(self):
-        return "Date(%s)" % self.format
-
-    def __hash__(self):
-        return hash(self.__class__) + hash(self.format)
 
 
 class DateUtilType(CellType):
