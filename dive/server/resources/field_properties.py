@@ -6,7 +6,7 @@ from flask.ext.login import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
-from dive.worker.ingestion.field_properties import compute_field_properties
+from dive.worker.ingestion.field_properties import compute_all_field_properties
 
 
 import logging

@@ -459,6 +459,9 @@ def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
 def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     final_data = {}
 
+    logger.info('Binning field %s', args['binning_field']['name'])
+    logger.info('Binning field type %s', args['binning_field']['type'])
+
     binning_field = args['binning_field']['name']
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
@@ -478,7 +481,9 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     else:
         procedural = False
     precision = config.get('precision', None)
-    num_bins = config.get('num_bins', 3)
+
+    # Max number of bins for integers is number of unique values
+
 
     if not precision:
         precision = get_bin_decimals(binning_field_values)
@@ -487,6 +492,16 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         float_formatting_string = '%.' + str(precision) + 'f'
     else:
         float_formatting_string = '%d'
+
+    if config.get('num_bins'):
+        num_bins = config.get('num_bins')
+    else:
+        if args['binning_field']['type'] == 'integer':
+            num_bins = len(np.unique(binning_field_values))
+        else:
+            num_bins = 3
+
+    logger.info('Number of bins: %s', num_bins)
 
     bin_edges_list = get_bin_edges(
         binning_field_values,
@@ -663,10 +678,11 @@ def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']
     final_data = {}
     field_a_label = args['field_a']['name']
 
-    df = df.dropna()
-    vc = df[field_a_label].value_counts()
-    value_list = list(vc.index.values)
-    counts = vc.tolist()
+    values = df[field_a_label].dropna()
+    print len(df[field_a_label]), len(values)
+    value_counts = values.value_counts()
+    value_list = list(value_counts.index.values)
+    counts = value_counts.tolist()
 
     if 'score' in data_formats:
         final_data['score'] = {

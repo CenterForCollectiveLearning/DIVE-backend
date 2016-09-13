@@ -94,7 +94,13 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_dec
         num_bins = get_num_bins(v, procedure=procedure)
 
     rounding_string = '%.' + str(num_decimals) + 'f'
-    edges = np.linspace(min_v, max_v, num_bins+1)
+    try:
+        edges = np.linspace(min_v, max_v, num_bins+1)
+    except Exception as e:
+        logger.debug('MIN: %s, %s', min_v, type(min_v))
+        logger.debug('MAX: %s, %s', max_v, type(max_v))
+        logger.debug('NUM BINS: %s', num_bins)
+        raise e
     rounded_edges = []
     if num_decimals == 0:
         for i in range(len(edges)):

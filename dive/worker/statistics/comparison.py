@@ -12,6 +12,7 @@ from scipy.stats import ttest_ind
 
 from dive.base.db import db_access
 from dive.base.data.access import get_data
+from dive.base.serialization import make_serializable
 from dive.worker.ingestion.utilities import get_unique
 from dive.worker.statistics.utilities import variations_equal, sets_normal
 
