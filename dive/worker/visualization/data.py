@@ -678,10 +678,11 @@ def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']
     final_data = {}
     field_a_label = args['field_a']['name']
 
-    df = df.dropna()
-    vc = df[field_a_label].value_counts()
-    value_list = list(vc.index.values)
-    counts = vc.tolist()
+    values = df[field_a_label].dropna()
+    print len(df[field_a_label]), len(values)
+    value_counts = values.value_counts()
+    value_list = list(value_counts.index.values)
+    counts = value_counts.tolist()
 
     if 'score' in data_formats:
         final_data['score'] = {
