@@ -100,14 +100,16 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, f
     instances.
     '''
     # Convert to str and drop NAs for type detection
-    field_values = field_values.apply(str).dropna()
+    field_values_no_na = field_values.dropna()
+    field_values_as_str_no_na = field_values.apply(str)
 
-    num_samples = min(len(field_values), num_samples)
-    field_sample = random_sample(field_values, num_samples) if random else field_values[:num_samples]
+    num_samples = min(len(field_values_as_str_no_na), num_samples)
+    field_sample_no_na = random_sample(field_values_no_na, num_samples) if random else field_values_no_na[:num_samples]
+    field_sample_as_str_no_na = random_sample(field_values_as_str_no_na, num_samples) if random else field_values_as_str_no_na[:num_samples]
 
     logger.info('Sample size: %s', num_samples)
     type_scores_from_name = get_type_scores_from_field_name(field_name)
-    type_scores_from_values = get_type_scores_from_field_values(field_sample, field_types)
+    type_scores_from_values = get_type_scores_from_field_values(field_sample_as_str_no_na, field_types)
 
     logger.info(field_name)
     logger.info(type_scores_from_name)
@@ -130,7 +132,7 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, f
 
     final_field_type = max(score_tuples, key=lambda t: t[1])[0]
     if final_field_type == DataType.INTEGER.value:
-        if detect_contiguous_integers(field_sample):
+        if detect_contiguous_integers(field_sample_no_na):
             final_field_type = DataType.ORDINAL.value
 
     return (final_field_type, normalized_type_scores)

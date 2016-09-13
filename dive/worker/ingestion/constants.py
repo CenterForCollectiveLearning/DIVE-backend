@@ -4,6 +4,7 @@ class DataType(Enum):
 
     # Fundamental
     INTEGER = 'integer'
+    ORDINAL = 'ordinal'
     STRING = 'string'
     DECIMAL = 'decimal'
     BOOLEAN = 'boolean'
@@ -29,14 +30,13 @@ class DataType(Enum):
     MONTH = 'month'
     DAY = 'day'
 
-numeric_types = [
-    DataType.INTEGER.value,
-    DataType.DECIMAL.value
-]
-
 quantitative_types = [
     DataType.INTEGER.value,
     DataType.DECIMAL.value,
+]
+
+ordinal_types = [
+    DataType.ORDINAL.value
 ]
 
 temporal_types = [
@@ -64,6 +64,8 @@ categorical_types = [
 specific_to_general_type = {}
 for data_type in quantitative_types:
     specific_to_general_type[data_type] = 'q'
+for data_type in ordinal_types:
+    specific_to_general_type[data_type] = 'o'
 for data_type in temporal_types:
     specific_to_general_type[data_type] = 't'
 for data_type in categorical_types:
