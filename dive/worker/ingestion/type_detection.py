@@ -8,7 +8,7 @@ from collections import defaultdict
 from dive.worker.ingestion.type_classes import IntegerType, StringType, DecimalType, \
     BooleanType, DateType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
     CountryNameType, ContinentNameType
-from dive.worker.ingestion import DataType, DataTypeWeights
+from dive.worker.ingestion.constants import DataType, DataTypeWeights
 
 import logging
 logger = logging.getLogger(__name__)
@@ -47,22 +47,22 @@ def get_type_scores_from_field_name(field_name):
     for datatype, strings in header_strings['is'].iteritems():
         for s in strings:
             if field_name is s:
-                type_scores[datatype] += 7000
+                type_scores[datatype] += 2000
 
     for datatype, strings in header_strings['in'].iteritems():
         for s in strings:
             if s in field_name:
-                type_scores[datatype] += 7000
+                type_scores[datatype] += 2000
 
     for datatype, strings in header_strings['pre'].iteritems():
         for s in strings:
             if field_name.startswith(s):
-                type_scores[datatype] += 7000
+                type_scores[datatype] += 2000
 
     for datatype, strings in header_strings['post'].iteritems():
         for s in strings:
             if field_name.endswith(s):
-                type_scores[datatype] += 7000
+                type_scores[datatype] += 2000
     return type_scores
 
 
@@ -89,6 +89,9 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, f
     For each field, returns highest-scoring field type of first num_samples non-empty
     instances.
     '''
+    # Convert to str and drop NAs for type detection
+    field_values = field_values.apply(str).dropna()
+
     num_samples = min(len(field_values), num_samples)
     field_sample = random_sample(field_values, num_samples) if random else field_values[:num_samples]
 
