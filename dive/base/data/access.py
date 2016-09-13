@@ -67,6 +67,7 @@ fields_to_coerce_to_integer = [ 'year', 'integer' ]
 fields_to_coerce_to_string = [ 'string' ]
 fields_to_coerce_to_datetime = [ 'datetime' ]
 def coerce_types(df, field_properties):
+    logger.info('Coercing types %s', [ x['type'] for x in field_properties ])
     decimal_fields = []
     integer_fields = []
     string_fields = []

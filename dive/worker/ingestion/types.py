@@ -5,7 +5,7 @@ import datetime
 import dateutil.parser as dparser
 from dateparser import DATE_FORMATS, is_date
 
-from dive.worker.ingestion import DataType, DataTypeWeights
+from dive.worker.ingestion.constants import DataType, DataTypeWeights
 
 string_types = (str, unicode)
 

@@ -1,5 +1,5 @@
 from enum import Enum
-from dive.worker.ingestion import DataType
+from dive.worker.ingestion.constants import DataType
 import numpy as np
 
 
