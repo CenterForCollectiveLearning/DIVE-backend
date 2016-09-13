@@ -6,7 +6,7 @@ from dive.worker.core import celery, task_app
 
 from dive.worker.ingestion.upload import save_dataset
 from dive.worker.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
-from dive.worker.ingestion.field_properties import compute_field_properties, save_field_properties
+from dive.worker.ingestion.field_properties import compute_all_field_properties, save_field_properties
 from dive.worker.ingestion.relationships import compute_relationships, save_relationships
 
 from dive.worker.transformation.reduce import reduce_dataset
@@ -138,7 +138,7 @@ def ingestion_pipeline(self, dataset_id, project_id):
     save_dataset_properties(dataset_properties, dataset_id, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
-    field_properties = compute_field_properties(dataset_id, project_id)
+    field_properties = compute_all_field_properties(dataset_id, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
     result = save_field_properties(field_properties, dataset_id, project_id)
@@ -197,7 +197,7 @@ def ingestion_pipeline(self, dataset_id, project_id):
     save_dataset_properties(dataset_properties, dataset_id, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
-    field_properties = compute_field_properties(dataset_id, project_id)
+    field_properties = compute_all_field_properties(dataset_id, project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
     result = save_field_properties(field_properties, dataset_id, project_id)
