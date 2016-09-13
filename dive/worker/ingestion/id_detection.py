@@ -1,4 +1,4 @@
-from dive.worker.ingestion import DataType
+from dive.worker.ingestion.constants import DataType
 from dive.worker.ingestion.type_classes import IntegerType, StringType
 
 import logging

@@ -15,7 +15,7 @@ from dive.base.db import db_access
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
-from dive.worker.ingestion import DataType, specific_to_general_type
+from dive.worker.ingestion.constants import DataType, specific_to_general_type
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
 from dive.worker.ingestion.utilities import get_unique
@@ -86,7 +86,15 @@ def calculate_field_stats(field_type, field_values, logging=False):
     return stats
 
 
-def compute_field_properties(dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
+def compute_single_field_property():
+    '''
+    Attributes:
+    stats
+    '''
+    return
+
+
+def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
@@ -124,14 +132,15 @@ def compute_field_properties(dataset_id, project_id, compute_hierarchical_relati
             'type_scores': field_type_scores,
         })
 
-    coerced_df = coerce_types(df, field_properties)
-    IMD.insertData(dataset_id, coerced_df)
+    df = coerce_types(df, field_properties)
+    IMD.insertData(dataset_id, df)
 
     # 2) Rest
     for (i, field_name) in enumerate(df):
         logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]
+
         field_type = field_properties[i]['type']
         general_type = field_properties[i]['general_type']
 
