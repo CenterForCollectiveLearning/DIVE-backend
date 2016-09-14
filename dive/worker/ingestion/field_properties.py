@@ -165,7 +165,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
                 'agg_fn': 'count'
             }
             try:
-                viz_data = get_bin_agg_data(df, {}, binning_spec, {})
+                viz_data = get_bin_agg_data(df, binning_spec)
             except Exception as e:
                 logger.error("Error getting viz data for field, %s", e, exc_info=True)
                 continue
@@ -174,7 +174,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
                 'field_a': { 'name': field_name }
             }
             try:
-                viz_data = get_val_count_data(df, {}, val_count_spec, {})
+                viz_data = get_val_count_data(df, val_count_spec)
             except Exception as e:
                 logger.error("Error getting viz data for field, %s", e, exc_info=True)
                 continue

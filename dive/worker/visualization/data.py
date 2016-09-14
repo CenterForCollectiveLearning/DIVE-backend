@@ -107,13 +107,18 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
         GeneratingProcedure.VAL_COUNT.value: get_val_count_data,
         GeneratingProcedure.AGG_AGG.value: get_agg_agg_data,
     }
-    data = generating_procedure_to_data_function[gp](df, precomputed, args, config, data_formats)
+    data = generating_procedure_to_data_function[gp](df,
+        args,
+        precomputed=precomputed,
+        config=config,
+        data_formats=data_formats
+    )
 
     logger.debug('Data for %s: %s', gp, time() - start_time)
     return data
 
 
-def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
     field_b_label = args['field_b']['name']
@@ -150,7 +155,7 @@ def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visual
     return final_data
 
 
-def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_multigroup_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     '''
     Group by two groups then aggregate on the third
 
@@ -275,7 +280,7 @@ def get_multigroup_agg_data(df, precomputed, args, config, data_formats=['visual
     return final_data
 
 
-def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_multigroup_count_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     '''
     Group by one field, then by another
 
@@ -341,7 +346,7 @@ def get_multigroup_count_data(df, precomputed, args, config, data_formats=['visu
     return final_data
 
 
-def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_agg_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     '''
     1) Group by a categorical field
     2) Aggregate two other quantitative fields
@@ -391,7 +396,7 @@ def get_agg_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     return final_data
 
 
-def get_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     agg_field_label = args['agg_field_a']['name']
     df = df.dropna(subset=[agg_field_label])
@@ -408,7 +413,7 @@ def get_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     return final_data
 
 
-def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
 
@@ -445,7 +450,7 @@ def get_ind_val_data(df, precomputed, args, config, data_formats=['visualize']):
     return final_data
 
 
-def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
 
     logger.info('Binning field %s', args['binning_field']['name'])
@@ -592,7 +597,7 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
         }
     return final_data
 
-def get_val_box_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_val_box_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     grouped_field_name = args['grouped_field']['name']
     boxed_field_name = args['boxed_field']['name']
@@ -629,7 +634,7 @@ def get_val_box_data(df, precomputed, args, config, data_formats=['visualize']):
     grouped_field_list = df_max.index.tolist()
     boxed_field_list = df_max[boxed_field_name].tolist()
 
-    columns = [ 'Min', 'Bottom', 'Q1', 'Median', 'Mean', 'Q3', 'Top', 'Max' ]
+    columns = [ 'Bottom', 'Q1', 'Median', 'Mean', 'Q3', 'Top' ]
     if 'score' in data_formats:
         final_data['score'] = {
             'grouped_field': grouped_field_list,
@@ -671,7 +676,7 @@ def get_val_box_data(df, precomputed, args, config, data_formats=['visualize']):
 
 
 
-def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     aggregation_function_name = args['agg_fn']
     grouped_field_name = args['grouped_field']['name']
@@ -741,7 +746,7 @@ def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):
     return final_data
 
 
-def get_val_count_data(df, precomputed, args, config, data_formats=['visualize']):
+def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
 
