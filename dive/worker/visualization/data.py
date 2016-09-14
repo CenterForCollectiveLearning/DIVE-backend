@@ -87,43 +87,30 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
     args = spec['args']
     dataset_id = spec['dataset_id']
 
+    logger.debug('Generating Procedure: %s', gp)
+    logger.debug('Arguments: %s', args)
     start_time = time()
 
     if df is None:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
-    logger.debug('Generating procedure: %s', gp)
-
-    if gp == GeneratingProcedure.AGG.value:
-        final_data = get_agg_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.IND_VAL.value:
-        final_data = get_ind_val_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.BIN_AGG.value:
-        final_data = get_bin_agg_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.MULTIGROUP_COUNT.value:
-        final_data = get_multigroup_count_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.MULTIGROUP_AGG.value:
-        final_data = get_multigroup_agg_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_AGG.value:
-        final_data = get_val_agg_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_VAL.value:
-        final_data = get_raw_comparison_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.VAL_COUNT.value:
-        final_data = get_val_count_data(df, precomputed, args, config, data_formats)
-
-    elif gp == GeneratingProcedure.AGG_AGG.value:
-        final_data = get_agg_agg_data(df, precomputed, args, config, data_formats)
+    generating_procedure_to_data_function = {
+        GeneratingProcedure.AGG.value: get_agg_data,
+        GeneratingProcedure.IND_VAL.value: get_ind_val_data,
+        GeneratingProcedure.BIN_AGG.value: get_bin_agg_data,
+        GeneratingProcedure.MULTIGROUP_COUNT.value: get_multigroup_count_data,
+        GeneratingProcedure.MULTIGROUP_AGG.value: get_multigroup_agg_data,
+        GeneratingProcedure.VAL_BOX.value: get_val_box_data,
+        GeneratingProcedure.VAL_AGG.value: get_val_agg_data,
+        GeneratingProcedure.VAL_VAL.value: get_raw_comparison_data,
+        GeneratingProcedure.VAL_COUNT.value: get_val_count_data,
+        GeneratingProcedure.AGG_AGG.value: get_agg_agg_data,
+    }
+    data = generating_procedure_to_data_function[gp](df, precomputed, args, config, data_formats)
 
     logger.debug('Data for %s: %s', gp, time() - start_time)
-    return final_data
+    return data
 
 
 def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visualize']):
@@ -137,6 +124,8 @@ def get_raw_comparison_data(df, precomputed, args, config, data_formats=['visual
     field_b_list = df[field_b_label].tolist()
     zipped_list = zip(field_a_list, field_b_list)
     if len(zipped_list) > 1000:
+
+
         final_list = sample(zipped_list, 1000)
     else:
         final_list = zipped_list
@@ -602,6 +591,84 @@ def get_bin_agg_data(df, precomputed, args, config, data_formats=['visualize']):
             'data': table_data
         }
     return final_data
+
+def get_val_box_data(df, precomputed, args, config, data_formats=['visualize']):
+    final_data = {}
+    grouped_field_name = args['grouped_field']['name']
+    boxed_field_name = args['boxed_field']['name']
+
+    df = df[[grouped_field_name, boxed_field_name]]
+    df = df.dropna(how='any', subset=[grouped_field_name, boxed_field_name])
+
+    if 'groupby' in precomputed and grouped_field_name in precomputed['groupby']:
+        grouped_df = precomputed['groupby'][grouped_field_name]
+    else:
+        grouped_df = df.groupby(grouped_field_name, sort=False)
+
+    def top_whisker(group):
+      Q3 = group.quantile(0.75)
+      Q1 = group.quantile(0.25)
+      IQR = Q3 - Q1
+      return max(group[group <= Q3 + 1.5*IQR])
+
+    def bottom_whisker(group):
+      Q3 = group.quantile(0.75)
+      Q1 = group.quantile(0.25)
+      IQR = Q3 - Q1
+      return min(group[group >= Q1 - 1.5*IQR])
+
+    # Reduce redunancy here
+    df_quantiles = grouped_df.quantile([0.25, 0.75])
+    df_max = grouped_df.max()
+    df_min = grouped_df.min()
+    df_median = grouped_df.median()
+    df_mean = grouped_df.mean()
+    df_top_whisker = grouped_df.agg(top_whisker)
+    df_bottom_whisker = grouped_df.agg(bottom_whisker)
+
+    grouped_field_list = df_max.index.tolist()
+    boxed_field_list = df_max[boxed_field_name].tolist()
+
+    columns = [ 'Min', 'Bottom', 'Q1', 'Median', 'Mean', 'Q3', 'Top', 'Max' ]
+    if 'score' in data_formats:
+        final_data['score'] = {
+            'grouped_field': grouped_field_list,
+            'boxed_field': boxed_field_list
+        }
+    if 'visualize' in data_formats:
+        data_array = [[ boxed_field_name ] + columns]
+        for grouped_field_value in grouped_field_list:
+            Q1 = df_quantiles[boxed_field_name][grouped_field_value][0.25]
+            Q3 = df_quantiles[boxed_field_name][grouped_field_value][0.75]
+            bottom = df_bottom_whisker[boxed_field_name][grouped_field_value]
+            top = df_top_whisker[boxed_field_name][grouped_field_value]
+            maximum = df_max[boxed_field_name][grouped_field_value]
+            minimum = df_min[boxed_field_name][grouped_field_value]
+            median = df_median[boxed_field_name][grouped_field_value]
+            mean = df_mean[boxed_field_name][grouped_field_value]
+
+            # Handle this redunancy on the front-end?
+            data_element = [
+                grouped_field_value,
+                # minimum,
+                bottom,
+                Q1,
+                median,
+                mean,
+                Q3,
+                top,
+                # maximum,
+            ]
+            data_array.append(data_element)
+        final_data['visualize'] = data_array
+
+    if 'table' in data_formats:
+        final_data['table'] = {
+            'columns': columns,
+            'data': []
+        }
+    return final_data
+
 
 
 def get_val_agg_data(df, precomputed, args, config, data_formats=['visualize']):

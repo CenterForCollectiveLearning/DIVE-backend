@@ -78,6 +78,33 @@ def single_cq(c_field, q_field):
                 }
             }
             specs.append(spec)
+
+            spec = {
+                'case': 'single_cq',
+                'generating_procedure': GP.VAL_BOX.value,
+                'type_structure': TS.C_Q.value,
+                'viz_types': [ VT.BOX.value ],
+                'field_ids': [ c_field['id'], q_field['id'] ],
+                'args': {
+                    'grouped_field': c_field,
+                    'boxed_field': q_field
+                },
+                'meta': {
+                    'desc': 'Distribution of %s grouped by %s' % (q_label, c_label),
+                    'construction': [
+                        { 'string': 'Distribution', 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': c_label,
+                        'y': 'Distribution of %s' % (q_label),
+                    }
+                }
+            }
+            specs.append(spec)
     return specs
 
 
