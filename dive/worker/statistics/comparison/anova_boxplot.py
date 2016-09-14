@@ -63,56 +63,41 @@ def get_anova_boxplot_data(spec, project_id, conditionals={}):
     variable_subset = dependent_variable_names + independent_variable_names
     df_subset = df[variable_subset]
     df_grouped = df_subset.groupby(independent_variable_names)
-    df_quantiles = df_grouped.quantile(quantiles)
-    df_median = df_grouped.median()
-    df_mean = df_grouped.mean()
-    df_top_whisker = df_grouped.agg(top_whisker)
-    df_bottom_whisker = df_grouped.agg(bottom_whisker)
+    df_quantiles = df_grouped.quantile(quantiles)[dependent_variable_names[0]]
+    df_max = df_grouped.max()[dependent_variable_names[0]]
+    df_min = df_grouped.min()[dependent_variable_names[0]]
+    df_median = df_grouped.median()[dependent_variable_names[0]]
+    df_mean = df_grouped.mean()[dependent_variable_names[0]]
+    df_top_whisker = df_grouped.agg(top_whisker)[dependent_variable_names[0]]
+    df_bottom_whisker = df_grouped.agg(bottom_whisker)[dependent_variable_names[0]]
+    grouped_field_list = df_max.index.tolist()
 
     one_way = (len(independent_variable_names) == 1)
 
-    # { grouped_field_value: { quantile: value } }
-    results_grouped_by_highest_level = dict()
-    for specifier, value in df_quantiles.to_dict()[dependent_variable_names[0]].iteritems():
-        if one_way:
-            grouped_field_value, quantile_level = specifier
-
-            top_whisker = df_top_whisker[dependent_variable_names[0]][grouped_field_value]
-            bottom_whisker = df_bottom_whisker[dependent_variable_names[0]][grouped_field_value]
-            if grouped_field_value in results_grouped_by_highest_level:
-                results_grouped_by_highest_level[grouped_field_value][quantile_level] = value
-                results_grouped_by_highest_level[grouped_field_value]['top'] = top_whisker
-                results_grouped_by_highest_level[grouped_field_value]['bottom'] = bottom_whisker
-            else:
-                results_grouped_by_highest_level[grouped_field_value] = {
-                    quantile_level: value,
-                    'top': top_whisker,
-                    'bottom': bottom_whisker
-                }
-
-
-    # Sort OrderedDict
-    results_grouped_by_highest_level = OrderedDict(results_grouped_by_highest_level)
-
-    print results_grouped_by_highest_level
-
     # https://github.com/google/google-visualization-issues/issues/782
     final_data_array = [ dependent_variable_names + [ '', '', '', '', 'Median', 'Mean' ] ]
-    for grouped_field_value, quantile_value in results_grouped_by_highest_level.iteritems():
-        quantile_value_sorted = OrderedDict(quantile_value)
 
-        median = df_median[dependent_variable_names[0]][grouped_field_value]
-        mean = df_mean[dependent_variable_names[0]][grouped_field_value]
+    for grouped_field_value in grouped_field_list:
+        Q1 = df_quantiles[grouped_field_value][0.25]
+        Q3 = df_quantiles[grouped_field_value][0.75]
+        bottom = df_bottom_whisker[grouped_field_value]
+        top = df_top_whisker[grouped_field_value]
+        maximum = df_max[grouped_field_value]
+        minimum = df_min[grouped_field_value]
+        median = df_median[grouped_field_value]
+        mean = df_mean[grouped_field_value]
 
+        # Handle this redunancy on the front-end?
         data_element = [
             grouped_field_value,
-            0.0,
-            quantile_value['bottom'],
-            quantile_value[0.25],
+            # minimum,
+            bottom,
+            Q1,
             median,
             mean,
-            quantile_value[0.75],
-            quantile_value['top']
+            Q3,
+            top,
+            # maximum,
         ]
 
         final_data_array.append(data_element)
