@@ -7,6 +7,7 @@ class GeneratingProcedure(Enum):
     AGG = 'agg'
     IND_VAL = 'ind:val'
     VAL_COUNT = 'val:count'
+    VAL_BOX = 'val:box'
     BIN_AGG = 'bin:agg'
     BIN_COUNT = 'bin:count'
     VAL_VAL = 'val:val'
@@ -62,6 +63,7 @@ class TemporalFunction(Enum):
 
 class VizType(Enum):
     TREE = 'tree'
+    BOX = 'box'
     PIE = 'pie'
     SCATTER = 'scatter'
     LINE = 'line'
