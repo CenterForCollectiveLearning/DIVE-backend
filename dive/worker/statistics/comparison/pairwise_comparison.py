@@ -54,16 +54,18 @@ def get_pairwise_comparison_data(spec, project_id, conditionals={}):
     ]
     hsd_data = []
     for i in range(0, len(hsd_raw_data)):
-        hsd_data_row = [
-            hsd_raw_data[i][0],
-            hsd_raw_data[i][1],
-            hsd_result.meandiffs[i],
-            hsd_result.confint[i][0],
-            hsd_result.confint[i][1],
-            p_values[i],
-            ( 'False' if (p_values[i] <= significance_cutoff) else 'True' )
-        ]
-        print hsd_data_row
+        try:
+            hsd_data_row = [
+                hsd_raw_data[i][0],
+                hsd_raw_data[i][1],
+                hsd_result.meandiffs[i],
+                hsd_result.confint[i][0],
+                hsd_result.confint[i][1],
+                p_values[i],
+                ( 'False' if (p_values[i] <= significance_cutoff) else 'True' )
+            ]
+        except Exception as e:
+            logger.error(e, exc_info=True)
         hsd_data.append(hsd_data_row)
 
     return {
