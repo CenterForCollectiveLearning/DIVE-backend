@@ -303,7 +303,6 @@ def delete_spec(project_id, exported_spec_id):
 # Exported Specifications
 ################
 def get_public_exported_spec(exported_spec_id, spec_type):
-    print spec_type, ContentType.VISUALIZATION.value
     try:
         if spec_type == ContentType.VISUALIZATION.value:
             exported_spec = Exported_Spec.query.filter_by(
@@ -325,7 +324,9 @@ def get_public_exported_spec(exported_spec_id, spec_type):
             exported_spec = Exported_Regression.query.filter_by(
                 id=exported_spec_id
             ).one()
-            return row_to_dict(exported_spec)
+            setattr(exported_spec, 'spec', exported_spec.regression.spec)
+            setattr(exported_spec, 'type', 'regression')
+            return row_to_dict(exported_spec, custom_fields=['type', 'spec'])
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:

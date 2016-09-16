@@ -10,10 +10,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def object_type(j):
-    return j
-
-
 documentsGetParser = reqparse.RequestParser()
 documentsGetParser.add_argument('project_id', type=str, required=True)
 class Documents(Resource):
@@ -36,7 +32,7 @@ documentGetParser.add_argument('include_data', type=bool, default=False)
 documentPutParser = reqparse.RequestParser()
 documentPutParser.add_argument('project_id', type=str, required=True, location='json')
 documentPutParser.add_argument('title', type=str, location='json')
-documentPutParser.add_argument('content', type=object_type, location='json')
+documentPutParser.add_argument('content', type=dict, location='json')
 
 documentDeleteParser = reqparse.RequestParser()
 documentDeleteParser.add_argument('project_id', type=str, required=True)
