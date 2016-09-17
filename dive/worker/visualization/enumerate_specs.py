@@ -30,7 +30,7 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
 
     # Get field properties
     with task_app.app_context():
-        desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'name', 'id']
+        desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'name', 'id', 'contiguous']
         raw_field_properties = db_access.get_field_properties(project_id, dataset_id, is_id=False)
         field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 
