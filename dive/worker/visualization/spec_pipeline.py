@@ -46,8 +46,6 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     '''
     viz_specs_with_data = []
 
-    enumerated_viz_specs = enumerated_viz_specs[:30]
-
     start_time = time()
     # Get dataframe
     if project_id and dataset_id:
