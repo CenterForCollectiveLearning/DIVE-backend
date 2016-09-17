@@ -124,6 +124,7 @@ class Field_Properties(db.Model):
     type_scores = Column(JSONB)
     index = Column(Integer)  # TODO Tie this down with a foreign key?
     normality = Column(JSONB)
+    contiguous = Column(Boolean())    
     is_unique = Column(Boolean())
     is_id = Column(Boolean())
     unique_values = Column(JSONB)

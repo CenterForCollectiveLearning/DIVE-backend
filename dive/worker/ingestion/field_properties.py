@@ -94,6 +94,15 @@ def compute_single_field_property():
     return
 
 
+def detect_contiguous_integers(field_values):
+    sorted_unique_list = sorted(np.unique(field_values))
+    for i in range(len(sorted_unique_list) - 1):
+        diff = abs(sorted_unique_list[i + 1] - sorted_unique_list[i])
+        if diff > 1:
+            return False
+    return True
+
+
 def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
     '''
     Compute field properties of a specific dataset
@@ -147,6 +156,10 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         # Uniqueness
         is_unique = detect_unique_list(field_values)
 
+        contiguous = False
+        if field_type == 'integer':
+            contiguous = detect_contiguous_integers(field_values)
+
         # Unique values for categorical fields
         if general_type is 'c':
             unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ]
@@ -197,6 +210,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
                 normality = None
 
         field_properties[i].update({
+            'contiguous': contiguous,
             'color': palette[i],
             'viz_data': viz_data,
             'is_id': is_id,
