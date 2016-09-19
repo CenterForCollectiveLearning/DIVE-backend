@@ -79,7 +79,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
 
     '''
     for f in data_formats:
-        if f not in ['score', 'visualize', 'table']:
+        if f not in ['score', 'visualize', 'table', 'count']:
             raise ValueError('Passed incorrect data format', f)
     final_data = dict([(f, {}) for f in data_formats])
 
@@ -151,6 +151,8 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
             'columns': df.columns.tolist(),
             'data': df.values.tolist()
         }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
 
     return final_data
 
@@ -277,6 +279,8 @@ def get_multigroup_agg_data(df, args, precomputed={}, config={}, data_formats=['
             'data': final_array[1:]
         }
         final_data['table'] = table_data
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -343,6 +347,8 @@ def get_multigroup_count_data(df, args, precomputed={}, config={}, data_formats=
             'data': results_as_data_array[1:]
         }
         final_data['table'] = table_data
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -393,6 +399,8 @@ def get_agg_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
             'columns': data_table[0],
             'data': data_table[1:]
         }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -410,6 +418,8 @@ def get_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']
         aggregation_function_name = aggregation_functions[aggregation_function_name_label]
         result = aggregation_function_name(agg_field_data)
     final_data['visualize'] = result
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -447,6 +457,8 @@ def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visuali
             'columns': df.columns.tolist(),
             'data': df.values.tolist()
         }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -595,6 +607,8 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
             'columns': columns,
             'data': table_data
         }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 def get_val_box_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
@@ -635,43 +649,45 @@ def get_val_box_data(df, args, precomputed={}, config={}, data_formats=['visuali
     boxed_field_list = df_max[boxed_field_name].tolist()
 
     columns = [ 'Bottom', 'Q1', 'Median', 'Mean', 'Q3', 'Top' ]
+    data_array = [[ boxed_field_name ] + columns]
+    for grouped_field_value in grouped_field_list:
+        Q1 = df_quantiles[boxed_field_name][grouped_field_value][0.25]
+        Q3 = df_quantiles[boxed_field_name][grouped_field_value][0.75]
+        bottom = df_bottom_whisker[boxed_field_name][grouped_field_value]
+        top = df_top_whisker[boxed_field_name][grouped_field_value]
+        maximum = df_max[boxed_field_name][grouped_field_value]
+        minimum = df_min[boxed_field_name][grouped_field_value]
+        median = df_median[boxed_field_name][grouped_field_value]
+        mean = df_mean[boxed_field_name][grouped_field_value]
+
+        data_element = [
+            grouped_field_value,
+            # minimum,
+            bottom,
+            Q1,
+            median,
+            mean,
+            Q3,
+            top,
+            # maximum,
+        ]
+        data_array.append(data_element)
+
     if 'score' in data_formats:
         final_data['score'] = {
             'grouped_field': grouped_field_list,
             'boxed_field': boxed_field_list
         }
     if 'visualize' in data_formats:
-        data_array = [[ boxed_field_name ] + columns]
-        for grouped_field_value in grouped_field_list:
-            Q1 = df_quantiles[boxed_field_name][grouped_field_value][0.25]
-            Q3 = df_quantiles[boxed_field_name][grouped_field_value][0.75]
-            bottom = df_bottom_whisker[boxed_field_name][grouped_field_value]
-            top = df_top_whisker[boxed_field_name][grouped_field_value]
-            maximum = df_max[boxed_field_name][grouped_field_value]
-            minimum = df_min[boxed_field_name][grouped_field_value]
-            median = df_median[boxed_field_name][grouped_field_value]
-            mean = df_mean[boxed_field_name][grouped_field_value]
-
-            # Handle this redunancy on the front-end?
-            data_element = [
-                grouped_field_value,
-                # minimum,
-                bottom,
-                Q1,
-                median,
-                mean,
-                Q3,
-                top,
-                # maximum,
-            ]
-            data_array.append(data_element)
         final_data['visualize'] = data_array
 
     if 'table' in data_formats:
         final_data['table'] = {
-            'columns': columns,
-            'data': []
+            'columns': data_array[0],
+            'data': data_array[1:]
         }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -743,6 +759,8 @@ def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
                 'columns': agg_df.columns.tolist(),
                 'data': agg_df.values.tolist()
             }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
 
 
@@ -770,4 +788,6 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
             'columns': [field_a_label, 'count'],
             'data': [[v, c] for (v, c) in zip(value_list, counts)]
         }
+    if 'count' in data_formats:
+        final_data['count'] = df.shape[0]
     return final_data
