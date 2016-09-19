@@ -23,7 +23,6 @@ def get_pairwise_comparison_data(spec, project_id, conditionals={}):
         dependentVariables - list names, must be numerical
         numBins - number of bins for the independent quantitative variables (if they exist)
     '''
-    logger.info('In get_pairwise_comparison_data')
     anova_result = {}
 
     dependent_variables = spec.get('dependentVariables', [])
@@ -55,18 +54,23 @@ def get_pairwise_comparison_data(spec, project_id, conditionals={}):
     hsd_data = []
     for i in range(0, len(hsd_raw_data)):
         try:
+            if len(p_values) == 1:
+                p_value = p_values
+            else:
+                p_value = p_values[i] if i < len(p_values) else None
             hsd_data_row = [
                 hsd_raw_data[i][0],
                 hsd_raw_data[i][1],
                 hsd_result.meandiffs[i],
                 hsd_result.confint[i][0],
                 hsd_result.confint[i][1],
-                p_values[i],
-                ( 'False' if (p_values[i] <= significance_cutoff) else 'True' )
+                p_value,
+                ( 'False' if (p_value <= significance_cutoff) else 'True' )
             ]
+            hsd_data.append(hsd_data_row)
         except Exception as e:
             logger.error(e, exc_info=True)
-        hsd_data.append(hsd_data_row)
+
 
     return {
         'column_headers': hsd_headers,
