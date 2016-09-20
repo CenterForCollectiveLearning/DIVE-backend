@@ -32,9 +32,9 @@ def get_projects(**kwargs):
     projects = Project.query.filter_by(**kwargs).all()
     for project in projects:
         setattr(project, 'included_datasets', [ row_to_dict(d) for d in project.datasets ])
-        setattr(project, 'num_datasets', len(project.datasets))
-        setattr(project, 'num_specs', len(project.specs))
-        setattr(project, 'num_documents', len(project.documents))
+        setattr(project, 'num_datasets', project.datasets.count())
+        setattr(project, 'num_specs', project.specs.count())
+        setattr(project, 'num_documents', project.documents.count())
     return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents' ]) for project in projects ]
 
 def insert_project(**kwargs):
@@ -64,9 +64,6 @@ def delete_project(project_id):
 ################
 # Datasets
 ################
-def get_dataset(project_id, dataset_id):
-    # http://stackoverflow.com/questions/2128505/whats-the-difference-between-filter-and-filter-by-in-sqlalchemy
-    logger.debug("Get dataset with project_id %s and dataset_id %s", project_id, dataset_id)
     try:
         dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
         return row_to_dict(dataset)
@@ -85,8 +82,6 @@ def get_datasets(project_id, **kwargs):
     return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
-    logger.debug("Insert dataset with project_id %s", project_id)
-
     dataset = Dataset(
         project_id=project_id,
         **kwargs
