@@ -72,6 +72,8 @@ def get_statistical_properties(data, gp, ts):
     if ts in [TypeStructure.C_Q.value, TypeStructure.B_Q.value, TypeStructure.liC_Q.value]:
         if gp in [ GeneratingProcedure.VAL_AGG.value ]:
             v = data.get('agg_field')
+        if gp in [ GeneratingProcedure.VAL_BOX.value ]:
+            v = data.get('boxed_field')            
         elif gp in [ GeneratingProcedure.IND_VAL.value ]:
             v = data.get('val')
         elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
