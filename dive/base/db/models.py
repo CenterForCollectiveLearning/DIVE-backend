@@ -27,15 +27,18 @@ class Project(db.Model):
 
     datasets = relationship('Dataset',
         cascade='all, delete-orphan',
-        backref='project')
+        backref='project',
+        lazy='dynamic')
 
     specs = relationship('Spec',
         cascade='all, delete-orphan',
-        backref='project')
+        backref='project',
+        lazy='dynamic')
 
     documents = relationship('Document',
         cascade='all, delete-orphan',
-        backref='project')
+        backref='project',
+        lazy='dynamic')
 
 
     creation_date = Column(DateTime, default=datetime.utcnow)
@@ -124,7 +127,7 @@ class Field_Properties(db.Model):
     type_scores = Column(JSONB)
     index = Column(Integer)  # TODO Tie this down with a foreign key?
     normality = Column(JSONB)
-    contiguous = Column(Boolean())    
+    contiguous = Column(Boolean())
     is_unique = Column(Boolean())
     is_id = Column(Boolean())
     unique_values = Column(JSONB)
