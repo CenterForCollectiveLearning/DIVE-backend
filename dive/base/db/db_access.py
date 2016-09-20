@@ -64,6 +64,7 @@ def delete_project(project_id):
 ################
 # Datasets
 ################
+def get_dataset(project_id, dataset_id):
     try:
         dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
         return row_to_dict(dataset)
