@@ -546,7 +546,8 @@ def create_contingency_table(df, aggregation_variables, dep_variable):
             "values": values
         })
 
-    formatted_results_dict['column_totals'] = list(column_totals)
+    if not aggregationMean:
+        formatted_results_dict['column_totals'] = list(column_totals)
     return formatted_results_dict
 
 def get_binning_edges_and_names(array, config):
