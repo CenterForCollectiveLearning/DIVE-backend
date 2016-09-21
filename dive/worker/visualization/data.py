@@ -748,17 +748,14 @@ def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
         final_data['visualize'] = data_array
 
     if 'table' in data_formats:
-        ### TODO
-        if mean_aggregration:
-            final_data['table'] = {
-                'columns': agg_df.columns.tolist(),
-                'data': agg_df.values.tolist()
-            }
-        else:
-            final_data['table'] = {
-                'columns': agg_df.columns.tolist(),
-                'data': agg_df.values.tolist()
-            }
+        table_columns = [ grouped_field_name ] + agg_df.columns.tolist()
+        table_data = [ list(row) for row in zip(grouped_field_list, *agg_df.T.values.tolist()) ]  # Necessary to transpose
+
+        final_data['table'] = {
+            'columns': table_columns,
+            'data': table_data
+        }
+        print final_data['table']
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
     return final_data
