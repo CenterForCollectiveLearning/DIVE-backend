@@ -71,9 +71,10 @@ class ProductionConfig(BaseConfig):
     # Flask
     DEBUG = False
     COMPRESS = False
-    COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', '.usedive.com')
+    COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', 'usedive.com')
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SERVER_NAME = env('DIVE_COOKIE_DOMAIN', 'usedive.com')
 
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 's3')
