@@ -34,7 +34,11 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
 
 def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if IMD.hasData(dataset_id):
-        return IMD.getData(dataset_id)
+        logger.info('Accessing from IMD, project_id: %s, dataset_id: %s', project_id, dataset_id)
+        df = IMD.getData(dataset_id)
+        return df
+        
+    logger.debug('Accessing from read, project_id: %s, dataset_id: %s', project_id, dataset_id)
 
     dataset = db_access.get_dataset(project_id, dataset_id)
     dialect = dataset['dialect']
