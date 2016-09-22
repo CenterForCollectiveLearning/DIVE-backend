@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from flask.ext.user import UserMixin
 from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -472,55 +473,24 @@ class Team(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class User(db.Model):
-    '''
-    Many-to-one with Group
-    '''
+# Define User model. Make sure to add flask.ext.user UserMixin !!!
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
     __tablename__ = ModelName.USER.value
-    id = Column(Integer, primary_key=True)
-    username = Column(Unicode(50), unique=True)
-    email = Column(Unicode(120))
-    password = Column(Unicode(120))
 
-    authenticated = Column(Boolean(), default=True)
-    anonymous = Column(Boolean(), default=False)
-    active = Column(Boolean(), default=True)
+    # User Authentication information
+    username = db.Column(db.String(50), nullable=False, unique=True)
+    password = db.Column(db.String(255), nullable=False, default='')
+    reset_password_token = db.Column(db.String(100), nullable=False, default='')
 
-    api_key = Column(Unicode(2000), default=make_uuid)
+    # User Email information
+    email = db.Column(db.String(255), nullable=False, unique=True)
+    confirmed_at = db.Column(db.DateTime())
 
-    admin = relationship('Team', secondary=team_admin_association_table, back_populates="admins", lazy='dynamic')
-    teams = relationship('Team', secondary=team_user_association_table, back_populates="users", lazy='dynamic')
-
-    status = Column(Unicode(20), default=User_Status.NEW.value)
-
-    projects = relationship('Project',
-        backref='user',
-        cascade='all, delete-orphan',
-        lazy='dynamic'
-    )
-
-    creation_date = Column(DateTime, default=datetime.utcnow)
-    update_date = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
-
-    def __init__(self, username='', name='', email='', password='', role=''):
-        self.api_key = make_uuid()
-        self.username = username
-        self.email = email
-        self.password = password
-        self.role = role
-
-    def is_authenticated(self):
-        return self.authenticated
-
-    def is_anonymous(self):
-        return self.anonymous
-
-    def is_global_admin(self):
-        return (self.admin.filter_by(name='global').count() > 0)
+    # User information
+    is_enabled = db.Column(db.Boolean(), nullable=False, default=False)
+    first_name = db.Column(db.String(50), nullable=False, default='')
+    last_name = db.Column(db.String(50), nullable=False, default='')
 
     def is_active(self):
-        return self.active
-
-    def get_id(self):
-        return unicode(self.id)
+      return self.is_enabled

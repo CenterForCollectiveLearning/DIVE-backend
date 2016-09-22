@@ -8,6 +8,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
 from flask.ext.cors import CORS
 from flask.ext.compress import Compress
+from flask.ext.user import UserManager, SQLAlchemyAdapter
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
 
@@ -28,9 +29,10 @@ class CustomSQLAlchemy(SQLAlchemy):
 # Initialize app-based objects
 sentry = Sentry()
 db = CustomSQLAlchemy()
-login_manager = LoginManager()
 cors = CORS()
 compress = Compress()
+login_manager = LoginManager()
+user_manager = UserManager()
 
 def create_app(**kwargs):
     '''
@@ -51,8 +53,12 @@ def create_app(**kwargs):
     if app.config.get('COMPRESS', True):
         compress.init_app(app)
 
+    # print app.config
     db.init_app(app)
-    login_manager.init_app(app)
+
+    from dive.base.db.models import User
+    db_adapter = SQLAlchemyAdapter(db, User)
+    user_manager = UserManager(db_adapter, app)
 
     cors.init_app(app,
         resources=r'/*',

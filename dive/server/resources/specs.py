@@ -1,6 +1,6 @@
 from flask import request, current_app
 from flask.ext.restful import Resource, reqparse
-from flask.ext.login import login_required
+from flask.ext.user import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify

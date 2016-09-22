@@ -5,7 +5,7 @@ import os
 import json
 from flask import request, make_response
 from flask.ext.restful import Resource, reqparse
-from flask.ext.login import login_required
+from flask.ext.user import login_required
 
 from dive.base.db import db_access
 from dive.worker.ingestion.constants import quantitative_types, categorical_types, temporal_types, specific_to_general_type
