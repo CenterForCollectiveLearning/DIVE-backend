@@ -24,13 +24,16 @@ logger = get_task_logger(__name__)
 def run_correlation_from_spec(spec, project_id, conditionals=[]):
     dataset_id = spec.get("datasetId")
     correlation_variables = spec.get("correlationVariables")
+    correlation_variables_names = correlation_variables
 
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    df = df.dropna()  # Remove unclean
 
-    correlation_result = run_correlation(df, correlation_variables)
+    df_subset = df[ correlation_variables_names ]
+    df_ready = df_subset.dropna(how='all')
+
+    correlation_result = run_correlation(df_ready, correlation_variables)
     return correlation_result, 200
 
 
@@ -44,18 +47,29 @@ def run_correlation(df, correlation_variables):
     correlation_result['headers'] = correlation_variables
     correlation_result['rows'] = []
 
-    data_columns = [ df[correlation_variable] for correlation_variable in correlation_variables ]
+    df_subset = df[correlation_variables]
+
+    # data_columns = [ df[correlation_variable] for correlation_variable in correlation_variables ]
     num_variables = len(correlation_variables)
 
-    for row in range(num_variables):
+    for row_index, row_name in enumerate(correlation_variables):
         row_data = []
-        for col in range(num_variables):
-            if row > col:
+        for col_index, col_name in enumerate(correlation_variables):
+            if row_index > col_index:
                 row_data.append([None, None])
+            elif row_index == col_index:
+                row_data.append([1.0, 0.0])
             else:
-                row_data.append(stats.pearsonr(data_columns[row], data_columns[col]))
-        correlation_result['rows'].append({'field': correlation_variables[row], 'data': row_data})
+                df_subset_pair = df_subset[[ row_name, col_name ]]
+                df_ready = df_subset_pair.dropna(how='any')
+                try:
+                    r2 = stats.pearsonr(df_ready[row_name], df_ready[col_name])
+                except Exception as e:
+                    r2 = 0
+                row_data.append(r2)
+        correlation_result['rows'].append({'field': row_name, 'data': row_data})
 
+    logger.info(correlation_result)
     return correlation_result
 
 
@@ -64,16 +78,16 @@ def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=
     dataset_id = correlation_spec['datasetId']
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna()  # Remove unclean
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    if len(df) > max_points:
-        df = df.sample(n=max_points)
 
     result = []
     for (var_a, var_b) in combinations(correlation_variables, 2):
+        df_subset_pair = df[[var_a, var_b]].dropna(how='any')
+        if len(df_subset_pair) > max_points:
+            df_subset_pair = df_subset_pair.sample(n=max_points)
         data_array = []
         header = [[ var_a, var_b ]]
-        for (a, b) in zip(df[var_a], df[var_b]):
+        for (a, b) in zip(df_subset_pair[var_a], df_subset_pair[var_b]):
             data_array.append([a, b])
         data = header + data_array
 
