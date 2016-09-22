@@ -83,9 +83,12 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
     # 2) Access dataset
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = df.dropna(axis=0, how='any')
 
-    return dependent_variable, independent_variables, interaction_terms, df
+    # Drop NAs
+    df_subset = df[[dependent_variable_name] + independent_variables_names]
+    df_ready = df_subset.dropna(axis=0, how='all')
+
+    return dependent_variable, independent_variables, interaction_terms, df_ready
 
 def get_full_field_documents_from_field_names(all_fields, names):
     fields = []

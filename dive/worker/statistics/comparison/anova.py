@@ -26,13 +26,17 @@ def run_anova_from_spec(spec, project_id, conditionals={}):
 
     dependent_variables = spec.get('dependentVariables', [])
     independent_variables = spec.get('independentVariables', [])
+    dependent_variables_names = dependent_variables
+    independent_variables_names = [ iv[1] for iv in independent_variables ]
     dataset_id = spec.get('datasetId')
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    df = df.dropna()  # Remove unclean
 
-    anova_result = run_anova(df, independent_variables, dependent_variables)
+    df_subset = df[ dependent_variables_names + independent_variables_names ]
+    df_ready = df_subset.dropna(how='all')  # Remove unclean
+
+    anova_result = run_anova(df_ready, independent_variables, dependent_variables)
     return anova_result, 200
 
 
