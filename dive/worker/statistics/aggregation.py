@@ -17,26 +17,41 @@ def create_one_dimensional_contingency_table_from_spec(spec, project_id, conditi
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
+    fields = []
+    if dep_variable:
+        fields.append(dep_variable[1])
+    fields.append(aggregation_variable[1])
+
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    df = df.dropna()  # Remove unclean
 
-    aggregation_result = create_one_dimensional_contingency_table(df, aggregation_variable, dep_variable)
+    df_subset = df[ fields ]
+    df_ready = df_subset.dropna(how='any')  # Remove unclean
+
+    aggregation_result = create_one_dimensional_contingency_table(df_ready, aggregation_variable, dep_variable)
     return aggregation_result, 200
 
 
 def create_contingency_table_from_spec(spec, project_id, conditionals=[]):
     aggregation_variables = spec.get("aggregationVariables")
+    aggregation_variables_names = [ av[1] for av in aggregation_variables ]
     dataset_id = spec.get("datasetId")
     dep_variable = spec.get("dependentVariable", [])
 
+    fields = []
+    if dep_variable:
+        fields.append(dep_variable[1])
+    fields = fields + aggregation_variables_names
+
     with task_app.app_context():
         df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    df = df.dropna()  # Remove unclean
 
-    aggregation_result = create_contingency_table(df, aggregation_variables, dep_variable)
+    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+    df_subset = df[ fields ]
+    df_ready = df_subset.dropna(how='any')  # Remove unclean
+
+    aggregation_result = create_contingency_table(df_ready, aggregation_variables, dep_variable)
     return aggregation_result, 200
 
 def run_aggregation_from_spec(spec, project_id, conditionals=[]):
@@ -341,14 +356,15 @@ def create_one_dimensional_contingency_table(df, aggregation_variable, dep_varia
         unique_indep_values = get_unique(df[aggregation_variable[1]], True)
         variable_type_aggregation.append(('cat', aggregation_variable[1]))
     elif aggregation_variable[0] == 'q':
-        (binningEdges, names) = get_binning_edges_and_names(df[aggregation_variable[1]], aggregation_variable[2])
-        num_bins = len(binningEdges) -1
+        values = df[aggregation_variable[1]].dropna(how='any')
+        config = aggregation_variable[2]
+        (binning_edges, names) = get_binning_edges_and_names(values, config)
+        num_bins = len(binning_edges) -1
         unique_indep_values = names
-        variable_type_aggregation.append(('num', [aggregation_variable[1],num_bins], binningEdges, names))
+        variable_type_aggregation.append(('num', [aggregation_variable[1], num_bins], binning_edges, names))
 
     if dep_variable:
         (results_dict, aggregationMean) = create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values)
-
     else:
         results_dict = create_one_dimensional_contingency_table_with_no_dependent_variable(df, variable_type_aggregation, unique_indep_values)
 
@@ -515,10 +531,14 @@ def create_contingency_table(df, aggregation_variables, dep_variable):
             unique_indep_values.append(get_unique(df[var[1]], True))
             variable_type_aggregation.append(('cat', var[1]))
         elif var[0] == 'q':
-            (binningEdges, names) = get_binning_edges_and_names(df[var[1]], var[2])
-            num_bins = len(binningEdges) - 1
+            name = var[1]
+            config = var[2]
+            values = df[name].dropna(how='any')
+            (binning_edges, names) = get_binning_edges_and_names(values, config)
+
+            num_bins = len(binning_edges) - 1
             unique_indep_values.append(names)
-            variable_type_aggregation.append(('num', [var[1], num_bins], binningEdges, names))
+            variable_type_aggregation.append(('num', [name, num_bins], binning_edges, names))
 
     if dep_variable:
         (results_dict, aggregationMean) = create_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values)
@@ -549,6 +569,7 @@ def create_contingency_table(df, aggregation_variables, dep_variable):
     if not aggregationMean:
         formatted_results_dict['column_totals'] = list(column_totals)
     return formatted_results_dict
+
 
 def get_binning_edges_and_names(array, config):
     procedure = config.get('binning_procedure', 'freedman')
