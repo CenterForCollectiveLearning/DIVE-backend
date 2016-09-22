@@ -37,7 +37,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
         logger.info('Accessing from IMD, project_id: %s, dataset_id: %s', project_id, dataset_id)
         df = IMD.getData(dataset_id)
         return df
-        
+
     logger.debug('Accessing from read, project_id: %s, dataset_id: %s', project_id, dataset_id)
 
     dataset = db_access.get_dataset(project_id, dataset_id)

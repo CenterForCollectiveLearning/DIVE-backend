@@ -38,32 +38,37 @@ class TaskResult(Resource):
     '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)
-        state = {
+        result = {
             'currentTask': '',
             'state': task.state
         }
+        state = task.state
 
-        # logger.debug('%s: %s', task_id, task.state)
-
-        if task.state == states.PENDING:
-            if (task.info) and (task.info.get('desc')):
-                state['currentTask'] = task.info.get('desc'),
+        if state == states.PENDING:
+            try:
+                if (task.info) and (task.info.get('desc')):
+                    result['currentTask'] = task.info.get('desc')
+            except AttributeError:
+                if (task.info):
+                    state = states.FAILURE
+                    result['state'] = states.FAILURE
+                    result['currentTask'] = task.info
             logger.info('PENDING %s: %s', task_id, state)
 
-        elif task.state == states.SUCCESS:
+        elif state == states.SUCCESS:
             if task.info:
-                state['result'] = task.info.get('result')
+                result['result'] = task.info.get('result')
 
-        elif task.state == states.FAILURE:
+        elif state == states.FAILURE:
             if task.info:
                 try:
-                    state['error'] = task.info.get('error')
+                    result['error'] = task.info.get('error')
                 except Exception as e:
-                    state['error'] = 'Unknown error occurred'
+                    result['error'] = 'Unknown error occurred'
 
-        response = jsonify(state)
-        if task.state == states.PENDING:
+        response = jsonify(result)
+        if state == states.PENDING:
             response.status_code = 202
-        elif task.state == states.FAILURE:
+        elif state == states.FAILURE:
             response.status_code = 500
         return response
