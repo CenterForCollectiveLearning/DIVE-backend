@@ -544,11 +544,11 @@ class User(db.Model):
 
 
 def rel_listener(t, v, i):
-    t.last_modified = datetime.utcnow()
+    t.update_date = datetime.utcnow()
 
 def listener(t, v, o, i):
-    if t.last_modified:
-        t.last_modified = datetime.utcnow()
+    if t.update_date:
+        t.update_date = datetime.utcnow()
 
 from sqlalchemy import inspect
 
