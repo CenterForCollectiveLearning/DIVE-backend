@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
+from sqlalchemy import event
 from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float
+# from sqlalchemy.event import listens_for
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
@@ -10,6 +12,7 @@ from dive.base.db import ModelName
 
 def make_uuid():
     return unicode(uuid.uuid4())
+
 
 class Project(db.Model):
     __tablename__ = ModelName.PROJECT.value
@@ -36,6 +39,21 @@ class Project(db.Model):
         lazy='dynamic')
 
     documents = relationship('Document',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    regressions = relationship('Regression',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    field_properties = relationship('Field_Properties',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    dataset_properties = relationship('Dataset_Properties',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
@@ -110,7 +128,6 @@ class Dataset_Properties(db.Model):
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -143,8 +160,6 @@ class Field_Properties(db.Model):
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
-    project = relationship(Project)
-
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
@@ -171,6 +186,9 @@ class Spec(db.Model):
     selected_fields = Column(JSONB)
     conditionals = Column(JSONB)
     config = Column(JSONB)
+
+    clicks = Column(Integer, default=0)
+    views = Column(Integer, default=0)
 
     # One-to-many with exported specs
     exported_specs = relationship('Exported_Spec',
@@ -244,7 +262,6 @@ class Regression(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -524,3 +541,21 @@ class User(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+
+def rel_listener(t, v, i):
+    t.last_modified = datetime.utcnow()
+
+def listener(t, v, o, i):
+    if t.last_modified:
+        t.last_modified = datetime.utcnow()
+
+from sqlalchemy import inspect
+
+for rel in inspect(Project).relationships:
+    event.listen(rel, 'append', rel_listener)
+    event.listen(rel, 'remove', rel_listener)
+
+for table in [ Dataset, Dataset_Properties, Field_Properties, Spec, Document, Regression, Correlation ]:
+    for col in inspect(table).column_attrs:
+        event.listen(col, 'set', listener)
