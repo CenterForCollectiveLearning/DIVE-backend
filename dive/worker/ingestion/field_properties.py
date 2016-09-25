@@ -149,6 +149,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]
+        field_values_no_na = field_values.dropna(how='any')
 
         field_type = field_properties[i]['type']
         general_type = field_properties[i]['general_type']
@@ -158,7 +159,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
 
         contiguous = False
         if field_type == 'integer':
-            contiguous = detect_contiguous_integers(field_values)
+            contiguous = detect_contiguous_integers(field_values_no_na)
 
         # Unique values for categorical fields
         if general_type is 'c':
