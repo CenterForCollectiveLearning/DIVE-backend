@@ -1,5 +1,5 @@
 from itertools import combinations
-from dive.worker.visualization import GeneratingProcedure as GP, TypeStructure as TS, \
+from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     TermType, aggregation_functions, VizType as VT
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
 
@@ -65,7 +65,7 @@ def single_q_multi_c(c_fields, q_field):
             spec_1 = {
                 'generating_procedure': GP.MULTIGROUP_AGG.value,
                 'type_structure': TS.liC_Q.value,
-                'viz_types': [ VT.STACKED_BAR.value ],
+                'viz_types': [ VT.GRID.value, VT.STACKED_BAR.value ],
                 'field_ids': [ c_field_a['id'], c_field_b['id'], q_field['id'] ],
                 'args': {
                     'grouped_field_a': c_field_a,
