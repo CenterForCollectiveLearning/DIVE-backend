@@ -21,7 +21,7 @@ def multi_c(c_fields):
         spec_1 = {
             'generating_procedure': GP.MULTIGROUP_COUNT.value,
             'type_structure': TS.liC_Q.value,
-            'viz_types': [ VT.STACKED_BAR.value ],
+            'viz_types': [ VT.GRID.value, VT.STACKED_BAR.value ],
             'field_ids': [ c_field_a['id'], c_field_b['id'] ],
 
             'args': {
