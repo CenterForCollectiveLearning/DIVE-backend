@@ -18,7 +18,7 @@ from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.ingestion.type_detection import detect_time_series
 from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals
-from dive.worker.visualization import GeneratingProcedure, TypeStructure, aggregation_functions
+from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure, aggregation_functions
 
 from time import time
 
