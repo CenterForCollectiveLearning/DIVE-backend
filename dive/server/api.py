@@ -10,6 +10,8 @@ from dive.server.resources.statistics_resources import AnovaFromSpec, Correlatio
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, InteractionTerms, \
     ContributionToRSquared, CorrelationScatterplot, AnovaBoxplotFromSpec, PairwiseComparisonFromSpec
 
+from dive.server.resources.export import ExportStoryToPowerpoint
+from dive.server.resources.exported_results import ExportedResults
 from dive.server.resources.exported_results import ExportedResults
 from dive.server.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
 from dive.server.resources.exported_analyses import ExportedRegression, DataFromExportedRegression, \
@@ -76,6 +78,8 @@ def add_resources(api):
 
     api.add_resource(ExportedAggregation,               '/exported_aggregation/v1/exported_aggregation')
     api.add_resource(DataFromExportedAggregation,       '/exported_aggregation/v1/exported_aggregation/<string:exported_spec_id>/data')
+
+    api.add_resource(ExportStoryToPowerpoint,       '/export/v1/powerpoint')
 
     api.add_resource(Documents,                     '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
