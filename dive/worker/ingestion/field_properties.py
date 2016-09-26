@@ -151,6 +151,8 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         field_values = df[field_name]
         field_values_no_na = field_values.dropna(how='any')
 
+        num_na = len(field_values) - len(field_values_no_na)
+
         field_type = field_properties[i]['type']
         general_type = field_properties[i]['general_type']
 
@@ -221,6 +223,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
             'viz_data': viz_data,
             'is_id': is_id,
             'stats': stats,
+            'num_na': num_na,
             'normality': normality,
             'is_unique': is_unique,
             'unique_values': unique_values,
