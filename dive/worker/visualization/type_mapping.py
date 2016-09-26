@@ -1,4 +1,4 @@
-from dive.worker.visualization import TypeStructure as TS
+from dive.worker.visualization.constants import TypeStructure as TS
 
 import logging
 logger = logging.getLogger(__name__)
