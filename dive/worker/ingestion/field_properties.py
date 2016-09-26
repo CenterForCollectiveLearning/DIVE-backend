@@ -158,8 +158,13 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         is_unique = detect_unique_list(field_values)
 
         contiguous = False
+        # Only adding contiguity if number of unique integers <= 30 (arbitrary)
+        # Right now just a workaround for not having proper ordinal handling
+        max_contiguous_fields = 20
         if field_type == 'integer':
-            contiguous = detect_contiguous_integers(field_values_no_na)
+            value_range = max(field_values_no_na) - min(field_values_no_na) + 1
+            if (value_range <= max_contiguous_fields):
+                contiguous = detect_contiguous_integers(field_values_no_na)
 
         # Unique values for categorical fields
         if general_type is 'c':
