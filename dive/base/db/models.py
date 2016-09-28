@@ -417,6 +417,29 @@ class Exported_Correlation(db.Model):
                         onupdate=datetime.utcnow)
 
 
+class Feedback(db.Model):
+    __tablename__ = ModelName.FEEDBACK.value
+    id = Column(Integer, primary_key=True)
+
+    feedback_type = Column(Unicode(250))
+    description = Column(Unicode(2000))
+
+    user_id = Column(Integer, ForeignKey('user.id',
+        onupdate='CASCADE', ondelete='CASCADE'))
+
+    user_email = Column(Unicode(50))
+    user_username = Column(Unicode(50))
+
+    project_id = Column(Integer, ForeignKey('project.id',
+        onupdate='CASCADE', ondelete='CASCADE'), index=True)
+
+    project = relationship(Project)
+
+    creation_date = Column(DateTime, default=datetime.utcnow)
+    update_date = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
 class Relationship(db.Model):
     '''
     Relationships between fields in different datasets
