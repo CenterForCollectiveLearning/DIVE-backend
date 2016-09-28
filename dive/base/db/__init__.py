@@ -34,6 +34,7 @@ class ModelName(Enum):
     RELATIONSHIP = 'relationship'
     TEAM = 'team'
     USER = 'user'
+    FEEDBACK = 'feedback'
 
 
 def row_to_dict(r, custom_fields=[]):
