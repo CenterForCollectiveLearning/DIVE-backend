@@ -13,7 +13,7 @@ from dive.base.core import db
 from dive.base.db import ModelName, row_to_dict
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Team, User, \
-    Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation
+    Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation, Feedback
 from dive.server.resources import ContentType
 
 import logging
@@ -786,3 +786,20 @@ def delete_document(project_id, document_id):
     db.session.delete(document)
     db.session.commit()
     return row_to_dict(document)
+
+
+################
+# Feedback
+################
+def submit_feedback(project_id, user_id, user_email, user_username, feedback_type, description):
+    feedback = Feedback(
+        project_id=project_id,
+        user_id=user_id,
+        user_email=user_email,
+        user_username=user_username,
+        feedback_type=feedback_type,
+        description=description
+    )
+    db.session.add(feedback)
+    db.session.commit()
+    return row_to_dict(feedback)
