@@ -20,6 +20,8 @@ from dive.server.resources.transform import Reduce, Unpivot, Join
 from dive.server.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
 from dive.server.resources.auth_resources import Register, Login, Logout, User
 
+from dive.server.resources.feedback import Feedback
+
 from flask.ext.restful import Resource
 
 
@@ -74,8 +76,8 @@ def add_resources(api):
     api.add_resource(ExportedCorrelation,           '/exported_correlation/v1/exported_correlation')
     api.add_resource(DataFromExportedCorrelation,   '/exported_correlation/v1/exported_correlation/<string:exported_spec_id>/data')
 
-    api.add_resource(ExportedAggregation,               '/exported_aggregation/v1/exported_aggregation')
-    api.add_resource(DataFromExportedAggregation,       '/exported_aggregation/v1/exported_aggregation/<string:exported_spec_id>/data')
+    api.add_resource(ExportedAggregation,           '/exported_aggregation/v1/exported_aggregation')
+    api.add_resource(DataFromExportedAggregation,   '/exported_aggregation/v1/exported_aggregation/<string:exported_spec_id>/data')
 
     api.add_resource(Documents,                     '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
@@ -85,5 +87,7 @@ def add_resources(api):
     api.add_resource(Login,                         '/auth/v1/login')
     api.add_resource(Logout,                        '/auth/v1/logout')
     api.add_resource(User,                          '/auth/v1/user')
+
+    api.add_resource(Feedback,                      '/feedback/v1/feedback')
 
     return api
