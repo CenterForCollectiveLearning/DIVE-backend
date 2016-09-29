@@ -4,7 +4,7 @@ import pandas as pd
 from dive.base.db import db_access
 from dive.base.data.access import get_data
 from dive.worker.core import celery, task_app
-from dive.worker.ingestion.upload import save_dataset
+from dive.worker.ingestion.upload import save_dataset_to_db
 from dive.worker.transformation.utilities import list_elements_from_indices, get_transformed_file_name
 
 from celery.utils.log import get_task_logger

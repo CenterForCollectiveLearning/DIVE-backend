@@ -2,7 +2,7 @@ export MODE="PRODUCTION"
 export SITE_TITLE="dive"
 export SECRET_KEY="dive"
 export DIVE_COOKIE_DOMAIN=".usedive.com"
-export STORAGE_TYPE="file"
+export STORAGE_TYPE="s3"
 
 export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
 
@@ -12,3 +12,14 @@ export SQLALCHEMY_DATABASE_NAME="dive"
 export SQLALCHEMY_DATABASE_USER="diveuser"
 export SQLALCHEMY_DATABASE_PASSWORD="electr0n"
 export SQLALCHEMY_DATABASE_ENDPOINT="divedb.cpmsy9duer4d.us-west-2.rds.amazonaws.com:5432"
+
+export AWS_ACCESS_KEY_ID="AKIAJJTBFKNV5DML6LFQ"
+export AWS_SECRET_ACCESS_KEY="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"
+export AWS_REGION="us-east-1"
+
+
+# SPENDB_MAIL_SERVER=smtp.mandrillapp.com
+# SPENDB_MAIL_PORT=587
+# SPENDB_MAIL_USERNAME=
+# SPENDB_MAIL_PASSWORD=
+# SPENDB_MAIL_DEFAULT_SENDER=
