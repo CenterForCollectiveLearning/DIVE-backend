@@ -23,8 +23,21 @@ logger = logging.getLogger(__name__)
 locale.setlocale(locale.LC_NUMERIC, '')
 
 
-def get_path(project_id, file_name, file_type, storage):
-    return
+def delete_dataset(project_id, dataset_id):
+    deleted_dataset = db_access.delete_dataset(project_id, dataset_id)
+    if deleted_dataset['storage_type'] == 's3':
+        s3 = boto3.client('s3',
+            aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
+            region_name=current_app.config['AWS_REGION']
+        )
+        file_obj = s3.delete_object(
+            Bucket=current_app.config['AWS_DATA_BUCKET'],
+            Key="%s/%s" % (project_id, deleted_dataset['file_name'])
+        )
+    elif deleted_dataset['storage_type'] == 'file':
+        os.remove(deleted_dataset['path'])
+    return deleted_dataset
 
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
@@ -55,7 +68,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
             aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
             region_name=current_app.config['AWS_REGION']
         )
-        print current_app.config, current_app.config['AWS_DATA_BUCKET']
         file_obj = s3.get_object(
             Bucket=current_app.config['AWS_DATA_BUCKET'],
             Key="%s/%s" % (project_id, dataset['file_name'])
