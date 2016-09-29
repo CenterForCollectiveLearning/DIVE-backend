@@ -6,12 +6,14 @@ TODO Rename either this or access.py to be more descriptive
 import locale
 
 import os
+import boto3
 import numpy as np
 import pandas as pd
 from flask.ext.restful import abort
 
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.db import db_access
+from flask import current_app
 from dive.worker.core import task_app
 from time import time
 
@@ -23,7 +25,7 @@ locale.setlocale(locale.LC_NUMERIC, '')
 
 def get_path(project_id, file_name, file_type, storage):
     return
-    
+
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
@@ -47,11 +49,26 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     dataset = db_access.get_dataset(project_id, dataset_id)
     dialect = dataset['dialect']
 
+    if dataset['storage_type'] == 's3':
+        s3 = boto3.client('s3',
+            aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
+            region_name=current_app.config['AWS_REGION']
+        )
+        print current_app.config, current_app.config['AWS_DATA_BUCKET']
+        file_obj = s3.get_object(
+            Bucket=current_app.config['AWS_DATA_BUCKET'],
+            Key="%s/%s" % (project_id, dataset['file_name'])
+        )
+        accessor = file_obj['Body']
+    if dataset['storage_type'] == 'file':
+        accessor = dataset['path']
+
     if not field_properties:
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
     df = pd.read_table(
-        dataset['path'],
+        accessor,
         skiprows = dataset['offset'],
         sep = dialect['delimiter'],
         engine = 'c',
