@@ -127,14 +127,18 @@ def upload_file(project_id, file_obj):
     return datasets
 
 
-def get_dialect(file_obj):
+def get_dialect(file_obj, sample_size=1024*1024):
     '''
     TODO Use file extension as an indication?
     TODO list of delimiters
     '''
     DELIMITERS = ''.join([',', ';', '|', '$', ';', ' ', ' | ', '\t'])
 
-    sample = file_obj.readline()
+    try:
+        sample = file_obj.read(sample_size)
+    except StopIteration:
+        sample = file_obj.readline()
+    file_obj.seek(0)
 
     sniffer = csv.Sniffer()
     dialect = sniffer.sniff(sample)
