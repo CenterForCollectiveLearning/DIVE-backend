@@ -58,7 +58,7 @@ class Dataset(db.Model):
     title = Column(Unicode(250))
     description = Column(Unicode())
 
-    storage = Column(Unicode(10))
+    storage_type = Column(Unicode(10))
     offset = Column(Integer)
     dialect = Column(JSONB)
     path = Column(Unicode(250))

@@ -15,6 +15,7 @@ export SQLALCHEMY_DATABASE_ENDPOINT=".cpmsy9duer4d.us-west-2.rds.amazonaws.com:5
 
 export AWS_ACCESS_KEY_ID=***REMOVED***
 export AWS_SECRET_ACCESS_KEY=***REMOVED***
+export AWS_DATA_BUCKET=***REMOVED***
 export AWS_REGION=***REMOVED***
 
 
