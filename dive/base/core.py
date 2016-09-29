@@ -2,6 +2,7 @@ import os
 import sys
 import pandas.json as pjson
 
+import boto3
 import psycopg2.extras
 from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -25,12 +26,16 @@ class CustomSQLAlchemy(SQLAlchemy):
             options["json_serializer"] = pjson.dumps
         return super(CustomSQLAlchemy, self).apply_driver_hacks(app, info, options)
 
+
 # Initialize app-based objects
 sentry = Sentry()
 db = CustomSQLAlchemy()
 login_manager = LoginManager()
 cors = CORS()
 compress = Compress()
+s3 = None
+s3_bucket = None
+
 
 def create_app(**kwargs):
     '''

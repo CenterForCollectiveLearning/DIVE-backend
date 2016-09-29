@@ -14,86 +14,32 @@ import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import current_app
 
+from dive.base.core import s3_bucket
 from dive.base.db import db_access
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data
 from dive.base.data.in_memory_data import InMemoryData as IMD
 
-from boto.s3.cors import CORSConfiguration
-from boto.exception import S3ResponseError
+import boto3
+# import boto.s3
+# from boto.s3.cors import CORSConfiguration
+# from boto.exception import S3ResponseError
 
 import logging
 logger = logging.getLogger(__name__)
 
-def enable_bucket_cors(bucket):
-    """ For direct upload to work, the bucket needs to enable
-    cross-origin request scripting. """
+
+def save_fileobj(fileobj, project_id, file_name):
+    s3 = boto3.resource('s3',
+        aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
+        region_name=current_app.config['AWS_REGION']
+    )
+    s3_bucket = s3.Bucket(current_app.config['AWS_DATA_BUCKET'])
     try:
-        cors_cfg = bucket.get_cors()
-    except S3ResponseError:
-        cors_cfg = CORSConfiguration()
-    rules = [r.id for r in cors_cfg]
-    changed = False
-    if 'spendb_put' not in rules:
-        cors_cfg.add_rule(['PUT', 'POST'], '*',
-                          allowed_header='*',
-                          id='spendb_put',
-                          max_age_seconds=3000,
-                          expose_header='x-amz-server-side-encryption')
-        changed = True
-    if 'spendb_get' not in rules:
-        cors_cfg.add_rule('GET', '*', id='spendb_get')
-        changed = True
-
-    if changed:
-        bucket.set_cors(cors_cfg)
-
-
-def generate_s3_upload_policy(source, file_name, mime_type):
-    """ Generate a policy and signature for uploading a file directly to
-    the specified source on S3. """
-    obj = source._obj
-    if not hasattr(obj, 'key'):
-        return {
-            'status': 'error',
-            'message': 'Backend is not on S3, cannot generate signature.'
-        }
-
-    enable_bucket_cors(obj.store.bucket)
-    url = obj.key.generate_url(expires_in=0, force_http=True,
-                               query_auth=False)
-    url = url.split(obj.key.name)[0]
-
-    if 'https' in current_app.config.get('PREFERRED_URL_SCHEME'):
-        url = url.replace('http://', 'https://')
-
-    data = {
-        'url': url,
-        'status': 'ok',
-        'key': obj.key.name,
-        'source_name': source.name,
-        'aws_key_id': obj.store.aws_key_id,
-        'acl': 'public-read',
-        'file_name': file_name,
-        'mime_type': mime_type
-    }
-    expire = datetime.utcnow() + timedelta(days=7)
-    expire, ms = expire.isoformat().split('.')
-    policy = {
-        "expiration": expire + "Z",
-        "conditions": [
-            {"bucket": obj.store.bucket_name},
-            ["starts-with", "$key", data['key']],
-            {"acl": data['acl']}
-        ]
-    }
-
-    # data['raw_policy'] = json.dumps(policy)
-    data['policy'] = b64encode(json.dumps(policy))
-    data['signature'] = b64encode(hmac.new(obj.store.aws_secret,
-                                           data['policy'],
-                                           hashlib.sha1).digest())
-    return data
+        result = s3_bucket.upload_fileobj(fileobj, "%s/%s" % (project_id, file_name))
+    except Exception as e:
+        logger.error(e, exc_info=True)
 
 
 def upload_file(project_id, file):
@@ -106,23 +52,52 @@ def upload_file(project_id, file):
     file_title = foo
     '''
     file_name = secure_filename(file.filename)
-
-    # TODO Create file_type enum
     file_title, file_type = file_name.rsplit('.', 1)
-    path = os.path.join(current_app.config['STORAGE_PATH'], project_id, file_name)
 
-    # Ensure project directory exists
-    project_dir = os.path.join(current_app.config['STORAGE_PATH'], project_id)
-    if not os.path.isdir(project_dir):
-        os.mkdir(os.path.join(project_dir))
 
-    if file_type in ['csv', 'tsv', 'txt', 'json'] or file_type.startswith('xls'):
-        try:
-            file.save(path)
-        except IOError:
-            logger.error('Error saving file with path %s', path, exc_info=True)
+    # s3_conn = boto.connect_s3(
+    #     current_app.config['AWS_ACCESS_KEY'],
+    #     current_app.config['AWS_SECRET_KEY'],
+    #     host=current_app.config['AWS_HOST']
+    # )
+    # s3 = boto3.resource('s3')
+    # for bucket in s3.buckets.all():
+    #     print(bucket.name)
 
-    datasets = save_dataset(project_id, file_title, file_name, file_type, path)
+    # bucket = s3_conn.get_bucket(current_app.config['AWS_DATA_BUCKET'])
+    # # CREATE PROJECT ID DIR IF NEEDED
+    # print bucket
+    # # generate_s3_upload_policy(bucket)
+    #
+    # # TODO Create file_type enum
+    # file_title, file_type = file_name.rsplit('.', 1)
+    # key = boto.s3.key.Key(bucket, file_name)
+    # key.send_file(
+    #     file,
+    #     chunked_transfer=False
+    # )
+    # print 'Sent file'
+    # path = os.path.join(current_app.config['STORAGE_PATH'], project_id, file_name)
+    #
+    # # Ensure project directory exists
+    # project_dir = os.path.join(current_app.config['STORAGE_PATH'], project_id)
+    # if not os.path.isdir(project_dir):
+    #     os.mkdir(os.path.join(project_dir))
+    #
+    # if file_type in ['csv', 'tsv', 'txt', 'json'] or file_type.startswith('xls'):
+    #     try:
+    #         file.save(path)
+    #     except IOError:
+    #         logger.error('Error saving file with path %s', path, exc_info=True)
+    #
+    datasets = save_dataset_to_db(
+        project_id,
+        file_title,
+        file_name,
+        file_type,
+        path,
+        storage=current_app.config['STORAGE_TYPE']
+    )
     return datasets
 
 
@@ -148,7 +123,7 @@ def get_dialect(f):
     return result
 
 
-def save_dataset(project_id, file_title, file_name, file_type, path):
+def save_dataset_to_db(project_id, file_title, file_name, file_type, path, storage_type):
     file_docs = []
     if file_type in ['csv', 'tsv', 'txt'] :
         file_doc = {
@@ -182,7 +157,8 @@ def save_dataset(project_id, file_title, file_name, file_type, path):
                 offset = None,
                 title = file_doc['file_title'],
                 file_name = file_doc['file_name'],
-                type = file_doc['type']
+                type = file_doc['type'],
+                storage_type = storage_type
             )
             datasets.append(dataset)
 

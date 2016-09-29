@@ -28,7 +28,15 @@ class BaseConfig(object):
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     # Resources
-    STORAGE_TYPE = 'file'
+    STORAGE_TYPE = 's3'
+    # STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    if STORAGE_TYPE == 'file':
+        STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
+    else:
+        AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+        AWS_DATA_BUCKET = env('AWS_DATA_BUCKET')
+        AWS_REGION = env('AWS_REGION')
     STORAGE_PATH = base_dir_path('uploads')
     PRELOADED_PATH = base_dir_path('preloaded')
     ALEMBIC_DIR = base_dir_path('migrate')
