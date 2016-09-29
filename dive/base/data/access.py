@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 locale.setlocale(locale.LC_NUMERIC, '')
 
 
+def get_path(project_id, file_name, file_type, storage):
+    return
+    
+
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
@@ -149,10 +153,9 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
     if not (and_clause_list or or_clause_list):
         return df
 
-    with task_app.app_context():
-        desired_keys = ['general_type', 'name', 'id']
-        raw_field_properties = db_access.get_field_properties(project_id, dataset_id)
-        all_field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
+    desired_keys = ['general_type', 'name', 'id']
+    raw_field_properties = db_access.get_field_properties(project_id, dataset_id)
+    all_field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 
     query_strings = {
         'and': '',

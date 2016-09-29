@@ -14,7 +14,7 @@ from dive.base.db.constants import Role
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
-from dive.worker.ingestion.upload import save_dataset
+from dive.worker.ingestion.upload import save_dataset_to_db
 
 excluded_filetypes = ['json', 'py', 'yaml']
 

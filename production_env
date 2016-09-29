@@ -2,7 +2,7 @@ export MODE="PRODUCTION"
 ***REMOVED***
 ***REMOVED***
 export DIVE_COOKIE_DOMAIN=".usedive.com"
-export STORAGE_TYPE="file"
+export STORAGE_TYPE="s3"
 
 export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
 
@@ -12,3 +12,14 @@ export SQLALCHEMY_DATABASE_NAME="dive"
 export SQLALCHEMY_DATABASE_USER=***REMOVED***
 export SQLALCHEMY_DATABASE_PASSWORD=***REMOVED***
 export SQLALCHEMY_DATABASE_ENDPOINT=".cpmsy9duer4d.us-west-2.rds.amazonaws.com:5432"
+
+export AWS_ACCESS_KEY_ID=***REMOVED***
+export AWS_SECRET_ACCESS_KEY=***REMOVED***
+export AWS_REGION=***REMOVED***
+
+
+# SPENDB_MAIL_SERVER=
+# SPENDB_MAIL_PORT=587
+# SPENDB_MAIL_USERNAME=
+# SPENDB_MAIL_PASSWORD=
+# SPENDB_MAIL_DEFAULT_SENDER=
