@@ -30,19 +30,31 @@ logger = logging.getLogger(__name__)
 
 
 def save_fileobj(fileobj, project_id, file_name):
-    s3 = boto3.resource('s3',
+    s3 = boto3.client('s3',
         aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
         aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
         region_name=current_app.config['AWS_REGION']
     )
-    s3_bucket = s3.Bucket(current_app.config['AWS_DATA_BUCKET'])
     try:
-        result = s3_bucket.upload_fileobj(fileobj, "%s/%s" % (project_id, file_name))
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params = {
+                'Bucket': current_app.config['AWS_DATA_BUCKET'],
+                'Key': file_name
+            },
+            ExpiresIn = 86400
+        )
+        s3.upload_fileobj(
+            fileobj,
+            current_app.config['AWS_DATA_BUCKET'],
+            "%s/%s" % (project_id, file_name)
+        )
     except Exception as e:
         logger.error(e, exc_info=True)
+    return url
 
 
-def upload_file(project_id, file):
+def upload_file(project_id, file_obj):
     '''
     1. Save file in uploads/project_id directory
     2. If excel or json, also save CSV versions
@@ -51,10 +63,20 @@ def upload_file(project_id, file):
     file_name = foo.csv
     file_title = foo
     '''
-    file_name = secure_filename(file.filename)
+    file_name = secure_filename(file_obj.filename)
     file_title, file_type = file_name.rsplit('.', 1)
 
+    dialect = get_dialect(file_obj)
+    file_obj.read(0)
+    url = save_fileobj(file_obj, project_id, file_name)
 
+    if current_app.config['STORAGE_TYPE'] == 'file':
+        path = os.path.join(current_app.config['STORAGE_PATH'], project_id, file_name)
+    elif current_app.config['STORAGE_TYPE'] == 's3':
+        path = 'https://s3.amazonaws.com/%s/%s/%s' % (current_app.config['AWS_DATA_BUCKET'], project_id, file_name)
+
+    # print df
+    # file_obj.close()
     # s3_conn = boto.connect_s3(
     #     current_app.config['AWS_ACCESS_KEY'],
     #     current_app.config['AWS_SECRET_KEY'],
@@ -90,25 +112,29 @@ def upload_file(project_id, file):
     #     except IOError:
     #         logger.error('Error saving file with path %s', path, exc_info=True)
     #
+
     datasets = save_dataset_to_db(
         project_id,
+        file_obj,
+        dialect,
         file_title,
         file_name,
         file_type,
         path,
-        storage=current_app.config['STORAGE_TYPE']
+        current_app.config['STORAGE_TYPE']
     )
+    file_obj.close()
     return datasets
 
 
-def get_dialect(f):
+def get_dialect(file_obj):
     '''
     TODO Use file extension as an indication?
     TODO list of delimiters
     '''
     DELIMITERS = ''.join([',', ';', '|', '$', ';', ' ', ' | ', '\t'])
-    f.seek(0)
-    sample = f.readline()
+
+    sample = file_obj.readline()
 
     sniffer = csv.Sniffer()
     dialect = sniffer.sniff(sample)
@@ -123,7 +149,7 @@ def get_dialect(f):
     return result
 
 
-def save_dataset_to_db(project_id, file_title, file_name, file_type, path, storage_type):
+def save_dataset_to_db(project_id, file_obj, dialect, file_title, file_name, file_type, path, storage_type):
     file_docs = []
     if file_type in ['csv', 'tsv', 'txt'] :
         file_doc = {
@@ -147,10 +173,9 @@ def save_dataset_to_db(project_id, file_title, file_name, file_type, path, stora
 
         # Get pre-read dataset properties (all data needed to correctly read)
         # Insert into database
-        with open(path, 'rb') as f:
-            dialect = get_dialect(f)
+        # dialect = get_dialect(file_obj)
 
-        with task_app.app_context():
+        with current_app.app_context():
             dataset = db_access.insert_dataset(project_id,
                 path = path,
                 dialect = dialect,
