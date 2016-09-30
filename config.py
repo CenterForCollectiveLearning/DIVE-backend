@@ -28,16 +28,14 @@ class BaseConfig(object):
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     # Resources
-    STORAGE_TYPE = 's3'
-    # STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
     if STORAGE_TYPE == 'file':
-        STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
+        STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
     else:
-        AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
-        AWS_DATA_BUCKET = env('AWS_DATA_BUCKET')
-        AWS_REGION = env('AWS_REGION')
-    STORAGE_PATH = base_dir_path('uploads')
+        AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+        AWS_REGION = env('DIVE_AWS_REGION')
     PRELOADED_PATH = base_dir_path('preloaded')
     ALEMBIC_DIR = base_dir_path('migrate')
 
@@ -83,18 +81,9 @@ class ProductionConfig(BaseConfig):
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
-    # Resources
-    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 's3')
-    if STORAGE_TYPE == 'file':
-        STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
-    else:
-        AWS_KEY_ID = env('DIVE_AWS_KEY_ID')
-        AWS_SECRET = env('DIVE_AWS_SECRET')
-        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-
     # DB
-    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
 
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
@@ -102,8 +91,8 @@ class ProductionConfig(BaseConfig):
 
     # Worker
     # https://www.cloudamqp.com/docs/celery.html
-    # CELERY_BROKER_URL = env('DIVE_AMQP_URL')
-    # CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
@@ -124,18 +113,9 @@ class TestingConfig(BaseConfig):
     DEBUG = True
     COMPRESS = False
 
-    # Resources
-    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
-    if STORAGE_TYPE == 'file':
-        STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
-    else:
-        AWS_KEY_ID = env('DIVE_AWS_KEY_ID')
-        AWS_SECRET = env('DIVE_AWS_SECRET')
-        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-
     # DB
-    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
 
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
@@ -143,8 +123,8 @@ class TestingConfig(BaseConfig):
 
     # Worker
     # https://www.cloudamqp.com/docs/celery.html
-    # CELERY_BROKER_URL = env('DIVE_AMQP_URL')
-    # CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc

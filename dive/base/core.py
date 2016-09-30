@@ -69,7 +69,8 @@ def create_app(**kwargs):
     def shutdown_session(exception=None):
         db.session.remove()
 
-    ensure_directories(app)
+    if app.config['STORAGE_TYPE'] == 'file':
+        ensure_directories(app)
     return app
 
 
