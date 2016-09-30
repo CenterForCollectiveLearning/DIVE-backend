@@ -79,13 +79,13 @@ Database Migrations
 --------
 Follow [the docs](https://flask-migrate.readthedocs.org/en/latest/). The first time, run the migration script.
 ```bash
-python manager.py db init
+python migrate.py db init
 ```
 
 Then, review and edit the migration script. Finally, each time models are changed, run the following:
 ```bash
-$ python manager.py db migrate
-$ python manager.py db upgrade
+$ python migrate.py db migrate
+$ python migrate.py db upgrade
 ```
 
 Run API

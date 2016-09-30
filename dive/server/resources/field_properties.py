@@ -1,16 +1,12 @@
 import json
 
 from flask import make_response
-<<<<<<< HEAD:dive/resources/field_properties.py
 from flask_restful import Resource, reqparse, marshal, fields, marshal_with
-=======
-from flask.ext.restful import Resource, reqparse, marshal, fields, marshal_with
-from flask.ext.login import login_required
+from flask_login import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
 from dive.worker.ingestion.field_properties import compute_all_field_properties
->>>>>>> master:dive/server/resources/field_properties.py
 
 
 import logging
