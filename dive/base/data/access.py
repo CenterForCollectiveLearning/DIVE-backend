@@ -9,7 +9,7 @@ import os
 import boto3
 import numpy as np
 import pandas as pd
-from flask.ext.restful import abort
+from flask_restful import abort
 
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.db import db_access

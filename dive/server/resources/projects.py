@@ -3,8 +3,8 @@ import shutil
 import boto3
 
 from flask import make_response, current_app
-from flask.ext.restful import Resource, reqparse, marshal_with
-from flask.ext.login import login_required
+from flask_restful import Resource, reqparse, marshal_with
+from flask_login import login_required
 
 from dive.base.db import db_access
 from dive.base.db.accounts import load_account

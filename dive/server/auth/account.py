@@ -3,7 +3,7 @@ from dive.base.db.models import User
 from dive.base.db.accounts import is_authorized_user
 from dive.base.serialization import jsonify
 
-from flask.ext.login import current_user
+from flask_login import current_user
 from functools import wraps, update_wrapper
 
 
