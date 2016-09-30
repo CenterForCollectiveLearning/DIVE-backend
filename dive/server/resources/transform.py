@@ -4,7 +4,7 @@ Endpoints for uploading, getting, updating, and deleting datasets
 import os
 import json
 from flask import request, make_response
-from flask.ext.restful import Resource, reqparse
+from flask_restful import Resource, reqparse
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
