@@ -74,7 +74,7 @@ class ProductionConfig(BaseConfig):
     # General
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
-    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'http')
+    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
 
     # Flask
     DEBUG = False
@@ -84,7 +84,7 @@ class ProductionConfig(BaseConfig):
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     # Resources
-    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 's3')
     if STORAGE_TYPE == 'file':
         STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
     else:
