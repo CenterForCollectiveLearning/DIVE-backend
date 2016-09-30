@@ -1,4 +1,5 @@
-from dive.core import create_app, create_api
+from dive.base.core import create_app
+from dive.server.core import create_api
 
 if __name__ == '__main__':
     app = create_app()

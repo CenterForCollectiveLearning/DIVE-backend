@@ -1,1 +1,8 @@
-celery -A dive.task_core worker -l info --autoscale=10,3 --autoreload &
+celery worker \
+  --app=dive.worker.core \
+  --autoscale=10,3 \
+  --autoreload \
+  -l debug \
+  --without-gossip \
+  --without-mingle \
+  --without-heartbeat

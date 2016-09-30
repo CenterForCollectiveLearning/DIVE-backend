@@ -1,1 +1,1 @@
-celery -A dive.task_core flower
+celery -A dive.worker.core flower
