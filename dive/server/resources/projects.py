@@ -133,8 +133,9 @@ class Projects(Resource):
         new_project_id = result['id']
         db_access.create_document(new_project_id)
 
-        project_dir = os.path.join(current_app.config['STORAGE_PATH'], str(result['id']))
-        if os.path.isdir(project_dir):
-            os.mkdir(project_dir)
+        if current_app.config['STORAGE_TYPE'] == 'file':
+            project_dir = os.path.join(current_app.config['STORAGE_PATH'], str(result['id']))
+            if os.path.isdir(project_dir):
+                os.mkdir(project_dir)
 
         return jsonify(result)
