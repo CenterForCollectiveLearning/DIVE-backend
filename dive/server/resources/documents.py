@@ -1,17 +1,13 @@
 import os
 
 from flask import make_response, current_app
-from flask.ext.restful import Resource, reqparse
+from flask_restful import Resource, reqparse
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def object_type(j):
-    return j
 
 
 documentsGetParser = reqparse.RequestParser()
@@ -36,7 +32,7 @@ documentGetParser.add_argument('include_data', type=bool, default=False)
 documentPutParser = reqparse.RequestParser()
 documentPutParser.add_argument('project_id', type=str, required=True, location='json')
 documentPutParser.add_argument('title', type=str, location='json')
-documentPutParser.add_argument('content', type=object_type, location='json')
+documentPutParser.add_argument('content', type=dict, location='json')
 
 documentDeleteParser = reqparse.RequestParser()
 documentDeleteParser.add_argument('project_id', type=str, required=True)

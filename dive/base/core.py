@@ -5,9 +5,9 @@ import pandas.json as pjson
 import boto3
 import psycopg2.extras
 from flask import Flask, request
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import LoginManager
-from flask.ext.cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_cors import CORS
 from flask.ext.compress import Compress
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
