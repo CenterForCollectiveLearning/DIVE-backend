@@ -1,7 +1,6 @@
 from dive.base.core import create_app
 from dive.server.core import create_api
 
-
 if __name__ == '__main__':
     app = create_app()
     api = create_api(app)
