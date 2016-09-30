@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.config.from_object('config.DevelopmentConfig')
 
 db = SQLAlchemy(app)
-from dive.db.models import *
+from dive.base.db.models import *
 migrate = Migrate(app, db, compare_type=True)
 
 manager = Manager(app)
