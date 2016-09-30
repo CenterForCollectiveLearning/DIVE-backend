@@ -28,8 +28,14 @@ class BaseConfig(object):
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     # Resources
-    STORAGE_TYPE = 'file'
-    STORAGE_PATH = base_dir_path('uploads')
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    if STORAGE_TYPE == 'file':
+        STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
+    else:
+        AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+        AWS_REGION = env('DIVE_AWS_REGION')
     PRELOADED_PATH = base_dir_path('preloaded')
     ALEMBIC_DIR = base_dir_path('migrate')
 
@@ -62,17 +68,11 @@ class BaseConfig(object):
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
 
-<<<<<<< HEAD
-    SQLALCHEMY_POOL_SIZE=20
-    SQLALCHEMY_MAX_OVERFLOW=100
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
-=======
 class ProductionConfig(BaseConfig):
     # General
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
-    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'http')
->>>>>>> master
+    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
 
     # Flask
     DEBUG = False
@@ -81,48 +81,6 @@ class ProductionConfig(BaseConfig):
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
-<<<<<<< HEAD
-    CELERY_BROKER_URL = 'librabbitmq://admin:password@%s/dive' % 'rabbitmq'
-    CELERY_RESULT_BACKEND = 'amqp'
-
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@%s:5432/dive' % 'localhost'
-
-    ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
-    ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
-
-    CELERY_IMPORTS = [
-        'dive.tasks.pipelines',
-        'dive.tasks.handlers',
-        'dive.tasks.ingestion.upload',
-        'dive.tasks.ingestion.dataset_properties',
-        'dive.tasks.ingestion.id_detection',
-        'dive.tasks.ingestion.type_detection',
-        'dive.tasks.ingestion.type_classes',
-        'dive.tasks.ingestion.field_properties',
-        'dive.tasks.ingestion.relationships',
-        'dive.tasks.transformation.reduce',
-        'dive.tasks.visualization.__init__',
-        'dive.tasks.visualization.data',
-        'dive.tasks.visualization.enumerate_specs',
-        'dive.tasks.visualization.score_specs',
-        'dive.tasks.visualization.spec_pipeline',
-        'dive.tasks.visualization.type_mapping',
-        'dive.tasks.visualization.marginal_spec_functions.single_field_single_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.single_field_multi_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.multi_field_single_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.mixed_field_multi_type_specs',
-        'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',
-        'dive.tasks.transformation.join',
-        'dive.tasks.transformation.pivot',
-        'dive.tasks.transformation.reduce',
-        'dive.tasks.statistics.regression',
-        'dive.tasks.statistics.comparison',
-        'dive.tasks.statistics.aggregation',
-    ]
-
-class DevelopmentConfig(BaseConfig):
-    DEBUG = True
-=======
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
     if STORAGE_TYPE == 'file':
@@ -133,18 +91,17 @@ class DevelopmentConfig(BaseConfig):
         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
 
     # DB
-    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
 
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
->>>>>>> master
 
     # Worker
     # https://www.cloudamqp.com/docs/celery.html
-    # CELERY_BROKER_URL = env('DIVE_AMQP_URL')
-    # CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
@@ -165,18 +122,9 @@ class TestingConfig(BaseConfig):
     DEBUG = True
     COMPRESS = False
 
-    # Resources
-    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
-    if STORAGE_TYPE == 'file':
-        STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
-    else:
-        AWS_KEY_ID = env('DIVE_AWS_KEY_ID')
-        AWS_SECRET = env('DIVE_AWS_SECRET')
-        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-
     # DB
-    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
 
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
@@ -184,8 +132,8 @@ class TestingConfig(BaseConfig):
 
     # Worker
     # https://www.cloudamqp.com/docs/celery.html
-    # CELERY_BROKER_URL = env('DIVE_AMQP_URL')
-    # CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
