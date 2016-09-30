@@ -23,14 +23,11 @@ $ sudo apt-get install -y postgres git python2.7 python-pip build-essential pyth
 Install System Dependencies (Mac / brew)
 ---------
 Install [Homebrew](http://brew.sh/) if you don't already have it. Then, run the following code:
+```bash
+$ brew install postgres
+$ brew install rabbitmq
 ```
-brew install postgres
-brew install rabbitmq
-brew install libmagic
-brew install Caskroom/cask/xquartz
-brew install cairo
-```
-Install postgres.app
+OR Install postgres.app
 ---------
 Install postgres.app by following the instructions here: (http://postgresapp.com/).
 
@@ -39,10 +36,9 @@ Download and open the app to start postgres.
 Setup postgres
 ---------
 Make sure that you have a postgres server instance running. Create the dive database by running:
-```
-sudo -u postgres -i
-createuser admin -P
-createdb dive -O admin
+```bash
+$ createuser admin -P
+$ createdb dive -O admin
 ```
 
 Start RabbitMQ
@@ -52,10 +48,10 @@ Start RabbitMQ
 `sudo rabbitmq-server -detached`
 
 3. Create a RabbitMQ user and virtual host:
-```
-sudo rabbitmqctl add_user admin password
-sudo rabbitmqctl add_vhost dive
-sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
+```bash
+$ sudo rabbitmqctl add_user admin password
+$ sudo rabbitmqctl add_vhost dive
+$ sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
 ```
 
 
@@ -68,34 +64,34 @@ Install and get into a virtual environment
 Install Python Dependencies
 ---------
 Within a virtual environment, install dependencies in `requirements.txt`. But due to a dependency issue in numexpr, we need to install numpy first.
-```
-pip install numpy
-pip install -r requirements.txt
+```bash
+$ pip install numpy
+$ pip install -r requirements.txt
 ```
 
 Start Celery worker
 ---------
-1. Start celery worker: `./worker.sh`
-2. Start celery monitor (flower): `celery -A dive.task_core flower`
+1. Start celery worker: `./run_worker.sh`
+2. Start celery monitor (flower): `celery -A base.core flower`
 
 
 Database Migrations
 --------
 Follow [the docs](https://flask-migrate.readthedocs.org/en/latest/). The first time, run the migration script.
 ```bash
-python migrate.py db init
+python manager.py db init
 ```
 
 Then, review and edit the migration script. Finally, each time models are changed, run the following:
-```
-python migrate.py db migrate
-python migrate.py db upgrade
+```bash
+$ python manager.py db migrate
+$ python manager.py db upgrade
 ```
 
 Run API
 ---------
-1. To run development Flask server, run `python run.py`.
-2. To run production Gunicorn server, run `./run.sh`.
+1. To run development Flask server, run `python run_server.py`.
+2. To run production Gunicorn server, run `./run_server.sh`.
 
 Deployment
 --------

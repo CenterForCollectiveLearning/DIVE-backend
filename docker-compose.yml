@@ -11,8 +11,6 @@ services:
       - "8081:8081"
     links:
       - db
-      - rabbitmq
-      - worker
 
   worker:
     build:
@@ -41,7 +39,7 @@ services:
       - DB_NAME=dive
       - PSQL_TRUST_LOCALNET
     ports:
-      - "5433:5432"
+      - "5432:5432"
 
   dbdata:
     image: sameersbn/postgresql
