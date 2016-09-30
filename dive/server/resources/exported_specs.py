@@ -1,5 +1,5 @@
 from flask import make_response
-from flask.ext.restful import Resource, reqparse
+from flask_restful import Resource, reqparse
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
