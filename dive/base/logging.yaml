@@ -27,8 +27,14 @@ handlers:
         backupCount: 20
 
 loggers:
-  base.core.cors:
+  dive.base.core.cors:
     level: ERROR
+  boto3:
+    level: CRITICAL
+  botocore.hooks:
+    level: CRITICAL
+  s3transfer:
+    level: CRITICAL
 
 root:
     level: DEBUG
