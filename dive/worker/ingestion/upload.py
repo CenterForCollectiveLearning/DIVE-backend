@@ -21,11 +21,14 @@ from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data
 from dive.base.data.in_memory_data import InMemoryData as IMD
 
+<<<<<<< HEAD
 import boto3
 # import boto.s3
 # from boto.s3.cors import CORSConfiguration
 # from boto.exception import S3ResponseError
 
+=======
+>>>>>>> full-deploy-refactor
 import logging
 logger = logging.getLogger(__name__)
 

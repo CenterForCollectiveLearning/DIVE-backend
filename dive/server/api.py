@@ -22,7 +22,7 @@ from dive.server.resources.auth_resources import Register, Login, Logout, User
 
 from dive.server.resources.feedback import Feedback
 
-from flask.ext.restful import Resource
+from flask_restful import Resource
 
 
 def add_resources(api):
