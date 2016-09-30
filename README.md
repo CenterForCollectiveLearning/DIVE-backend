@@ -17,7 +17,7 @@ Development setup involves the following steps:
 Install System Dependencies (Linux / apt)
 ---------
 ```bash
-$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev python-dev libffi-dev liblapack-dev gfortran rabbitmq-server
+$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev libffi-dev liblapack-dev gfortran rabbitmq-server
 ```
 
 Install System Dependencies (Mac / brew)
