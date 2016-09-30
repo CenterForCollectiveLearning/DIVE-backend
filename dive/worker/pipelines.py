@@ -4,7 +4,7 @@ Containers for celery task chains
 from celery import group, chain, states
 from dive.worker.core import celery, task_app
 
-from dive.worker.ingestion.upload import save_dataset
+from dive.worker.ingestion.upload import save_dataset_to_db
 from dive.worker.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.worker.ingestion.field_properties import compute_all_field_properties, save_field_properties
 from dive.worker.ingestion.relationships import compute_relationships, save_relationships

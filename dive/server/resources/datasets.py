@@ -4,13 +4,13 @@ Endpoints for uploading, getting, updating, and deleting datasets
 import os
 import json
 from flask import request, make_response
-from flask.ext.restful import Resource, reqparse
-from flask.ext.login import login_required
+from flask_restful import Resource, reqparse
+from flask_login import login_required
 from celery import chain
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
-from dive.base.data.access import get_dataset_sample
+from dive.base.data.access import get_dataset_sample, delete_dataset
 from dive.worker.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
 from dive.worker.ingestion.upload import upload_file
 from dive.worker.handlers import error_handler
@@ -115,10 +115,9 @@ class Dataset(Resource):
         args = datasetDeleteParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        # Delete from datasets table
-        result = db_access.delete_dataset(project_id, dataset_id)
+        db_result = delete_dataset(project_id, dataset_id)
 
-        # Delete from file ststem
-        os.remove(result['path'])
-        return jsonify({"message": "Successfully deleted dataset.",
-                            "id": int(result['id'])})
+        return jsonify({
+            "message": "Successfully deleted dataset.",
+            "id": int(db_result['id'])
+        })
