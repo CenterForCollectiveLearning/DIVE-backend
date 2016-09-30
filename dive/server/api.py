@@ -24,10 +24,6 @@ from dive.server.resources.feedback import Feedback
 
 from flask_restful import Resource
 
-class Test(Resource):
-    def get(self):
-        return "Ping!"
-
 
 def add_resources(api):
     api.add_resource(TaskResult,                    '/tasks/v1/result/<task_id>')

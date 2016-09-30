@@ -1,73 +1,97 @@
 name: dive
 dependencies:
-- anaconda::pyyaml=3.11=py27_4
-- anaconda::yaml=0.1.6=0
-- asmeurer::blinker=1.2=py27_0
-- bioconda::flask-sqlalchemy=2.1=py27_0
-- blaze::flask-cors=2.1.2=py27_0
+- NSIDC::flask-sqlalchemy=2.1=py27_0
+- anaconda::libxml2=2.9.2=0
+- asmeurer::blinker=1.4=py27_0
+- babel=2.3.3=py27_0
+- backports=1.0=py27_0
+- backports_abc=0.4=py27_0
+- binstar::flask-login=0.2.6=py27_1
+- bioconda::flask-script=2.0.5=py27_0
+- birdhouse::amqp=1.4.8=py27_0
+- birdhouse::anyjson=0.3.3=py27_0
+- birdhouse::billiard=3.3.0.21=py27_0
+- birdhouse::celery=3.1.19=py27_0
+- birdhouse::flower=0.8.2=py27_0
+- birdhouse::kombu=3.0.30=py27_0
+- boto3=1.3.1=py27_0
+- botocore=1.4.52=py27_0
 - click=6.6=py27_0
 - conda-forge::colorlog=2.7.0=py27_0
 - contextlib2=0.5.3=py27_0
-- davidbgonzalez::alembic=0.7.6=py27_0
-- davidbgonzalez::flask-migrate=1.4.0=py27_0
-- davidbgonzalez::flask-script=2.0.5=py27_0
-- davidbgonzalez::mako=1.0.1=py27_0
-- distribute=0.6.45=py27_1
-- elevatedirect::flask-restful=0.3.4=0
+- csvkit=0.9.1=py27_1
+- dbf=0.96.003=py27_0
+- docutils=0.12=py27_2
+- enum34=1.1.6=py27_0
+- et_xmlfile=1.0.1=py27_0
 - flask=0.11.1=py27_0
+- flask-cors=2.1.2=py27_0
+- futures=3.0.5=py27_0
+- gunicorn=19.1.0=py27_0
 - itsdangerous=0.24=py27_0
+- jdcal=1.2=py27_1
 - jinja2=2.8=py27_1
-- libgfortran=3.0.0=1
-- libxml2=2.9.2=0
-- libxslt=1.1.28=0
+- jmespath=0.9.0=py27_0
+- libxslt=1.1.28=2
 - lxml=3.6.1=py27_0
 - markupsafe=0.23=py27_2
+- menpo::aniso8601=0.82=py27_0
 - menpo::flask-compress=1.0.2=py27_0
+- menpo::flask-restful=0.2.12=py27_0
 - mkl=11.3.3=0
 - numpy=1.11.1=py27_0
+- openpyxl=2.3.2=py27_0
 - openssl=1.0.2h=1
 - orchardmile::raven=5.3.1=py27_0
 - pandas=0.18.1=np111py27_0
+- pastedeploy=1.5.2=py27_1
 - patsy=0.4.1=py27_0
 - pip=8.1.2=py27_0
-- prometeia::amqp=1.4.9=py27_0
-- prometeia::anyjson=0.3.3=py27_0
-- prometeia::billiard=3.3.0.23=py27_0
-- prometeia::celery=3.1.23=py27_0
-- prometeia::kombu=3.0.35=py27_0
-- psutil=4.3.0=py27_0
+- psycopg2=2.6.1=py27_1
 - python=2.7.12=1
 - python-dateutil=2.5.3=py27_0
 - pytz=2016.6.1=py27_0
+- pyyaml=3.11=py27_4
 - readline=6.2=2
 - scikit-learn=0.17.1=np111py27_2
 - scipy=0.18.0=np111py27_0
-- setuptools=25.1.6=py27_0
+- setuptools=23.0.0=py27_0
+- singledispatch=3.4.0.3=py27_0
 - six=1.10.0=py27_0
 - sqlalchemy=1.0.13=py27_0
 - sqlite=3.13.0=0
+- ssl_match_hostname=3.4.0.2=py27_1
 - statsmodels=0.6.1=np111py27_1
 - tk=8.5.18=0
-- wakari::flask-login=0.2.9=py27_33
+- tornado=4.4.1=py27_0
 - werkzeug=0.11.10=py27_0
 - wheel=0.29.0=py27_0
+- xlrd=1.0.0=py27_0
+- yaml=0.1.6=0
 - zlib=1.2.8=3
 - pip:
-  - alembic==0.7.6
-  - amqp==1.4.9
+  - amqp==1.4.8
+  - aniso8601==0.82
   - anyjson==0.3.3
-  - billiard==3.3.0.23
-  - blinker==1.2
-  - celery==3.1.23
+  - backports-abc==0.4
+  - backports.ssl-match-hostname==3.4.0.2
+  - billiard==3.3.0.21
+  - blinker==1.4
+  - celery==3.1.19
+  - chardet==2.1.1
   - colorlog==2.7.0
+  - et-xmlfile==1.0.1
   - flask-compress==1.0.2
-  - flask-cors==2.1.2
-  - flask-login==0.2.9
-  - flask-migrate==1.4.0
+  - flask-login==0.2.6
+  - flask-restful==0.2.12
   - flask-script==2.0.5
   - flask-sqlalchemy==2.1
-  - kombu==3.0.35
-  - mako==1.0.1
-  - pyyaml==3.11
+  - flower==0.8.2
+  - json-table-schema==0.1
+  - kombu==3.0.30
+  - librabbitmq==1.6.1
+  - messytables==0.14.1
+  - python-magic==0.4.6
   - raven==5.3.1
-prefix: /home/kzh/miniconda2/envs/dive
+  - requests==2.4.1
+prefix: ~/anaconda2/envs/dive
