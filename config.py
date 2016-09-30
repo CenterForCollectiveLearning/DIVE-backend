@@ -62,11 +62,17 @@ class BaseConfig(object):
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
 
+<<<<<<< HEAD
+    SQLALCHEMY_POOL_SIZE=20
+    SQLALCHEMY_MAX_OVERFLOW=100
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+=======
 class ProductionConfig(BaseConfig):
     # General
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
     PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'http')
+>>>>>>> master
 
     # Flask
     DEBUG = False
@@ -75,6 +81,48 @@ class ProductionConfig(BaseConfig):
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
+<<<<<<< HEAD
+    CELERY_BROKER_URL = 'librabbitmq://admin:password@%s/dive' % 'rabbitmq'
+    CELERY_RESULT_BACKEND = 'amqp'
+
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://admin:password@%s:5432/dive' % 'localhost'
+
+    ALEMBIC_DIR = os.path.join(os.path.dirname(__file__), 'migrate')
+    ALEMBIC_DIR = os.path.abspath(ALEMBIC_DIR)
+
+    CELERY_IMPORTS = [
+        'dive.tasks.pipelines',
+        'dive.tasks.handlers',
+        'dive.tasks.ingestion.upload',
+        'dive.tasks.ingestion.dataset_properties',
+        'dive.tasks.ingestion.id_detection',
+        'dive.tasks.ingestion.type_detection',
+        'dive.tasks.ingestion.type_classes',
+        'dive.tasks.ingestion.field_properties',
+        'dive.tasks.ingestion.relationships',
+        'dive.tasks.transformation.reduce',
+        'dive.tasks.visualization.__init__',
+        'dive.tasks.visualization.data',
+        'dive.tasks.visualization.enumerate_specs',
+        'dive.tasks.visualization.score_specs',
+        'dive.tasks.visualization.spec_pipeline',
+        'dive.tasks.visualization.type_mapping',
+        'dive.tasks.visualization.marginal_spec_functions.single_field_single_type_specs',
+        'dive.tasks.visualization.marginal_spec_functions.single_field_multi_type_specs',
+        'dive.tasks.visualization.marginal_spec_functions.multi_field_single_type_specs',
+        'dive.tasks.visualization.marginal_spec_functions.mixed_field_multi_type_specs',
+        'dive.tasks.visualization.marginal_spec_functions.multi_field_multi_type_specs',
+        'dive.tasks.transformation.join',
+        'dive.tasks.transformation.pivot',
+        'dive.tasks.transformation.reduce',
+        'dive.tasks.statistics.regression',
+        'dive.tasks.statistics.comparison',
+        'dive.tasks.statistics.aggregation',
+    ]
+
+class DevelopmentConfig(BaseConfig):
+    DEBUG = True
+=======
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
     if STORAGE_TYPE == 'file':
@@ -91,6 +139,7 @@ class ProductionConfig(BaseConfig):
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
+>>>>>>> master
 
     # Worker
     # https://www.cloudamqp.com/docs/celery.html
