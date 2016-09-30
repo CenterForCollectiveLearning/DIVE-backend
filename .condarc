@@ -1,6 +1,6 @@
 channels:
+  - defaults
   - anaconda
-  - asmeurer
   - binstar
   - bioconda
   - birdhouse
@@ -8,5 +8,6 @@ channels:
   - menpo
   - NSIDC
   - orchardmile
-always_yes: True
 show_channel_urls: True
+always_yes: True
+update_dependencies: True
