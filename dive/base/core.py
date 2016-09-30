@@ -68,32 +68,6 @@ def create_app(**kwargs):
     return app
 
 
-<<<<<<< HEAD:dive/core.py
-def create_celery(app):
-    '''
-    Initialize celery instance given an app
-    '''
-    celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
-    celery.conf.update(app.config)
-    return celery
-
-
-def create_api(app):
-    '''
-    Attach API endpoints / resources to app
-    '''
-    from flask_restful import Api
-    api = Api(catch_all_404s=True)
-
-    from api import add_resources
-    api = add_resources(api)
-    api.init_app(app)
-
-    return api
-
-
-=======
->>>>>>> master:dive/base/core.py
 def ensure_directories(app):
     if not os.path.isdir(app.config['STORAGE_PATH']):
         app.logger.info("Creating Upload directory")

@@ -1,10 +1,6 @@
 from flask import request, current_app
-<<<<<<< HEAD:dive/resources/specs.py
 from flask_restful import Resource, reqparse
-=======
-from flask.ext.restful import Resource, reqparse
-from flask.ext.login import login_required
->>>>>>> master:dive/server/resources/specs.py
+from flask_login import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
