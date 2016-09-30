@@ -7,7 +7,8 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_cors import CORS
-from flask.ext.compress import Compress
+from flask_compress import Compress
+
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
 
