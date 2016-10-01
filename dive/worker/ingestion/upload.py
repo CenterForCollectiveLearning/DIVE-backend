@@ -165,7 +165,7 @@ def save_flat_table(project_id, file_obj, file_title, file_name, file_type, path
     return file_doc
 
 
-def save_excel_to_csv(project_id, file_obj, file_title, file_name, path):
+def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, path):
     if current_app.config['STORAGE_TYPE'] == 's3':
         book = xlrd.open_workbook(file_contents=file_obj.read())
     if current_app.config['STORAGE_TYPE'] == 'file':
@@ -213,7 +213,7 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, path):
     return file_docs
 
 
-def save_json_to_csv(project_id, file_obj, file_title, file_name, path):
+def save_json_to_csv(project_id, file_obj, file_title, file_name, file_type, path):
     f = open(path, 'rU')
     json_data = json.load(f)
 
