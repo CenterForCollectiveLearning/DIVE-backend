@@ -37,7 +37,7 @@ def delete_dataset(project_id, dataset_id):
 
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
-    logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
+    logger.debug("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
     sample = map(list, df.iloc[start:end].values)
@@ -49,7 +49,7 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
 
 def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if IMD.hasData(dataset_id):
-        logger.info('Accessing from IMD, project_id: %s, dataset_id: %s', project_id, dataset_id)
+        logger.debug('Accessing from IMD, project_id: %s, dataset_id: %s', project_id, dataset_id)
         df = IMD.getData(dataset_id)
         return df
 
@@ -95,7 +95,7 @@ fields_to_coerce_to_integer = [ 'year', 'integer' ]
 fields_to_coerce_to_string = [ 'string' ]
 fields_to_coerce_to_datetime = [ 'datetime' ]
 def coerce_types(df, field_properties):
-    logger.info('Coercing types %s', [ x['type'] for x in field_properties ])
+    logger.debug('Coercing types %s', [ x['type'] for x in field_properties ])
     decimal_fields = []
     integer_fields = []
     string_fields = []
