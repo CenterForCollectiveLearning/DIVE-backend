@@ -17,7 +17,6 @@ elif mode == 'TESTING':
     app.config.from_object('config.TestingConfig')
 elif mode == 'PRODUCTION':
     app.config.from_object('config.ProductionConfig')
-    sentry.init_app(app)
 
 db = SQLAlchemy(app)
 from dive.base.db.models import *

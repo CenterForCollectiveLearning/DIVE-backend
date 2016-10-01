@@ -31,7 +31,7 @@ loggers:
     level: ERROR
   boto3:
     level: CRITICAL
-  botocore.hooks:
+  botocore:
     level: CRITICAL
   s3transfer:
     level: CRITICAL
