@@ -34,8 +34,7 @@ db = CustomSQLAlchemy()
 login_manager = LoginManager()
 cors = CORS()
 compress = Compress()
-s3 = None
-s3_bucket = None
+s3_client = None
 
 
 def create_app(**kwargs):
@@ -69,6 +68,14 @@ def create_app(**kwargs):
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         db.session.remove()
+
+    if app.config['STORAGE_TYPE'] == 's3':
+        global s3_client
+        s3_client = boto3.client('s3',
+            aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+            region_name=app.config['AWS_REGION']
+        )
 
     if app.config['STORAGE_TYPE'] == 'file':
         ensure_directories(app)

@@ -7,10 +7,10 @@ export DIVE_PREFERRED_URL_SCHEME="https"
 export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
 export SENTRY_DSN=""
 
-export SQLALCHEMY_DATABASE_NAME="dive"
+export SQLALCHEMY_DATABASE_NAME=""
 export SQLALCHEMY_DATABASE_USER=""
 export SQLALCHEMY_DATABASE_PASSWORD=""
-export SQLALCHEMY_DATABASE_ENDPOINT=".cpmsy9duer4d.us-west-2.rds.amazonaws.com:5432"
+export SQLALCHEMY_DATABASE_ENDPOINT=""
 
 export DIVE_STORAGE_TYPE="s3"
 export DIVE_AWS_ACCESS_KEY_ID=""

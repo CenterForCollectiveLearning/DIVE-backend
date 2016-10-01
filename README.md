@@ -97,8 +97,11 @@ Deployment
 --------
 1. Set environment variable before running any command:
 ```bash
-$ export ENV=production
+$ source production_env
 ```
+
+Building Docker Images
+--------
 
 ```
 conda env export > environment.yml

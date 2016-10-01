@@ -11,36 +11,24 @@ import xlrd
 import json
 import codecs
 import StringIO
+import boto3
 import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import current_app
 
-from dive.base.core import s3_bucket
+from dive.base.core import s3_client, compress
 from dive.base.db import db_access
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data
 from dive.base.data.in_memory_data import InMemoryData as IMD
 
-<<<<<<< HEAD
-import boto3
-# import boto.s3
-# from boto.s3.cors import CORSConfiguration
-# from boto.exception import S3ResponseError
-
-=======
->>>>>>> full-deploy-refactor
 import logging
 logger = logging.getLogger(__name__)
 
 
 def save_fileobj_to_s3(fileobj, project_id, file_name):
-    s3 = boto3.client('s3',
-        aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
-        region_name=current_app.config['AWS_REGION']
-    )
     try:
-        url = s3.generate_presigned_url(
+        url = s3_client.generate_presigned_url(
             'get_object',
             Params = {
                 'Bucket': current_app.config['AWS_DATA_BUCKET'],
@@ -48,7 +36,7 @@ def save_fileobj_to_s3(fileobj, project_id, file_name):
             },
             ExpiresIn = 86400
         )
-        s3.upload_fileobj(
+        s3_client.upload_fileobj(
             fileobj,
             current_app.config['AWS_DATA_BUCKET'],
             "%s/%s" % (project_id, file_name)
@@ -132,14 +120,14 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
         dialect = get_dialect(file_obj)
         file_obj.read(0)
 
-        file_doc = save_flat_table(project_id, file_obj, file_title, file_name, path)
+        file_doc = save_flat_table(project_id, file_obj, file_title, file_name, file_type, path)
         file_docs.append(file_doc)
 
     elif file_type.startswith('xls'):
-        file_docs = save_excel_to_csv(project_id, file_obj, file_title, file_name, path)
+        file_docs = save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, path)
 
     elif file_type == 'json':
-        file_doc = save_json_to_csv(project_id, file_obj, file_title, file_name, path)
+        file_doc = save_json_to_csv(project_id, file_obj, file_title, file_name, file_type, path)
         file_docs.append(file_doc)
 
     datasets = []
@@ -160,14 +148,13 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
 
     return datasets
 
-def save_flat_table(project_id, file_obj, file_title, file_name, path):
+def save_flat_table(project_id, file_obj, file_title, file_name, file_type, path):
     file_doc = {
         'file_title': file_title,
         'file_name': file_name,
         'type': file_type,
         'path': path
     }
-    file_docs.append(file_doc)
     if current_app.config['STORAGE_TYPE'] == 'file':
         try:
             file_obj.save(path)
@@ -202,11 +189,6 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, path):
                 wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
             strIO.seek(0)
 
-            s3_client = boto3.client('s3',
-                aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
-                aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
-                region_name=current_app.config['AWS_REGION']
-            )
             response = s3_client.upload_fileobj(
                 strIO,
                 current_app.config['AWS_DATA_BUCKET'],

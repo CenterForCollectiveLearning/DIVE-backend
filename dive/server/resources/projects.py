@@ -6,6 +6,7 @@ from flask import make_response, current_app
 from flask_restful import Resource, reqparse, marshal_with
 from flask_login import login_required
 
+from dive.base.core import s3_client
 from dive.base.db import db_access
 from dive.base.db.accounts import load_account
 from dive.server.auth.account import project_auth
@@ -51,11 +52,6 @@ class Project(Resource):
                 shutil.rmtree(project_dir)
         elif current_app.config['STORAGE_TYPE'] == 's3':
             # TODO Just get bucket to avoid redundancy?
-            s3_client = boto3.client('s3',
-                aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
-                aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
-                region_name=current_app.config['AWS_REGION']
-            )
             file_objects = [ { 'Key': obj['Key'] } for obj in s3_client.list_objects(
                 Bucket=current_app.config['AWS_DATA_BUCKET'],
                 Prefix="%s/" % (project_id)
