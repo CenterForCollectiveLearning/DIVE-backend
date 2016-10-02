@@ -64,8 +64,8 @@ def delete_specs():
 @manager.command
 def users():
     with app.app_context():
-        user_fixture_file = open('user_fixtures.yaml', 'rt')
-        users = yaml.load(user_fixture_file.read())
+        user_fixture_file = open('fixtures.yaml', 'rt')
+        users = yaml.load(user_fixture_file.read())['users']
 
         for user in users:
             app.logger.info('Created user: %s', user['username'])
