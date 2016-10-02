@@ -13,5 +13,4 @@ WORKDIR /DIVE-backend
 EXPOSE 8081
 
 # Run server
-# CMD ["python", "run_server.py"]
 RUN . ./run_server.sh
