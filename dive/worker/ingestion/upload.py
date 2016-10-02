@@ -36,6 +36,12 @@ def save_fileobj_to_s3(fileobj, project_id, file_name):
             },
             ExpiresIn = 86400
         )
+        # s3_client.put_bucket_accelerate_configuration(
+        #     Bucket=current_app.config['AWS_DATA_BUCKET'],
+        #     AccelerateConfiguration={
+        #         'Status': 'Enabled'
+        #     }
+        # )
         s3_client.upload_fileobj(
             fileobj,
             current_app.config['AWS_DATA_BUCKET'],
