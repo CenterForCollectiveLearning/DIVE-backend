@@ -51,16 +51,18 @@ class Project(Resource):
             if os.path.isdir(project_dir):
                 shutil.rmtree(project_dir)
         elif current_app.config['STORAGE_TYPE'] == 's3':
-            file_objects = [ { 'Key': obj['Key'] } for obj in s3_client.list_objects(
+            bucket_objects = s3_client.list_objects(
                 Bucket=current_app.config['AWS_DATA_BUCKET'],
                 Prefix="%s/" % (project_id)
-            )['Contents']]
-            s3_delete_objects_result = s3_client.delete_objects(
-                Bucket=current_app.config['AWS_DATA_BUCKET'],
-                Delete={
-                    'Objects': file_objects
-                }
             )
+            if bucket_objects.get('Contents'):
+                file_objects = [ { 'Key': obj['Key'] } for obj in bucket_objects['Contents']]
+                s3_delete_objects_result = s3_client.delete_objects(
+                    Bucket=current_app.config['AWS_DATA_BUCKET'],
+                    Delete={
+                        'Objects': file_objects
+                    }
+                )
 
         return jsonify({
             "message": "Successfully deleted project.",
