@@ -1,6 +1,7 @@
 import yaml
 import shutil
 import contextlib
+import os
 from os import listdir, curdir
 from os.path import isfile, join, isdir
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -19,12 +20,18 @@ from dive.worker.ingestion.upload import save_dataset_to_db
 excluded_filetypes = ['json', 'py', 'yaml']
 
 app = create_app()
+mode = os.environ.get('MODE', 'DEVELOPMENT')
+if mode == 'DEVELOPMENT': app.config.from_object('config.DevelopmentConfig')
+elif mode == 'TESTING': app.config.from_object('config.TestingConfig')
+elif mode == 'PRODUCTION': app.config.from_object('config.ProductionConfig')
+
 db = SQLAlchemy(app)
 manager = Manager(app)
-migrate = Migrate(app, db, compare_type=True)
-manager.add_command('db', MigrateCommand)
 
 from dive.base.db.models import *
+migrate = Migrate(app, db, compare_type=True)
+
+manager.add_command('db', MigrateCommand)
 
 @manager.command
 def drop():
