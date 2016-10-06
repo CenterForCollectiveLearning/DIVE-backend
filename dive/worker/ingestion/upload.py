@@ -65,7 +65,6 @@ def upload_file(project_id, file_obj):
     file_title, file_type = file_name.rsplit('.', 1)
 
     # Pre-save properties
-
     if current_app.config['STORAGE_TYPE'] == 'file':
         path = os.path.join(current_app.config['STORAGE_PATH'], project_id, file_name)
     elif current_app.config['STORAGE_TYPE'] == 's3':
@@ -172,10 +171,7 @@ def save_flat_table(project_id, file_obj, file_title, file_name, file_type, path
 
 
 def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, path):
-    if current_app.config['STORAGE_TYPE'] == 's3':
-        book = xlrd.open_workbook(file_contents=file_obj.read())
-    if current_app.config['STORAGE_TYPE'] == 'file':
-        book = xlrd.open_workbook(path)
+    book = xlrd.open_workbook(file_contents=file_obj.read())
     sheet_names = book.sheet_names()
 
     file_docs = []
