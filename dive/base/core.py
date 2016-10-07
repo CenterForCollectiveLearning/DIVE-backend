@@ -8,7 +8,8 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_cors import CORS
-from flask.ext.compress import Compress
+from flask_compress import Compress
+
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
 
@@ -33,8 +34,7 @@ db = CustomSQLAlchemy()
 login_manager = LoginManager()
 cors = CORS()
 compress = Compress()
-s3 = None
-s3_bucket = None
+s3_client = None
 
 
 def create_app(**kwargs):
@@ -68,6 +68,14 @@ def create_app(**kwargs):
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         db.session.remove()
+
+    if app.config['STORAGE_TYPE'] == 's3':
+        global s3_client
+        s3_client = boto3.client('s3',
+            aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+            region_name=app.config['AWS_REGION']
+        )
 
     if app.config['STORAGE_TYPE'] == 'file':
         ensure_directories(app)

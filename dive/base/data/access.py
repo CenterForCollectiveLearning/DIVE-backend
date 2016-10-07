@@ -6,16 +6,17 @@ TODO Rename either this or access.py to be more descriptive
 import locale
 
 import os
-import boto3
+from time import time
 import numpy as np
 import pandas as pd
+from flask import current_app
 from flask_restful import abort
 
+from dive.base.core import s3_client
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.db import db_access
-from flask import current_app
 from dive.worker.core import task_app
-from time import time
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -26,12 +27,7 @@ locale.setlocale(locale.LC_NUMERIC, '')
 def delete_dataset(project_id, dataset_id):
     deleted_dataset = db_access.delete_dataset(project_id, dataset_id)
     if deleted_dataset['storage_type'] == 's3':
-        s3 = boto3.client('s3',
-            aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
-            aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
-            region_name=current_app.config['AWS_REGION']
-        )
-        file_obj = s3.delete_object(
+        file_obj = s3_client.delete_object(
             Bucket=current_app.config['AWS_DATA_BUCKET'],
             Key="%s/%s" % (project_id, deleted_dataset['file_name'])
         )
@@ -41,7 +37,7 @@ def delete_dataset(project_id, dataset_id):
 
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
-    logger.info("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
+    logger.debug("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
     sample = map(list, df.iloc[start:end].values)
@@ -53,7 +49,7 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
 
 def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if IMD.hasData(dataset_id):
-        logger.info('Accessing from IMD, project_id: %s, dataset_id: %s', project_id, dataset_id)
+        logger.debug('Accessing from IMD, project_id: %s, dataset_id: %s', project_id, dataset_id)
         df = IMD.getData(dataset_id)
         return df
 
@@ -63,12 +59,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     dialect = dataset['dialect']
 
     if dataset['storage_type'] == 's3':
-        s3 = boto3.client('s3',
-            aws_access_key_id=current_app.config['AWS_ACCESS_KEY_ID'],
-            aws_secret_access_key=current_app.config['AWS_SECRET_ACCESS_KEY'],
-            region_name=current_app.config['AWS_REGION']
-        )
-        file_obj = s3.get_object(
+        file_obj = s3_client.get_object(
             Bucket=current_app.config['AWS_DATA_BUCKET'],
             Key="%s/%s" % (project_id, dataset['file_name'])
         )
@@ -104,7 +95,7 @@ fields_to_coerce_to_integer = [ 'year', 'integer' ]
 fields_to_coerce_to_string = [ 'string' ]
 fields_to_coerce_to_datetime = [ 'datetime' ]
 def coerce_types(df, field_properties):
-    logger.info('Coercing types %s', [ x['type'] for x in field_properties ])
+    logger.debug('Coercing types %s', [ x['type'] for x in field_properties ])
     decimal_fields = []
     integer_fields = []
     string_fields = []

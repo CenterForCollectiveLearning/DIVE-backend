@@ -95,13 +95,8 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, f
     num_samples = min(len(field_values), num_samples)
     field_sample = random_sample(field_values, num_samples) if random else field_values[:num_samples]
 
-    logger.info('Sample size: %s', num_samples)
     type_scores_from_name = get_type_scores_from_field_name(field_name)
     type_scores_from_values = get_type_scores_from_field_values(field_sample, field_types)
-
-    logger.info(field_name)
-    logger.info(type_scores_from_name)
-    logger.info(type_scores_from_values)
 
     # Combine type score dictionaries
     final_type_scores = defaultdict(int)

@@ -81,6 +81,15 @@ class ProductionConfig(BaseConfig):
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
+    # Resources
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    if STORAGE_TYPE == 'file':
+        STORAGE_PATH = base_dir_path('uploads')  # env('DIVE_STORAGE_PATH', '/usr/local/lib/dive')
+    else:
+        AWS_KEY_ID = env('DIVE_AWS_KEY_ID')
+        AWS_SECRET = env('DIVE_AWS_SECRET')
+        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+
     # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
