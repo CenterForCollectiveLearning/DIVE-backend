@@ -2,7 +2,7 @@ export MODE="DEVELOPMENT"
 export SITE_TITLE="dive"
 export SECRET_KEY="dive"
 
-export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
+export DIVE_AMQP_URL="amqp://wmbffuqp:vfNWXcgT79lCFNk19mFIIJbsWInbroja@reindeer.rmq.cloudamqp.com/wmbffuqp"
 
 export SQLALCHEMY_DATABASE_NAME="divedb"
 export SQLALCHEMY_DATABASE_USER="divedevuser"
