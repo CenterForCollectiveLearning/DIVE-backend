@@ -1,0 +1,22 @@
+export MODE="DEVELOPMENT"
+export SITE_TITLE="dive"
+export SECRET_KEY="dive"
+
+export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
+
+export SQLALCHEMY_DATABASE_NAME="divedb"
+export SQLALCHEMY_DATABASE_USER="divedevuser"
+export SQLALCHEMY_DATABASE_PASSWORD="electr0lyte"
+export SQLALCHEMY_DATABASE_ENDPOINT="divedevdb.cfbiys7g6z3k.us-east-1.rds.amazonaws.com:5432"
+
+export DIVE_STORAGE_TYPE="s3"
+export DIVE_AWS_ACCESS_KEY_ID="AKIAJJTBFKNV5DML6LFQ"
+export DIVE_AWS_SECRET_ACCESS_KEY="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"
+export DIVE_AWS_DATA_BUCKET="dive-development-file-bucket"
+export DIVE_AWS_REGION="us-east-1"
+
+# DIVE_MAIL_SERVER=smtp.mandrillapp.com
+# DIVE_MAIL_PORT=587
+# DIVE_MAIL_USERNAME=
+# DIVE_MAIL_PASSWORD=
+# DIVE_MAIL_DEFAULT_SENDER=
