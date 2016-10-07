@@ -16,8 +16,6 @@ def is_authorized_user(current_user, project_id):
     matching_project = Project.query.get(project_id)
     user_id = current_user.id
 
-    print current_user, project_id
-
     if current_user.is_global_admin() or not matching_project.private:
         return True
 

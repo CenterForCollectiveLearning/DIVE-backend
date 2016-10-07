@@ -430,6 +430,7 @@ class Feedback(db.Model):
 
     user_email = Column(Unicode(50))
     user_username = Column(Unicode(50))
+    path = Column(Unicode(250))
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)

@@ -791,14 +791,15 @@ def delete_document(project_id, document_id):
 ################
 # Feedback
 ################
-def submit_feedback(project_id, user_id, user_email, user_username, feedback_type, description):
+def submit_feedback(project_id, user_id, user_email, user_username, feedback_type, description, path):
     feedback = Feedback(
         project_id=project_id,
         user_id=user_id,
         user_email=user_email,
         user_username=user_username,
         feedback_type=feedback_type,
-        description=description
+        description=description,
+        path=path
     )
     db.session.add(feedback)
     db.session.commit()
