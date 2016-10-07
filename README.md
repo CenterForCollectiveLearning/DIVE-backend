@@ -17,7 +17,7 @@ Development setup involves the following steps:
 Install System Dependencies (Linux / apt)
 ---------
 ```bash
-$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev python-dev libffi-dev liblapack-dev gfortran rabbitmq-server
+$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev libffi-dev liblapack-dev gfortran rabbitmq-server
 ```
 
 Install System Dependencies (Mac / brew)
@@ -97,8 +97,11 @@ Deployment
 --------
 1. Set environment variable before running any command:
 ```bash
-$ export ENV=production
+$ source production_env
 ```
+
+Building Docker Images
+--------
 
 ```
 conda env export > environment.yml

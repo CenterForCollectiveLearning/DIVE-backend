@@ -4,13 +4,14 @@ export SECRET_KEY="dive"
 export DIVE_COOKIE_DOMAIN="usedive.com"
 export DIVE_PREFERRED_URL_SCHEME="https"
 
-export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"
+export DIVE_AMQP_URL="amqp://vjkkujsq:xmWVpO-dEGwV0xm1ZJle8KLBUL3CntRX@merry-badger.rmq.cloudamqp.com/vjkkujsq"
+# export DIVE_AMQP_URL="amqp://ezwzgmyb:1S3mu_LqKNiurgDLNwlNqm_yr-6FloU9@reindeer.rmq.cloudamqp.com/ezwzgmyb"  # Free tier
 export SENTRY_DSN="https://c7323107b6834d55b8b776b10772988f:3a3b9f7d03dd4bcfbb5da3f1c04ee207@app.getsentry.com/75310"
 
-export SQLALCHEMY_DATABASE_NAME="dive"
+export SQLALCHEMY_DATABASE_NAME="divedb"
 export SQLALCHEMY_DATABASE_USER="diveuser"
 export SQLALCHEMY_DATABASE_PASSWORD="electr0n"
-export SQLALCHEMY_DATABASE_ENDPOINT="divedb.cpmsy9duer4d.us-west-2.rds.amazonaws.com:5432"
+export SQLALCHEMY_DATABASE_ENDPOINT="divedb.cfbiys7g6z3k.us-east-1.rds.amazonaws.com:5432"
 
 export DIVE_STORAGE_TYPE="s3"
 export DIVE_AWS_ACCESS_KEY_ID="AKIAJJTBFKNV5DML6LFQ"
