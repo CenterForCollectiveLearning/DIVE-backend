@@ -16,6 +16,7 @@ feedbackPostParser.add_argument('user_email', type=str, location='json')
 feedbackPostParser.add_argument('username', type=str, location='json')
 feedbackPostParser.add_argument('feedback_type', type=str, location='json')
 feedbackPostParser.add_argument('description', type=str, location='json')
+feedbackPostParser.add_argument('path', type=str, location='json')
 class Feedback(Resource):
     @login_required
     def post(self):
@@ -26,8 +27,9 @@ class Feedback(Resource):
         user_username = args.get('username')
         feedback_type = args.get('feedback_type')
         description = args.get('description')
+        path = args.get('path')
 
-        feedback = db_access.submit_feedback(project_id, user_id, user_email, user_username, feedback_type, description)
+        feedback = db_access.submit_feedback(project_id, user_id, user_email, user_username, feedback_type, description, path)
         return jsonify({
             'message': 'Feedback Received',
             'feedback_id': feedback['id']
