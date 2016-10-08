@@ -20,12 +20,20 @@ from dive.server.resources.transform import Reduce, Unpivot, Join
 from dive.server.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
 from dive.server.resources.auth_resources import Register, Login, Logout, User
 
+from flask import request, make_response
 from dive.server.resources.feedback import Feedback
+from dive.base.serialization import jsonify
 
 from flask_restful import Resource
 
+class Test(Resource):
+    def get(self):
+        return make_response(jsonify({ 'result': 'Success' }))
+
 
 def add_resources(api):
+    api.add_resource(Test,                          '/test')
+
     api.add_resource(TaskResult,                    '/tasks/v1/result/<task_id>')
     api.add_resource(RevokeTask,                    '/tasks/v1/revoke/<task_id>')
     api.add_resource(RevokeChainTask,               '/tasks/v1/revoke')
