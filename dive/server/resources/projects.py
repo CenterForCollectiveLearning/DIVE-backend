@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 projectPutParser = reqparse.RequestParser()
 projectPutParser.add_argument('title', type=str, required=False)
 projectPutParser.add_argument('description', type=str, required=False)
+projectPutParser.add_argument('starred', type=bool, required=False)
 class Project(Resource):
     '''
     Single Project endpoints given a project_id
@@ -39,7 +40,8 @@ class Project(Resource):
         args = projectPutParser.parse_args()
         title = args.get('title')
         description = args.get('description')
-        result = db_access.update_project(project_id, title=title, description=description)
+        starred = args.get('starred')
+        result = db_access.update_project(project_id, title=title, description=description, starred=starred)
         return jsonify(result)
 
     @login_required
