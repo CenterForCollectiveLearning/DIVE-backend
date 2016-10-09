@@ -21,6 +21,7 @@ class Project(db.Model):
     directory = Column(Unicode(2000))
     private = Column(Boolean())
     anonymous = Column(Boolean())
+    starred = Column(Boolean(), default=False)
 
     user_id = Column(Integer, ForeignKey('user.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
@@ -36,6 +37,26 @@ class Project(db.Model):
         lazy='dynamic')
 
     documents = relationship('Document',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    correlations = relationship('Correlation',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    aggregations = relationship('Aggregation',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    comparisons = relationship('Comparison',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    regressions = relationship('Regression',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
@@ -246,7 +267,6 @@ class Regression(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -305,7 +325,6 @@ class Aggregation(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -348,7 +367,6 @@ class Comparison(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -392,7 +410,6 @@ class Correlation(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,

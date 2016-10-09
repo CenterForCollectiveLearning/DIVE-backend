@@ -35,7 +35,8 @@ def get_projects(**kwargs):
         setattr(project, 'num_datasets', project.datasets.count())
         setattr(project, 'num_specs', project.specs.count())
         setattr(project, 'num_documents', project.documents.count())
-    return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents' ]) for project in projects ]
+        setattr(project, 'num_analyses', project.aggregations.count() + project.comparisons.count() + project.correlations.count() + project.regressions.count())
+    return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents', 'num_analyses' ]) for project in projects ]
 
 def insert_project(**kwargs):
     project = Project(
