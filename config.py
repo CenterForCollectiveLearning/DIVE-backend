@@ -29,7 +29,8 @@ class BaseConfig(object):
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
 
     # Resources
-    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    # STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    STORAGE_TYPE = 'file'
     if STORAGE_TYPE == 'file':
         STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
     else:
@@ -40,8 +41,9 @@ class BaseConfig(object):
     PRELOADED_PATH = base_dir_path('preloaded')
 
     # DB
-    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+    DATABASE_URI = 'admin:password@localhost/dive'
+    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
     ALEMBIC_DIR = base_dir_path('migrate')
@@ -51,7 +53,8 @@ class BaseConfig(object):
     CELERY_ACCEPT_CONTENT = [ 'pjson' ]
     CELERY_TASK_SERIALIZER = 'pjson'
     CELERY_RESULT_SERIALIZER = 'pjson'
-    CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
+    CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
+    # CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     CELERY_IMPORTS = []
     for root, dirs, files in walk("./dive/worker"):
