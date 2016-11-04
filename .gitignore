@@ -14,3 +14,5 @@ migrations/
 preloaded/
 
 dive/tasks/statistics/comparison.py
+
+erl_crash.dump

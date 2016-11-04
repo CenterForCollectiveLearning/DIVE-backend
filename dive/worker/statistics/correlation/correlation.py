@@ -26,8 +26,7 @@ def run_correlation_from_spec(spec, project_id, conditionals=[]):
     correlation_variables = spec.get("correlationVariables")
     correlation_variables_names = correlation_variables
 
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     df_subset = df[ correlation_variables_names ]
@@ -76,8 +75,8 @@ def run_correlation(df, correlation_variables):
 def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=[], max_points=300):
     correlation_variables = correlation_spec['correlationVariables']
     dataset_id = correlation_spec['datasetId']
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
+
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     result = []
@@ -100,9 +99,8 @@ def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=
 
 
 def save_correlation(spec, result, project_id, conditionals={}):
-    with task_app.app_context():
-        existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec, conditionals=conditionals)
-        if existing_correlation_doc:
-            db_access.delete_correlation(project_id, existing_correlation_doc['id'], conditionals=conditionals)
-        inserted_correlation = db_access.insert_correlation(project_id, spec, result, conditionals=conditionals)
-        return inserted_correlation
+    existing_correlation_doc = db_access.get_correlation_from_spec(project_id, spec, conditionals=conditionals)
+    if existing_correlation_doc:
+        db_access.delete_correlation(project_id, existing_correlation_doc['id'], conditionals=conditionals)
+    inserted_correlation = db_access.insert_correlation(project_id, spec, result, conditionals=conditionals)
+    return inserted_correlation

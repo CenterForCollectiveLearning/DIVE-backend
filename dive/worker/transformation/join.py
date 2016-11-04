@@ -12,13 +12,12 @@ logger = get_task_logger(__name__)
 
 
 def join_datasets(project_id, left_dataset_id, right_dataset_id, on, left_on, right_on, how, left_suffix, right_suffix, new_dataset_name_prefix):
-    with task_app.app_context():
-        left_df = get_data(project_id=project_id, dataset_id=left_dataset_id)
-        right_df = get_data(project_id=project_id, dataset_id=right_dataset_id)
+    left_df = get_data(project_id=project_id, dataset_id=left_dataset_id)
+    right_df = get_data(project_id=project_id, dataset_id=right_dataset_id)
 
-        project = db_access.get_project(project_id)
-        original_left_dataset = db_access.get_dataset(project_id, left_dataset_id)
-        original_right_dataset = db_access.get_dataset(project_id, right_dataset_id)
+    project = db_access.get_project(project_id)
+    original_left_dataset = db_access.get_dataset(project_id, left_dataset_id)
+    original_right_dataset = db_access.get_dataset(project_id, right_dataset_id)
 
     preloaded_project = project.get('preloaded', False)
     if preloaded_project:

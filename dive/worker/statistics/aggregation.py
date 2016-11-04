@@ -22,8 +22,7 @@ def create_one_dimensional_contingency_table_from_spec(spec, project_id, conditi
         fields.append(dep_variable[1])
     fields.append(aggregation_variable[1])
 
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     df_subset = df[ fields ]
@@ -44,9 +43,7 @@ def create_contingency_table_from_spec(spec, project_id, conditionals=[]):
         fields.append(dep_variable[1])
     fields = fields + aggregation_variables_names
 
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
-
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df_subset = df[ fields ]
     df_ready = df_subset.dropna(how='any')  # Remove unclean
@@ -59,9 +56,8 @@ def run_aggregation_from_spec(spec, project_id, conditionals=[]):
     dataset_id = spec.get("datasetId")
     field_ids = spec.get("fieldIds")
 
-    with task_app.app_context():
-        field_properties = db_access.get_field_properties(project_id, dataset_id)
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
+    field_properties = db_access.get_field_properties(project_id, dataset_id)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
@@ -631,9 +627,8 @@ def find_bin(target, binningEdges, binningNames, num_bins):
 
 
 def save_aggregation(spec, result, project_id, conditionals={}):
-    with task_app.app_context():
-        existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
-        if existing_aggregation_doc:
-            db_access.delete_aggregation(project_id, existing_aggregation_doc['id'], conditionals=conditionals)
-        inserted_aggregation = db_access.insert_aggregation(project_id, spec, result, conditionals=conditionals)
-        return inserted_aggregation
+    existing_aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
+    if existing_aggregation_doc:
+        db_access.delete_aggregation(project_id, existing_aggregation_doc['id'], conditionals=conditionals)
+    inserted_aggregation = db_access.insert_aggregation(project_id, spec, result, conditionals=conditionals)
+    return inserted_aggregation

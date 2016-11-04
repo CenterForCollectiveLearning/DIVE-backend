@@ -139,17 +139,16 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
     for file_doc in file_docs:
         path = file_doc['path']
 
-        with current_app.app_context():
-            dataset = db_access.insert_dataset(project_id,
-                path = path,
-                dialect = dialect,
-                offset = None,
-                title = file_doc['file_title'],
-                file_name = file_doc['file_name'],
-                type = file_doc['type'],
-                storage_type = storage_type
-            )
-            datasets.append(dataset)
+        dataset = db_access.insert_dataset(project_id,
+            path = path,
+            dialect = dialect,
+            offset = None,
+            title = file_doc['file_title'],
+            file_name = file_doc['file_name'],
+            type = file_doc['type'],
+            storage_type = storage_type
+        )
+        datasets.append(dataset)
 
     return datasets
 
