@@ -109,6 +109,12 @@ class ProductionConfig(BaseConfig):
     CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
     CELERY_EVENT_QUEUE_EXPIRES = 60
 
+    # S3
+    AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+    AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+    AWS_REGION = env('DIVE_AWS_REGION')
+
     # Result persistence
     RECOMPUTE_FIELD_PROPERTIES = False
     RECOMPUTE_VIZ_SPECS = False
@@ -141,6 +147,12 @@ class TestingConfig(BaseConfig):
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
     CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
     CELERY_EVENT_QUEUE_EXPIRES = 60
+
+    # S3
+    AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+    AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+    AWS_REGION = env('DIVE_AWS_REGION')
 
     # Result persistence
     RECOMPUTE_FIELD_PROPERTIES = False
