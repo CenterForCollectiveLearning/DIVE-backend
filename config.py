@@ -14,7 +14,7 @@ class BaseConfig(object):
     # General
     SITE_TITLE = 'dive'
     SECRET_KEY = 'dive'
-    PREFERRED_URL_SCHEME = 'http'
+    PREFERRED_URL_SCHEME = 'https'
 
     # Flask
     HOST = '0.0.0.0'
@@ -29,7 +29,6 @@ class BaseConfig(object):
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
 
     # Resources
-    # STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
     STORAGE_TYPE = 'file'
     if STORAGE_TYPE == 'file':
         STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
@@ -42,7 +41,6 @@ class BaseConfig(object):
 
     # DB
     DATABASE_URI = 'admin:password@localhost/dive'
-    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
@@ -96,6 +94,16 @@ class ProductionConfig(BaseConfig):
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
+    # Resources
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    if STORAGE_TYPE == 'file':
+        STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
+    else:
+        AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+        AWS_REGION = env('DIVE_AWS_REGION')    
+
     # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
@@ -130,6 +138,16 @@ class TestingConfig(BaseConfig):
     # Flask
     DEBUG = True
     COMPRESS = False
+
+    # Resources
+    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    if STORAGE_TYPE == 'file':
+        STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
+    else:
+        AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+        AWS_REGION = env('DIVE_AWS_REGION')
 
     # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
