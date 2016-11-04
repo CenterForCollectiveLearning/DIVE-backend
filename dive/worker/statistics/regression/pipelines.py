@@ -66,9 +66,8 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
     Load DF and full field documents
     '''
     # Map variables to field documents
-    with task_app.app_context():
-        all_fields = db_access.get_field_properties(project_id, dataset_id)
-        interaction_terms = db_access.get_interaction_term_properties(interaction_term_ids)
+    all_fields = db_access.get_field_properties(project_id, dataset_id)
+    interaction_terms = db_access.get_interaction_term_properties(interaction_term_ids)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 
     independent_variables = []
@@ -81,8 +80,7 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
                 independent_variables.append(field)
 
     # 2) Access dataset
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     # Drop NAs
     df_subset = df[[dependent_variable_name] + independent_variables_names]
@@ -343,9 +341,8 @@ def format_results(model_results, dependent_variable, independent_variables, con
     return regression_results
 
 def save_regression(spec, result, project_id, conditionals=[]):
-    with task_app.app_context():
-        existing_regression_doc = db_access.get_regression_from_spec(project_id, spec, conditionals=conditionals)
-        if existing_regression_doc:
-            db_access.delete_regression(project_id, existing_regression_doc['id'], conditionals=conditionals)
-        inserted_regression = db_access.insert_regression(project_id, spec, result, conditionals=conditionals)
-        return inserted_regression
+    existing_regression_doc = db_access.get_regression_from_spec(project_id, spec, conditionals=conditionals)
+    if existing_regression_doc:
+        db_access.delete_regression(project_id, existing_regression_doc['id'], conditionals=conditionals)
+    inserted_regression = db_access.insert_regression(project_id, spec, result, conditionals=conditionals)
+    return inserted_regression

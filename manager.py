@@ -20,6 +20,7 @@ from dive.worker.ingestion.upload import save_dataset_to_db
 excluded_filetypes = ['json', 'py', 'yaml']
 
 app = create_app()
+app.app_context().push()
 mode = os.environ.get('MODE', 'DEVELOPMENT')
 if mode == 'DEVELOPMENT': app.config.from_object('config.DevelopmentConfig')
 elif mode == 'TESTING': app.config.from_object('config.TestingConfig')
@@ -70,20 +71,19 @@ def delete_specs():
 
 @manager.command
 def users():
-    with app.app_context():
-        user_fixture_file = open('fixtures.yaml', 'rt')
-        users = yaml.load(user_fixture_file.read())['users']
+    user_fixture_file = open('fixtures.yaml', 'rt')
+    users = yaml.load(user_fixture_file.read())['users']
 
-        for user in users:
-            app.logger.info('Created user: %s', user['username'])
-            register_user(
-                user['username'],
-                user['email'],
-                user['password'],
-                admin=user['admin'],
-                teams=user['teams'],
-                create_teams=True
-            )
+    for user in users:
+        app.logger.info('Created user: %s', user['username'])
+        register_user(
+            user['username'],
+            user['email'],
+            user['password'],
+            admin=user['admin'],
+            teams=user['teams'],
+            create_teams=True
+        )
 
 @manager.command
 def preload():
@@ -116,19 +116,18 @@ def preload():
 
         # Insert projects
         app.logger.info('Preloading project: %s', project_dir)
-        with task_app.app_context():
-            project_dict = db_access.insert_project(
-                title = project_title,
-                description = project_config.get('description'),
-                preloaded = True,
-                topics = project_config.get('topics', []),
-                directory = project_dir,
-                private = private
-            )
-            project_id = project_dict['id']
+        project_dict = db_access.insert_project(
+            title = project_title,
+            description = project_config.get('description'),
+            preloaded = True,
+            topics = project_config.get('topics', []),
+            directory = project_dir,
+            private = private
+        )
+        project_id = project_dict['id']
 
-            # Create first document
-            db_access.create_document(project_id)
+        # Create first document
+        db_access.create_document(project_id)
 
 
         # Iterate through datasets
@@ -147,11 +146,10 @@ def preload():
             dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
 
             # If dataset-level config for project
-            with task_app.app_context():
-                datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
+            datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
 
-                for dataset in datasets:
-                    ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
+            for dataset in datasets:
+                ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
 
                     # ingestion_result.get()
         # relationship_result = relationship_pipeline.apply(args=[ project_id ])

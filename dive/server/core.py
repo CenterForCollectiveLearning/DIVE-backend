@@ -13,6 +13,7 @@ def create_api(app):
     return api
 
 app = create_app()
+app.app_context().push()
 app.logger.addHandler(logging.StreamHandler())
 app.logger.setLevel(logging.INFO)
 

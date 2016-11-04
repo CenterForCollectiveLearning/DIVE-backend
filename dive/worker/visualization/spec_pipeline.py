@@ -22,8 +22,7 @@ logger = get_task_logger(__name__)
 
 def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
     conditionals_with_full_docs = {'and': [], 'or': []}
-    with task_app.app_context():
-        field_properties = db_access.get_field_properties(project_id, dataset_id)
+    field_properties = db_access.get_field_properties(project_id, dataset_id)
 
     for clause, conditional_list in conditionals.iteritems():
         for conditional in conditional_list:
@@ -49,9 +48,8 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     start_time = time()
     # Get dataframe
     if project_id and dataset_id:
-        with task_app.app_context():
-            df = get_data(project_id=project_id, dataset_id=dataset_id)
-            conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
+        conditioned_df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     precomputed = {
         'groupby': {}
@@ -124,13 +122,11 @@ def score_viz_specs(filtered_viz_specs, dataset_id, project_id, selected_fields,
 
 
 def save_viz_specs(specs, dataset_id, project_id, selected_fields, recommendation_types, conditionals, config):
-    with task_app.app_context():
-
-        # Delete existing specs with same parameters
-        existing_specs = db_access.get_specs(
-            project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals, config=config)
-        if existing_specs:
-            for spec in existing_specs:
-                db_access.delete_spec(project_id, spec['id'])
-        inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, recommendation_types, conditionals, config)
+    # Delete existing specs with same parameters
+    existing_specs = db_access.get_specs(
+        project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals, config=config)
+    if existing_specs:
+        for spec in existing_specs:
+            db_access.delete_spec(project_id, spec['id'])
+    inserted_specs = db_access.insert_specs(project_id, specs, selected_fields, recommendation_types, conditionals, config)
     return inserted_specs
