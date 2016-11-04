@@ -99,10 +99,10 @@ class ProductionConfig(BaseConfig):
     # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
-    SQLALCHEMY_POOL_SIZE=20
-    SQLALCHEMY_MAX_OVERFLOW=100
 
     # Worker
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
@@ -134,6 +134,8 @@ class TestingConfig(BaseConfig):
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
     # Worker
+    CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
