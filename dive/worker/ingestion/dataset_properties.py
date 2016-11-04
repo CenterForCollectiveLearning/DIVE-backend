@@ -19,10 +19,9 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
     import pandas as pd-dataset properties '''
 
     if not path:
-        with task_app.app_context():
-            dataset = db_access.get_dataset(project_id, dataset_id)
-            path = dataset['path']
-            df = get_data(project_id=project_id, dataset_id=dataset_id)
+        dataset = db_access.get_dataset(project_id, dataset_id)
+        path = dataset['path']
+        df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     n_rows, n_cols = df.shape
     field_names = df.columns.values.tolist()
@@ -60,16 +59,13 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
 
 def save_dataset_properties(properties_result, dataset_id, project_id):
     properties = properties_result['result']
-    with task_app.app_context():
-        existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
+    existing_dataset_properties = db_access.get_dataset_properties(project_id, dataset_id)
     if existing_dataset_properties:
         logger.info("Updating field property of dataset %s", dataset_id)
-        with task_app.app_context():
-            dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
+        dataset_properties = db_access.update_dataset_properties(project_id, dataset_id, **properties)
     else:
         logger.info("Inserting field property of dataset %s", dataset_id)
-        with task_app.app_context():
-            dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
+        dataset_properties = db_access.insert_dataset_properties(project_id, dataset_id, **properties)
     return {
         'desc': 'Done saving dataset properties',
         'result': None

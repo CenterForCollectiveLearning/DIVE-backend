@@ -18,17 +18,15 @@ def get_distance(list_a, list_b):
 
 THRESHOLD = 0.8
 def compute_relationships(project_id):
-    with task_app.app_context():
-        all_datasets = db_access.get_datasets(project_id)
+    all_datasets = db_access.get_datasets(project_id)
     relationships = []
 
     if len(all_datasets) == 1:
         return relationships
 
     for dataset_a, dataset_b in combinations(all_datasets, 2):
-        with task_app.app_context():
-            dataset_a_fields = db_access.get_field_properties(project_id, dataset_a['id'])
-            dataset_b_fields = db_access.get_field_properties(project_id, dataset_b['id'])
+        dataset_a_fields = db_access.get_field_properties(project_id, dataset_a['id'])
+        dataset_b_fields = db_access.get_field_properties(project_id, dataset_b['id'])
 
         for index_a, field_a in enumerate(dataset_a_fields):
             for index_b, field_b in enumerate(dataset_b_fields):
@@ -75,5 +73,4 @@ def compute_relationships(project_id):
 
 
 def save_relationships(relationships, project_id):
-    with task_app.app_context():
-        db_access.insert_relationships(relationships, project_id)
+    db_access.insert_relationships(relationships, project_id)

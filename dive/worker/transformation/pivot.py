@@ -16,10 +16,9 @@ def unpivot_dataset(project_id, dataset_id, pivot_fields, variable_name, value_n
     '''
     Returns unpivoted dataframe
     '''
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
-        project = db_access.get_project(project_id)
-        original_dataset = db_access.get_dataset(project_id, dataset_id)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    project = db_access.get_project(project_id)
+    original_dataset = db_access.get_dataset(project_id, dataset_id)
 
     preloaded_project = project.get('preloaded', False)
     if preloaded_project:

@@ -114,8 +114,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
 
     logger.debug("Computing field properties for dataset_id %s", dataset_id)
 
-    with task_app.app_context():
-        df = get_data(project_id=project_id, dataset_id=dataset_id)
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
 
     num_fields = len(df.columns)
     field_properties = [ {} for i in range(num_fields) ]
@@ -313,17 +312,14 @@ def save_field_properties(all_properties_result, dataset_id, project_id):
     for field_properties in all_properties:
         name = field_properties['name']
 
-        with task_app.app_context():
-            existing_field_properties = db_access.get_field_properties(project_id, dataset_id, name=name)
+        existing_field_properties = db_access.get_field_properties(project_id, dataset_id, name=name)
 
         if existing_field_properties:
             logger.debug("Updating field property of dataset %s with name %s", dataset_id, name)
-            with task_app.app_context():
-                field_properties = db_access.update_field_properties(project_id, dataset_id, **field_properties)
+            field_properties = db_access.update_field_properties(project_id, dataset_id, **field_properties)
         else:
             logger.debug("Inserting field property of dataset %s with name %s", dataset_id, name)
-            with task_app.app_context():
-                field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
+            field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
         field_properties_with_id.append(field_properties)
     return {
         'desc': 'Saved %s field properties' % len(field_properties_with_id),
