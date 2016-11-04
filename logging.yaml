@@ -35,6 +35,8 @@ loggers:
     level: CRITICAL
   s3transfer:
     level: CRITICAL
+  raven:
+    level: ERROR
 
 root:
     level: DEBUG
