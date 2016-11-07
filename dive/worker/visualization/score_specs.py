@@ -56,7 +56,6 @@ univariate_tests = {
 
 
 def _correlation(v1, v2):
-    print pearsonr(v1, v2)
     return pearsonr(v1, v2)[0]
 
 # Two quantitative variables
@@ -73,7 +72,7 @@ def get_statistical_properties(data, gp, ts):
         if gp in [ GeneratingProcedure.VAL_AGG.value ]:
             v = data.get('agg_field')
         if gp in [ GeneratingProcedure.VAL_BOX.value ]:
-            v = data.get('boxed_field')            
+            v = data.get('boxed_field')
         elif gp in [ GeneratingProcedure.IND_VAL.value ]:
             v = data.get('val')
         elif gp in [ GeneratingProcedure.BIN_AGG.value, GeneratingProcedure.MULTIGROUP_AGG.value, GeneratingProcedure.MULTIGROUP_COUNT.value, GeneratingProcedure.VAL_VAL_Q.value ]:
