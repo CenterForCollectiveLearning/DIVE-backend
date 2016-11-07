@@ -51,7 +51,6 @@ def create():
 @manager.command
 def remove_uploads():
     app.logger.info("Removing data directories in upload folder")
-    print app.config
     if os.path.isdir(app.config['STORAGE_PATH']):
         STORAGE_PATH = os.path.join(os.curdir, app.config['STORAGE_PATH'])
         shutil.rmtree(STORAGE_PATH)

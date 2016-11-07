@@ -119,8 +119,6 @@ def anova(transformed_data, independent_variables, dependent_variable):
     data_linear_model = sm.OLS(y, X).fit()
     anova_table = sm.stats.anova_lm(data_linear_model).transpose()
 
-    print anova_table
-
     column_headers = ['df', 'sum_sq', 'mean_sq', 'F', 'PR(>F)']
 
     results = {}

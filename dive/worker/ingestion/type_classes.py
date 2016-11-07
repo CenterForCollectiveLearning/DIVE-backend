@@ -77,7 +77,6 @@ class IntegerType(CellType):
     regex = re.compile("^-?[0-9]+$")
 
     def cast(self, value):
-        # print 'Casting integer', value, int(value), float(value), locale.atoi(value), int(value), value.is_integer
         if self.regex.match(value):
             return int(value)
 
