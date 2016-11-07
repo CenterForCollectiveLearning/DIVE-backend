@@ -52,7 +52,6 @@ class BaseConfig(object):
     CELERY_TASK_SERIALIZER = 'pjson'
     CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
-    # CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     CELERY_IMPORTS = []
     for root, dirs, files in walk("./dive/worker"):
@@ -102,7 +101,7 @@ class ProductionConfig(BaseConfig):
         AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-        AWS_REGION = env('DIVE_AWS_REGION')    
+        AWS_REGION = env('DIVE_AWS_REGION')
 
     # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
