@@ -21,7 +21,6 @@ def single_q(q_field):
 
     q_label = q_field['name']
 
-    print q_field.keys()
     if (q_field['type'] == 'integer') and q_field['contiguous']:
         # { Value: count }
         count_spec = {

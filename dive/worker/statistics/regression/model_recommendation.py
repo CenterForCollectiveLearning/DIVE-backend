@@ -135,7 +135,6 @@ def lasso(df, dependent_variable, independent_variables, model_limit=8):
     for i, independent_variable in enumerate(independent_variables):
         if abs(fit_coef[i]) >= column_means[i]:
             regression_variable_combination.append(independent_variable)
-        print independent_variable['name'], fit_coef[i], (abs(fit_coef[i]) < column_means[i])
     regression_variable_combinations.append(regression_variable_combination)
 
     return regression_variable_combinations

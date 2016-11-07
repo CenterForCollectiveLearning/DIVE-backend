@@ -755,7 +755,6 @@ def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
             'columns': table_columns,
             'data': table_data
         }
-        print final_data['table']
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
     return final_data
@@ -766,7 +765,6 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
     field_a_label = args['field_a']['name']
 
     values = df[field_a_label].dropna()
-    print len(df[field_a_label]), len(values)
     value_counts = values.value_counts()
     value_list = list(value_counts.index.values)
     counts = value_counts.tolist()
