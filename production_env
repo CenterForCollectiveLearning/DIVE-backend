@@ -13,7 +13,7 @@ export SQLALCHEMY_DATABASE_USER="diveuser"
 export SQLALCHEMY_DATABASE_PASSWORD="electr0n"
 export SQLALCHEMY_DATABASE_ENDPOINT="divedb.cfbiys7g6z3k.us-east-1.rds.amazonaws.com:5432"
 
-export REDIS_ENDPOINT="redis-11869.c8.us-east-1-3.ec2.cloud.redislabs.com:11869"
+export REDIS_URI="redis-11869.c8.us-east-1-3.ec2.cloud.redislabs.com:11869"
 
 export DIVE_STORAGE_TYPE="s3"
 export DIVE_AWS_ACCESS_KEY_ID="AKIAJJTBFKNV5DML6LFQ"
