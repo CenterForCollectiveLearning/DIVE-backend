@@ -129,16 +129,22 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
 
-
-class TestingConfig(BaseConfig):
+class ProductionConfig(BaseConfig):
     # General
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
-    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'http')
+    PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
 
     # Flask
-    DEBUG = True
+    DEBUG = False
     COMPRESS = False
+    COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', 'usedive.com')
+    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+
+    # Analytics
+    SENTRY_DSN = env('SENTRY_DSN')
+    SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
@@ -152,15 +158,12 @@ class TestingConfig(BaseConfig):
 
     # DB
     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
-
-    # Analytics
-    SENTRY_DSN = env('SENTRY_DSN')
-    SENTRY_USER_ATTRS = [ 'username', 'email' ]
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
 
     # Worker
     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    # CELERY_RESULT_BACKEND = 'redis://%s' % env('REDIS_URI')
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
@@ -174,6 +177,54 @@ class TestingConfig(BaseConfig):
     AWS_REGION = env('DIVE_AWS_REGION')
 
     # Result persistence
-    RECOMPUTE_FIELD_PROPERTIES = False
-    RECOMPUTE_VIZ_SPECS = False
-    RECOMPUTE_STATISTICS = False
+    RECOMPUTE_FIELD_PROPERTIES = True
+    RECOMPUTE_VIZ_SPECS = True
+    RECOMPUTE_STATISTICS = True
+#
+# class TestingConfig(BaseConfig):
+#     # General
+#     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
+#     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
+#     PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'http')
+#
+#     # Flask
+#     DEBUG = True
+#     COMPRESS = False
+#
+#     # Resources
+#     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+#     if STORAGE_TYPE == 'file':
+#         STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
+#     else:
+#         AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+#         AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+#         AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+#         AWS_REGION = env('DIVE_AWS_REGION')
+#
+#     # DB
+#     DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+#     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s' % DATABASE_URI
+#
+#     # Analytics
+#     SENTRY_DSN = env('SENTRY_DSN')
+#     SENTRY_USER_ATTRS = [ 'username', 'email' ]
+#
+#     # Worker
+#     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
+#     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+#     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
+#     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
+#     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
+#     CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
+#     CELERY_EVENT_QUEUE_EXPIRES = 60
+#
+#     # S3
+#     AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+#     AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+#     AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+#     AWS_REGION = env('DIVE_AWS_REGION')
+#
+#     # Result persistence
+#     RECOMPUTE_FIELD_PROPERTIES = False
+#     RECOMPUTE_VIZ_SPECS = False
+#     RECOMPUTE_STATISTICS = False
