@@ -53,7 +53,7 @@ class BaseConfig(object):
     CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
-    CELERY_RESULT_BACKEND = 'redis://%s' $ REDIS_URI
+    CELERY_RESULT_BACKEND = 'redis://%s' % REDIS_URI
     CELERY_IMPORTS = []
     for root, dirs, files in walk("./dive/worker"):
         path = root.split('/')
