@@ -129,7 +129,7 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
 
-class ProductionConfig(BaseConfig):
+class TestingConfig(BaseConfig):
     # General
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
