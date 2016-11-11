@@ -115,7 +115,7 @@ class ProductionConfig(BaseConfig):
 
     # Worker
     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
-    CELERY_BROKER_URL = 'redis://redis-11869.c8.-3.ec2.cloud.redislabs.com:11869'
+    # CELERY_BROKER_URL = 'redis://redis-11869.c8.-3.ec2.cloud.redislabs.com:11869'
     CELERY_RESULT_BACKEND = 'redis://redis-11869.c8.-3.ec2.cloud.redislabs.com:11869'
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
