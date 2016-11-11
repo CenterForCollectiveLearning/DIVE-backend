@@ -33,6 +33,7 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     4) Run regressions described by those models
     5) Format results
     '''
+
     model = spec.get('model', 'lr')
     regression_type = spec.get('regressionType')
     independent_variables_names = spec.get('independentVariables', [])
