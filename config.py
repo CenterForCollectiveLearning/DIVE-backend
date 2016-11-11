@@ -53,12 +53,6 @@ class BaseConfig(object):
     CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
-    # CELERY_RESULT_BACKEND = 'redis://'  # 'db+postgresql://%s' % DATABASE_URI
-    # CELERY_BROKER_URL = 'redis://dive-redis.od8pl7.ng.0001.use1.cache.amazonaws.com:6379'
-    # CELERY_RESULT_BACKEND = 'redis://dive-redis.od8pl7.ng.0001.use1.cache.amazonaws.com:6379'
-
-    CELERY_BROKER_URL = 'redis://redis-11869.c8.us-east-1-3.ec2.cloud.redislabs.com:11869'
-    CELERY_RESULT_BACKEND = 'redis://redis-11869.c8.us-east-1-3.ec2.cloud.redislabs.com:11869'
     CELERY_IMPORTS = []
     for root, dirs, files in walk("./dive/worker"):
         path = root.split('/')
@@ -115,8 +109,7 @@ class ProductionConfig(BaseConfig):
 
     # Worker
     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
-    # CELERY_BROKER_URL = 'redis://redis-11869.c8.us-east-1-3.ec2.cloud.redislabs.com:11869'
-    CELERY_RESULT_BACKEND = 'redis://redis-11869.c8.us-east-1-3.ec2.cloud.redislabs.com:11869'
+    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
     BROKER_POOL_LIMIT = 1 # Will decrease connection usage
     BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
     BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
