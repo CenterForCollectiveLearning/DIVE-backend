@@ -134,36 +134,33 @@ def relationship_pipeline(self, project_id):
     return
 
 
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendation_types, conditionals, config):
     '''
     Enumerate, filter, score, and format viz specs in sequence
     '''
     logger.info("In viz spec enumeration pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
 
-    try:
-        self.update_state(state=states.PENDING, meta={'desc': '(1/5) Enumerating visualization specs'})
-        enumerated_viz_specs = enumerate_viz_specs(project_id, dataset_id, field_agg_pairs, recommendation_types=recommendation_types)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/5) Enumerating visualization specs'})
+    enumerated_viz_specs = enumerate_viz_specs(project_id, dataset_id, field_agg_pairs, recommendation_types=recommendation_types)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to %s visualization specs' % len(enumerated_viz_specs)})
-        viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config)
+    self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to %s visualization specs' % len(enumerated_viz_specs)})
+    viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(3/5) Filtering %s visualization specs' % len(viz_specs_with_data)})
-        filtered_viz_specs = filter_viz_specs(viz_specs_with_data)
+    self.update_state(state=states.PENDING, meta={'desc': '(3/5) Filtering %s visualization specs' % len(viz_specs_with_data)})
+    filtered_viz_specs = filter_viz_specs(viz_specs_with_data)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(4/5) Scoring %s visualization specs' % len(filtered_viz_specs)})
-        scored_viz_specs = score_viz_specs(filtered_viz_specs, dataset_id, project_id, field_agg_pairs)
+    self.update_state(state=states.PENDING, meta={'desc': '(4/5) Scoring %s visualization specs' % len(filtered_viz_specs)})
+    scored_viz_specs = score_viz_specs(filtered_viz_specs, dataset_id, project_id, field_agg_pairs)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(5/5) Saving %s visualization specs' % len(scored_viz_specs)})
-        saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, recommendation_types, conditionals, config)
-        return { 'result': saved_viz_specs }
-    except Exception as e:
-        num_retries = viz_spec_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise viz_spec_pipeline.retry(countdown=seconds_to_wait)
+    self.update_state(state=states.PENDING, meta={'desc': '(5/5) Saving %s visualization specs' % len(scored_viz_specs)})
+    saved_viz_specs = save_viz_specs(scored_viz_specs, dataset_id, project_id, field_agg_pairs, recommendation_types, conditionals, config)
+    return { 'result': saved_viz_specs }
 
 
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def ingestion_pipeline(self, dataset_id, project_id):
     '''
     Compute dataset and field properties in parallel
@@ -171,115 +168,85 @@ def ingestion_pipeline(self, dataset_id, project_id):
     TODO Accept multiple datasets?
     '''
     logger.info("In ingestion pipeline with dataset_id %s and project_id %s", dataset_id, project_id)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/4) Computing dataset properties'})
+    dataset_properties = compute_dataset_properties(dataset_id, project_id)
 
-    try:
-        self.update_state(state=states.PENDING, meta={'desc': '(1/4) Computing dataset properties'})
-        dataset_properties = compute_dataset_properties(dataset_id, project_id)
+    self.update_state(state=states.PENDING, meta={'desc': '(2/4) Saving dataset properties'})
+    save_dataset_properties(dataset_properties, dataset_id, project_id)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/4) Saving dataset properties'})
-        save_dataset_properties(dataset_properties, dataset_id, project_id)
+    self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
+    field_properties = compute_all_field_properties(dataset_id, project_id)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(3/4) Computing dataset field properties'})
-        field_properties = compute_all_field_properties(dataset_id, project_id)
+    self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
+    result = save_field_properties(field_properties, dataset_id, project_id)
+    return result
 
-        self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
-        result = save_field_properties(field_properties, dataset_id, project_id)
-        return result
-    except Exception as e:
-        num_retries = ingestion_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise ingestion_pipeline.retry(countdown=seconds_to_wait)
-
-
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def regression_pipeline(self, spec, project_id, conditionals=[]):
-    try:
-        logger.info("In regression pipeline with and project_id %s", project_id)
+    logger.info("In regression pipeline with and project_id %s", project_id)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regressions'})
-        regression_data, status = run_regression_from_spec(spec, project_id, conditionals=conditionals)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regressions'})
+    regression_data, status = run_regression_from_spec(spec, project_id, conditionals=conditionals)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving regression results'})
-        regression_doc = save_regression(spec, regression_data, project_id, conditionals=conditionals)
-        regression_data['id'] = regression_doc['id']
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving regression results'})
+    regression_doc = save_regression(spec, regression_data, project_id, conditionals=conditionals)
+    regression_data['id'] = regression_doc['id']
 
-        return { 'result': regression_data }
-    except Exception as e:
-        num_retries = regression_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise regression_pipeline.retry(countdown=seconds_to_wait)
+    return { 'result': regression_data }
 
-
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def aggregation_pipeline(self, spec, project_id):
-    try:
-        logger.info("In aggregation pipeline with and project_id %s", project_id, conditionals=[])
+    logger.info("In aggregation pipeline with and project_id %s", project_id, conditionals=[])
 
-        self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical aggregation'})
-        aggregation_data, status = run_aggregation_from_spec(spec, project_id, conditionals=conditionals)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical aggregation'})
+    aggregation_data, status = run_aggregation_from_spec(spec, project_id, conditionals=conditionals)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical aggregation'})
-        aggregation_doc = save_aggregation(spec, aggregation_data, project_id, conditionals=conditionals)
-        aggregation_data['id'] = aggregation_doc['id']
-
-    except Exception as e:
-        num_retries = aggregation_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise aggregation_pipeline.retry(countdown=seconds_to_wait)
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical aggregation'})
+    aggregation_doc = save_aggregation(spec, aggregation_data, project_id, conditionals=conditionals)
+    aggregation_data['id'] = aggregation_doc['id']
 
 
-
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def one_dimensional_contingency_table_pipeline(self, spec, project_id, conditionals=[]):
-    try:
-        logger.info("In one dimensional contingency table pipeline with and project_id %s", project_id)
+    logger.info("In one dimensional contingency table pipeline with and project_id %s", project_id)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating one dimensional aggregation table'})
-        table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating one dimensional aggregation table'})
+    table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
-        table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
-        table_data['id'] = table_doc['id']
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
+    table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
+    table_data['id'] = table_doc['id']
 
-        return { 'result': table_data }
-    except Exception as e:
-        num_retries = one_dimensional_contingency_table_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise one_dimensional_contingency_table_pipeline.retry(countdown=seconds_to_wait)
+    return { 'result': table_data }
 
 
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def contingency_table_pipeline(self, spec, project_id, conditionals=[]):
-    try:
-        logger.info("In contingency table pipeline with and project_id %s", project_id)
+    logger.info("In contingency table pipeline with and project_id %s", project_id)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating aggregation table'})
-        table_data, status = create_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating aggregation table'})
+    table_data, status = create_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
-        table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
-        table_data['id'] = table_doc['id']
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
+    table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
+    table_data['id'] = table_doc['id']
 
-        return { 'result': table_data }
-    except Exception as e:
-        num_retries = contingency_table_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise contingency_table_pipeline.retry(countdown=seconds_to_wait)
+    return { 'result': table_data }
 
 
-@celery.task(bind=True, max_retries=10)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def correlation_pipeline(self, spec, project_id, conditionals=[]):
-    try:
-        logger.info("In correlation pipeline with and project_id %s", project_id)
+    logger.info("In correlation pipeline with and project_id %s", project_id)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical correlation'})
-        correlation_data, status = run_correlation_from_spec(spec, project_id, conditionals=conditionals)
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical correlation'})
+    correlation_data, status = run_correlation_from_spec(spec, project_id, conditionals=conditionals)
 
-        self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical correlation'})
-        correlation_doc = save_correlation(spec, correlation_data, project_id, conditionals=conditionals)
-        correlation_data['id'] = correlation_doc['id']
-        return { 'result': correlation_data }
-    except Exception as e:
-        num_retries = correlation_pipeline.request.retries
-        seconds_to_wait = 1.5 ** num_retries
-        raise correlation_pipeline.retry(countdown=seconds_to_wait)
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical correlation'})
+    correlation_doc = save_correlation(spec, correlation_data, project_id, conditionals=conditionals)
+    correlation_data['id'] = correlation_doc['id']
+    return { 'result': correlation_data }
