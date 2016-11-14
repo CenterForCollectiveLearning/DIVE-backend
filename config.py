@@ -51,7 +51,7 @@ class BaseConfig(object):
     CELERY_ACCEPT_CONTENT = [ 'pjson' ]
     CELERY_TASK_SERIALIZER = 'pjson'
     CELERY_RESULT_SERIALIZER = 'pjson'
-    CELERY_BROKER_URL = 'librabbitmq://admin:password@localhost/dive'
+    CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
 
     CELERY_IMPORTS = []
