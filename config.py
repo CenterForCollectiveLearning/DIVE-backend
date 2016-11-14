@@ -46,9 +46,9 @@ class BaseConfig(object):
 
     # Worker
     CELERY_TASK_ALWAYS_EAGER = False
-    CELERY_ACCEPT_CONTENT = [ 'pjson' ]
-    CELERY_TASK_SERIALIZER = 'pjson'
-    CELERY_RESULT_SERIALIZER = 'pjson'
+    # CELERY_ACCEPT_CONTENT = [ 'pjson' ]
+    # CELERY_TASK_SERIALIZER = 'pjson'
+    # CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
 
@@ -115,6 +115,7 @@ class ProductionConfig(BaseConfig):
     RECOMPUTE_VIZ_SPECS = False
     RECOMPUTE_STATISTICS = False
 
+
 class TestingConfig(BaseConfig):
     # General
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
@@ -149,7 +150,7 @@ class TestingConfig(BaseConfig):
     # Worker
     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
-    
+
     # S3
     AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
