@@ -30,13 +30,11 @@ class BaseConfig(object):
 
     # Resources
     STORAGE_TYPE = 'file'
-    if STORAGE_TYPE == 'file':
-        STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
-    else:
-        AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
-        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-        AWS_REGION = env('DIVE_AWS_REGION')
+    STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
+    AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+    AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+    AWS_REGION = env('DIVE_AWS_REGION')
     PRELOADED_PATH = base_dir_path('preloaded')
 
     # DB
@@ -62,11 +60,15 @@ class BaseConfig(object):
             if f.endswith('.py') and f != '__init__.py':
                 CELERY_IMPORTS.append('%s.%s' % (dir_path, f[:-3]))
 
-    CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
-    CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
-    CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
-    CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
-    CELERY_EVENT_QUEUE_EXPIRES = 60
+    # TODO Look into best performance
+    # CELERY_BROKER_URL = 'sqs://%s:%s@' % ( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
+    # CELERY_BROKER_URL = 'sqs://%s:%s@' % ('AKIAJJTBFKNV5DML6LFQ', 'N1nCZsKq4wwA6iyqCF8VAcoTbqKHplSCu1OQ9BW')
+    # CELERY_TASK_DEFAULT_QUEUE = 'dive-development-mq'
+    # CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
+    # CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
+    # CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
+    # CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
+    # CELERY_EVENT_QUEUE_EXPIRES = 60
 
     # Result persistence
     RECOMPUTE_FIELD_PROPERTIES = True
