@@ -51,15 +51,6 @@ class BaseConfig(object):
     CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
-    # CELERY_BROKER_URL = 'sqs://%s:%s@' % ("", "")
-    # CELERY_TASK_DEFAULT_QUEUE = 'dive-development-mq'
-    # CELERY_BROKER_URL = 'sqs://'
-
-    # CELERY_BROKER_TRANSPORT_OPTIONS = {
-    #     'polling_interval': 3,
-    #     'region': '',
-    #     'visibility_timeout': 3600
-    # }
 
     CELERY_IMPORTS = []
     for root, dirs, files in walk("./dive/worker"):
@@ -68,16 +59,6 @@ class BaseConfig(object):
         for f in files:
             if f.endswith('.py') and f != '__init__.py':
                 CELERY_IMPORTS.append('%s.%s' % (dir_path, f[:-3]))
-
-    # TODO Look into best performance
-    # CELERY_BROKER_URL = 'sqs://%s:%s@' % ( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
-    #
-    #
-    # CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
-    # CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
-    # CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
-    # CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
-    # CELERY_EVENT_QUEUE_EXPIRES = 60
 
     # Result persistence
     RECOMPUTE_FIELD_PROPERTIES = True
@@ -122,12 +103,6 @@ class ProductionConfig(BaseConfig):
     # Worker
     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
-    # CELERY_RESULT_BACKEND = 'redis://%s' % env('REDIS_URI')
-    CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
-    CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
-    CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
-    CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
-    CELERY_EVENT_QUEUE_EXPIRES = 60
 
     # S3
     AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
@@ -174,13 +149,7 @@ class TestingConfig(BaseConfig):
     # Worker
     CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
     CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
-    # CELERY_RESULT_BACKEND = 'redis://%s' % env('REDIS_URI')
-    CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
-    CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
-    CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS timeouts etc
-    CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
-    CELERY_EVENT_QUEUE_EXPIRES = 60
-
+    
     # S3
     AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
