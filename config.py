@@ -46,9 +46,9 @@ class BaseConfig(object):
 
     # Worker
     CELERY_TASK_ALWAYS_EAGER = False
-    # CELERY_ACCEPT_CONTENT = [ 'pjson' ]
-    # CELERY_TASK_SERIALIZER = 'pjson'
-    # CELERY_RESULT_SERIALIZER = 'pjson'
+    CELERY_ACCEPT_CONTENT = [ 'pjson' ]
+    CELERY_TASK_SERIALIZER = 'pjson'
+    CELERY_RESULT_SERIALIZER = 'pjson'
     CELERY_BROKER_URL = 'amqp://admin:password@localhost/dive'
     CELERY_RESULT_BACKEND = 'db+postgresql://%s' % DATABASE_URI
 
