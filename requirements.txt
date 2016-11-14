@@ -1,5 +1,5 @@
 alembic==0.8.2
-amqp==1.4.9
+amqp==2.1.1
 aniso8601==1.0.0
 anyjson==0.3.3
 appnope==0.1.0
@@ -7,13 +7,13 @@ awscli==1.10.67
 Babel==2.1.1
 backports.ssl-match-hostname==3.4.0.2
 bcrypt==3.1.1
-billiard==3.3.0.23
+billiard==3.5.0.2
 blinker==1.4
 boto==2.43.0
 boto3==1.4.0
 botocore==1.4.57
 bz2file==0.98
-celery==3.1.25
+celery==4.0.0
 certifi==2015.9.6.2
 cffi==1.8.3
 chardet==2.3.0
@@ -75,8 +75,7 @@ jdcal==1.2
 Jinja2==2.8
 jmespath==0.9.0
 json-table-schema==0.2.1
-kombu==3.0.37
-librabbitmq==1.6.1
+kombu==4.0.0
 logging-tree==1.7
 lxml==3.4.4
 Mako==1.0.2
