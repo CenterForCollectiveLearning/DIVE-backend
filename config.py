@@ -2,13 +2,15 @@ import os
 from os import walk
 from os.path import join, dirname, abspath
 from dive.base.serialization import pjson_dumps, pjson_loads
-from kombu.serialization import register
+from kombu.serialization import register, registry
 env = os.environ.get
 base_dir_path = lambda x: abspath(join(dirname(__file__), x))
 
 register('pjson', pjson_dumps, pjson_loads,
     content_type='application/x-pjson',
     content_encoding='utf-8')
+
+registry.enable('application/x-pjson')
 
 class BaseConfig(object):
     # General
