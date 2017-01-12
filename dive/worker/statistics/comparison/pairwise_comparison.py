@@ -37,6 +37,12 @@ def get_pairwise_comparison_data(spec, project_id, conditionals={}):
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df = df.dropna()  # Remove unclean
 
+    # Only return pairwise comparison data if number of groups < THRESHOLD
+    num_groups = len(get_unique(df[independent_variable_names[0]]))
+    NUM_GROUP_THRESHOLD = 15
+    if num_groups > NUM_GROUP_THRESHOLD:
+        return None, 200
+
     hsd_result = pairwise_tukeyhsd(df[dependent_variable_names[0]], df[independent_variable_names[0]], alpha=significance_cutoff)
     hsd_raw_data = hsd_result.summary().data[1:]
     st_range = np.abs(hsd_result.meandiffs) / hsd_result.std_pairs
@@ -75,4 +81,4 @@ def get_pairwise_comparison_data(spec, project_id, conditionals={}):
     return {
         'column_headers': hsd_headers,
         'rows': hsd_data
-    },200
+    }, 200
