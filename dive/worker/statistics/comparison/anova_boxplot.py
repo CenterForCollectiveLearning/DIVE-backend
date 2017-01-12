@@ -9,6 +9,7 @@ from collections import OrderedDict
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
 from dive.base.data.access import get_data, get_conditioned_data
+from dive.worker.ingestion.utilities import get_unique
 from dive.worker.visualization.data import get_val_box_data
 
 from celery.utils.log import get_task_logger
@@ -26,6 +27,12 @@ def get_anova_boxplot_data(spec, project_id, conditionals={}):
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+
+    # Only return boxplot data if number of groups < THRESHOLD
+    num_groups = len(get_unique(df[independent_variables_names[0]]))
+    NUM_GROUP_THRESHOLD = 15
+    if num_groups > NUM_GROUP_THRESHOLD:
+        return None, 200
 
     df_subset = df[ dependent_variables_names + independent_variables_names ]
     df_ready = df_subset.dropna(how='all')  # Remove unclean
