@@ -57,6 +57,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
 
     dataset = db_access.get_dataset(project_id, dataset_id)
     dialect = dataset['dialect']
+    encoding = dataset.get('encoding', 'utf-8')
 
     if dataset['storage_type'] == 's3':
         file_obj = s3_client.get_object(
@@ -70,8 +71,10 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if not field_properties:
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
+    print 'ACCESSING, encoding:', encoding
     df = pd.read_table(
         accessor,
+        encoding = encoding,
         skiprows = dataset['offset'],
         sep = dialect['delimiter'],
         engine = 'c',
@@ -87,6 +90,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     coerced_df = coerce_types(sanitized_df, field_properties)
 
     IMD.insertData(dataset_id, coerced_df)
+    print coerced_df.columns
     return coerced_df
 
 
