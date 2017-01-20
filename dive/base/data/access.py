@@ -57,6 +57,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
 
     dataset = db_access.get_dataset(project_id, dataset_id)
     dialect = dataset['dialect']
+    encoding = dataset.get('encoding', 'utf-8')
 
     if dataset['storage_type'] == 's3':
         file_obj = s3_client.get_object(
@@ -72,6 +73,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
 
     df = pd.read_table(
         accessor,
+        encoding = encoding,
         skiprows = dataset['offset'],
         sep = dialect['delimiter'],
         engine = 'c',
@@ -95,7 +97,6 @@ fields_to_coerce_to_integer = [ 'year', 'integer' ]
 fields_to_coerce_to_string = [ 'string' ]
 fields_to_coerce_to_datetime = [ 'datetime' ]
 def coerce_types(df, field_properties):
-    logger.debug('Coercing types %s', [ x['type'] for x in field_properties ])
     decimal_fields = []
     integer_fields = []
     string_fields = []

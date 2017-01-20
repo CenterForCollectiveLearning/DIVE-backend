@@ -127,8 +127,8 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
 
     # 1) Detect field types
     for (i, field_name) in enumerate(df):
+        logger.info('Detecting field properties for field %s', field_name)
         field_values = df[field_name]
-        logger.debug('Computing field properties for field %s', field_name)
         field_type, field_type_scores = calculate_field_type(field_name, field_values, i, num_fields)
         general_type = specific_to_general_type[field_type]
 
@@ -145,7 +145,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
 
     # 2) Rest
     for (i, field_name) in enumerate(df):
-        logger.debug('Computing field properties for field %s', field_name)
 
         field_values = df[field_name]
         field_values_no_na = field_values.dropna(how='any')
@@ -187,7 +186,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
             try:
                 viz_data = get_bin_agg_data(df, binning_spec)
             except Exception as e:
-                logger.error("Error getting viz data for field, %s", e, exc_info=True)
                 continue
         elif general_type is 'c' or (general_type == 'q' and contiguous ):
             val_count_spec = {
@@ -196,7 +194,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
             try:
                 viz_data = get_val_count_data(df, val_count_spec)
             except Exception as e:
-                logger.error("Error getting viz data for field, %s", e, exc_info=True)
                 continue
 
         # Normality
@@ -315,10 +312,8 @@ def save_field_properties(all_properties_result, dataset_id, project_id):
         existing_field_properties = db_access.get_field_properties(project_id, dataset_id, name=name)
 
         if existing_field_properties:
-            logger.debug("Updating field property of dataset %s with name %s", dataset_id, name)
             field_properties = db_access.update_field_properties(project_id, dataset_id, **field_properties)
         else:
-            logger.debug("Inserting field property of dataset %s with name %s", dataset_id, name)
             field_properties = db_access.insert_field_properties(project_id, dataset_id, **field_properties)
         field_properties_with_id.append(field_properties)
     return {

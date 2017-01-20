@@ -12,7 +12,9 @@ import json
 import codecs
 import StringIO
 import boto3
+import chardet
 import pandas as pd
+
 from werkzeug.utils import secure_filename
 from flask import current_app
 
@@ -84,6 +86,13 @@ def upload_file(project_id, file_obj):
     return datasets
 
 
+def get_encoding(file_obj, sample_size=100*1024*1024):
+    blob = file_obj.read(sample_size)
+    file_obj.seek(0)
+    encoding = chardet.detect(blob)
+    return encoding['encoding']
+
+
 def get_dialect(file_obj, sample_size=1024*1024):
     '''
     TODO Use file extension as an indication?
@@ -111,6 +120,8 @@ def get_dialect(file_obj, sample_size=1024*1024):
 
 
 def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, path, storage_type):
+    encoding = 'utf-8'
+
     # Default dialect (for Excel and JSON conversion)
     dialect = {
         "delimiter": ",",
@@ -123,6 +134,7 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
     file_docs = []
     if file_type in ['csv', 'tsv', 'txt'] :
         dialect = get_dialect(file_obj)
+        encoding = get_encoding(file_obj)
         file_obj.read(0)
 
         file_doc = save_flat_table(project_id, file_obj, file_title, file_name, file_type, path)
@@ -141,6 +153,7 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
 
         dataset = db_access.insert_dataset(project_id,
             path = path,
+            encoding = encoding,
             dialect = dialect,
             offset = None,
             title = file_doc['file_title'],
