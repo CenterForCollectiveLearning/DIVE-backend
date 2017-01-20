@@ -121,7 +121,7 @@ def get_dialect(file_obj, sample_size=1024*1024):
 
 def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, path, storage_type):
     encoding = 'utf-8'
-    
+
     # Default dialect (for Excel and JSON conversion)
     dialect = {
         "delimiter": ",",
@@ -153,8 +153,8 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
 
         dataset = db_access.insert_dataset(project_id,
             path = path,
-            dialect = dialect,
             encoding = encoding,
+            dialect = dialect,
             offset = None,
             title = file_doc['file_title'],
             file_name = file_doc['file_name'],

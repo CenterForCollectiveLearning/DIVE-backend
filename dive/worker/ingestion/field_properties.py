@@ -125,7 +125,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         palette = total_palette + [ '#007BD7' for i in range(0, num_fields - len(total_palette)) ]
         # palette = sample_with_maximum_distance(padded_palette, num_fields, random_start=True)
 
-    print "PART 1"
     # 1) Detect field types
     for (i, field_name) in enumerate(df):
         field_values = df[field_name]
@@ -143,7 +142,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
     df = coerce_types(df, field_properties)
     IMD.insertData(dataset_id, df)
 
-    print 'PART 2'
     # 2) Rest
     for (i, field_name) in enumerate(df):
 
