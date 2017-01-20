@@ -82,6 +82,7 @@ class Dataset(db.Model):
     storage_type = Column(Unicode(10))
     offset = Column(Integer)
     dialect = Column(JSONB)
+    encoding = Column(Unicode(250))    
     path = Column(Unicode(250))
     file_name = Column(Unicode(250))
     type = Column(Unicode(250))
