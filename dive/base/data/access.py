@@ -71,7 +71,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if not field_properties:
         field_properties = db_access.get_field_properties(project_id, dataset_id)
 
-    print 'ACCESSING, encoding:', encoding
     df = pd.read_table(
         accessor,
         encoding = encoding,
@@ -90,7 +89,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     coerced_df = coerce_types(sanitized_df, field_properties)
 
     IMD.insertData(dataset_id, coerced_df)
-    print coerced_df.columns
     return coerced_df
 
 
@@ -99,7 +97,6 @@ fields_to_coerce_to_integer = [ 'year', 'integer' ]
 fields_to_coerce_to_string = [ 'string' ]
 fields_to_coerce_to_datetime = [ 'datetime' ]
 def coerce_types(df, field_properties):
-    logger.debug('Coercing types %s', [ x['type'] for x in field_properties ])
     decimal_fields = []
     integer_fields = []
     string_fields = []
