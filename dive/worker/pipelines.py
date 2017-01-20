@@ -159,7 +159,8 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendat
     return { 'result': saved_viz_specs }
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 5})
 def ingestion_pipeline(self, dataset_id, project_id):
     '''
     Compute dataset and field properties in parallel
