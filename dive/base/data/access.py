@@ -73,7 +73,8 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
 
     df = pd.read_table(
         accessor,
-        encoding = encoding,
+        error_bad_lines = False,
+        encoding = 'utf-8',
         skiprows = dataset['offset'],
         sep = dialect['delimiter'],
         engine = 'c',
