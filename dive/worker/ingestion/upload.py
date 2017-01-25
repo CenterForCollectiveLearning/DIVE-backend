@@ -10,7 +10,10 @@ import csv
 import xlrd
 import json
 import codecs
-import StringIO
+try:
+    import cStringIO as StringIO
+except:
+    import StringIO
 import boto3
 import chardet
 import pandas as pd
@@ -38,12 +41,7 @@ def save_fileobj_to_s3(fileobj, project_id, file_name):
             },
             ExpiresIn = 86400
         )
-        # s3_client.put_bucket_accelerate_configuration(
-        #     Bucket=current_app.config['AWS_DATA_BUCKET'],
-        #     AccelerateConfiguration={
-        #         'Status': 'Enabled'
-        #     }
-        # )
+
         s3_client.upload_fileobj(
             fileobj,
             current_app.config['AWS_DATA_BUCKET'],
@@ -94,10 +92,6 @@ def get_encoding(file_obj, sample_size=100*1024*1024):
 
 
 def get_dialect(file_obj, sample_size=1024*1024):
-    '''
-    TODO Use file extension as an indication?
-    TODO list of delimiters
-    '''
     DELIMITERS = ''.join([',', ';', '|', '$', ';', ' ', ' | ', '\t'])
 
     try:
@@ -135,7 +129,14 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
     if file_type in ['csv', 'tsv', 'txt'] :
         dialect = get_dialect(file_obj)
         encoding = get_encoding(file_obj)
-        file_obj.read(0)
+
+        try:
+            file_obj.seek(0)
+            file_obj.write(file_obj.read().decode(encoding).encode('utf-8'))
+            file_obj.seek(0)
+        except Exception as e:
+            logger.error('Error coercing unicode for file with path %s', path, exc_info=True)
+            raise e
 
         file_doc = save_flat_table(project_id, file_obj, file_title, file_name, file_type, path)
         file_docs.append(file_doc)
@@ -172,6 +173,7 @@ def save_flat_table(project_id, file_obj, file_title, file_name, file_type, path
         'type': file_type,
         'path': path
     }
+
     if current_app.config['STORAGE_TYPE'] == 'file':
         try:
             file_obj.save(path)
@@ -193,7 +195,6 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, pa
         if sheet.nrows == 0: continue
         csv_file_title = file_name + "_" + sheet_name
         csv_file_name = csv_file_title + ".csv"
-
 
         if current_app.config['STORAGE_TYPE'] == 's3':
             csv_path = 'https://s3.amazonaws.com/%s/%s/%s' % (current_app.config['AWS_DATA_BUCKET'], str(project_id), csv_file_name)
