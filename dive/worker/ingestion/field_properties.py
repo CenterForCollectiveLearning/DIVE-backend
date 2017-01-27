@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 '''
 Dataset field properties
 '''
@@ -177,6 +178,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
 
         # Binning
         viz_data = None
+        logger.info('General type: %s', general_type)
         if general_type in ['q', 't'] and not contiguous:
             binning_spec = {
                 'binning_field': { 'name': field_name, 'type': field_type },
@@ -186,14 +188,17 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
             try:
                 viz_data = get_bin_agg_data(df, binning_spec)
             except Exception as e:
+                logger.error(e, exc_info=True)
                 continue
-        elif general_type is 'c' or (general_type == 'q' and contiguous ):
+        elif general_type in ['c'] or (general_type == 'q' and contiguous ):
             val_count_spec = {
                 'field_a': { 'name': field_name }
             }
             try:
                 viz_data = get_val_count_data(df, val_count_spec)
             except Exception as e:
+                logger.info('ERROR GETTING VAL COUNT DATA')
+                logger.error(e, exc_info=True)
                 continue
 
         # Normality
