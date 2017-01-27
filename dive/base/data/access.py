@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 '''
 Module for reading datasets given some specifier
 
