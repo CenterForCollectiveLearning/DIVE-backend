@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 '''
 Functions for reading, sampling, and detecting types of datasets
 
@@ -85,8 +86,12 @@ def upload_file(project_id, file_obj):
 
 
 def get_encoding(file_obj, sample_size=100*1024*1024):
-    blob = file_obj.read(sample_size)
-    file_obj.seek(0)
+    try:
+        blob = file_obj.read(sample_size)
+        file_obj.seek(0)
+    except:
+        blob = file_obj
+
     encoding = chardet.detect(blob)
     return encoding['encoding']
 
@@ -129,14 +134,26 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
     if file_type in ['csv', 'tsv', 'txt'] :
         dialect = get_dialect(file_obj)
         encoding = get_encoding(file_obj)
+        file_obj.seek(0)
 
-        try:
+        print 'Encoding:', encoding
+        # Force encoding to UTF-8
+        if (encoding not in ['ascii']) and ('utf' not in encoding) and ('UTF' not in encoding):
+            try:
+                coerced_content = file_obj.read().decode(encoding).encode('utf-8', 'replace')
+            except UnicodeDecodeError as UDE:
+                try:
+                    coerced_content = unicode(file_obj.read(), errors='replace')
+                except UnicodeDecodeError as UDE:
+                    logger.error('Error coercing unicode for file with path %s', path, exc_info=True)
+                    raise UDE
             file_obj.seek(0)
-            file_obj.write(file_obj.read().decode(encoding).encode('utf-8'))
+            file_obj.write(coerced_content)
             file_obj.seek(0)
-        except Exception as e:
-            logger.error('Error coercing unicode for file with path %s', path, exc_info=True)
-            raise e
+
+            # print 'New encoding of strings:', get_encoding(coerced_content)
+            # print 'New encoding of file:', get_encoding(file_obj)
+            # file_obj.seek(0)
 
         file_doc = save_flat_table(project_id, file_obj, file_title, file_name, file_type, path)
         file_docs.append(file_doc)
@@ -201,7 +218,7 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, pa
             strIO = StringIO.StringIO()
             wr = csv.writer(strIO, quoting=csv.QUOTE_ALL)
             for rn in xrange(sheet.nrows) :
-                wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
+                wr.writerow([ unicode(v).encode('utf-8', 'replace') for v in sheet.row_values(rn) ])
             strIO.seek(0)
 
             response = s3_client.upload_fileobj(
