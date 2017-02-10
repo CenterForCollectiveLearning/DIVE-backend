@@ -4,11 +4,16 @@ import logging
 import multiprocessing
 import sys
 import traceback
+import functools
 
 import benchmark.benchmark_config as BenchmarkConfig
 import benchmark.auth as auth
 
 LOG = logging.getLogger(__name__)
+
+
+def run_job(job, params):
+    return list(map((lambda job: job.run(params)), job['actions']))
 
 
 def main(argv):
@@ -29,13 +34,10 @@ def main(argv):
         LOG.info("Loading config.yml from: %s", config_path)
         jobs = BenchmarkConfig.parse_benchmark_config(config_path)
         LOG.info("Parsed %s %s", str(len(jobs)), "job" if len(jobs) == 1 else "jobs")
-        processes = []
-        for job in jobs:
-            session = auth.get_session()
-            params = {"session": session}
-            process = multiprocessing.Process(target=job['actions'][0].run, args=(params, ))
-            processes.append(process)
-            process.start()
+        pool = multiprocessing.Pool(processes=4)
+        params = auth.register_user(email='benchmark@mit.edu', username='benchmark', password='benchmark')
+        async = pool.map_async(functools.partial(run_job, params=params), jobs)
+        async.wait(timeout=300)
     except getopt.GetoptError as error:
         LOG.error("Must supply config YAML path as first argument: %s", error)
         traceback.format_exc()
