@@ -6,3 +6,6 @@ jobs:
       action_class_name: "Upload"
       file: "../benchmark-sample/nba_winrates.csv"
       delay: 3
+    - action_module: "benchmark.action.explore"
+      action_class_name: "Explore"
+      delay: 0
