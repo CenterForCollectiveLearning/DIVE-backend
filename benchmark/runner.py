@@ -3,6 +3,7 @@ import getopt
 import logging
 import multiprocessing
 import sys
+import time
 import traceback
 import functools
 
@@ -36,8 +37,11 @@ def main(argv):
         LOG.info("Parsed %s %s", str(len(jobs)), "job" if len(jobs) == 1 else "jobs")
         pool = multiprocessing.Pool(processes=4)
         params = auth.register_user(email='benchmark@mit.edu', username='benchmark', password='benchmark')
+        start_time = time.time()
         async = pool.map_async(functools.partial(run_job, params=params), jobs)
         async.wait(timeout=300)
+        end_time = time.time()
+        LOG.info("Finished all benchmark jobs, took: {0}".format(str(end_time - start_time)))
     except getopt.GetoptError as error:
         LOG.error("Must supply config YAML path as first argument: %s", error)
         traceback.format_exc()

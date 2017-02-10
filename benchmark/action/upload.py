@@ -10,14 +10,19 @@ class Upload(Action):
 
     UPLOAD_TASK_PENDING = 'PENDING'
 
-    ACTION_ARG_WHITELIST = ['dive_url', 'file']
+    ACTION_ARG_WHITELIST = ['dive_url', 'file', 'delay']
 
-    def __init__(self, dive_url, file):
+    def __init__(self, dive_url, file, delay=0):
         self._dive_url = dive_url
         self._file = file
+        self._delay = delay
         super(Upload, self).__init__()
 
     def run(self, args):
+        LOG.info('Starting upload action')
+        LOG.info('Delaying {0} seconds'.format(str(self._delay)))
+        time.sleep(self._delay)
+        LOG.info('Finished delay')
         with open(self._file, 'rb') as file:
             project_response = args['session'].post('%s/projects/v1/projects' % self._dive_url, json={
                 'anonymous': 'false',
@@ -35,7 +40,7 @@ class Upload(Action):
             task_id = response.json()['taskId']
             task_status = self.UPLOAD_TASK_PENDING
             while task_status == self.UPLOAD_TASK_PENDING:
-                time.sleep(1)
+                time.sleep(0.5)
                 status_response = args['session'].get('{0}/tasks/v1/result/{1}'.format(self._dive_url, task_id))
                 task_status = status_response.json()['state']
             end_time = time.time()

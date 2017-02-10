@@ -2,15 +2,17 @@ import hashlib
 import requests
 import logging
 
-
 LOG = logging.getLogger(__name__)
 
+LOGIN_ENDPOINT = 'auth/v1/login'
+REGISTER_ENDPOINT = 'auth/v1/register'
 
-def get_session(username, password, email='', url='http://localhost:8081/auth/v1/login'):
+
+def get_session(username, password, email='', url='http://localhost:8081/{0}'.format(LOGIN_ENDPOINT)):
     return _auth_with_payload(email, username, password, url)
 
 
-def register_user(email, username, password, url='http://localhost:8081/auth/v1/register'):
+def register_user(email, username, password, url='http://localhost:8081/{0}'.format(REGISTER_ENDPOINT)):
     session_params = _auth_with_payload(email, username, password, url)
     LOG.info(session_params)
     if int(session_params['http_status_code']) != 200:
