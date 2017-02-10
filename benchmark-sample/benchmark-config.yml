@@ -1,7 +1,7 @@
-dive_url: "localhost:8081"
+dive_url: "http://localhost:8081"
 jobs:
   - params: {}
     actions:
     - action_module: "benchmark.action.upload"
       action_class_name: "Upload"
-      file: "benchmark_sample/nba_winrates.csv"
+      file: "../benchmark-sample/nba_winrates.csv"

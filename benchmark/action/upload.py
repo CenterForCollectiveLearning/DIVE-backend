@@ -1,3 +1,4 @@
+import os
 from benchmark.action.base_action import Action
 
 
@@ -11,5 +12,7 @@ class Upload(Action):
         super(Upload, self).__init__()
 
     def run(self, args):
-        files = {'filename': open(self._file, 'rb')}
-        args['session'].post('%s/datasets/v1/upload' % self._dive_url, files=files, data={"project_id": 1})
+        with open(self._file, 'rb') as file:
+            files = {'data': ('', '{"project_id": 1}'), 'file': (os.path.basename(file.name), file)}
+            response = args['session'].post('%s/datasets/v1/upload' % self._dive_url, files=files)
+            return response

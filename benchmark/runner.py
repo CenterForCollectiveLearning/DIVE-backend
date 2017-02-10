@@ -29,6 +29,13 @@ def main(argv):
         LOG.info("Loading config.yml from: %s", config_path)
         jobs = BenchmarkConfig.parse_benchmark_config(config_path)
         LOG.info("Parsed %s %s", str(len(jobs)), "job" if len(jobs) == 1 else "jobs")
+        processes = []
+        for job in jobs:
+            session = auth.get_session()
+            params = {"session": session}
+            process = multiprocessing.Process(target=job['actions'][0].run, args=(params, ))
+            processes.append(process)
+            process.start()
     except getopt.GetoptError as error:
         LOG.error("Must supply config YAML path as first argument: %s", error)
         traceback.format_exc()
