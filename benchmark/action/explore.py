@@ -9,11 +9,12 @@ class Explore(Action):
 
     EXPLORE_TASK_PENDING = 'PENDING'
 
-    ACTION_ARG_WHITELIST = ['dive_url', 'delay']
+    ACTION_ARG_WHITELIST = ['dive_url', 'delay', 'threshold_millis']
 
-    def __init__(self, dive_url, delay=0):
+    def __init__(self, dive_url, threshold_millis=0, delay=0):
         self._dive_url = dive_url
         self._delay = delay
+        self._threshold_millis = threshold_millis
         super(Explore, self).__init__()
 
     def run(self, args):
@@ -37,8 +38,12 @@ class Explore(Action):
                 task_status = self.EXPLORE_TASK_PENDING
                 while task_status == self.EXPLORE_TASK_PENDING:
                     time.sleep(0.5)
+                    if (time.time() - start_time) * 1000 > self._threshold_millis:
+                        error = "Elapsed time exceeded threshold millis %s" % str(self._threshold_millis)
+                        LOG.error(error)
+                        raise AssertionError(error)
                     status_response = args['session'].get('{0}/tasks/v1/result/{1}'.format(self._dive_url, task_id))
                     task_status = status_response.json()['state']
-                end_time = time.time()
+                elapsed = time.time() - start_time
                 LOG.info("Explore of projectId: {0}, for datasetId: {1}, named dataset: {2}, took {3} seconds"
-                         .format(dataset['projectId'], dataset['id'], dataset['title'], str(end_time - start_time)))
+                         .format(dataset['projectId'], dataset['id'], dataset['title'], str(elapsed)))

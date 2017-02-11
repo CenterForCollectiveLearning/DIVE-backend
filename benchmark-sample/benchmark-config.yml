@@ -4,8 +4,10 @@ jobs:
     actions:
     - action_module: "benchmark.action.upload"
       action_class_name: "Upload"
-      file: "../benchmark-sample/nba_winrates.csv"
+      file: "./benchmark-sample/nba_winrates.csv"
       delay: 3
+      threshold_millis: 15000
     - action_module: "benchmark.action.explore"
       action_class_name: "Explore"
       delay: 0
+      threshold_millis: 10000

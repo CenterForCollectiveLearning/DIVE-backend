@@ -1,4 +1,33 @@
+machine:
+  environment:
+    MODE: DEVELOPMENT
+    SITE_TITLE: dive
+    SECRET_KEY: dive
+    DIVE_AMQP_URL: amqp://admin:password@localhost/dive
+    SQLALCHEMY_DATABASE_NAME: dive
+    SQLALCHEMY_DATABASE_USER: admin
+    SQLALCHEMY_DATABASE_PASSWORD: password
+    SQLALCHEMY_DATABASE_ENDPOINT: localhost
+  python:
+    version: 2.7.10
+  services:
+    - rabbitmq-server
+
 general:
   branches:
     only:
-      - benchmark
+      - update-benchmark
+
+test:
+  pre:
+    - bash test_startup.sh > test_startup.log 2>&1
+    - bash run_worker.sh > run_worker.log 2>&1:
+        background: true
+    - python run_server.py > run_server.log 2>&1:
+        background: true
+  post:
+    - python benchmark/runner.py --config=./benchmark-sample/benchmark-config.yml:
+        environment:
+          PYTHONPATH: $PYTHONPATH:benchmark:benchmark-sample
+    - mkdir -p $CIRCLE_TEST_REPORTS/log/
+    - cp *.log $CIRCLE_TEST_REPORTS/log/

@@ -41,16 +41,17 @@ def main(argv):
         async = pool.map_async(functools.partial(run_job, params=params), jobs)
         async.wait(timeout=300)
         end_time = time.time()
+        async.get()
         LOG.info("Finished all benchmark jobs, took: {0}".format(str(end_time - start_time)))
     except getopt.GetoptError as error:
         LOG.error("Must supply config YAML path as first argument: %s", error)
         traceback.format_exc()
     except Exception as exception:
-        LOG.error("Caught exception: %s", exception)
+        LOG.error("Caught exception: %s", str(exception))
         traceback.format_exc()
-    finally:
-        LOG.info("Shutting down")
-        sys.exit(0)
+        sys.exit(1)
+    LOG.info("Shutting down successfully")
+    sys.exit(0)
 
 
 def parse_config_args(argv, long_opts):
