@@ -1,15 +1,35 @@
-# from dive.worker.statistics.utilities import create_patsy_model
 import numpy as np
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
 from sklearn import linear_model
 
-from dive.worker.statistics.utilities import create_patsy_model
+from dive.base.data.access import get_data
+from dive.base.db import db_access
+
 from dive.worker.statistics.regression import ModelSelectionType as MST
-from dive.worker.statistics.regression.helpers import rvc_contains_all_interaction_variables
+from dive.worker.statistics.utilities import create_patsy_model
+from dive.worker.statistics.regression.pipelines import run_models, format_results
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+
+
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable=None):
+    df = get_data(project_id=project_id, dataset_id=dataset_id)
+    field_properties = db_access.get_field_properties(project_id, dataset_id)
+    quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
+
+    if not dependent_variable:
+        dependent_variable = np.random.choice(quantitative_field_properties, size=1)[0]['name']
+
+    independent_variables = [ fp for fp in field_properties \
+        if (fp['general_type'] == 'q' and fp['name'] != dependent_variable and not fp['is_unique'])]
+
+    result = forward_r2(df, dependent_variable, independent_variables)
+    return {
+        'dependent_variable': dependent_variable,
+        'independent_variables': [ x['name'] for x in result ],
+    }
 
 
 def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
@@ -76,13 +96,16 @@ def all_but_one(df, dependent_variable, independent_variables, interaction_terms
 
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     '''
-    Return forward selection model based on r-squared.
-
+    Return forward selection model based on r-squared. Returns full (last) model
     For now: linear model
+
+    TODO Vary marginal threshold based on all other contributions
     '''
     regression_variable_combinations = []
+    interaction_terms = []
+    regression_type = 'linear'
 
-    MARGINAL_THRESHOLD = 0.1
+    MARGINAL_THRESHOLD_PERCENTAGE = 0.05  # Need x * r2 of last model to include variable
 
     last_r2 = 0.0
     last_variable_set = []
@@ -93,17 +116,21 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
         for variable in remaining_variables:
             considered_variables = last_variable_set + [ variable ]
 
-            patsy_model = create_patsy_model(dependent_variable, considered_variables)
-            y, X = dmatrices(patsy_model, df, return_type='dataframe')
-            model_result = sm.OLS(y, X).fit()
-            r_squared_adj = model_result.rsquared_adj
+            considered_independent_variables_per_model, patsy_models = \
+                construct_models(df, dependent_variable, considered_variables, interaction_terms)
+
+
+            formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
+
+            # TODO Don't run all of them!
+            r_squared_adj = formatted_results['regressions_by_column'][-1]['column_properties']['r_squared']
             r2s.append(r_squared_adj)
 
         max_r2 = max(r2s)
         marginal_r2 = max_r2 - last_r2
         max_variable = remaining_variables[r2s.index(max_r2)]
 
-        if marginal_r2 < MARGINAL_THRESHOLD:
+        if marginal_r2 < last_r2 * MARGINAL_THRESHOLD_PERCENTAGE:
             break
 
         last_r2 = max_r2
@@ -112,7 +139,8 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
 
         regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
 
-    return regression_variable_combinations
+    largest_variable_set = regression_variable_combinations[-1]
+    return largest_variable_set
 
 
 def lasso(df, dependent_variable, independent_variables, model_limit=8):
