@@ -12,6 +12,7 @@ from dive.worker.statistics.comparison.anova import run_anova_from_spec
 from dive.worker.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.worker.statistics.comparison.pairwise_comparison import get_pairwise_comparison_data
 from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
+from dive.worker.statistics.regression.model_recommendation import get_initial_regression_model_recommendation
 from dive.worker.statistics.correlation.correlation import get_correlation_scatterplot_data
 # from dive.worker.statistics.regression.interaction_terms import
 
@@ -79,6 +80,26 @@ class InteractionTerms(Resource):
         interaction_term_id = args.get('id')
         deleted_term = db_access.delete_interaction_term(interaction_term_id)
         return jsonify(deleted_term)
+
+#####################################################################
+# Return variables included in model selection algorithm
+# INPUT: project_id, dataset_id
+# OUTPUT: {}
+#####################################################################
+initialRegressionModelRecommendationPostParser = reqparse.RequestParser()
+initialRegressionModelRecommendationPostParser.add_argument('projectId', required=True, type=int, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('datasetId', required=True, type=int, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('dependentVariable', type=str, location='json')
+class InitialRegressionModelRecommendation(Resource):
+    def post(self):
+        args = initialRegressionModelRecommendationPostParser.parse_args()
+        project_id = args.get('projectId')
+        dataset_id = args.get('datasetId')
+        dependent_variable = args.get('dependentVariable')
+
+        result = get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable=dependent_variable)
+        return jsonify(result)
+
 
 #####################################################################
 # Endpoint returning regression data given a specification

@@ -1,5 +1,3 @@
-'''
-'''
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -18,8 +16,8 @@ from patsy import dmatrices
 from dive.base.db import db_access
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import celery, task_app
-from dive.worker.statistics.regression.model_recommendation import construct_models
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
+from dive.worker.statistics.regression import ModelSelectionType as MST
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -96,6 +94,32 @@ def get_full_field_documents_from_field_names(all_fields, names):
         if matched_field:
             fields.append(matched_field)
     return fields
+
+
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
+    '''
+    Given dependent and independent variables, return list of patsy model.
+
+    Classify into different systems:
+        1) Whether data is involved
+        2) Whether the final regressions are actually run in the process
+
+    regression_variable_combinations = [ [x], [x, y], [y, z] ]
+    models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
+    '''
+    model_selection_name_to_function = {
+        MST.ALL_BUT_ONE.value: all_but_one,
+        MST.LASSO.value: lasso,
+        MST.FORWARD_R2.value: forward_r2
+    }
+
+    model_selection_function = model_selection_name_to_function[selection_type]
+    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables, interaction_terms)
+
+    patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
+
+    return ( regression_variable_combinations, patsy_models )
+
 
 def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []
