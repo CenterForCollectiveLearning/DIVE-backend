@@ -15,9 +15,10 @@ from patsy import dmatrices
 
 from dive.base.db import db_access
 from dive.base.data.access import get_data, get_conditioned_data
-from dive.worker.core import celery, task_app
+
+from dive.worker.statistics.utilities import create_patsy_model
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
-from dive.worker.statistics.regression import ModelSelectionType as MST
+from dive.worker.statistics.regression import ModelCompletionType as MCT
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -96,29 +97,84 @@ def get_full_field_documents_from_field_names(all_fields, names):
     return fields
 
 
-def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
-    '''
-    Given dependent and independent variables, return list of patsy model.
+def one_at_a_time_and_all_but_one(df, dependent_variable, independent_variables, interaction_terms):
+    return
 
-    Classify into different systems:
-        1) Whether data is involved
-        2) Whether the final regressions are actually run in the process
+
+def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
+    '''
+    Return one model with all variables, and N-1 models with one variable left out
+
+    Technically not a model
+    '''
+    # Create list of independent variables, one per regression
+    regression_variable_combinations = []
+    if len(independent_variables) == 2:
+        for i, considered_field in enumerate(independent_variables):
+            regression_variable_combinations.append([ considered_field ])
+    if len(independent_variables) > 2:
+        for i, considered_field in enumerate(independent_variables):
+            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
+            regression_variable_combinations.append(all_fields_except_considered_field)
+    regression_variable_combinations.append(independent_variables)
+
+    combinations_with_interactions = []
+    if interaction_terms:
+        for rvc in regression_variable_combinations:
+            for interaction_term in interaction_terms:
+                if rvc_contains_all_interaction_variables(interaction_term, rvc):
+                    new_combination = rvc[:]
+                    new_combination.append(interaction_term)
+                    combinations_with_interactions.append(new_combination)
+    regression_variable_combinations = regression_variable_combinations + combinations_with_interactions
+
+    return regression_variable_combinations
+
+
+def all_variables(df, dependent_variable, independent_variables, interaction_terms):
+    '''
+    Returns model including all independent_variables
+    '''
+    logger.info(independent_variables)
+    regression_variable_combinations = [ independent_variables + interaction_terms ]
+    logger.info(regression_variable_combinations)
+    return regression_variable_combinations
+
+
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, completion_type=MCT.ALL_BUT_ONE.value):
+    '''
+    Given dependent and independent variables, return list of patsy models completing
+    the regression table. NOT model recommendation.
+
+    Currently:
+        1) Including variables one at a time, leaving them out one at a time, and all
+        2) Leaving variables out one at a time, and all
+        3) Just including all variables
 
     regression_variable_combinations = [ [x], [x, y], [y, z] ]
     models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
     '''
-    model_selection_name_to_function = {
-        MST.ALL_BUT_ONE.value: all_but_one,
-        MST.LASSO.value: lasso,
-        MST.FORWARD_R2.value: forward_r2
+    model_completion_name_to_function = {
+        MCT.ONE_AT_A_TIME_AND_ALL_BUT_ONE: one_at_a_time_and_all_but_one,
+        MCT.ALL_BUT_ONE.value: all_but_one,
+        MCT.ALL_VARIABLES.value: all_variables,
     }
 
-    model_selection_function = model_selection_name_to_function[selection_type]
-    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables, interaction_terms)
+    model_completion_function = model_completion_name_to_function[completion_type]
+    regression_variable_combinations = model_completion_function(df, dependent_variable, independent_variables, interaction_terms)
 
     patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
 
     return ( regression_variable_combinations, patsy_models )
+
+
+def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
+    patsy_models = []
+    for regression_variable_combination in regression_variable_combinations:
+        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        patsy_models.append(model)
+
+    return patsy_models
 
 
 def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
