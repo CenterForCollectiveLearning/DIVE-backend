@@ -76,7 +76,7 @@ def add_resources(api):
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
-    api.add_resource(InitialRegressionModelRecommendation, '/statistics/v1/initial_regression_model_recommendation')
+    api.add_resource(InitialRegressionModelRecommendation, '/statistics/v1/initial_regression_state')
 
     api.add_resource(ExportedResults,               '/exported_results/v1/exported_results')
 
