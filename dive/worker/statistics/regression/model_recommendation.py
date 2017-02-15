@@ -18,12 +18,14 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable=None):
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     field_properties = db_access.get_field_properties(project_id, dataset_id)
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
 
-    if not dependent_variable:
+    if dependent_variable_id:
+        dependent_variable = next((f for f in field_properties if f['id'] == dependent_variable_id), None)
+    else:
         dependent_variable = np.random.choice(quantitative_field_properties, size=1)[0]
 
     independent_variables = [ fp for fp in field_properties \
@@ -31,6 +33,8 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
 
     result = forward_r2(df, dependent_variable, independent_variables)
     return {
+        'completion_type': 'leaveOneOut',
+        'recommendation_type': 'forwardR2',
         'dependent_variable_id': dependent_variable['id'],
         'independent_variables_ids': [ x['id'] for x in result ],
     }
