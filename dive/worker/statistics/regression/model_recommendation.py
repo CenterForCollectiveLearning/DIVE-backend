@@ -1,3 +1,8 @@
+'''
+Module containing functions accepting a data frame and returning a single recommended model
+
+Currently: LASSO and Greedy Forward R2
+'''
 import numpy as np
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
@@ -6,9 +11,8 @@ from sklearn import linear_model
 from dive.base.data.access import get_data
 from dive.base.db import db_access
 
-from dive.worker.statistics.regression import ModelSelectionType as MST
-from dive.worker.statistics.utilities import create_patsy_model
-from dive.worker.statistics.regression.pipelines import run_models, format_results
+from dive.worker.statistics.regression import ModelRecommendationType as MRT, ModelCompletionType as MCT
+from dive.worker.statistics.regression.pipelines import run_models, format_results, construct_models
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -30,68 +34,6 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
         'dependent_variable_id': dependent_variable['id'],
         'independent_variables_ids': [ x['id'] for x in result ],
     }
-
-
-def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, selection_type=MST.ALL_BUT_ONE.value):
-    '''
-    Given dependent and independent variables, return list of patsy model.
-
-    Classify into different systems:
-        1) Whether data is involved
-        2) Whether the final regressions are actually run in the process
-
-    regression_variable_combinations = [ [x], [x, y], [y, z] ]
-    models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
-    '''
-    model_selection_name_to_function = {
-        MST.ALL_BUT_ONE.value: all_but_one,
-        MST.LASSO.value: lasso,
-        MST.FORWARD_R2.value: forward_r2
-    }
-
-    model_selection_function = model_selection_name_to_function[selection_type]
-    regression_variable_combinations = model_selection_function(df, dependent_variable, independent_variables, interaction_terms)
-
-    patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
-
-    return ( regression_variable_combinations, patsy_models )
-
-
-def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
-    patsy_models = []
-    for regression_variable_combination in regression_variable_combinations:
-        model = create_patsy_model(dependent_variable, regression_variable_combination)
-        patsy_models.append(model)
-
-    return patsy_models
-
-
-def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
-    '''
-    Return one model with all variables, and N-1 models with one variable left out
-    '''
-    # Create list of independent variables, one per regression
-    regression_variable_combinations = []
-    if len(independent_variables) == 2:
-        for i, considered_field in enumerate(independent_variables):
-            regression_variable_combinations.append([ considered_field ])
-    if len(independent_variables) > 2:
-        for i, considered_field in enumerate(independent_variables):
-            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
-            regression_variable_combinations.append(all_fields_except_considered_field)
-    regression_variable_combinations.append(independent_variables)
-
-    combinations_with_interactions = []
-    if interaction_terms:
-        for rvc in regression_variable_combinations:
-            for interaction_term in interaction_terms:
-                if rvc_contains_all_interaction_variables(interaction_term, rvc):
-                    new_combination = rvc[:]
-                    new_combination.append(interaction_term)
-                    combinations_with_interactions.append(new_combination)
-    regression_variable_combinations = regression_variable_combinations + combinations_with_interactions
-
-    return regression_variable_combinations
 
 
 def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
@@ -117,13 +59,13 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
             considered_variables = last_variable_set + [ variable ]
 
             considered_independent_variables_per_model, patsy_models = \
-                construct_models(df, dependent_variable, considered_variables, interaction_terms)
+                construct_models(df, dependent_variable, considered_variables, interaction_terms, completion_type=MCT.ALL_VARIABLES.value)
 
             raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
             formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
 
             # TODO Don't run all of them!
-            r_squared_adj = formatted_results['regressions_by_column'][-1]['column_properties']['r_squared']
+            r_squared_adj = formatted_results['regressions_by_column'][0]['column_properties']['r_squared']
             r2s.append(r_squared_adj)
 
         max_r2 = max(r2s)
