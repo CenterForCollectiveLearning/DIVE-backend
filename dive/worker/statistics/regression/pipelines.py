@@ -19,6 +19,7 @@ from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.statistics.utilities import create_patsy_model
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
 from dive.worker.statistics.regression import ModelCompletionType as MCT
+from dive.worker.statistics.regression.model_completion import one_at_a_time_and_all_but_one, all_but_one, all_variables
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -88,6 +89,7 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
 
     return dependent_variable, independent_variables, interaction_terms, df_ready
 
+
 def get_full_field_documents_from_field_names(all_fields, names):
     fields = []
     for name in names:
@@ -95,48 +97,6 @@ def get_full_field_documents_from_field_names(all_fields, names):
         if matched_field:
             fields.append(matched_field)
     return fields
-
-
-def one_at_a_time_and_all_but_one(df, dependent_variable, independent_variables, interaction_terms):
-    return
-
-
-def all_but_one(df, dependent_variable, independent_variables, interaction_terms, model_limit=8):
-    '''
-    Return one model with all variables, and N-1 models with one variable left out
-
-    Technically not a model
-    '''
-    # Create list of independent variables, one per regression
-    regression_variable_combinations = []
-    if len(independent_variables) == 2:
-        for i, considered_field in enumerate(independent_variables):
-            regression_variable_combinations.append([ considered_field ])
-    if len(independent_variables) > 2:
-        for i, considered_field in enumerate(independent_variables):
-            all_fields_except_considered_field = independent_variables[:i] + independent_variables[i+1:]
-            regression_variable_combinations.append(all_fields_except_considered_field)
-    regression_variable_combinations.append(independent_variables)
-
-    combinations_with_interactions = []
-    if interaction_terms:
-        for rvc in regression_variable_combinations:
-            for interaction_term in interaction_terms:
-                if rvc_contains_all_interaction_variables(interaction_term, rvc):
-                    new_combination = rvc[:]
-                    new_combination.append(interaction_term)
-                    combinations_with_interactions.append(new_combination)
-    regression_variable_combinations = regression_variable_combinations + combinations_with_interactions
-
-    return regression_variable_combinations
-
-
-def all_variables(df, dependent_variable, independent_variables, interaction_terms):
-    '''
-    Returns model including all independent_variables
-    '''
-    regression_variable_combinations = [ independent_variables + interaction_terms ]
-
 
 
 def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, completion_type=MCT.ALL_BUT_ONE.value):
