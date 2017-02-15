@@ -36,7 +36,7 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
     }
 
 
-def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
+def forward_r2(df, dependent_variable, independent_variables, model_limit=5):
     '''
     Return forward selection model based on r-squared. Returns full (last) model
     For now: linear model
@@ -47,7 +47,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
     interaction_terms = []
     regression_type = 'linear'
 
-    MARGINAL_THRESHOLD_PERCENTAGE = 0.05  # Need x * r2 of last model to include variable
+    MARGINAL_THRESHOLD_PERCENTAGE = 0.1  # Need x * r2 of last model to include variable
 
     last_r2 = 0.0
     last_variable_set = []
@@ -64,7 +64,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
             raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
             formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
 
-            # TODO Don't run all of them!
+
             r_squared_adj = formatted_results['regressions_by_column'][0]['column_properties']['r_squared']
             r2s.append(r_squared_adj)
 
@@ -72,14 +72,16 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
         marginal_r2 = max_r2 - last_r2
         max_variable = remaining_variables[r2s.index(max_r2)]
 
-        if marginal_r2 < last_r2 * MARGINAL_THRESHOLD_PERCENTAGE:
+        if marginal_r2 < (last_r2 * MARGINAL_THRESHOLD_PERCENTAGE):
             break
 
         last_r2 = max_r2
         last_variable_set.append(max_variable)
         remaining_variables.remove(max_variable)
-
         regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
+
+        if len(regression_variable_combinations) > model_limit:
+            break
 
     largest_variable_set = regression_variable_combinations[-1]
     return largest_variable_set

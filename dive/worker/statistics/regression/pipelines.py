@@ -135,10 +135,8 @@ def all_variables(df, dependent_variable, independent_variables, interaction_ter
     '''
     Returns model including all independent_variables
     '''
-    logger.info(independent_variables)
     regression_variable_combinations = [ independent_variables + interaction_terms ]
-    logger.info(regression_variable_combinations)
-    return regression_variable_combinations
+
 
 
 def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, completion_type=MCT.ALL_BUT_ONE.value):
