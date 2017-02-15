@@ -433,8 +433,11 @@ def get_regression_by_id(regression_id, project_id, **kwargs):
 def get_regression_from_spec(project_id, spec, **kwargs):
     try:
         regression = Regression.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
-    except NoResultFound:
+    except NoResultFound, e:
         return None
+    except MultipleResultsFound, e:
+        logger.error(e)
+        return row_to_dict(Regression.query.filter_by(project_id=project_id, spec=spec, **kwargs).all()[0])
     return row_to_dict(regression)
 
 
