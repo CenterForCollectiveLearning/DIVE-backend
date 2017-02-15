@@ -89,15 +89,15 @@ class InteractionTerms(Resource):
 initialRegressionModelRecommendationPostParser = reqparse.RequestParser()
 initialRegressionModelRecommendationPostParser.add_argument('projectId', required=True, type=int, location='json')
 initialRegressionModelRecommendationPostParser.add_argument('datasetId', required=True, type=int, location='json')
-initialRegressionModelRecommendationPostParser.add_argument('dependentVariable', type=str, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('dependentVariableId', type=int, location='json')
 class InitialRegressionModelRecommendation(Resource):
     def post(self):
         args = initialRegressionModelRecommendationPostParser.parse_args()
         project_id = args.get('projectId')
         dataset_id = args.get('datasetId')
-        dependent_variable = args.get('dependentVariable')
+        dependent_variable_id = args.get('dependentVariableId')
 
-        result = get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable=dependent_variable)
+        result = get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=dependent_variable_id)
         return jsonify(result)
 
 
