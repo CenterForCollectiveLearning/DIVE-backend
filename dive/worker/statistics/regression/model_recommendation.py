@@ -20,15 +20,15 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
 
     if not dependent_variable:
-        dependent_variable = np.random.choice(quantitative_field_properties, size=1)[0]['name']
+        dependent_variable = np.random.choice(quantitative_field_properties, size=1)[0]
 
     independent_variables = [ fp for fp in field_properties \
-        if (fp['general_type'] == 'q' and fp['name'] != dependent_variable and not fp['is_unique'])]
+        if (fp['general_type'] == 'q' and fp['name'] != dependent_variable['name'] and not fp['is_unique'])]
 
     result = forward_r2(df, dependent_variable, independent_variables)
     return {
-        'dependent_variable': dependent_variable,
-        'independent_variables': [ x['name'] for x in result ],
+        'dependent_variable_id': dependent_variable['id'],
+        'independent_variables_ids': [ x['id'] for x in result ],
     }
 
 
@@ -119,7 +119,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=8):
             considered_independent_variables_per_model, patsy_models = \
                 construct_models(df, dependent_variable, considered_variables, interaction_terms)
 
-
+            raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
             formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
 
             # TODO Don't run all of them!
