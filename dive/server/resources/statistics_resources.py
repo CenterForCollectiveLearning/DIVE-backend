@@ -7,6 +7,7 @@ from dive.base.serialization import jsonify
 
 
 # Sync tasks
+from dive.worker.statistics.regression import ModelRecommendationType as MRT, ModelCompletionType as MCT
 from dive.worker.statistics.comparison.numeric import run_numerical_comparison_from_spec
 from dive.worker.statistics.comparison.anova import run_anova_from_spec
 from dive.worker.statistics.comparison.anova_boxplot import get_anova_boxplot_data
@@ -90,14 +91,18 @@ initialRegressionModelRecommendationPostParser = reqparse.RequestParser()
 initialRegressionModelRecommendationPostParser.add_argument('projectId', required=True, type=int, location='json')
 initialRegressionModelRecommendationPostParser.add_argument('datasetId', required=True, type=int, location='json')
 initialRegressionModelRecommendationPostParser.add_argument('dependentVariableId', type=int, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('recommendationType', type=str, default=MRT.LASSO, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('tableLayout', type=str, default=MCT.LEAVE_ONE_OUT, location='json')
 class InitialRegressionModelRecommendation(Resource):
     def post(self):
         args = initialRegressionModelRecommendationPostParser.parse_args()
         project_id = args.get('projectId')
         dataset_id = args.get('datasetId')
         dependent_variable_id = args.get('dependentVariableId')
+        recommendation_type = args.get('recommendationType')
+        table_layout = args.get('tableLayout')
 
-        result = get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=dependent_variable_id)
+        result = get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=dependent_variable_id, recommendation_type=recommendation_type, table_layout=table_layout)
         return jsonify(result)
 
 
