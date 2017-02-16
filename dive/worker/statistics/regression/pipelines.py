@@ -119,8 +119,6 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
         MCT.ALL_VARIABLES.value: all_variables,
     }
 
-    print table_layout_name_to_function
-
     table_layout_function = table_layout_name_to_function[table_layout]
     regression_variable_combinations = table_layout_function(df, dependent_variable, independent_variables, interaction_terms)
     patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
