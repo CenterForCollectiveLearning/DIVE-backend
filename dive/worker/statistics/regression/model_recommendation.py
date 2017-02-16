@@ -33,7 +33,7 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
 
     result = forward_r2(df, dependent_variable, independent_variables)
     return {
-        'completion_type': 'leaveOneOut',
+        'table_layout': 'leaveOneOut',
         'recommendation_type': 'forwardR2',
         'dependent_variable_id': dependent_variable['id'],
         'independent_variables_ids': [ x['id'] for x in result ],
@@ -63,7 +63,7 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=5):
             considered_variables = last_variable_set + [ variable ]
 
             considered_independent_variables_per_model, patsy_models = \
-                construct_models(df, dependent_variable, considered_variables, interaction_terms, completion_type=MCT.ALL_VARIABLES.value)
+                construct_models(df, dependent_variable, considered_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
 
             raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
             formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)

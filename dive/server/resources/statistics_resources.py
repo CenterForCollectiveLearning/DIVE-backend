@@ -123,6 +123,7 @@ class RegressionFromSpec(Resource):
             weights
             functions
             datasetId
+            tableLayout
         }
         '''
 
