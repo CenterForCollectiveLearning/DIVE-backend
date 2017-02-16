@@ -18,7 +18,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO, table_layout=MCT.LEAVE_ONE_OUT):
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO.value, table_layout=MCT.LEAVE_ONE_OUT.value):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     field_properties = db_access.get_field_properties(project_id, dataset_id)
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
@@ -31,14 +31,14 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
         if (fp['general_type'] == 'q' and fp['name'] != dependent_variable['name'] and not fp['is_unique'])]
 
     recommendationTypeToFunction = {
-        MRT.FORWARD_R2: forward_r2,
-        MRT.LASSO: lasso,
+        MRT.FORWARD_R2.value: forward_r2,
+        MRT.LASSO.value: lasso,
     }
 
     result = recommendationTypeToFunction[recommendation_type](df, dependent_variable, independent_variables)
 
     return {
-        'recommendation': True,
+        'recommended': True,
         'table_layout': table_layout,
         'recommendation_type': recommendation_type,
         'dependent_variable_id': dependent_variable['id'],
@@ -53,7 +53,7 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
 
     TODO Vary marginal threshold based on all other contributions
     '''
-    regression_variable_combinations = []
+    selected_variables = []
     regression_type = 'linear'
 
     MARGINAL_THRESHOLD_PERCENTAGE = 0.1  # Need x * r2 of last model to include variable
@@ -86,13 +86,12 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
         last_r2 = max_r2
         last_variable_set.append(max_variable)
         remaining_variables.remove(max_variable)
-        regression_variable_combinations.append(last_variable_set[:])  # Neccessary to make copy on each iteration
+        selected_variables = last_variable_set[:]  # Neccessary to make copy on each iteration
 
-        if len(regression_variable_combinations) > model_limit:
+        if len(selected_variables) >= model_limit:
             break
 
-    largest_variable_set = regression_variable_combinations[-1]
-    return largest_variable_set
+    return selected_variables
 
 
 def lasso(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
@@ -102,7 +101,7 @@ def lasso(df, dependent_variable, independent_variables, interaction_terms=[], m
 
     y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
 
-    clf = linear_model.Lasso(alpha = 0.1)
+    clf = linear_model.Lasso(alpha = 1.0)
     clf.fit(X, y)
     fit_coef = clf.coef_
     column_means = np.apply_along_axis(np.mean, 1, X)
