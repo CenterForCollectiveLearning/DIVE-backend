@@ -1,14 +1,13 @@
-def one_at_a_time_and_all_but_one(df, dependent_variable, independent_variables, interaction_terms):
+def one_at_a_time(df, dependent_variable, independent_variables, interaction_terms):
     regression_variable_combinations = []
     for independent_variable in independent_variables:
         regression_variable_combinations.append([ independent_variable ])
 
-    all_but_one_regression_variable_combinations = all_but_one(df, dependent_variable, independent_variables, interaction_terms)
-    regression_variable_combinations.extend(all_but_one_regression_variable_combinations)
+    regression_variable_combinations.append(independent_variables)
     return regression_variable_combinations
 
 
-def all_but_one(df, dependent_variable, independent_variables, interaction_terms):
+def leave_one_out(df, dependent_variable, independent_variables, interaction_terms):
     '''
     Return one model with all variables, and N-1 models with one variable left out
 

@@ -6,6 +6,6 @@ class ModelRecommendationType(Enum):
 
 
 class ModelCompletionType(Enum):
-    ALL_BUT_ONE = 'ALL_BUT_ONE'
-    ALL_VARIABLES = 'ALL_VARIABLES'
-    ONE_AT_A_TIME_AND_ALL_BUT_ONE = 'ONE_AT_A_TIME_AND_ALL_BUT_ONE'
+    LEAVE_ONE_OUT = u'leaveOneOut'
+    ALL_VARIABLES = u'all'
+    ONE_AT_A_TIME = u'oneAtATime'
