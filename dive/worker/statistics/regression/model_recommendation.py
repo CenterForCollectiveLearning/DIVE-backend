@@ -18,29 +18,35 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None):
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO, table_layout=MCT.LEAVE_ONE_OUT):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     field_properties = db_access.get_field_properties(project_id, dataset_id)
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
 
-    if dependent_variable_id:
-        dependent_variable = next((f for f in field_properties if f['id'] == dependent_variable_id), None)
-    else:
-        dependent_variable = np.random.choice(quantitative_field_properties, size=1)[0]
+    dependent_variable = next((f for f in field_properties if f['id'] == dependent_variable_id), None) \
+        if dependent_variable_id \
+        else np.random.choice(quantitative_field_properties, size=1)[0]
 
     independent_variables = [ fp for fp in field_properties \
         if (fp['general_type'] == 'q' and fp['name'] != dependent_variable['name'] and not fp['is_unique'])]
 
-    result = forward_r2(df, dependent_variable, independent_variables)
+    recommendationTypeToFunction = {
+        MRT.FORWARD_R2: forward_r2,
+        MRT.LASSO: lasso,
+    }
+
+    result = recommendationTypeToFunction[recommendation_type](df, dependent_variable, independent_variables)
+
     return {
-        'table_layout': 'leaveOneOut',
-        'recommendation_type': 'forwardR2',
+        'recommendation': True,
+        'table_layout': table_layout,
+        'recommendation_type': recommendation_type,
         'dependent_variable_id': dependent_variable['id'],
         'independent_variables_ids': [ x['id'] for x in result ],
     }
 
 
-def forward_r2(df, dependent_variable, independent_variables, model_limit=5):
+def forward_r2(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
     '''
     Return forward selection model based on r-squared. Returns full (last) model
     For now: linear model
@@ -48,7 +54,6 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=5):
     TODO Vary marginal threshold based on all other contributions
     '''
     regression_variable_combinations = []
-    interaction_terms = []
     regression_type = 'linear'
 
     MARGINAL_THRESHOLD_PERCENTAGE = 0.1  # Need x * r2 of last model to include variable
@@ -67,7 +72,6 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=5):
 
             raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
             formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
-
 
             r_squared_adj = formatted_results['regressions_by_column'][0]['column_properties']['r_squared']
             r2s.append(r_squared_adj)
@@ -91,26 +95,18 @@ def forward_r2(df, dependent_variable, independent_variables, model_limit=5):
     return largest_variable_set
 
 
-def lasso(df, dependent_variable, independent_variables, model_limit=8):
-    '''
-    Return one model with all variables, and N-1 models with one variable left out
-    '''
-    # Create list of independent variables, one per regression
-    regression_variable_combinations = []
+def lasso(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
+    considered_independent_variables_per_model, patsy_models = \
+        construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
+    full_patsy_model = patsy_models[0]
 
-    full_patsy_model = create_patsy_model(dependent_variable, independent_variables)
     y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
 
+    clf = linear_model.Lasso(alpha = 0.1)
     clf.fit(X, y)
     fit_coef = clf.coef_
     column_means = np.apply_along_axis(np.mean, 1, X)
 
-    clf = linear_model.Lasso(alpha = 0.1)
+    selected_variables = [ independent_variable for (i, independent_variable) in enumerate(independent_variables) if ( abs(fit_coef[i]) >= column_means[i] ) ]
 
-    regression_variable_combination = []
-    for i, independent_variable in enumerate(independent_variables):
-        if abs(fit_coef[i]) >= column_means[i]:
-            regression_variable_combination.append(independent_variable)
-    regression_variable_combinations.append(regression_variable_combination)
-
-    return regression_variable_combinations
+    return selected_variables
