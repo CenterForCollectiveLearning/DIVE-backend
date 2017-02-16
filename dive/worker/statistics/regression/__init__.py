@@ -3,6 +3,8 @@ from enum import Enum
 class ModelRecommendationType(Enum):
     LASSO = u'lasso'
     FORWARD_R2 = u'forwardR2'
+    RFE = u'rfe'
+    FORWARD_F = u'forwardF'
 
 
 class ModelCompletionType(Enum):

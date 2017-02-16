@@ -7,6 +7,8 @@ import numpy as np
 from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
 from sklearn import linear_model
+from sklearn.svm import SVR
+from sklearn.feature_selection import RFE
 
 from dive.base.data.access import get_data
 from dive.base.db import db_access
@@ -28,11 +30,13 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
         else np.random.choice(quantitative_field_properties, size=1)[0]
 
     independent_variables = [ fp for fp in field_properties \
-        if (fp['general_type'] == 'q' and fp['name'] != dependent_variable['name'] and not fp['is_unique'])]
+        if (not (fp['general_type'] == 'c' and fp['is_unique']) and fp['name'] != dependent_variable['name'])]
 
     recommendationTypeToFunction = {
         MRT.FORWARD_R2.value: forward_r2,
         MRT.LASSO.value: lasso,
+        MRT.RFE.value: recursive_feature_elimination,
+        MRT.FORWARD_F.value: f_regression
     }
 
     result = recommendationTypeToFunction[recommendation_type](df, dependent_variable, independent_variables)
@@ -94,14 +98,34 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
     return selected_variables
 
 
-def lasso(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
+def recursive_feature_elimination(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
+    print [ x['name'] for x in independent_variables ]
     considered_independent_variables_per_model, patsy_models = \
         construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
-    full_patsy_model = patsy_models[0]
+    y, X = dmatrices(patsy_models[0], df, return_type='dataframe')
 
-    y, X = dmatrices(full_patsy_model, df, return_type='dataframe')
+    estimator = SVR(kernel='linear')
+    selector = RFE(estimator, 5, step=1)
+    selector = selector.fit(X, y)
+    print selector.support_
+    print selector.ranking_
+    return
 
-    clf = linear_model.Lasso(alpha = 1.0)
+def f_regression(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
+    return
+
+
+def lasso(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
+    print [ x['name'] for x in independent_variables ]
+    considered_independent_variables_per_model, patsy_models = \
+        construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
+    print patsy_models
+    y, X = dmatrices(patsy_models[0], df, return_type='dataframe')
+
+    clf = linear_model.Lasso(
+        alpha = 1.0,
+        normalize=True
+    )
     clf.fit(X, y)
     fit_coef = clf.coef_
     column_means = np.apply_along_axis(np.mean, 1, X)
