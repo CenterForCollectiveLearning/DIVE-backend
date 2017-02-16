@@ -91,8 +91,8 @@ initialRegressionModelRecommendationPostParser = reqparse.RequestParser()
 initialRegressionModelRecommendationPostParser.add_argument('projectId', required=True, type=int, location='json')
 initialRegressionModelRecommendationPostParser.add_argument('datasetId', required=True, type=int, location='json')
 initialRegressionModelRecommendationPostParser.add_argument('dependentVariableId', type=int, location='json')
-initialRegressionModelRecommendationPostParser.add_argument('recommendationType', type=str, default=MRT.LASSO, location='json')
-initialRegressionModelRecommendationPostParser.add_argument('tableLayout', type=str, default=MCT.LEAVE_ONE_OUT, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('recommendationType', type=str, default=MRT.LASSO.value, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('tableLayout', type=str, default=MCT.LEAVE_ONE_OUT.value, location='json')
 class InitialRegressionModelRecommendation(Resource):
     def post(self):
         args = initialRegressionModelRecommendationPostParser.parse_args()
