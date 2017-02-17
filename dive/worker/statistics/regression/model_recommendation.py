@@ -8,7 +8,7 @@ from patsy import dmatrices, ModelDesc, Term, LookupFactor, EvalFactor
 import statsmodels.api as sm
 from sklearn import linear_model
 from sklearn.svm import SVR
-from sklearn.feature_selection import RFE
+from sklearn.feature_selection import RFE, f_regression
 
 from dive.base.data.access import get_data
 from dive.base.db import db_access
@@ -20,7 +20,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO.value, table_layout=MCT.LEAVE_ONE_OUT.value):
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.FORWARD_R2.value, table_layout=MCT.LEAVE_ONE_OUT.value, categorical_value_limit=20):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     field_properties = db_access.get_field_properties(project_id, dataset_id)
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
@@ -29,8 +29,12 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
         if dependent_variable_id \
         else np.random.choice(quantitative_field_properties, size=1)[0]
 
-    independent_variables = [ fp for fp in field_properties \
-        if (not (fp['general_type'] == 'c' and fp['is_unique']) and fp['name'] != dependent_variable['name'])]
+    independent_variables = []
+    for fp in field_properties:
+        if (fp['name'] != dependent_variable['name']):
+            if (fp['general_type'] == 'c' and fp['is_unique']):
+                continue
+            independent_variables.append(fp)
 
     recommendationTypeToFunction = {
         MRT.FORWARD_R2.value: forward_r2,
@@ -99,7 +103,6 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
 
 
 def recursive_feature_elimination(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
-    print [ x['name'] for x in independent_variables ]
     considered_independent_variables_per_model, patsy_models = \
         construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
     y, X = dmatrices(patsy_models[0], df, return_type='dataframe')
@@ -112,14 +115,19 @@ def recursive_feature_elimination(df, dependent_variable, independent_variables,
     return
 
 def f_regression(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
+    considered_independent_variables_per_model, patsy_models = \
+        construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
+    y, X = dmatrices(patsy_models[0], df, return_type='dataframe')
+
+    f_test, r = f_regression(X, y, center=True)
+    print f_test
+    print r
     return
 
 
 def lasso(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
-    print [ x['name'] for x in independent_variables ]
     considered_independent_variables_per_model, patsy_models = \
-        construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
-    print patsy_models
+    construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
     y, X = dmatrices(patsy_models[0], df, return_type='dataframe')
 
     clf = linear_model.Lasso(
