@@ -1,5 +1,3 @@
-'''
-'''
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -17,9 +15,11 @@ from patsy import dmatrices
 
 from dive.base.db import db_access
 from dive.base.data.access import get_data, get_conditioned_data
-from dive.worker.core import celery, task_app
-from dive.worker.statistics.regression.model_recommendation import construct_models
+
+from dive.worker.statistics.utilities import create_patsy_model
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
+from dive.worker.statistics.regression import ModelCompletionType as MCT
+from dive.worker.statistics.regression.table_layout import one_at_a_time, leave_one_out, all_variables
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -44,6 +44,7 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     weights = spec.get('weights', None)
     functions = spec.get('functions', [])
     dataset_id = spec.get('datasetId')
+    table_layout = spec.get('tableLayout', MCT.LEAVE_ONE_OUT)
 
     if not (dataset_id and dependent_variable_name):
         return 'Not passed required parameters', 400
@@ -54,7 +55,7 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     considered_independent_variables_per_model, patsy_models = \
-        construct_models(df, dependent_variable, independent_variables, interaction_terms)
+        construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=table_layout)
 
     raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
@@ -89,6 +90,7 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
 
     return dependent_variable, independent_variables, interaction_terms, df_ready
 
+
 def get_full_field_documents_from_field_names(all_fields, names):
     fields = []
     for name in names:
@@ -96,6 +98,42 @@ def get_full_field_documents_from_field_names(all_fields, names):
         if matched_field:
             fields.append(matched_field)
     return fields
+
+
+def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, table_layout=MCT.LEAVE_ONE_OUT.value):
+    '''
+    Given dependent and independent variables, return list of patsy models completing
+    the regression table. NOT model recommendation.
+
+    Currently:
+        1) Including variables one at a time, leaving them out one at a time, and all
+        2) Leaving variables out one at a time, and all
+        3) Just including all variables
+
+    regression_variable_combinations = [ [x], [x, y], [y, z] ]
+    models = [ ModelDesc(lhs=y, rhs=[x]), ... ]
+    '''
+    table_layout_name_to_function = {
+        MCT.ONE_AT_A_TIME.value: one_at_a_time,
+        MCT.LEAVE_ONE_OUT.value: leave_one_out,
+        MCT.ALL_VARIABLES.value: all_variables,
+    }
+
+    table_layout_function = table_layout_name_to_function[table_layout]
+    regression_variable_combinations = table_layout_function(df, dependent_variable, independent_variables, interaction_terms)
+    patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
+
+    return ( regression_variable_combinations, patsy_models )
+
+
+def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
+    patsy_models = []
+    for regression_variable_combination in regression_variable_combinations:
+        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        patsy_models.append(model)
+
+    return patsy_models
+
 
 def run_models(df, patsy_models, dependent_variable, regression_type, degree=1, functions=[], estimator='ols', weights=None):
     model_results = []

@@ -8,7 +8,8 @@ from dive.server.resources.specs import Specs, VisualizationFromSpec, Generating
 from dive.server.resources.statistics_resources import AnovaFromSpec, CorrelationsFromSpec, RegressionEstimator, \
     RegressionFromSpec, AggregationStatsFromSpec, NumericalComparisonFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, InteractionTerms, \
-    ContributionToRSquared, CorrelationScatterplot, AnovaBoxplotFromSpec, PairwiseComparisonFromSpec
+    ContributionToRSquared, CorrelationScatterplot, AnovaBoxplotFromSpec, PairwiseComparisonFromSpec, \
+    InitialRegressionModelRecommendation
 
 from dive.server.resources.exported_results import ExportedResults
 from dive.server.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
@@ -75,6 +76,7 @@ def add_resources(api):
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
+    api.add_resource(InitialRegressionModelRecommendation, '/statistics/v1/initial_regression_state')
 
     api.add_resource(ExportedResults,               '/exported_results/v1/exported_results')
 
