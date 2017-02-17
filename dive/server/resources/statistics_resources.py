@@ -7,11 +7,13 @@ from dive.base.serialization import jsonify
 
 
 # Sync tasks
+from dive.worker.statistics.regression import ModelRecommendationType as MRT, ModelCompletionType as MCT
 from dive.worker.statistics.comparison.numeric import run_numerical_comparison_from_spec
 from dive.worker.statistics.comparison.anova import run_anova_from_spec
 from dive.worker.statistics.comparison.anova_boxplot import get_anova_boxplot_data
 from dive.worker.statistics.comparison.pairwise_comparison import get_pairwise_comparison_data
 from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
+from dive.worker.statistics.regression.model_recommendation import get_initial_regression_model_recommendation
 from dive.worker.statistics.correlation.correlation import get_correlation_scatterplot_data
 # from dive.worker.statistics.regression.interaction_terms import
 
@@ -81,6 +83,30 @@ class InteractionTerms(Resource):
         return jsonify(deleted_term)
 
 #####################################################################
+# Return variables included in model selection algorithm
+# INPUT: project_id, dataset_id
+# OUTPUT: {}
+#####################################################################
+initialRegressionModelRecommendationPostParser = reqparse.RequestParser()
+initialRegressionModelRecommendationPostParser.add_argument('projectId', required=True, type=int, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('datasetId', required=True, type=int, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('dependentVariableId', type=int, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('recommendationType', type=str, default=MRT.LASSO.value, location='json')
+initialRegressionModelRecommendationPostParser.add_argument('tableLayout', type=str, default=MCT.LEAVE_ONE_OUT.value, location='json')
+class InitialRegressionModelRecommendation(Resource):
+    def post(self):
+        args = initialRegressionModelRecommendationPostParser.parse_args()
+        project_id = args.get('projectId')
+        dataset_id = args.get('datasetId')
+        dependent_variable_id = args.get('dependentVariableId')
+        recommendation_type = args.get('recommendationType')
+        table_layout = args.get('tableLayout')
+
+        result = get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=dependent_variable_id, recommendation_type=recommendation_type, table_layout=table_layout)
+        return jsonify(result)
+
+
+#####################################################################
 # Endpoint returning regression data given a specification
 # INPUT: project_id, spec
 # OUTPUT: {stat data}
@@ -102,6 +128,7 @@ class RegressionFromSpec(Resource):
             weights
             functions
             datasetId
+            tableLayout
         }
         '''
 
