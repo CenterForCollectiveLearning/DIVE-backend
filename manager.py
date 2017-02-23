@@ -81,6 +81,7 @@ def users():
             user['password'],
             admin=user['admin'],
             teams=user['teams'],
+            confirmed=True,
             create_teams=True
         )
 
