@@ -7,7 +7,7 @@ from dive.server.auth.token import generate_confirmation_token, confirm_token
 from dive.server.auth.email import send_email
 from dive.base.core import login_manager, db
 from dive.base.db import AuthStatus, AuthMessage, row_to_dict
-from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user
+from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user, check_email_exists
 from dive.base.db.models import User
 from dive.base.serialization import jsonify
 
@@ -17,20 +17,23 @@ logger = logging.getLogger(__name__)
 COOKIE_DURATION = timedelta(days=365)
 
 
+# Expired token
+# http://localhost:3009/auth/activate/Imt6aEB0ZXN0LmNvbXUi.C5C0EQ.b55oev3lDumYZby8L5ChLINoD80
 class Confirm_Token(Resource):
     def get(self, token):
         email = confirm_token(token)
         if not email:
             return jsonify({
                 'status': 'failure',
-                'message': 'The confirmation link is invalid or expired'
+                'message': 'The confirmation link is invalid or expired.'
             }, status=401)
 
         user = get_user(email=email)
         if user.confirmed:
             response = jsonify({
                 'status': 'success',
-                'message': 'Account for %s already confirmed. Please login' % email,
+                'message': 'Account for %s already activated.' % email,
+                'alreadyActivated': True,
                 'user': row_to_dict(user)
             }, status=200)
             response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
@@ -42,13 +45,50 @@ class Confirm_Token(Resource):
             login_user(user, remember=True)
             response = jsonify({
                 'status': 'success',
-                'message': 'A confirmation e-mail has been sent to %s' % email,
+                'message': 'Account for %s successfully activated.' % email,
+                'alreadyActivated': False,
                 'user': row_to_dict(user)
             })
             response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
+
+
+resendEmailPostParser = reqparse.RequestParser()
+resendEmailPostParser.add_argument('email', type=str, required=True, location='json')
+resendEmailPostParser.add_argument('os', type=str, required=True, location='json')
+resendEmailPostParser.add_argument('browser', type=str, required=True, location='json')
+class Resend_Email(Resource):
+    def post(self):
+        args = resendEmailPostParser.parse_args()
+        email = args.get('email')
+        os = args.get('os')
+        browser = args.get('browser')
+
+        user = check_email_exists(email)
+        if user:
+            token = generate_confirmation_token(email)
+            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
+            confirm_url = '%s/auth/activate/%s' % (site_url, token)
+            html = render_template('confirm_email.html',
+                username=username,
+                confirm_url=confirm_url,
+                site_url=site_url,
+                support_url='mailto:dive@media.mit.edu',
+                os=os,
+                browser=browser
+            )
+            send_email(email, 'Activate your DIVE Account', html)
+            return jsonify({
+                'status': 'success',
+                'message': 'A confirmation e-mail has been sent to %s' % email
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'No account corresponds to that e-mail address.'
+            }, status=401)
 
 
 class Reset_Password(Resource):
@@ -77,7 +117,7 @@ class Register(Resource):
 
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
-            user = register_user(username, email, password)
+            user = register_user(username, email, password, confirmed=False)
             login_user(user, remember=remember)
 
             site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
