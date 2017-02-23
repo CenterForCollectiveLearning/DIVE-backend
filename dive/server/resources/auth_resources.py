@@ -3,6 +3,8 @@ from flask_restful import Resource, reqparse
 from flask_login import current_user, login_user, logout_user
 from datetime import timedelta, datetime
 
+from dive.server.auth.token import generate_confirmation_token, confirm_token
+from dive.server.auth.email import send_email
 from dive.base.core import login_manager, db
 from dive.base.db import AuthStatus, AuthMessage, row_to_dict
 from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth
@@ -30,15 +32,19 @@ class Register(Resource):
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
             user = register_user(username, email, password)
-            login_user(user, remember=True)
+            # login_user(user, remember=True)
+
+            token = generate_confirmation_token(email)
+            send_email('kzh@mit.edu', '', '')
+
             response = jsonify({
                 'status': 'success',
-                'message': 'Welcome to DIVE, %s' % user.username,
+                'message': 'A confirmation e-mail has been sent to %s' % email,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            # response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            # response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            # response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
 
         else:
