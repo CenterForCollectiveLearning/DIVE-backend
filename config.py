@@ -14,9 +14,10 @@ registry.enable('application/x-pjson')
 
 class BaseConfig(object):
     # General
+    SITE_URL = 'localhost:3009'
     SITE_TITLE = 'dive'
     SECRET_KEY = 'dive'
-    PREFERRED_URL_SCHEME = 'https'
+    PREFERRED_URL_SCHEME = 'http'
     SECURITY_PASSWORD_SALT = 'nacl'
 
     # Flask
@@ -84,6 +85,7 @@ class DevelopmentConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     # General
+    SITE_URL = 'staging.usedive.com'
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
     PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
