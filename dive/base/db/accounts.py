@@ -1,4 +1,5 @@
 from flask import abort
+import datetime
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.base.core import db, login_manager
@@ -49,6 +50,30 @@ def create_team(team_name):
     t = Team(name=team_name)
     db.session.add(t)
     db.session.commit()
+
+def confirm_user(**kwargs):
+    try:
+        user = User.query.filter_by(**kwargs).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    user.confirmed = True
+    user.confirmed_on = datetime.datetime.now()
+    db.session.commit()
+
+    return user
+
+def get_user(**kwargs):
+    try:
+        user = User.query.filter_by(**kwargs).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    return user
 
 def register_user(username, email, password, admin=[], teams=[], create_teams=True):
     user = User(

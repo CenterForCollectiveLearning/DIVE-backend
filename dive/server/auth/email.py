@@ -5,11 +5,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def send_email(to, subject, template):
-    msg = Message('Testing e-mail',
-        recipients=[ 'whoiskevinhu@gmail.com'])
-    msg.body = 'testing'
-    msg.html = '<b>testing</b>'
+def send_email(to, subject, html):
+    msg = Message(subject, recipients=[ 'whoiskevinhu@gmail.com'])
 
-    logger.info('Sending e-mail')
+    msg.html = html
     mail.send(msg)
