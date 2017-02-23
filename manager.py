@@ -37,7 +37,10 @@ manager.add_command('db', MigrateCommand)
 @manager.command
 def drop():
     app.logger.info("Dropping tables")
-    shutil.rmtree('migrations')
+    try:
+        shutil.rmtree('migrations')
+    except OSError as e:
+        pass
     db.reflect()
     db.drop_all()
 

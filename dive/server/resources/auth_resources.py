@@ -39,6 +39,7 @@ class Confirm_Token(Resource):
             response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('confirmed', str(True), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
         else:
             confirm_user(email=email)
@@ -52,6 +53,7 @@ class Confirm_Token(Resource):
             response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('confirmed', str(True), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
 
 
@@ -72,7 +74,7 @@ class Resend_Email(Resource):
             site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
             confirm_url = '%s/auth/activate/%s' % (site_url, token)
             html = render_template('confirm_email.html',
-                username=username,
+                username=user.username,
                 confirm_url=confirm_url,
                 site_url=site_url,
                 support_url='mailto:dive@media.mit.edu',
@@ -142,6 +144,8 @@ class Register(Resource):
             response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('confirmed', str(user.confirmed), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+
             return response
 
         else:
@@ -194,9 +198,12 @@ class Login(Resource):
                 'message': message,
                 'user': row_to_dict(user)
             })
+
             response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('confirmed', str(user.confirmed), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+
             return response
         else:
             return jsonify({
@@ -219,4 +226,6 @@ class Logout(Resource):
         response.set_cookie('username', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
         response.set_cookie('email', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
         response.set_cookie('user_id', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
+        response.set_cookie('confirmed', str(False), expires=0, domain=current_app.config['COOKIE_DOMAIN'])
+
         return response
