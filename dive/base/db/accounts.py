@@ -27,6 +27,13 @@ def is_authorized_user(current_user, project_id):
             return False
 
 
+def check_email_exists(email):
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return user
+    else:
+        return False
+
 def validate_registration(username, email):
     matching_email = User.query.filter_by(email=email).first()
     result = {}
@@ -75,11 +82,12 @@ def get_user(**kwargs):
 
     return user
 
-def register_user(username, email, password, admin=[], teams=[], create_teams=True):
+def register_user(username, email, password, admin=[], teams=[], create_teams=True, confirmed=True):
     user = User(
         username=username,
         email=email,
-        password=password
+        password=password,
+        confirmed=confirmed
     )
 
     if admin:

@@ -19,7 +19,7 @@ from dive.server.resources.exported_analyses import ExportedRegression, DataFrom
 from dive.server.resources.transform import Reduce, Unpivot, Join
 
 from dive.server.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
-from dive.server.resources.auth_resources import Register, Login, Logout, User, Confirm_Token
+from dive.server.resources.auth_resources import Register, Login, Logout, User, Confirm_Token, Resend_Email
 
 from flask import request, make_response
 from dive.server.resources.feedback import Feedback
@@ -98,6 +98,7 @@ def add_resources(api):
     api.add_resource(Login,                         '/auth/v1/login')
     api.add_resource(Logout,                        '/auth/v1/logout')
     api.add_resource(User,                          '/auth/v1/user')
+    api.add_resource(Resend_Email,                  '/auth/v1/resend')
 
     api.add_resource(Feedback,                      '/feedback/v1/feedback')
 
