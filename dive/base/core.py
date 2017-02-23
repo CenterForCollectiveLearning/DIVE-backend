@@ -9,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_cors import CORS
 from flask_compress import Compress
+from flask_mail import Mail
 
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
@@ -35,7 +36,7 @@ login_manager = LoginManager()
 cors = CORS()
 compress = Compress()
 s3_client = None
-
+mail = Mail()
 
 def create_app(**kwargs):
     '''
@@ -58,6 +59,7 @@ def create_app(**kwargs):
 
     db.init_app(app)
     login_manager.init_app(app)
+    mail.init_app(app)
 
     cors.init_app(app,
         resources=r'/*',
