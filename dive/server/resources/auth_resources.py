@@ -1,4 +1,4 @@
-from flask import current_app, request, make_response
+from flask import render_template, current_app, request, make_response
 from flask_restful import Resource, reqparse
 from flask_login import current_user, login_user, logout_user
 from datetime import timedelta, datetime
@@ -7,7 +7,7 @@ from dive.server.auth.token import generate_confirmation_token, confirm_token
 from dive.server.auth.email import send_email
 from dive.base.core import login_manager, db
 from dive.base.db import AuthStatus, AuthMessage, row_to_dict
-from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth
+from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user
 from dive.base.db.models import User
 from dive.base.serialization import jsonify
 
@@ -16,11 +16,54 @@ logger = logging.getLogger(__name__)
 
 COOKIE_DURATION = timedelta(days=365)
 
+
+class Confirm_Token(Resource):
+    def get(self, token):
+        email = confirm_token(token)
+        if not email:
+            return jsonify({
+                'status': 'failure',
+                'message': 'The confirmation link is invalid or expired'
+            }, status=401)
+
+        user = get_user(email=email)
+        if user.confirmed:
+            response = jsonify({
+                'status': 'success',
+                'message': 'Account for %s already confirmed. Please login' % email,
+                'user': row_to_dict(user)
+            }, status=200)
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            return response
+        else:
+            confirm_user(email=email)
+            login_user(user, remember=True)
+            response = jsonify({
+                'status': 'success',
+                'message': 'A confirmation e-mail has been sent to %s' % email,
+                'user': row_to_dict(user)
+            })
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            return response
+
+
+class Reset_Password(Resource):
+    def get(self, token):
+        logger.info('Confirming e-mail with token %s', token)
+
+
 registerPostParser = reqparse.RequestParser()
 registerPostParser.add_argument('username', type=str, location='json')
 registerPostParser.add_argument('name', type=str, default='', location='json')
 registerPostParser.add_argument('email', type=str, location='json')
 registerPostParser.add_argument('password', type=str, location='json')
+registerPostParser.add_argument('os', type=str, location='json')
+registerPostParser.add_argument('browser', type=str, location='json')
+registerPostParser.add_argument('remember', type=bool, location='json')
 class Register(Resource):
     def post(self):
         args = registerPostParser.parse_args()
@@ -28,23 +71,37 @@ class Register(Resource):
         name = args.get('name')
         email = args.get('email')
         password = args.get('password')
+        os = args.get('os')
+        browser = args.get('browser')
+        remember = args.get('remember', True)
 
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
             user = register_user(username, email, password)
-            # login_user(user, remember=True)
+            login_user(user, remember=remember)
 
+            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
             token = generate_confirmation_token(email)
-            send_email('kzh@mit.edu', '', '')
+            confirm_url = '%s/auth/activate/%s' % (site_url, token)
+            html = render_template('confirm_email.html',
+                username=username,
+                confirm_url=confirm_url,
+                site_url=site_url,
+                support_url='mailto:dive@media.mit.edu',
+                os=os,
+                browser=browser
+            )
+
+            send_email('kzh@mit.edu', 'Activate your DIVE Account', html)
 
             response = jsonify({
                 'status': 'success',
                 'message': 'A confirmation e-mail has been sent to %s' % email,
                 'user': row_to_dict(user)
             })
-            # response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            # response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            # response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
 
         else:

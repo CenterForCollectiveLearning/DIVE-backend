@@ -529,6 +529,7 @@ class User(db.Model):
     anonymous = Column(Boolean(), default=False)
     active = Column(Boolean(), default=True)
     confirmed = Column(Boolean(), default=False)
+    confirmed_on = Column(DateTime, nullable=True)
 
     api_key = Column(Unicode(2000), default=make_uuid)
 
@@ -547,7 +548,7 @@ class User(db.Model):
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    def __init__(self, username='', name='', email='', password='', role=''):
+    def __init__(self, username='', name='', email='', password='', role='',):
         self.api_key = make_uuid()
         self.username = username
         self.email = email
