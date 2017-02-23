@@ -17,6 +17,7 @@ class BaseConfig(object):
     SITE_TITLE = 'dive'
     SECRET_KEY = 'dive'
     PREFERRED_URL_SCHEME = 'https'
+    SECURITY_PASSWORD_SALT = 'nacl'
 
     # Flask
     HOST = '0.0.0.0'
@@ -29,6 +30,16 @@ class BaseConfig(object):
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
+
+    MAIL_SERVER = 'smtp.postmarkapp.com'
+    MAIL_PORT = 2525
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = '99b4b664-9751-492c-b48d-2bd492e9912a'
+    MAIL_PASSWORD = '99b4b664-9751-492c-b48d-2bd492e9912a'
+    MAIL_DEFAULT_SENDER = 'dive@media.mit.edu'
+    MAIL_SUPPRESS_SEND = False
+    MAIL_DEBUG = False
 
     # Resources
     STORAGE_TYPE = 'file'
