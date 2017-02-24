@@ -124,6 +124,7 @@ def change_user_password_by_email(email, password):
 
     user.password = password
     user.confirmed_on = datetime.datetime.now()
+    db.session.commit()
 
     return user
 
