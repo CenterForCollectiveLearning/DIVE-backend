@@ -56,7 +56,7 @@ class BaseConfig(object):
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
-    SQLALCHEMY_ECHO='debug'
+    # SQLALCHEMY_ECHO='debug'
     ALEMBIC_DIR = base_dir_path('migrate')
 
     # Worker
