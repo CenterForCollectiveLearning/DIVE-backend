@@ -14,9 +14,11 @@ registry.enable('application/x-pjson')
 
 class BaseConfig(object):
     # General
+    SITE_URL = 'localhost:3009'
     SITE_TITLE = 'dive'
     SECRET_KEY = 'dive'
-    PREFERRED_URL_SCHEME = 'https'
+    PREFERRED_URL_SCHEME = 'http'
+    SECURITY_PASSWORD_SALT = 'nacl'
 
     # Flask
     HOST = '0.0.0.0'
@@ -29,6 +31,16 @@ class BaseConfig(object):
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
+
+    MAIL_SERVER = 'smtp.postmarkapp.com'
+    MAIL_USERNAME = '99b4b664-9751-492c-b48d-2bd492e9912a'
+    MAIL_PASSWORD = '99b4b664-9751-492c-b48d-2bd492e9912a'
+    MAIL_PORT = 2525
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_DEFAULT_SENDER = 'dive@media.mit.edu'
+    MAIL_SUPPRESS_SEND = False
+    MAIL_DEBUG = False
 
     # Resources
     STORAGE_TYPE = 'file'
@@ -44,6 +56,7 @@ class BaseConfig(object):
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
+    SQLALCHEMY_ECHO='debug'
     ALEMBIC_DIR = base_dir_path('migrate')
 
     # Worker
@@ -73,6 +86,7 @@ class DevelopmentConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     # General
+    SITE_URL = 'staging.usedive.com'
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
     PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
@@ -87,6 +101,10 @@ class ProductionConfig(BaseConfig):
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
+
+    # Mail
+    MAIL_USERNAME = env('DIVE_MAIL_USERNAME')
+    MAIL_PASSWORD = env('DIVE_MAIL_PASSWORD')
 
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
