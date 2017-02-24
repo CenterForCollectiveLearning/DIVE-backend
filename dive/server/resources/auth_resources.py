@@ -124,7 +124,7 @@ class Reset_Password_Link(Resource):
         if user:
             token = generate_confirmation_token(email)
             site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
-            confirm_url = '%s/auth/reset_password/%s' % (site_url, token)
+            confirm_url = '%s/auth/reset/%s' % (site_url, token)
             html = render_template('reset_password.html',
                 username=user.username,
                 confirm_url=confirm_url,
