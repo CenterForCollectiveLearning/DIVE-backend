@@ -41,13 +41,14 @@ def drop():
         shutil.rmtree('migrations')
     except OSError as e:
         pass
+    db.session.commit()
     db.reflect()
     db.drop_all()
 
 @manager.command
 def create():
     app.logger.info("Creating tables")
-
+    db.session.commit()
     db.create_all()
     db.session.commit()
 

@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 
 COOKIE_DURATION = timedelta(days=365)
 
+def set_cookies(response, cookie_dict, expires=0, domain=current_app.config['COOKIE_DOMAIN']):
+    for (k, v) in cookie_dict.iteritems():
+        response.set_cookie(k, v, expires=expires, domain=domain)
+    return response
+
 
 # Expired token
 # http://localhost:3009/auth/activate/Imt6aEB0ZXN0LmNvbXUi.C5C0EQ.b55oev3lDumYZby8L5ChLINoD80
@@ -36,7 +41,12 @@ class Confirm_Token(Resource):
                 'alreadyActivated': True,
                 'user': row_to_dict(user)
             }, status=200)
-            response.set_cookie('confirmed', str(True), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response = set_cookies(response, {
+                'username': user.username,
+                'email': user.email,
+                'user_id': str(user.id),
+                'confirmed': str(True)
+            }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
         else:
             confirm_user(email=email)
@@ -47,10 +57,12 @@ class Confirm_Token(Resource):
                 'alreadyActivated': False,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('confirmed', str(True), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
+            response = set_cookies(response, {
+                'username': user.username,
+                'email': user.email,
+                'user_id': str(user.id),
+                'confirmed': str(True)
+            }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
 
 
@@ -183,18 +195,19 @@ class Register(Resource):
                 browser=browser
             )
 
-            send_email('kzh@mit.edu', 'Activate Your DIVE Account', html)
+            send_email(email, 'Activate Your DIVE Account', html)
 
             response = jsonify({
                 'status': 'success',
                 'message': 'A confirmation e-mail has been sent to %s' % email,
                 'user': row_to_dict(user)
             })
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('confirmed', str(user.confirmed), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-
+            response = set_cookies(response, {
+                'username': user.username,
+                'email': user.email,
+                'user_id': str(user.id),
+                'confirmed': str(user.confirmed)
+            }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
 
         else:
@@ -247,12 +260,12 @@ class Login(Resource):
                 'message': message,
                 'user': row_to_dict(user)
             })
-
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('confirmed', str(user.confirmed), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-
+            response = set_cookies(response, {
+                'username': user.username,
+                'email': user.email,
+                'user_id': str(user.id),
+                'confirmed': str(user.confirmed)
+            }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
         else:
             return jsonify({
@@ -271,10 +284,11 @@ class Logout(Resource):
         response = jsonify({
             'status': 'success',
             'message': 'You have been logged out.'
-        })
-        response.set_cookie('username', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
-        response.set_cookie('email', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
-        response.set_cookie('user_id', '', expires=0, domain=current_app.config['COOKIE_DOMAIN'])
-        response.set_cookie('confirmed', str(False), expires=0, domain=current_app.config['COOKIE_DOMAIN'])
-
+        }, status=200)
+        response = set_cookies(response, {
+            'username': '',
+            'email': '',
+            'user_id': '',
+            'confirmed': str(False)
+        }, expires=0)
         return response

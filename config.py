@@ -33,11 +33,11 @@ class BaseConfig(object):
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
 
     MAIL_SERVER = 'smtp.postmarkapp.com'
+    MAIL_USERNAME = '99b4b664-9751-492c-b48d-2bd492e9912a'
+    MAIL_PASSWORD = '99b4b664-9751-492c-b48d-2bd492e9912a'
     MAIL_PORT = 2525
     MAIL_USE_TLS = True
     MAIL_USE_SSL = False
-    MAIL_USERNAME = '99b4b664-9751-492c-b48d-2bd492e9912a'
-    MAIL_PASSWORD = '99b4b664-9751-492c-b48d-2bd492e9912a'
     MAIL_DEFAULT_SENDER = 'dive@media.mit.edu'
     MAIL_SUPPRESS_SEND = False
     MAIL_DEBUG = False
@@ -56,6 +56,7 @@ class BaseConfig(object):
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
     SQLALCHEMY_POOL_SIZE=20
     SQLALCHEMY_MAX_OVERFLOW=100
+    SQLALCHEMY_ECHO='debug'
     ALEMBIC_DIR = base_dir_path('migrate')
 
     # Worker
@@ -100,6 +101,10 @@ class ProductionConfig(BaseConfig):
     # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
+
+    # Mail
+    MAIL_USERNAME = env('DIVE_MAIL_USERNAME')
+    MAIL_PASSWORD = env('DIVE_MAIL_PASSWORD')
 
     # Resources
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
