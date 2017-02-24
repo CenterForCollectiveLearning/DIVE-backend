@@ -36,9 +36,6 @@ class Confirm_Token(Resource):
                 'alreadyActivated': True,
                 'user': row_to_dict(user)
             }, status=200)
-            response.set_cookie('username', user.username, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('email', user.email, expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
-            response.set_cookie('user_id', str(user.id), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             response.set_cookie('confirmed', str(True), expires=datetime.utcnow() + COOKIE_DURATION, domain=current_app.config['COOKIE_DOMAIN'])
             return response
         else:
@@ -81,7 +78,7 @@ class Resend_Email(Resource):
                 os=os,
                 browser=browser
             )
-            send_email(email, 'Activate your DIVE Account', html)
+            send_email(email, 'Activate Your DIVE Account', html)
             return jsonify({
                 'status': 'success',
                 'message': 'A confirmation e-mail has been sent to %s' % email
@@ -93,9 +90,40 @@ class Resend_Email(Resource):
             }, status=401)
 
 
+resetPasswordPostParser = reqparse.RequestParser()
+resetPasswordPostParser.add_argument('email', type=str, required=True, location='json')
+resetPasswordPostParser.add_argument('os', type=str, required=True, location='json')
+resetPasswordPostParser.add_argument('browser', type=str, required=True, location='json')
 class Reset_Password(Resource):
-    def get(self, token):
-        logger.info('Confirming e-mail with token %s', token)
+    def post(self):
+        args = resetPasswordPostParser.parse_args()
+        email = args.get('email')
+        os = args.get('os')
+        browser = args.get('browser')
+
+        user = check_email_exists(email)
+        if user:
+            token = generate_confirmation_token(email)
+            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
+            confirm_url = '%s/auth/reset_password/%s' % (site_url, token)
+            html = render_template('reset_password.html',
+                username=user.username,
+                confirm_url=confirm_url,
+                site_url=site_url,
+                support_url='mailto:dive@media.mit.edu',
+                os=os,
+                browser=browser
+            )
+            send_email(email, 'Reset Your DIVE Password', html)
+            return jsonify({
+                'status': 'success',
+                'message': 'A password reset link has been sent to %s' % email
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'No account corresponds to that e-mail address.'
+            }, status=401)
 
 
 registerPostParser = reqparse.RequestParser()
@@ -134,7 +162,7 @@ class Register(Resource):
                 browser=browser
             )
 
-            send_email('kzh@mit.edu', 'Activate your DIVE Account', html)
+            send_email('kzh@mit.edu', 'Activate Your DIVE Account', html)
 
             response = jsonify({
                 'status': 'success',
