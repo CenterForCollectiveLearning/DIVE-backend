@@ -37,14 +37,18 @@ manager.add_command('db', MigrateCommand)
 @manager.command
 def drop():
     app.logger.info("Dropping tables")
-    shutil.rmtree('migrations')
+    try:
+        shutil.rmtree('migrations')
+    except OSError as e:
+        pass
+    db.session.commit()
     db.reflect()
     db.drop_all()
 
 @manager.command
 def create():
     app.logger.info("Creating tables")
-
+    db.session.commit()
     db.create_all()
     db.session.commit()
 
@@ -81,6 +85,7 @@ def users():
             user['password'],
             admin=user['admin'],
             teams=user['teams'],
+            confirmed=True,
             create_teams=True
         )
 

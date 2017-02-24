@@ -1,4 +1,5 @@
 from flask import abort
+import datetime
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.base.core import db, login_manager
@@ -26,6 +27,13 @@ def is_authorized_user(current_user, project_id):
             return False
 
 
+def check_email_exists(email):
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return user
+    else:
+        return False
+
 def validate_registration(username, email):
     matching_email = User.query.filter_by(email=email).first()
     result = {}
@@ -50,11 +58,36 @@ def create_team(team_name):
     db.session.add(t)
     db.session.commit()
 
-def register_user(username, email, password, admin=[], teams=[], create_teams=True):
+def confirm_user(**kwargs):
+    try:
+        user = User.query.filter_by(**kwargs).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    user.confirmed = True
+    user.confirmed_on = datetime.datetime.now()
+    db.session.commit()
+
+    return user
+
+def get_user(**kwargs):
+    try:
+        user = User.query.filter_by(**kwargs).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    return user
+
+def register_user(username, email, password, admin=[], teams=[], create_teams=True, confirmed=True):
     user = User(
         username=username,
         email=email,
-        password=password
+        password=password,
+        confirmed=confirmed
     )
 
     if admin:
@@ -84,6 +117,16 @@ def register_user(username, email, password, admin=[], teams=[], create_teams=Tr
     db.session.commit()
     return user  # Not turning to dictionary because of flask-login
 
+def change_user_password_by_email(email, password):
+    try: user = User.query.filter_by(email=email).one()
+    except NoResultFound, e: return None
+    except MultipleResultsFound, e: raise e
+
+    user.password = password
+    user.confirmed_on = datetime.datetime.now()
+    db.session.commit()
+
+    return user
 
 def delete_user(user_id, password, name=None):
     try:
