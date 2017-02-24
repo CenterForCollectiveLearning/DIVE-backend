@@ -7,7 +7,7 @@ from dive.server.auth.token import generate_confirmation_token, confirm_token
 from dive.server.auth.email import send_email
 from dive.base.core import login_manager, db
 from dive.base.db import AuthStatus, AuthMessage, row_to_dict
-from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user, check_email_exists
+from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user, check_email_exists, change_user_password_by_email
 from dive.base.db.models import User
 from dive.base.serialization import jsonify
 
@@ -89,14 +89,33 @@ class Resend_Email(Resource):
                 'message': 'No account corresponds to that e-mail address.'
             }, status=401)
 
+resetPasswordWithTokenPostParser = reqparse.RequestParser()
+resetPasswordWithTokenPostParser.add_argument('password', type=str, required=True, location='json')
+class Reset_Password_With_Token(Resource):
+    def post(self, token):
+        args = resetPasswordWithTokenPostParser.parse_args()
+        password = args.get('password')
+        email = confirm_token(token)
+        if email:
+            user = change_user_password_by_email(email, password)
+            return jsonify({
+                'status': 'success',
+                'message': 'Successfully changed password for account %s.' % email
+            }, status=200)
+        else:
+            return jsonify({
+                'status': 'failure',
+                'message': 'The password reset link is invalid or expired.'
+            }, status=401)
 
-resetPasswordPostParser = reqparse.RequestParser()
-resetPasswordPostParser.add_argument('email', type=str, required=True, location='json')
-resetPasswordPostParser.add_argument('os', type=str, required=True, location='json')
-resetPasswordPostParser.add_argument('browser', type=str, required=True, location='json')
-class Reset_Password(Resource):
+
+resetPasswordLinkPostParser = reqparse.RequestParser()
+resetPasswordLinkPostParser.add_argument('email', type=str, required=True, location='json')
+resetPasswordLinkPostParser.add_argument('os', type=str, required=True, location='json')
+resetPasswordLinkPostParser.add_argument('browser', type=str, required=True, location='json')
+class Reset_Password_Link(Resource):
     def post(self):
-        args = resetPasswordPostParser.parse_args()
+        args = resetPasswordLinkPostParser.parse_args()
         email = args.get('email')
         os = args.get('os')
         browser = args.get('browser')
