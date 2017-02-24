@@ -117,6 +117,15 @@ def register_user(username, email, password, admin=[], teams=[], create_teams=Tr
     db.session.commit()
     return user  # Not turning to dictionary because of flask-login
 
+def change_user_password_by_email(email, password):
+    try: user = User.query.filter_by(email=email).one()
+    except NoResultFound, e: return None
+    except MultipleResultsFound, e: raise e
+
+    user.password = password
+    user.confirmed_on = datetime.datetime.now()
+
+    return user
 
 def delete_user(user_id, password, name=None):
     try:
