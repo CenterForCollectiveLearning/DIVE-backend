@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def send_email(to, subject, html):
-    msg = Message(subject, recipients=[ 'whoiskevinhu@gmail.com'])
+    msg = Message(subject, recipients=[ to ])
 
     msg.html = html
     mail.send(msg)
