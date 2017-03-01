@@ -760,12 +760,14 @@ def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visualize'], limit=25):
     final_data = {}
     field_a_label = args['field_a']['name']
 
     values = df[field_a_label].dropna()
-    value_counts = values.value_counts()
+    value_counts = values.value_counts(sort=True, dropna=True)
+    if limit:
+        value_counts = value_counts[:limit]
     value_list = list(value_counts.index.values)
     counts = value_counts.tolist()
 
