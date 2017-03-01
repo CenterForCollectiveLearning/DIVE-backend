@@ -118,22 +118,21 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
     return data
 
 
-def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['visualize'], limit=100):
     final_data = {}
     field_a_label = args['field_a']['name']
     field_b_label = args['field_b']['name']
 
     df = df.dropna(subset=[field_a_label, field_b_label])
 
+    subset = False
+    if len(df.index) > limit:
+        subset = True
+        df = df.sample(limit)
+
     field_a_list = df[field_a_label].tolist()
     field_b_list = df[field_b_label].tolist()
     zipped_list = zip(field_a_list, field_b_list)
-    if len(zipped_list) > 1000:
-
-
-        final_list = sample(zipped_list, 1000)
-    else:
-        final_list = zipped_list
 
     if 'score' in data_formats:
         final_data['score'] = {
@@ -143,7 +142,7 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
     if 'visualize' in data_formats:
         data_array = []
         data_array.append([ field_a_label, field_b_label ])
-        for (a, b) in final_list:
+        for (a, b) in zipped_list:
             data_array.append([a, b])
         final_data['visualize'] = data_array
     if 'table' in data_formats:
@@ -153,6 +152,8 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
         }
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
+
+    final_data['subset'] = limit if subset else None
 
     return final_data
 
@@ -760,13 +761,16 @@ def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visualize'], limit=25):
+def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visualize'], limit=50):
     final_data = {}
     field_a_label = args['field_a']['name']
 
     values = df[field_a_label].dropna()
     value_counts = values.value_counts(sort=True, dropna=True)
-    if limit:
+
+    subset = False
+    if len(value_counts.index) > limit:
+        subset = True
         value_counts = value_counts[:limit]
     value_list = list(value_counts.index.values)
     counts = value_counts.tolist()
@@ -787,4 +791,7 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
         }
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
+
+    final_data['subset'] = limit if subset else None
+
     return final_data
