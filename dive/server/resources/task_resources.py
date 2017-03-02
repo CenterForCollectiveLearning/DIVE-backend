@@ -20,6 +20,7 @@ class RevokeTask(Resource):
     def get(self, task_id):
         logger.debug('Revoking task: %s', task_id)
         r = celery.control.revoke(task_id)
+        print r
 
 
 revokeChainTaskPostParser = reqparse.RequestParser()
@@ -29,7 +30,10 @@ class RevokeChainTask(Resource):
         args = revokeChainTaskPostParser.parse_args()
         task_ids = args.get('task_ids')
         logger.debug('Revoking tasks: %s', task_ids)
-        celery.control.revoke(task_ids)
+
+        # TODO Terminate or not?
+        r = celery.control.revoke(task_ids, terminate=True)
+        print r
 
 
 class TaskResult(Resource):
