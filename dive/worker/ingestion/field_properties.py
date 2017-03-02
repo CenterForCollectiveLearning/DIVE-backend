@@ -195,7 +195,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
                 'field_a': { 'name': field_name }
             }
             try:
-                viz_data = get_val_count_data(df, val_count_spec)
+                viz_data = get_val_count_data(df, val_count_spec, limit=25)
             except Exception as e:
                 logger.info('ERROR GETTING VAL COUNT DATA')
                 logger.error(e, exc_info=True)
