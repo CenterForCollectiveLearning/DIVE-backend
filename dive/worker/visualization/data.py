@@ -154,7 +154,7 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
 
-    final_data['subset'] = subset if (is_subset and is_subset != 'all') else None
+    final_data['subset'] = subset if (is_subset or subset == 'all') else None
 
     return final_data
 
@@ -759,7 +759,7 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
 
     subset = config.get('subset', 100)
     is_subset = False
-    if subset and len(value_counts.index) > subset:
+    if subset and (subset != 'all') and len(value_counts.index) > subset:
         is_subset = True
         value_counts = value_counts[:subset]
     value_list = list(value_counts.index.values)
@@ -782,6 +782,6 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
 
-    final_data['subset'] = subset if (is_subset and is_subset != 'all') else None
+    final_data['subset'] = subset if (is_subset or subset == 'all') else None
 
     return final_data
