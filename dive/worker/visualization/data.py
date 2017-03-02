@@ -125,15 +125,15 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
 
     df = df.dropna(subset=[field_a_label, field_b_label])
 
+    subset = config.get('subset', 100)
+    is_subset = False
+    if subset and (subset != 'all') and len(df.index) > subset:
+        is_subset = True
+        df = df.sample(subset)
+
     field_a_list = df[field_a_label].tolist()
     field_b_list = df[field_b_label].tolist()
     zipped_list = zip(field_a_list, field_b_list)
-    if len(zipped_list) > 1000:
-
-
-        final_list = sample(zipped_list, 1000)
-    else:
-        final_list = zipped_list
 
     if 'score' in data_formats:
         final_data['score'] = {
@@ -143,7 +143,7 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
     if 'visualize' in data_formats:
         data_array = []
         data_array.append([ field_a_label, field_b_label ])
-        for (a, b) in final_list:
+        for (a, b) in zipped_list:
             data_array.append([a, b])
         final_data['visualize'] = data_array
     if 'table' in data_formats:
@@ -153,6 +153,8 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
         }
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
+
+    final_data['subset'] = subset if is_subset else 'all'
 
     return final_data
 
@@ -462,11 +464,8 @@ def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_BINS=25):
     final_data = {}
-
-    logger.info('Binning field %s', args['binning_field']['name'])
-    logger.info('Binning field type %s', args['binning_field']['type'])
 
     binning_field = args['binning_field']['name']
     agg_field_a = args['agg_field_a']['name']
@@ -474,40 +473,31 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
 
     # Handling NAs
     pre_cleaned_binning_field_values = df[binning_field]
-    df = df.dropna(subset=[binning_field])
+    df = df.dropna(subset=[ binning_field ])
     binning_field_values = df[binning_field]
     if len(binning_field_values) == 0:
         return None
 
     # Configuration
-    procedure = config.get('binning_procedure', 'freedman')
-    binning_type = config.get('binning_type', 'procedural')
-    if binning_type == 'procedural':
-        procedural = True
-    else:
-        procedural = False
-    precision = config.get('precision', None)
+    data_config = config
+    procedure = data_config.get('binning_procedure', 'freedman')
+    binning_type = data_config.get('binning_type', 'procedural')
+    procedural = (binning_type == 'procedural')
+    num_bins = data_config.get('num_bins')
+    precision = config.get('precision', get_bin_decimals(binning_field_values))
 
     # Max number of bins for integers is number of unique values
+    float_formatting_string = ('%.' + str(precision) + 'f') if (precision > 0) else '%d'
 
+    print procedure, procedural, binning_type
+    logger.info('%s %s %s %s', procedure, binning_type, procedural, data_config.get('num_bins'))
 
-    if not precision:
-        precision = get_bin_decimals(binning_field_values)
-
-    if precision > 0:
-        float_formatting_string = '%.' + str(precision) + 'f'
-    else:
-        float_formatting_string = '%d'
-
-    if config.get('num_bins'):
-        num_bins = config.get('num_bins')
-    else:
+    if not (procedural or num_bins):
         if args['binning_field']['type'] == 'integer':
             num_bins = len(np.unique(binning_field_values))
         else:
             num_bins = 3
-
-    logger.info('Number of bins: %s', num_bins)
+    num_bins = min(num_bins, MAX_BINS)
 
     bin_edges_list = get_bin_edges(
         binning_field_values,
@@ -765,7 +755,13 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
     field_a_label = args['field_a']['name']
 
     values = df[field_a_label].dropna()
-    value_counts = values.value_counts()
+    value_counts = values.value_counts(sort=True, dropna=True)
+
+    subset = config.get('subset', 100)
+    is_subset = False
+    if subset and len(value_counts.index) > subset:
+        is_subset = True
+        value_counts = value_counts[:subset]
     value_list = list(value_counts.index.values)
     counts = value_counts.tolist()
 
@@ -785,4 +781,7 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
         }
     if 'count' in data_formats:
         final_data['count'] = df.shape[0]
+
+    final_data['subset'] = subset if subset else 'all'
+
     return final_data
