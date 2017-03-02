@@ -73,7 +73,7 @@ class VisualizationFromSpec(Resource):
         args = visualizationFromSpecPostParser.parse_args()
         project_id = args.get('project_id')
         conditionals = args.get('conditionals', {})
-        config = args.get('config', {})
+        config = args.get('config', {}).get('data', {})
         spec = db_access.get_spec(spec_id, project_id)
 
         viz_data = spec.get('data', None)
