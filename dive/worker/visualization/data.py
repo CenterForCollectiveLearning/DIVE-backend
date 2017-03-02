@@ -125,7 +125,7 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
 
     df = df.dropna(subset=[field_a_label, field_b_label])
 
-    subset = config['data'].get('subset', 100)
+    subset = config.get('subset', 100)
     is_subset = False
     if subset and (subset != 'all') and len(df.index) > subset:
         is_subset = True
@@ -479,7 +479,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
         return None
 
     # Configuration
-    data_config = config['data']
+    data_config = config
     procedure = data_config.get('binning_procedure', 'freedman')
     binning_type = data_config.get('binning_type', 'procedural')
     procedural = (binning_type == 'procedural')
@@ -757,7 +757,7 @@ def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visua
     values = df[field_a_label].dropna()
     value_counts = values.value_counts(sort=True, dropna=True)
 
-    subset = config['data'].get('subset', 100)
+    subset = config.get('subset', 100)
     is_subset = False
     if subset and len(value_counts.index) > subset:
         is_subset = True
