@@ -489,9 +489,6 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     # Max number of bins for integers is number of unique values
     float_formatting_string = ('%.' + str(precision) + 'f') if (precision > 0) else '%d'
 
-    print procedure, procedural, binning_type
-    logger.info('%s %s %s %s', procedure, binning_type, procedural, data_config.get('num_bins'))
-
     if not (procedural or num_bins):
         if args['binning_field']['type'] == 'integer':
             num_bins = len(np.unique(binning_field_values))
