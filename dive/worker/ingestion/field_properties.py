@@ -168,7 +168,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
                 contiguous = detect_contiguous_integers(field_values_no_na)
 
         # Unique values for categorical fields
-        if general_type is 'c':
+        if general_type == 'c' and not is_unique:
             unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ]
         else:
             unique_values = None
