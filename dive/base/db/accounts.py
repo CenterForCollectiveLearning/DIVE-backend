@@ -135,14 +135,22 @@ def create_anonymous_user():
     return user
 
 
-def register_user(username, email, password, admin=[], teams=[], create_teams=True, confirmed=True):
-    user = User(
-        username=username,
-        email=email,
-        password=password,
-        confirmed=confirmed
-    )
-
+def register_user(username, email, password, user_id=None, confirmed=True, anonymous=False, admin=[], teams=[], create_teams=True):
+    if user_id:
+        user = User.query.get_or_404(user_id)
+        setattr(user, 'username', username)
+        setattr(user, 'email', email)
+        setattr(user, 'password', password)
+        setattr(user, 'confirmed', confirmed)
+        setattr(user, 'anonymous', anonymous)
+    else:
+        user = User(
+            username=username,
+            email=email,
+            password=password,
+            confirmed=confirmed,
+            anonymous=anonymous
+        )
     if admin:
         for admin_team_name in admin:
             if team_exists(admin_team_name):

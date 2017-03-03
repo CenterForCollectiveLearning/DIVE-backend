@@ -77,11 +77,11 @@ projectsGetParser.add_argument('preloaded', type=bool, default=False)
 projectsGetParser.add_argument('private', type=bool, default=False)
 
 projectsPostParser = reqparse.RequestParser()
+projectsPostParser.add_argument('user_id', type=int, required=False)
 projectsPostParser.add_argument('title', type=str, location='json', required=False)
 projectsPostParser.add_argument('description', type=str, location='json', required=False)
 projectsPostParser.add_argument('anonymous', type=bool, location='json', required=False, default=False)
 projectsPostParser.add_argument('private', type=bool, location='json', required=False, default=True)
-projectsPostParser.add_argument('user_id', type=int, required=False)
 class Projects(Resource):
     '''
     GET list of all projects

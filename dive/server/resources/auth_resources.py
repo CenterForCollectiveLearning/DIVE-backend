@@ -18,7 +18,7 @@ COOKIE_DURATION = timedelta(days=365)
 
 def set_cookies(response, cookie_dict, expires=0, domain=current_app.config['COOKIE_DOMAIN']):
     for (k, v) in cookie_dict.iteritems():
-        response.set_cookie(k, v, expires=expires, domain=domain)
+        response.set_cookie(k, str(v), expires=expires, domain=domain)
     return response
 
 
@@ -41,13 +41,6 @@ class Confirm_Token(Resource):
                 'alreadyActivated': True,
                 'user': row_to_dict(user)
             }, status=200)
-            response = set_cookies(response, {
-                'username': user.username,
-                'email': user.email,
-                'user_id': str(user.id),
-                'confirmed': str(True)
-            }, expires=datetime.utcnow() + COOKIE_DURATION)
-            return response
         else:
             confirm_user(email=email)
             login_user(user, remember=True)
@@ -57,13 +50,13 @@ class Confirm_Token(Resource):
                 'alreadyActivated': False,
                 'user': row_to_dict(user)
             })
-            response = set_cookies(response, {
-                'username': user.username,
-                'email': user.email,
-                'user_id': str(user.id),
-                'confirmed': str(True)
-            }, expires=datetime.utcnow() + COOKIE_DURATION)
-            return response
+        response = set_cookies(response, {
+            'username': user.username,
+            'email': user.email,
+            'user_id': user.id,
+            'confirmed': True
+        }, expires=datetime.utcnow() + COOKIE_DURATION)
+        return response
 
 
 resendEmailPostParser = reqparse.RequestParser()
@@ -160,27 +153,37 @@ class Reset_Password_Link(Resource):
 
 
 registerPostParser = reqparse.RequestParser()
+registerPostParser.add_argument('user_id', type=int, location='json')
 registerPostParser.add_argument('username', type=str, location='json')
 registerPostParser.add_argument('name', type=str, default='', location='json')
 registerPostParser.add_argument('email', type=str, location='json')
 registerPostParser.add_argument('password', type=str, location='json')
 registerPostParser.add_argument('os', type=str, location='json')
 registerPostParser.add_argument('browser', type=str, location='json')
-registerPostParser.add_argument('remember', type=bool, location='json')
+registerPostParser.add_argument('rememberMe', type=bool, default=True, location='json')
 class Register(Resource):
     def post(self):
         args = registerPostParser.parse_args()
+        user_id = args.get('user_id')
         username = args.get('username')
         name = args.get('name')
         email = args.get('email')
         password = args.get('password')
         os = args.get('os')
         browser = args.get('browser')
-        remember = args.get('remember', True)
+        remember = args.get('rememberMe', True)
 
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
-            user = register_user(username, email, password, confirmed=False)
+            user = register_user(
+                username,
+                email,
+                password,
+                user_id=user_id,
+                confirmed=False,
+                anonymous=False
+            )
+
             login_user(user, remember=remember)
 
             site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
@@ -205,8 +208,9 @@ class Register(Resource):
             response = set_cookies(response, {
                 'username': user.username,
                 'email': user.email,
-                'user_id': str(user.id),
-                'confirmed': str(user.confirmed)
+                'user_id': user.id,
+                'confirmed': user.confirmed,
+                'anonymous': user.anonymous
             }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
 
@@ -241,9 +245,9 @@ class AnonymousUser(Resource):
         response = set_cookies(response, {
             'username': user.username,
             'email': '',
-            'user_id': str(user.id),
-            'confirmed': str(False),
-            'anonymous': str(True)
+            'user_id': user.id,
+            'confirmed': False,
+            'anonymous': True
         }, expires=datetime.utcnow() + COOKIE_DURATION)
         return response
 
@@ -260,7 +264,7 @@ class DeleteAnonymousData(Resource):
             'user_id': '',
             'confirmed': str(False)
         }, expires=0)
-        return response
+
 
 loginPostParser = reqparse.RequestParser()
 loginPostParser.add_argument('username', type=str, required=True, location='json')
@@ -273,7 +277,7 @@ class Login(Resource):
         username = args.get('username')
         email = args.get('email')
         password = args.get('password')
-        rememberMe = args.get('rememberMe')
+        remember = args.get('rememberMe')
 
         user_auth_object = check_user_auth(password, email=email, username=username)
         user = user_auth_object['user']
@@ -282,7 +286,7 @@ class Login(Resource):
         error_type = user_auth_object['error_type']
 
         if status == AuthStatus.SUCCESS.value:
-            login_user(user, remember=rememberMe)
+            login_user(user, remember=remember)
             if user.username:
                 message = 'Welcome back %s!' % user.username
             else:
@@ -295,8 +299,9 @@ class Login(Resource):
             response = set_cookies(response, {
                 'username': user.username,
                 'email': user.email,
-                'user_id': str(user.id),
-                'confirmed': str(user.confirmed)
+                'user_id': user.id,
+                'confirmed': user.confirmed,
+                'anonymous': user.anonymous
             }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
         else:
@@ -321,6 +326,7 @@ class Logout(Resource):
             'username': '',
             'email': '',
             'user_id': '',
-            'confirmed': str(False)
+            'confirmed': False,
+            'anonymous': True
         }, expires=0)
-        return response
+        return
