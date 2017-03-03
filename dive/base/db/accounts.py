@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 def project_auth(project_id):
-    print current_user
     if is_authorized_user(current_user, project_id):
         return True, None
     else:
@@ -243,3 +242,10 @@ def check_user_auth(password, email=None, username=None):
         'user': user,
         'error_type': error_type
     }
+
+
+def delete_anonymous_data(user_id):
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return user

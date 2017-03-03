@@ -7,7 +7,7 @@ from dive.server.auth.token import generate_confirmation_token, confirm_token
 from dive.server.auth.email import send_email
 from dive.base.core import login_manager, db
 from dive.base.db import AuthStatus, AuthMessage, row_to_dict
-from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user, check_email_exists, change_user_password_by_email, create_anonymous_user
+from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user, check_email_exists, change_user_password_by_email, create_anonymous_user, delete_anonymous_data
 from dive.base.db.models import User
 from dive.base.serialization import jsonify
 
@@ -247,6 +247,20 @@ class AnonymousUser(Resource):
         }, expires=datetime.utcnow() + COOKIE_DURATION)
         return response
 
+
+class DeleteAnonymousData(Resource):
+    def get(self, user_id):
+        deleted_user = delete_anonymous_data(user_id)
+        response = jsonify({
+            'user': row_to_dict(user)
+        })
+        response = set_cookies(response, {
+            'username': '',
+            'email': '',
+            'user_id': '',
+            'confirmed': str(False)
+        }, expires=0)
+        return response
 
 loginPostParser = reqparse.RequestParser()
 loginPostParser.add_argument('username', type=str, required=True, location='json')
