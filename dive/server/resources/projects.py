@@ -8,8 +8,7 @@ from flask_login import login_required
 
 from dive.base.core import s3_client
 from dive.base.db import db_access
-from dive.base.db.accounts import load_account
-from dive.server.auth.account import project_auth
+from dive.base.db.accounts import load_account, project_auth
 from dive.base.serialization import jsonify
 
 import logging
@@ -88,6 +87,7 @@ class Projects(Resource):
     GET list of all projects
     POST to add new projects
     '''
+    @login_required
     def get(self):
         args = projectsGetParser.parse_args()
         user_id = args.get('user_id')
