@@ -1,11 +1,13 @@
 from flask import abort
 import datetime
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from haikunator import Haikunator
 
 from dive.base.core import db, login_manager
 from dive.base.db import ModelName, AuthStatus, AuthMessage, AuthErrorType, row_to_dict
 from dive.base.db.models import Team, User, Project
 from dive.base.db.constants import Role
+
 
 
 @login_manager.user_loader
@@ -81,6 +83,20 @@ def get_user(**kwargs):
         raise e
 
     return user
+
+haikunator = Haikunator()
+def create_anonymous_user():
+    user = User(
+        username=haikunator.haikunate(),
+        email='',
+        password='',
+        confirmed=None,
+        anonymous=True
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
+
 
 def register_user(username, email, password, admin=[], teams=[], create_teams=True, confirmed=True):
     user = User(
