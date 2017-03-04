@@ -51,10 +51,11 @@ class Confirm_Token(Resource):
                 'user': row_to_dict(user)
             })
         response = set_cookies(response, {
+            'anonymous': user.anonymous,
             'username': user.username,
             'email': user.email,
             'user_id': user.id,
-            'confirmed': True
+            'confirmed': user.confirmed
         }, expires=datetime.utcnow() + COOKIE_DURATION)
         return response
 
