@@ -1,11 +1,50 @@
 from flask import abort
 import datetime
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from haikunator import Haikunator
+from flask_login import current_user
 
+from dive.base.serialization import jsonify
 from dive.base.core import db, login_manager
 from dive.base.db import ModelName, AuthStatus, AuthMessage, AuthErrorType, row_to_dict
 from dive.base.db.models import Team, User, Project
 from dive.base.db.constants import Role
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+def project_auth(project_id):
+    if is_authorized_user(current_user, project_id):
+        return True, None
+    else:
+        return False, jsonify({
+            'status': 'error',
+            'message': 'Not authorized'
+        }, status=401)
+
+
+def logged_in():
+    return current_user.is_authenticated() and current_user.is_active()
+
+
+def is_admin():
+    return logged_in() and current_user.admin
+
+
+def create():
+    return True
+
+def read(account):
+    return True
+
+
+def update(account):
+    return logged_in()
+
+
+def delete(account):
+    return False
 
 
 @login_manager.user_loader
@@ -82,14 +121,36 @@ def get_user(**kwargs):
 
     return user
 
-def register_user(username, email, password, admin=[], teams=[], create_teams=True, confirmed=True):
+haikunator = Haikunator()
+def create_anonymous_user():
     user = User(
-        username=username,
-        email=email,
-        password=password,
-        confirmed=confirmed
+        username=haikunator.haikunate(),
+        email='',
+        password='',
+        confirmed=None,
+        anonymous=True
     )
+    db.session.add(user)
+    db.session.commit()
+    return user
 
+
+def register_user(username, email, password, user_id=None, confirmed=True, anonymous=False, admin=[], teams=[], create_teams=True):
+    if user_id:
+        user = User.query.get_or_404(user_id)
+        setattr(user, 'username', username)
+        setattr(user, 'email', email)
+        setattr(user, 'password', password)
+        setattr(user, 'confirmed', confirmed)
+        setattr(user, 'anonymous', anonymous)
+    else:
+        user = User(
+            username=username,
+            email=email,
+            password=password,
+            confirmed=confirmed,
+            anonymous=anonymous
+        )
     if admin:
         for admin_team_name in admin:
             if team_exists(admin_team_name):
@@ -189,3 +250,10 @@ def check_user_auth(password, email=None, username=None):
         'user': user,
         'error_type': error_type
     }
+
+
+def delete_anonymous_data(user_id):
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return user

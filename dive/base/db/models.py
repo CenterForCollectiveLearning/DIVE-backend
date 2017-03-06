@@ -548,13 +548,14 @@ class User(db.Model):
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-    def __init__(self, username='', name='', email='', password='', role='', confirmed=False):
+    def __init__(self, username='', name='', email='', password='', role='', confirmed=False, anonymous=False):
         self.api_key = make_uuid()
         self.username = username
         self.email = email
         self.password = password
         self.role = role
         self.confirmed = confirmed
+        self.anonymous = anonymous
 
     def is_authenticated(self):
         return self.authenticated
