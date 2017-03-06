@@ -19,7 +19,7 @@ from dive.server.resources.exported_analyses import ExportedRegression, DataFrom
 from dive.server.resources.transform import Reduce, Unpivot, Join
 
 from dive.server.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
-from dive.server.resources.auth_resources import Register, Login, Logout, User, Confirm_Token, Resend_Email, Reset_Password_Link, Reset_Password_With_Token
+from dive.server.resources.auth_resources import Register, Login, Logout, User, Confirm_Token, Resend_Email, Reset_Password_Link, Reset_Password_With_Token, AnonymousUser, DeleteAnonymousData
 
 from flask import request, make_response
 from dive.server.resources.feedback import Feedback
@@ -101,6 +101,8 @@ def add_resources(api):
     api.add_resource(Resend_Email,                  '/auth/v1/resend')
     api.add_resource(Reset_Password_Link,           '/auth/v1/reset_password')
     api.add_resource(Reset_Password_With_Token,     '/auth/v1/reset_password/<string:token>')
+    api.add_resource(AnonymousUser,                 '/auth/v1/anonymous_user')
+    api.add_resource(DeleteAnonymousData,           '/auth/v1/delete_anonymous_data/<int:user_id>')
 
     api.add_resource(Feedback,                      '/feedback/v1/feedback')
 
