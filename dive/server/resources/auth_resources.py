@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 COOKIE_DURATION = timedelta(days=365)
 
-def set_cookies(response, cookie_dict, expires=0, domain=current_app.config['COOKIE_DOMAIN']):
+def set_cookies(response, cookie_dict, expires=None, domain=current_app.config['COOKIE_DOMAIN']):
     for (k, v) in cookie_dict.iteritems():
         response.set_cookie(k, str(v), expires=expires, domain=domain)
     return response
@@ -249,7 +249,7 @@ class AnonymousUser(Resource):
             'user_id': user.id,
             'confirmed': False,
             'anonymous': True
-        }, expires=datetime.utcnow() + COOKIE_DURATION)
+        })
         return response
 
 
@@ -257,7 +257,7 @@ class DeleteAnonymousData(Resource):
     def get(self, user_id):
         deleted_user = delete_anonymous_data(user_id)
         response = jsonify({
-            'user': row_to_dict(user)
+            'user': row_to_dict(deleted_user)
         })
         response = set_cookies(response, {
             'username': '',
