@@ -59,14 +59,13 @@ class UploadFile(Resource):
 # Datasets list retrieval
 datasetsGetParser = reqparse.RequestParser()
 datasetsGetParser.add_argument('project_id', type=str, required=True)
-datasetsGetParser.add_argument('getStructure', type=bool, required=False, default=False)
+datasetsGetParser.add_argument('get_structure', type=bool, required=False, default=False)
 class Datasets(Resource):
     ''' Get dataset descriptions or samples '''
     @login_required
     def get(self):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
-        logger.info("[GET] Data for project_id: %s" % project_id)
 
         datasets = db_access.get_datasets(project_id)
 
@@ -78,12 +77,41 @@ class Datasets(Resource):
                 'datasetId': d.get('id')
             }
 
-            if args['getStructure']:
-                dataset_data['details'] = db_access.get_dataset_properties(project_id, dataset_id)
+            if args['get_structure']:
+                dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
 
             data_list.append(dataset_data)
 
         return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+
+
+# Datasets list retrieval
+preloadedDatasetsGetParser = reqparse.RequestParser()
+preloadedDatasetsGetParser.add_argument('get_structure', type=bool, required=False, default=False)
+class PreloadedDatasets(Resource):
+    ''' Get dataset descriptions or samples '''
+    @login_required
+    def get(self):
+        args = preloadedDatasetsGetParser.parse_args()
+        get_structure = args.get('get_structure')
+        logger.info("[GET] Data for project_id: %s" % project_id)
+
+        preloaded_datasets = db_access.get_preloaded_datasets()
+
+        data_list = []
+        for d in preloaded_datasets:
+            dataset_data = {
+                'title': d.get('title'),
+                'fileName': d.get('file_name'),
+                'datasetId': d.get('id')
+            }
+
+            if args['get_structure']:
+                dataset_data['details'] = db_access.get_preloaded_dataset_properties(project_id, d.get('id'))
+
+            data_list.append(dataset_data)
+
+        return make_response(jsonify({'status': 'success', 'preloaded_datasets': data_list}))
 
 
 # Dataset retrieval, editing, deletion
