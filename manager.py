@@ -12,7 +12,7 @@ from dive.base.core import create_app
 from dive.base.db import db_access
 from dive.base.db.accounts import register_user
 from dive.base.db.constants import Role
-from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
+from dive.base.db.models import Project, Preloaded_Dataset, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.worker.ingestion.upload import save_dataset_to_db
@@ -33,6 +33,15 @@ from dive.base.db.models import *
 migrate = Migrate(app, db, compare_type=True)
 
 manager.add_command('db', MigrateCommand)
+
+@manager.command
+def fresh_migrations():
+    try:
+        shutil.rmtree('migrations')
+    except OSError as e:
+        pass
+    command = 'DROP TABLE IF EXISTS alembic_version;'
+    db.engine.execute(command)
 
 @manager.command
 def drop():
