@@ -99,6 +99,12 @@ def users():
         )
 
 @manager.command
+def preloaded_datasets():
+    preloaded_dir = app.config['PRELOADED_PATH']
+    top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
+    top_level_config = yaml.load(top_level_config_file.read())
+
+@manager.command
 def preload():
     preloaded_dir = app.config['PRELOADED_PATH']
     top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
