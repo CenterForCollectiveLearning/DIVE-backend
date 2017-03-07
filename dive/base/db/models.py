@@ -11,6 +11,13 @@ from dive.base.db import ModelName
 def make_uuid():
     return unicode(uuid.uuid4())
 
+
+project_preloaded_dataset_association_table = Table('project_preloaded_dataset_association',
+    db.Model.metadata,
+    Column('project_id', Integer, ForeignKey('project.id')),
+    Column('preloaded_dataset_id', Integer, ForeignKey('preloaded_dataset.id'))
+)
+
 class Project(db.Model):
     __tablename__ = ModelName.PROJECT.value
     id = Column(Integer, primary_key=True)
@@ -25,6 +32,16 @@ class Project(db.Model):
 
     user_id = Column(Integer, ForeignKey('user.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
+
+    datasets = relationship('Dataset',
+        cascade='all, delete-orphan',
+        backref='project',
+        lazy='dynamic')
+
+    preloaded_datasets = relationship('Preloaded_Dataset',
+        secondary=project_preloaded_dataset_association_table,
+        lazy='dynamic'
+    )
 
     datasets = relationship('Dataset',
         cascade='all, delete-orphan',
@@ -66,7 +83,47 @@ class Project(db.Model):
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-# TODO Use mixins and custom base classes to support dataset -> postgres?
+
+class Preloaded_Dataset(db.Model):
+    __tablename__ = ModelName.PRELOADED_DATASET.value
+    id = Column(Integer, primary_key=True)
+    title = Column(Unicode(250))
+    description = Column(Unicode())
+
+    storage_type = Column(Unicode(10))
+    offset = Column(Integer)
+    dialect = Column(JSONB)
+    encoding = Column(Unicode(250))
+    path = Column(Unicode(250))
+    file_name = Column(Unicode(250))
+    type = Column(Unicode(250))
+    orig_type = Column(Unicode(250))
+
+    dataset_properties = relationship('Dataset_Properties',
+        uselist=False,
+        cascade='all, delete-orphan',
+        backref='dataset')
+
+    fields_properties = relationship('Field_Properties',
+        backref='dataset',
+        cascade='all, delete-orphan',
+        lazy='dynamic')
+
+    specs = relationship('Spec',
+        backref='dataset',
+        cascade='all, delete-orphan',
+        lazy='dynamic')
+
+    projects = relationship('Project',
+        secondary=project_preloaded_dataset_association_table,
+        lazy='dynamic'
+    )
+
+    creation_date = Column(DateTime, default=datetime.utcnow)
+    update_date = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+
 class Dataset(db.Model):
     '''
     The dataset is the core entity of any access to data.
