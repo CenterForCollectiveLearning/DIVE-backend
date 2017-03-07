@@ -87,16 +87,20 @@ class Datasets(Resource):
 
 # Datasets list retrieval
 preloadedDatasetsGetParser = reqparse.RequestParser()
+datasetsGetParser.add_argument('project_id', type=int, required=False)
 preloadedDatasetsGetParser.add_argument('get_structure', type=bool, required=False, default=False)
 class PreloadedDatasets(Resource):
     ''' Get dataset descriptions or samples '''
     @login_required
     def get(self):
         args = preloadedDatasetsGetParser.parse_args()
+        project_id = args.get('project_id')
         get_structure = args.get('get_structure')
-        logger.info("[GET] Data for project_id: %s" % project_id)
 
-        preloaded_datasets = db_access.get_preloaded_datasets()
+        args = {}
+        if project_id:
+            args['project_id'] = project_id
+        preloaded_datasets = db_access.get_preloaded_datasets(**args)
 
         data_list = []
         for d in preloaded_datasets:
@@ -107,7 +111,7 @@ class PreloadedDatasets(Resource):
             }
 
             if args['get_structure']:
-                dataset_data['details'] = db_access.get_preloaded_dataset_properties(project_id, d.get('id'))
+                dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
 
             data_list.append(dataset_data)
 

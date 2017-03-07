@@ -136,7 +136,6 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
         encoding = get_encoding(file_obj)
         file_obj.seek(0)
 
-        print 'Encoding:', encoding
         # Force encoding to UTF-8
         if (encoding not in ['ascii']) and ('utf' not in encoding) and ('UTF' not in encoding):
             try:
