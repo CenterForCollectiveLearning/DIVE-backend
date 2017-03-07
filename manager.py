@@ -12,10 +12,10 @@ from dive.base.core import create_app
 from dive.base.db import db_access
 from dive.base.db.accounts import register_user
 from dive.base.db.constants import Role
-from dive.base.db.models import Project, Preloaded_Dataset, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
+from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
-from dive.worker.ingestion.upload import save_dataset_to_db
+from dive.worker.ingestion.upload import get_dialect, get_encoding
 
 excluded_filetypes = ['json', 'py', 'yaml']
 
@@ -99,78 +99,45 @@ def users():
         )
 
 @manager.command
-def preloaded_datasets():
-    preloaded_dir = app.config['PRELOADED_PATH']
-    top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
-    top_level_config = yaml.load(top_level_config_file.read())
-
-@manager.command
 def preload():
     preloaded_dir = app.config['PRELOADED_PATH']
     top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
     top_level_config = yaml.load(top_level_config_file.read())
-
-    # If 'active' flag present, read only those projects. Else iterate through all.
-    active_projects = top_level_config.get('active')
-    if active_projects:
-        project_dirs = active_projects
+    dataset_configs = top_level_config['datasets']
 
     # Iterate through project directories
-    for project_dir in project_dirs:
-        full_project_dir = join(preloaded_dir, project_dir)
+    for dataset_config in dataset_configs:
+        title = dataset_config['title']
+        file_name = dataset_config['file']
+        description = dataset_config['description']
+        synthetic = dataset_config['synthetic']
+        topics = dataset_config['topics']
+        path = join(preloaded_dir, file_name)
 
-        # Validate dir
-        if not isdir(full_project_dir) or (project_dir.startswith('.')):
-            continue
+        app.logger.info('Ingesting dataset: %s', file_name)
+        _, file_type = file_name.rsplit('.', 1)
 
-        # Read config
-        project_config = {}
-        project_config_file_path = join(full_project_dir, 'metadata.yaml')
-        if isfile(project_config_file_path):
-            project_config_file = open(project_config_file_path, 'rt')
-            project_config = yaml.load(project_config_file.read())
-        project_title = project_config.get('title', project_dir)
-        project_datasets = project_config.get('datasets')
-        private = project_config.get('private', True)
+        file_object = open(path, 'r')
+        project_id = -1
 
-        # Insert projects
-        app.logger.info('Preloading project: %s', project_dir)
-        project_dict = db_access.insert_project(
-            title = project_title,
-            description = project_config.get('description'),
+        dialect = get_dialect(file_object)
+        encoding = get_encoding(file_object)
+
+        dataset = db_access.insert_dataset(
+            project_id,
+            path = path,
+            encoding = encoding,
+            dialect = dialect,
+            offset = None,
+            title = title,
+            file_name = file_name,
+            type = file_type,
             preloaded = True,
-            topics = project_config.get('topics', []),
-            directory = project_dir,
-            private = private
+            storage_type = 'file'
         )
-        project_id = project_dict['id']
 
-        # Create first document
-        db_access.create_document(project_id)
-
-
-        # Iterate through datasets
-        dataset_file_names = listdir(full_project_dir)
-        if project_datasets:
-            dataset_file_names = project_datasets
-
-        for dataset_file_name in dataset_file_names:
-            app.logger.info('Ingesting dataset: %s', dataset_file_name)
-            full_dataset_path = join(full_project_dir, dataset_file_name)
-            if (not isfile(full_dataset_path)) \
-                or dataset_file_name.startswith('.') \
-                or (dataset_file_name.rsplit('.')[1] in excluded_filetypes):
-                continue
-
-            dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
-
-            # If dataset-level config for project
-            datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
-
-            for dataset in datasets:
-                ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
-
-                    # ingestion_result.get()
+        ingestion_result = ingestion_pipeline.apply(args=[dataset['id'], project_id])
+        print ingestion_result.get()
         # relationship_result = relationship_pipeline.apply(args=[ project_id ])
         # relationship_result.get()
 
