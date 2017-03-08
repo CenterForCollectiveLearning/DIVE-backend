@@ -65,13 +65,13 @@ def delete_project(project_id):
 ################
 # Datasets
 ################
-def get_dataset(project_id, dataset_id, preloaded=False):
+def get_dataset(project_id, dataset_id):
     try:
-        if preloaded:
-            dataset = Preloaded_Dataset.query.filter_by(id=dataset_id).one()
+        dataset = Dataset.query.filter_by(id=dataset_id).one()
+        if dataset.preloaded or dataset.project_id == project_id:
+            return row_to_dict(dataset)
         else:
-            dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
-        return row_to_dict(dataset)
+            return None
 
     # TODO Decide between raising error and aborting with 404
     except NoResultFound, e:
@@ -82,8 +82,12 @@ def get_dataset(project_id, dataset_id, preloaded=False):
         logger.error(e)
         raise e
 
-def get_datasets(project_id, **kwargs):
+def get_datasets(project_id, include_preloaded=True, **kwargs):
     datasets = Dataset.query.filter_by(project_id=project_id, **kwargs).all()
+
+    if include_preloaded:
+        project = Project.query.get_or_404(project_id)
+        datasets.extend(project.preloaded_datasets.all())
     return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
@@ -157,8 +161,11 @@ def get_project_preloaded_datasets(project_id):
 ################
 def get_dataset_properties(project_id, dataset_id):
     try:
-        dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
-        return row_to_dict(dataset_properties)
+        dataset_properties = Dataset_Properties.query.filter_by(dataset_id=dataset_id).one()
+        if dataset_properties.dataset.preloaded or dataset_properties.project_id == project_id:
+            return row_to_dict(dataset_properties)
+        else:
+            return None
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -200,8 +207,8 @@ def delete_dataset_properties(project_id, dataset_id):
 # TODO Write functions dealing with one vs many field properties
 ################
 def get_field_properties(project_id, dataset_id, **kwargs):
-    result = Field_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
-    field_properties = [ row_to_dict(r) for r in result ]
+    result = Field_Properties.query.filter_by(dataset_id=dataset_id, **kwargs).all()
+    field_properties = [ row_to_dict(r) for r in result if (r.dataset.preloaded or r.project_id == project_id) ]
     return field_properties
 
 
@@ -301,7 +308,7 @@ def insert_relationships(relationships, project_id):
 # Specifications
 ################
 def get_spec(spec_id, project_id, **kwargs):
-    spec = Spec.query.filter_by(id=spec_id, project_id=project_id, **kwargs).one()
+    spec = Spec.query.filter_by(id=spec_id, **kwargs).one()
     if spec is None:
         abort(404)
     exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
@@ -314,7 +321,8 @@ def get_spec(spec_id, project_id, **kwargs):
     return row_to_dict(spec, custom_fields=[ 'exported', 'exported_spec_ids'])
 
 def get_specs(project_id, dataset_id, **kwargs):
-    specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
+    specs = Spec.query.filter_by(dataset_id=dataset_id, **kwargs).all()
+    specs = [ s for s in specs if (s.dataset.preloaded or s.project_id == project_id)]
     if specs is None:
         abort(404)
     final_specs = []
