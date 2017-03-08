@@ -174,11 +174,10 @@ class Dataset(Resource):
         project_id = args.get('project_id').strip().strip('"')
 
         dataset = db_access.get_dataset(project_id, dataset_id)
-
-        sample = get_dataset_sample(dataset.get('id'), project_id)
+        sample = get_dataset_sample(dataset_id, project_id)
 
         response = {
-            'datasetId': dataset.get('id'),
+            'datasetId': dataset_id,
             'title': dataset.get('title'),
             'details': sample
         }
