@@ -107,16 +107,25 @@ def delete_dataset(project_id, dataset_id):
 # Preloaded Datasets
 ################
 def get_preloaded_datasets(**kwargs):
-    datasets = Preloaded_Dataset.query.filter_by(**kwargs).all()
+    datasets = Dataset.query.filter_by(preloaded=True).all()
     return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_preloaded_dataset(**kwargs):
-    dataset = Preloaded_Dataset(
+    dataset = Dataset(
         **kwargs
     )
     db.session.add(dataset)
     db.session.commit()
     return row_to_dict(dataset)
+
+def add_preloaded_dataset_to_project(project_id, dataset_id):
+    try:
+        project = Project.query.filter_by(id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    print project.preloaded_datasets
 
 ################
 # Dataset Properties

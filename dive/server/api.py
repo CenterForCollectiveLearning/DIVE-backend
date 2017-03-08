@@ -1,4 +1,4 @@
-from dive.server.resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets
+from dive.server.resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets, SelectPreloadedDataset
 from dive.server.resources.documents import NewDocument, Document, Documents
 from dive.server.resources.fields import Field
 from dive.server.resources.projects import Project, Projects
@@ -45,7 +45,8 @@ def add_resources(api):
     api.add_resource(UploadFile,                    '/datasets/v1/upload')
     api.add_resource(Datasets,                      '/datasets/v1/datasets')
     api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dataset_id>')
-    api.add_resource(PreloadedDatasets,             '/datasest/v1/preloaded_datasets')
+    api.add_resource(PreloadedDatasets,             '/datasets/v1/preloaded_datasets')
+    api.add_resource(SelectPreloadedDataset,        '/datasets/v1/select_preloaded_dataset')
 
     api.add_resource(Reduce,                        '/datasets/v1/reduce')
     api.add_resource(Unpivot,                       '/datasets/v1/unpivot')

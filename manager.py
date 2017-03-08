@@ -126,6 +126,7 @@ def preload():
         dataset = db_access.insert_dataset(
             project_id,
             path = path,
+            description = description,
             encoding = encoding,
             dialect = dialect,
             offset = None,

@@ -8,6 +8,7 @@ from constants import Role, User_Status
 from dive.base.core import db
 from dive.base.db import ModelName
 
+
 def make_uuid():
     return unicode(uuid.uuid4())
 
@@ -32,9 +33,7 @@ class Project(db.Model):
         backref='project',
         lazy='dynamic')
 
-    datasets = relationship('Dataset',
-        cascade='all, delete-orphan',
-        backref='project',
+    preloaded_datasets = relationship('Dataset',
         lazy='dynamic')
 
     specs = relationship('Spec',
@@ -84,7 +83,7 @@ class Dataset(db.Model):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode(250))
     description = Column(Unicode())
-    preloaded = Column(Boolean(), default=False)    
+    preloaded = Column(Boolean(), default=False)
 
     storage_type = Column(Unicode(10))
     offset = Column(Integer)

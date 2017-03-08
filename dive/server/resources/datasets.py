@@ -87,35 +87,38 @@ class Datasets(Resource):
 
 # Datasets list retrieval
 preloadedDatasetsGetParser = reqparse.RequestParser()
-datasetsGetParser.add_argument('project_id', type=int, required=False)
 preloadedDatasetsGetParser.add_argument('get_structure', type=bool, required=False, default=False)
 class PreloadedDatasets(Resource):
-    ''' Get dataset descriptions or samples '''
-    @login_required
+    # @login_required
     def get(self):
         args = preloadedDatasetsGetParser.parse_args()
-        project_id = args.get('project_id')
         get_structure = args.get('get_structure')
 
-        args = {}
-        if project_id:
-            args['project_id'] = project_id
         preloaded_datasets = db_access.get_preloaded_datasets(**args)
 
         data_list = []
         for d in preloaded_datasets:
-            dataset_data = {
-                'title': d.get('title'),
-                'fileName': d.get('file_name'),
-                'datasetId': d.get('id')
-            }
+            dataset_data = { k: d[k] for k in [ 'title', 'file_name', 'id', 'description' ]}
 
             if args['get_structure']:
                 dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
 
             data_list.append(dataset_data)
 
-        return make_response(jsonify({'status': 'success', 'preloaded_datasets': data_list}))
+        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+
+
+selectPreloadedDatasetGetParser = reqparse.RequestParser()
+selectPreloadedDatasetGetParser.add_argument('project_id', type=int, required=True)
+selectPreloadedDatasetGetParser.add_argument('dataset_id', type=int, required=True)
+class SelectPreloadedDataset(Resource):
+    def get(self):
+        args = selectPreloadedDatasetGetParser.parse_args()
+        project_id = args.get('project_id')
+        dataset_id = args.get('dataset_id')
+
+        print project_id, dataset_id
+        db_access.add_preloaded_dataset_to_project(project_id, dataset_id)
 
 
 # Dataset retrieval, editing, deletion
