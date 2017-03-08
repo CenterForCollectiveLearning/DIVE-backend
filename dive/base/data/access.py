@@ -38,7 +38,6 @@ def delete_dataset(project_id, dataset_id):
 
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
-    logger.debug("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
     sample = map(list, df.iloc[start:end].values)
@@ -54,8 +53,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
         df = IMD.getData(dataset_id)
         return df
 
-    logger.debug('Accessing from read, project_id: %s, dataset_id: %s', project_id, dataset_id)
-
     dataset = db_access.get_dataset(project_id, dataset_id)
     dialect = dataset['dialect']
     encoding = dataset.get('encoding', 'utf-8')
@@ -66,6 +63,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
             Key="%s/%s" % (project_id, dataset['file_name'])
         )
         accessor = file_obj['Body']
+        
     if dataset['storage_type'] == 'file':
         accessor = dataset['path']
 
