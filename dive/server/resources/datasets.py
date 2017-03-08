@@ -52,8 +52,8 @@ class UploadFile(Resource):
                     args=[dataset['id'], project_id],
                     link_error = error_handler.s()
                 )
-            return make_response(jsonify({'task_id': ingestion_task.task_id}))
-        return make_response(jsonify({'status': 'Upload failed'}))
+            return jsonify({'task_id': ingestion_task.task_id})
+        return jsonify({'status': 'Upload failed'})
 
 
 # Datasets list retrieval
@@ -82,30 +82,40 @@ class Datasets(Resource):
 
             data_list.append(dataset_data)
 
-        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+        return jsonify({'status': 'success', 'datasets': data_list})
 
 
 # Datasets list retrieval
 preloadedDatasetsGetParser = reqparse.RequestParser()
+preloadedDatasetsGetParser.add_argument('project_id', type=int, required=False)
 preloadedDatasetsGetParser.add_argument('get_structure', type=bool, required=False, default=False)
 class PreloadedDatasets(Resource):
-    # @login_required
     def get(self):
         args = preloadedDatasetsGetParser.parse_args()
+        project_id = args.get('project_id')
         get_structure = args.get('get_structure')
 
         preloaded_datasets = db_access.get_preloaded_datasets(**args)
 
+        selected_preloaded_dataset_ids = []
+        if project_id:
+            selected_preloaded_datasets = db_access.get_project_preloaded_datasets(project_id)
+            selected_preloaded_dataset_ids = [ d['id'] for d in selected_preloaded_datasets ]
+
         data_list = []
         for d in preloaded_datasets:
             dataset_data = { k: d[k] for k in [ 'title', 'file_name', 'id', 'description' ]}
+            if dataset_data['id'] in selected_preloaded_dataset_ids:
+                dataset_data['selected'] = True
+            else:
+                dataset_data['selected'] = False
 
             if args['get_structure']:
                 dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
-
             data_list.append(dataset_data)
 
-        return make_response(jsonify({'status': 'success', 'datasets': data_list}))
+
+        return jsonify({'status': 'success', 'datasets': data_list})
 
 
 selectPreloadedDatasetGetParser = reqparse.RequestParser()
@@ -117,9 +127,38 @@ class SelectPreloadedDataset(Resource):
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
 
-        print project_id, dataset_id
-        db_access.add_preloaded_dataset_to_project(project_id, dataset_id)
+        preloaded_dataset = db_access.add_preloaded_dataset_to_project(project_id, dataset_id)
 
+        if preloaded_dataset:
+            return jsonify({
+                'result': 'success',
+                'preloaded_dataset': { k: preloaded_dataset[k] for k in [ 'title', 'file_name', 'id', 'description' ]}
+            })
+        else:
+            return jsonify({
+                'result': 'failure',
+            }, status=400)
+
+deselectPreloadedDatasetGetParser = reqparse.RequestParser()
+deselectPreloadedDatasetGetParser.add_argument('project_id', type=int, required=True)
+deselectPreloadedDatasetGetParser.add_argument('dataset_id', type=int, required=True)
+class DeselectPreloadedDataset(Resource):
+    def get(self):
+        args = deselectPreloadedDatasetGetParser.parse_args()
+        project_id = args.get('project_id')
+        dataset_id = args.get('dataset_id')
+
+        preloaded_dataset = db_access.remove_preloaded_dataset_from_project(project_id, dataset_id)
+
+        if preloaded_dataset:
+            return jsonify({
+                'result': 'success',
+                'preloaded_dataset': { k: preloaded_dataset[k] for k in [ 'title', 'file_name', 'id', 'description' ]}
+            })
+        else:
+            return jsonify({
+                'result': 'failure',
+            }, status=400)
 
 # Dataset retrieval, editing, deletion
 datasetGetParser = reqparse.RequestParser()
@@ -143,7 +182,7 @@ class Dataset(Resource):
             'title': dataset.get('title'),
             'details': sample
         }
-        return make_response(jsonify(response))
+        return jsonify(response)
 
     @login_required
     def delete(self, dataset_id):
