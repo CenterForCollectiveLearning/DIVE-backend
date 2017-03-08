@@ -67,7 +67,7 @@ class Datasets(Resource):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id').strip().strip('"')
 
-        datasets = db_access.get_datasets(project_id)
+        datasets = db_access.get_datasets(project_id, include_preloaded=True)
 
         data_list = []
         for d in datasets:
@@ -132,7 +132,7 @@ class SelectPreloadedDataset(Resource):
         if preloaded_dataset:
             return jsonify({
                 'result': 'success',
-                'preloaded_dataset': { k: preloaded_dataset[k] for k in [ 'title', 'file_name', 'id', 'description' ]}
+                'preloaded_dataset': { k: preloaded_dataset[k] for k in [ 'title', 'file_name', 'id', 'description', 'preloaded' ]}
             })
         else:
             return jsonify({
@@ -153,7 +153,7 @@ class DeselectPreloadedDataset(Resource):
         if preloaded_dataset:
             return jsonify({
                 'result': 'success',
-                'preloaded_dataset': { k: preloaded_dataset[k] for k in [ 'title', 'file_name', 'id', 'description' ]}
+                'preloaded_dataset': { k: preloaded_dataset[k] for k in [ 'title', 'file_name', 'id', 'description', 'preloaded' ]}
             })
         else:
             return jsonify({

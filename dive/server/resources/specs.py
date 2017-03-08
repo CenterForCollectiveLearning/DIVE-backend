@@ -43,12 +43,14 @@ class Specs(Resource):
 
         specs = db_access.get_specs(project_id, dataset_id, recommendation_types=recommendation_types, selected_fields=selected_fields, conditionals=conditionals)
 
+        print 'GETTING SPECS', specs, project_id, dataset_id
         if specs and not current_app.config['RECOMPUTE_VIZ_SPECS']:
             return jsonify({
                 'result': specs,
                 'compute': False
             })
         else:
+            print 'IN VIZ SPEC PIPELINE'
             specs_task = viz_spec_pipeline.apply_async(
                 args = [dataset_id, project_id, selected_fields, recommendation_types, conditionals, config],
                 link_error = error_handler.s()
