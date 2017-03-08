@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float
+from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
@@ -11,6 +11,14 @@ from dive.base.db import ModelName
 
 def make_uuid():
     return unicode(uuid.uuid4())
+
+
+project_preloaded_dataset_association_table = Table('project_preloaded_dataset_association',
+    db.Model.metadata,
+    Column('project_preloaded_dataset_id', Integer, primary_key=True),
+    Column('project_id', Integer, ForeignKey('project.id')),
+    Column('preloaded_dataset_id', Integer, ForeignKey('dataset.id'))
+)
 
 
 class Project(db.Model):
@@ -34,11 +42,13 @@ class Project(db.Model):
         lazy='dynamic')
 
     preloaded_datasets = relationship('Dataset',
+        secondary=project_preloaded_dataset_association_table,
+        back_populates='projects_using',
         lazy='dynamic')
 
     specs = relationship('Spec',
         cascade='all, delete-orphan',
-        backref='project',
+        backref='projects',
         lazy='dynamic')
 
     documents = relationship('Document',
@@ -110,6 +120,11 @@ class Dataset(db.Model):
     specs = relationship('Spec',
         backref='dataset',
         cascade='all, delete-orphan',
+        lazy='dynamic')
+
+    projects_using = relationship('Project',
+        secondary=project_preloaded_dataset_association_table,
+        back_populates='preloaded_datasets',
         lazy='dynamic')
 
     # Many-to-one with project
