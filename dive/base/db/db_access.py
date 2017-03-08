@@ -32,8 +32,8 @@ def get_projects(**kwargs):
     projects = Project.query.filter_by(**kwargs).all()
     for project in projects:
         setattr(project, 'included_datasets', [ row_to_dict(d) for d in project.datasets ])
-        setattr(project, 'num_datasets', project.datasets.count())
         setattr(project, 'num_specs', project.specs.count())
+        setattr(project, 'num_datasets', project.datasets.count())
         setattr(project, 'num_documents', project.documents.count())
         setattr(project, 'num_analyses', project.aggregations.count() + project.comparisons.count() + project.correlations.count() + project.regressions.count())
     return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents', 'num_analyses' ]) for project in projects ]
@@ -121,11 +121,36 @@ def insert_preloaded_dataset(**kwargs):
 def add_preloaded_dataset_to_project(project_id, dataset_id):
     try:
         project = Project.query.filter_by(id=project_id).one()
+        preloaded_dataset = Dataset.query.filter_by(id=dataset_id, preloaded=True).one()
+        if preloaded_dataset not in project.preloaded_datasets:
+            project.preloaded_datasets.append(preloaded_dataset)
+            db.session.commit()
+            return row_to_dict(preloaded_dataset)
+        else:
+            return None
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
         raise e
-    print project.preloaded_datasets
+
+def remove_preloaded_dataset_from_project(project_id, dataset_id):
+    try:
+        project = Project.query.filter_by(id=project_id).one()
+        preloaded_dataset = Dataset.query.filter_by(id=dataset_id, preloaded=True).one()
+        if preloaded_dataset in project.preloaded_datasets:
+            project.preloaded_datasets.remove(preloaded_dataset)
+            db.session.commit()
+            return row_to_dict(preloaded_dataset)
+        else:
+            return None
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+def get_project_preloaded_datasets(project_id):
+    project = Project.query.get_or_404(int(project_id))
+    return [ row_to_dict(d) for d in project.preloaded_datasets ]
 
 ################
 # Dataset Properties
