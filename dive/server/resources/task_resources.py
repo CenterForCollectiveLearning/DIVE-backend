@@ -30,7 +30,7 @@ class RevokeChainTask(Resource):
         logger.debug('Revoking tasks: %s', task_ids)
 
         # TODO Terminate or not?
-        r = celery.control.revoke(task_ids, terminate=True)
+        r = celery.control.revoke(task_ids, terminate=False)
 
 
 class TaskResult(Resource):
