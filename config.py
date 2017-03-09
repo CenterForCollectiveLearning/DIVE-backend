@@ -43,6 +43,7 @@ class BaseConfig(object):
     MAIL_DEBUG = False
 
     # Resources
+    METADATA_FILE_NAME_SUFFIX = 'dev'
     STORAGE_TYPE = 'file'
     STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
     AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
@@ -107,6 +108,7 @@ class ProductionConfig(BaseConfig):
     MAIL_PASSWORD = env('DIVE_MAIL_PASSWORD')
 
     # Resources
+    METADATA_FILE_NAME_SUFFIX = 'PROD'
     STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
     if STORAGE_TYPE == 'file':
         STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))

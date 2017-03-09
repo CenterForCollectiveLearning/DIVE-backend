@@ -4,9 +4,11 @@ import contextlib
 import os
 from os import listdir, curdir
 from os.path import isfile, join, isdir
+import boto3
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.migrate import Migrate, MigrateCommand
 from flask.ext.script import Manager
+from sqlalchemy.orm.exc import NoResultFound
 
 from dive.base.core import create_app
 from dive.base.db import db_access
@@ -15,7 +17,7 @@ from dive.base.db.constants import Role
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
-from dive.worker.ingestion.upload import save_dataset_to_db
+from dive.worker.ingestion.upload import get_dialect, get_encoding
 
 excluded_filetypes = ['json', 'py', 'yaml']
 
@@ -29,10 +31,27 @@ elif mode == 'PRODUCTION': app.config.from_object('config.ProductionConfig')
 db = SQLAlchemy(app)
 manager = Manager(app)
 
+if app.config['STORAGE_TYPE'] == 's3':
+    s3_client = boto3.client('s3',
+        aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+        region_name=app.config['AWS_REGION']
+    )
+
+
 from dive.base.db.models import *
 migrate = Migrate(app, db, compare_type=True)
 
 manager.add_command('db', MigrateCommand)
+
+@manager.command
+def fresh_migrations():
+    try:
+        shutil.rmtree('migrations')
+    except OSError as e:
+        pass
+    command = 'DROP TABLE IF EXISTS alembic_version;'
+    db.engine.execute(command)
 
 @manager.command
 def drop():
@@ -90,74 +109,75 @@ def users():
         )
 
 @manager.command
-def preload():
+def delete_preloaded_datasets():
+    logger.info('Deleting preloaded datasets')
+    preloaded_datasets = Dataset.query.filter_by(preloaded=True).all()
+    for pd in preloaded_datasets:
+        db.session.delete(pd)
+    db.session.commit()
+
+def ensure_dummy_project():
+    logger.info('Ensuring dummy project for preloaded datasets')
+    try:
+        dummy_project = Project.query.filter_by(id=-1).one()
+    except NoResultFound, e:
+        p = Project(
+            id=-1,
+            title='Dummy Project',
+            description='Dummy Description'
+        )
+        db.session.add(p)
+        db.session.commit()
+
+@manager.command
+def preload_datasets():
+    '''
+    Usage: have preloaded directory on local and mirrored files on remote S3 bucket
+    '''
     preloaded_dir = app.config['PRELOADED_PATH']
     top_level_config_file = open(join(preloaded_dir, 'metadata.yaml'), 'rt')
     top_level_config = yaml.load(top_level_config_file.read())
-
-    # If 'active' flag present, read only those projects. Else iterate through all.
-    active_projects = top_level_config.get('active')
-    if active_projects:
-        project_dirs = active_projects
+    datasets = top_level_config['datasets']
+    ensure_dummy_project()
+    delete_preloaded_datasets()
 
     # Iterate through project directories
-    for project_dir in project_dirs:
-        full_project_dir = join(preloaded_dir, project_dir)
+    for dataset in datasets:
+        project_id = -1
+        file_name = dataset.get('file_name')
 
-        # Validate dir
-        if not isdir(full_project_dir) or (project_dir.startswith('.')):
-            continue
+        app.logger.info('Ingesting preloaded dataset: %s', file_name)
 
-        # Read config
-        project_config = {}
-        project_config_file_path = join(full_project_dir, 'metadata.yaml')
-        if isfile(project_config_file_path):
-            project_config_file = open(project_config_file_path, 'rt')
-            project_config = yaml.load(project_config_file.read())
-        project_title = project_config.get('title', project_dir)
-        project_datasets = project_config.get('datasets')
-        private = project_config.get('private', True)
+        path = join(preloaded_dir, file_name)
+        file_object = open(path, 'r')
+        if app.config['STORAGE_TYPE'] == 's3':
+            remote_path = 'https://s3.amazonaws.com/%s/%s/%s' % (app.config['AWS_DATA_BUCKET'], project_id, file_name)
 
-        # Insert projects
-        app.logger.info('Preloading project: %s', project_dir)
-        project_dict = db_access.insert_project(
-            title = project_title,
-            description = project_config.get('description'),
+        dataset = db_access.insert_dataset(
+            project_id,
+            path = path if (app.config['STORAGE_TYPE'] == 'file') else remote_path,
+            description = dataset.get('description'),
+            encoding = get_encoding(file_object),
+            dialect = get_dialect(file_object),
+            offset = None,
+            title = dataset.get('title'),
+            file_name = file_name,
+            type = dataset.get('file_type'),
             preloaded = True,
-            topics = project_config.get('topics', []),
-            directory = project_dir,
-            private = private
+            storage_type = app.config['STORAGE_TYPE'],
+            info_url = dataset.get('info_url'),
+            tags = dataset.get('tags')
         )
-        project_id = project_dict['id']
 
-        # Create first document
-        db_access.create_document(project_id)
-
-
-        # Iterate through datasets
-        dataset_file_names = listdir(full_project_dir)
-        if project_datasets:
-            dataset_file_names = project_datasets
-
-        for dataset_file_name in dataset_file_names:
-            app.logger.info('Ingesting dataset: %s', dataset_file_name)
-            full_dataset_path = join(full_project_dir, dataset_file_name)
-            if (not isfile(full_dataset_path)) \
-                or dataset_file_name.startswith('.') \
-                or (dataset_file_name.rsplit('.')[1] in excluded_filetypes):
-                continue
-
-            dataset_title, dataset_type = dataset_file_name.rsplit('.', 1)
-
-            # If dataset-level config for project
-            datasets = save_dataset(project_id, dataset_title, dataset_file_name, dataset_type, full_dataset_path)
-
-            for dataset in datasets:
-                ingestion_result = ingestion_pipeline.apply(args=[dataset[ 'id'], project_id ])
-
-                    # ingestion_result.get()
+        ingestion_result = ingestion_pipeline.apply(args=[dataset['id'], project_id])
         # relationship_result = relationship_pipeline.apply(args=[ project_id ])
         # relationship_result.get()
+
+        # TODO Visualiation ingest
+        # TODO Regression ingest
+        # TODO Aggregation ingest
+        # TODO Correlation ingest
+        # TODO Comparison ingest
 
 
 if __name__ == "__main__":

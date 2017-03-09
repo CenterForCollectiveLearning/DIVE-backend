@@ -324,6 +324,6 @@ def save_field_properties(all_properties_result, dataset_id, project_id):
     return {
         'desc': 'Saved %s field properties' % len(field_properties_with_id),
         'result': {
-            'dataset_id': dataset_id
+            'id': dataset_id
         }
     }

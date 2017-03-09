@@ -30,7 +30,7 @@ def delete_dataset(project_id, dataset_id):
     if deleted_dataset['storage_type'] == 's3':
         file_obj = s3_client.delete_object(
             Bucket=current_app.config['AWS_DATA_BUCKET'],
-            Key="%s/%s" % (project_id, deleted_dataset['file_name'])
+            Key="%s/%s" % (str(project_id), deleted_dataset['file_name'])
         )
     elif deleted_dataset['storage_type'] == 'file':
         os.remove(deleted_dataset['path'])
@@ -38,9 +38,9 @@ def delete_dataset(project_id, dataset_id):
 
 
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
-    logger.debug("Getting dataset sample with project_id %s and dataset_id %s", project_id, dataset_id)
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
+
     sample = map(list, df.iloc[start:end].values)
 
     result = db_access.get_dataset_properties(project_id, dataset_id)
@@ -54,8 +54,6 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
         df = IMD.getData(dataset_id)
         return df
 
-    logger.debug('Accessing from read, project_id: %s, dataset_id: %s', project_id, dataset_id)
-
     dataset = db_access.get_dataset(project_id, dataset_id)
     dialect = dataset['dialect']
     encoding = dataset.get('encoding', 'utf-8')
@@ -63,9 +61,10 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     if dataset['storage_type'] == 's3':
         file_obj = s3_client.get_object(
             Bucket=current_app.config['AWS_DATA_BUCKET'],
-            Key="%s/%s" % (project_id, dataset['file_name'])
+            Key="%s/%s" % (str(project_id), dataset['file_name'])
         )
         accessor = file_obj['Body']
+
     if dataset['storage_type'] == 'file':
         accessor = dataset['path']
 
@@ -75,7 +74,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     df = pd.read_table(
         accessor,
         error_bad_lines = False,
-        encoding = 'utf-8',
+        encoding = encoding,
         skiprows = dataset['offset'],
         sep = dialect['delimiter'],
         engine = 'c',

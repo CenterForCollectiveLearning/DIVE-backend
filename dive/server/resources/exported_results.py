@@ -12,7 +12,7 @@ def object_type(j):
 
 
 exportedResultsGetParser = reqparse.RequestParser()
-exportedResultsGetParser.add_argument('project_id', type=str, required=True)
+exportedResultsGetParser.add_argument('project_id', type=int, required=True)
 exportedResultsGetParser.add_argument('result_type', type=str, action='append')
 class ExportedResults(Resource):
     def get(self):
