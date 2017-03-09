@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float
+from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from constants import Role, User_Status
@@ -8,8 +8,18 @@ from constants import Role, User_Status
 from dive.base.core import db
 from dive.base.db import ModelName
 
+
 def make_uuid():
     return unicode(uuid.uuid4())
+
+
+project_preloaded_dataset_association_table = Table('project_preloaded_dataset_association',
+    db.Model.metadata,
+    Column('project_preloaded_dataset_id', Integer, primary_key=True),
+    Column('project_id', Integer, ForeignKey('project.id')),
+    Column('preloaded_dataset_id', Integer, ForeignKey('dataset.id'))
+)
+
 
 class Project(db.Model):
     __tablename__ = ModelName.PROJECT.value
@@ -17,7 +27,7 @@ class Project(db.Model):
     title = Column(Unicode(250))
     description = Column(Unicode(2000))
     topics = Column(JSONB)
-    preloaded = Column(Boolean())
+    preloaded = Column(Boolean(), default=False)
     directory = Column(Unicode(2000))
     private = Column(Boolean())
     anonymous = Column(Boolean())
@@ -31,9 +41,14 @@ class Project(db.Model):
         backref='project',
         lazy='dynamic')
 
+    preloaded_datasets = relationship('Dataset',
+        secondary=project_preloaded_dataset_association_table,
+        back_populates='projects_using',
+        lazy='dynamic')
+
     specs = relationship('Spec',
         cascade='all, delete-orphan',
-        backref='project',
+        backref='projects',
         lazy='dynamic')
 
     documents = relationship('Document',
@@ -66,7 +81,7 @@ class Project(db.Model):
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-# TODO Use mixins and custom base classes to support dataset -> postgres?
+
 class Dataset(db.Model):
     '''
     The dataset is the core entity of any access to data.
@@ -78,6 +93,7 @@ class Dataset(db.Model):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode(250))
     description = Column(Unicode())
+    preloaded = Column(Boolean(), default=False)
 
     storage_type = Column(Unicode(10))
     offset = Column(Integer)
@@ -87,6 +103,8 @@ class Dataset(db.Model):
     file_name = Column(Unicode(250))
     type = Column(Unicode(250))
     orig_type = Column(Unicode(250))
+    tags = Column(JSONB)
+    info_url = Column(Unicode(250))
 
     # One-to-one with dataset_properties
     dataset_properties = relationship('Dataset_Properties',
@@ -106,6 +124,11 @@ class Dataset(db.Model):
         cascade='all, delete-orphan',
         lazy='dynamic')
 
+    projects_using = relationship('Project',
+        secondary=project_preloaded_dataset_association_table,
+        back_populates='preloaded_datasets',
+        lazy='dynamic')
+
     # Many-to-one with project
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
@@ -116,8 +139,6 @@ class Dataset(db.Model):
                         onupdate=datetime.utcnow)
 
 
-
-# TODO Decide between a separate table and more fields on Dataset
 class Dataset_Properties(db.Model):
     __tablename__ = ModelName.DATASET_PROPERTIES.value
     id = Column(Integer, primary_key=True)

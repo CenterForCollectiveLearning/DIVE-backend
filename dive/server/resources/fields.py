@@ -20,7 +20,7 @@ def object_type(j):
 
 
 fieldPostParser = reqparse.RequestParser()
-fieldPostParser.add_argument('project_id', type=str, required=True, location='json')
+fieldPostParser.add_argument('project_id', type=int, required=True, location='json')
 fieldPostParser.add_argument('type', type=object_type, location='json')
 fieldPostParser.add_argument('isId', type=bool, location='json')
 fieldPostParser.add_argument('color', type=str, location='json')

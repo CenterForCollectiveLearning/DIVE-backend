@@ -65,7 +65,7 @@ def reduce_pipeline(self, column_ids_to_keep, new_dataset_name_prefix, dataset_i
     ingestion_result = ingestion_pipeline.apply(args=[ new_dataset_id, project_id ])
     return {
         'result': {
-            'dataset_id': new_dataset_id
+            'id': new_dataset_id
         }
     }
 
@@ -91,7 +91,7 @@ def join_pipeline(self, left_dataset_id, right_dataset_id, on, left_on, right_on
     ingestion_result = ingestion_pipeline.apply(args=[ new_dataset_id, project_id ])
     return {
         'result': {
-            'dataset_id': new_dataset_id
+            'id': new_dataset_id
         }
     }
 
@@ -117,7 +117,7 @@ def unpivot_pipeline(self, pivot_fields, variable_name, value_name, new_dataset_
     ingestion_result = ingestion_pipeline.apply(args=[ new_dataset_id, project_id ])
     return {
         'result': {
-            'dataset_id': new_dataset_id
+            'id': new_dataset_id
         }
     }
 
