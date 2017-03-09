@@ -25,15 +25,15 @@ logger = logging.getLogger(__name__)
 # https://github.com/sloria/PythonORMSleepy/blob/master/sleepy/api_sqlalchemy.py
 ################
 def get_project(project_id):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
     return row_to_dict(project)
 
 def get_projects(**kwargs):
     projects = Project.query.filter_by(**kwargs).all()
     for project in projects:
         setattr(project, 'included_datasets', [ row_to_dict(d) for d in project.datasets ])
-        setattr(project, 'num_datasets', project.datasets.count())
         setattr(project, 'num_specs', project.specs.count())
+        setattr(project, 'num_datasets', project.datasets.count())
         setattr(project, 'num_documents', project.documents.count())
         setattr(project, 'num_analyses', project.aggregations.count() + project.comparisons.count() + project.correlations.count() + project.regressions.count())
     return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents', 'num_analyses' ]) for project in projects ]
@@ -47,7 +47,7 @@ def insert_project(**kwargs):
     return row_to_dict(project)
 
 def update_project(project_id, **kwargs):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
 
     for k, v in kwargs.iteritems():
         setattr(project, k, v)
@@ -57,7 +57,7 @@ def update_project(project_id, **kwargs):
     return row_to_dict(project)
 
 def delete_project(project_id):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
     db.session.delete(project)
     db.session.commit()
     return row_to_dict(project)
@@ -66,9 +66,13 @@ def delete_project(project_id):
 # Datasets
 ################
 def get_dataset(project_id, dataset_id):
+    project_id = project_id
     try:
-        dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
-        return row_to_dict(dataset)
+        dataset = Dataset.query.filter_by(id=dataset_id).one()
+        if dataset.preloaded or dataset.project_id == project_id:
+            return row_to_dict(dataset)
+        else:
+            return None
 
     # TODO Decide between raising error and aborting with 404
     except NoResultFound, e:
@@ -79,8 +83,12 @@ def get_dataset(project_id, dataset_id):
         logger.error(e)
         raise e
 
-def get_datasets(project_id, **kwargs):
+def get_datasets(project_id, include_preloaded=True, **kwargs):
     datasets = Dataset.query.filter_by(project_id=project_id, **kwargs).all()
+
+    if include_preloaded:
+        project = Project.query.get_or_404(project_id)
+        datasets.extend(project.preloaded_datasets.all())
     return [ row_to_dict(dataset) for dataset in datasets ]
 
 def insert_dataset(project_id, **kwargs):
@@ -101,12 +109,65 @@ def delete_dataset(project_id, dataset_id):
 
 
 ################
+# Preloaded Datasets
+################
+def get_preloaded_datasets(**kwargs):
+    datasets = Dataset.query.filter_by(preloaded=True).all()
+    return [ row_to_dict(dataset) for dataset in datasets ]
+
+def insert_preloaded_dataset(**kwargs):
+    dataset = Dataset(
+        **kwargs
+    )
+    db.session.add(dataset)
+    db.session.commit()
+    return row_to_dict(dataset)
+
+def add_preloaded_dataset_to_project(project_id, dataset_id):
+    try:
+        project = Project.query.filter_by(id=project_id).one()
+        preloaded_dataset = Dataset.query.filter_by(id=dataset_id, preloaded=True).one()
+        if preloaded_dataset not in project.preloaded_datasets:
+            project.preloaded_datasets.append(preloaded_dataset)
+            db.session.commit()
+            return row_to_dict(preloaded_dataset)
+        else:
+            return None
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+def remove_preloaded_dataset_from_project(project_id, dataset_id):
+    try:
+        project = Project.query.filter_by(id=project_id).one()
+        preloaded_dataset = Dataset.query.filter_by(id=dataset_id, preloaded=True).one()
+        if preloaded_dataset in project.preloaded_datasets:
+            project.preloaded_datasets.remove(preloaded_dataset)
+            db.session.commit()
+            return row_to_dict(preloaded_dataset)
+        else:
+            return None
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+def get_project_preloaded_datasets(project_id):
+    project = Project.query.get_or_404(project_id)
+    return [ row_to_dict(d) for d in project.preloaded_datasets ]
+
+################
 # Dataset Properties
 ################
 def get_dataset_properties(project_id, dataset_id):
+    project_id = project_id
     try:
-        dataset_properties = Dataset_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id).one()
-        return row_to_dict(dataset_properties)
+        dataset_properties = Dataset_Properties.query.filter_by(dataset_id=dataset_id).one()
+        if dataset_properties.dataset.preloaded or dataset_properties.project_id == project_id:
+            return row_to_dict(dataset_properties)
+        else:
+            return None
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -148,8 +209,8 @@ def delete_dataset_properties(project_id, dataset_id):
 # TODO Write functions dealing with one vs many field properties
 ################
 def get_field_properties(project_id, dataset_id, **kwargs):
-    result = Field_Properties.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
-    field_properties = [ row_to_dict(r) for r in result ]
+    result = Field_Properties.query.filter_by(dataset_id=dataset_id, **kwargs).all()
+    field_properties = [ row_to_dict(r) for r in result if (r.dataset.preloaded or r.project_id == project_id) ]
     return field_properties
 
 
@@ -249,7 +310,7 @@ def insert_relationships(relationships, project_id):
 # Specifications
 ################
 def get_spec(spec_id, project_id, **kwargs):
-    spec = Spec.query.filter_by(id=spec_id, project_id=project_id, **kwargs).one()
+    spec = Spec.query.filter_by(id=spec_id, **kwargs).one()
     if spec is None:
         abort(404)
     exported_spec_ids = [ es.id for es in spec.exported_specs.all() ]
@@ -262,7 +323,8 @@ def get_spec(spec_id, project_id, **kwargs):
     return row_to_dict(spec, custom_fields=[ 'exported', 'exported_spec_ids'])
 
 def get_specs(project_id, dataset_id, **kwargs):
-    specs = Spec.query.filter_by(project_id=project_id, dataset_id=dataset_id, **kwargs).all()
+    specs = Spec.query.filter_by(dataset_id=dataset_id, **kwargs).all()
+    specs = [ s for s in specs if (s.dataset.preloaded or s.project_id == project_id)]
     if specs is None:
         abort(404)
     final_specs = []

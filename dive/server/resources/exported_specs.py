@@ -13,7 +13,7 @@ def object_type(j):
 
 
 visualizationFromExportedSpecGetParser = reqparse.RequestParser()
-visualizationFromExportedSpecGetParser.add_argument('project_id', type=str, required=True)
+visualizationFromExportedSpecGetParser.add_argument('project_id', type=int, required=True)
 class VisualizationFromExportedSpec(Resource):
     def get(self, exported_spec_id):
         args = visualizationFromExportedSpecGetParser.parse_args()
@@ -31,10 +31,10 @@ class VisualizationFromExportedSpec(Resource):
 
 
 exportedSpecsGetParser = reqparse.RequestParser()
-exportedSpecsGetParser.add_argument('project_id', type=str, required=True)
+exportedSpecsGetParser.add_argument('project_id', type=int, required=True)
 
 exportedSpecsPostParser = reqparse.RequestParser()
-exportedSpecsPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedSpecsPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedSpecsPostParser.add_argument('spec_id', type=str, required=True, location='json')
 exportedSpecsPostParser.add_argument('data', type=object_type, required=True, location='json')
 exportedSpecsPostParser.add_argument('conditionals', type=object_type, required=True, location='json', default={})
