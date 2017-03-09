@@ -103,6 +103,8 @@ class Dataset(db.Model):
     file_name = Column(Unicode(250))
     type = Column(Unicode(250))
     orig_type = Column(Unicode(250))
+    tags = Column(JSONB)
+    info_url = Column(Unicode(250))
 
     # One-to-one with dataset_properties
     dataset_properties = relationship('Dataset_Properties',
