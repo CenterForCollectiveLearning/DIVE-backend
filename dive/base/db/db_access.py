@@ -66,6 +66,7 @@ def delete_project(project_id):
 # Datasets
 ################
 def get_dataset(project_id, dataset_id):
+    project_id = int(project_id)
     try:
         dataset = Dataset.query.filter_by(id=dataset_id).one()
         if dataset.preloaded or dataset.project_id == project_id:
@@ -83,7 +84,7 @@ def get_dataset(project_id, dataset_id):
         raise e
 
 def get_datasets(project_id, include_preloaded=True, **kwargs):
-    datasets = Dataset.query.filter_by(project_id=project_id, **kwargs).all()
+    datasets = Dataset.query.filter_by(project_id=int(project_id), **kwargs).all()
 
     if include_preloaded:
         project = Project.query.get_or_404(project_id)
@@ -160,6 +161,7 @@ def get_project_preloaded_datasets(project_id):
 # Dataset Properties
 ################
 def get_dataset_properties(project_id, dataset_id):
+    project_id = int(project_id)
     try:
         dataset_properties = Dataset_Properties.query.filter_by(dataset_id=dataset_id).one()
         if dataset_properties.dataset.preloaded or dataset_properties.project_id == project_id:
