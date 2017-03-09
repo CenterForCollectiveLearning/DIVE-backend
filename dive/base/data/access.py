@@ -59,10 +59,16 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
     encoding = dataset.get('encoding', 'utf-8')
 
     if dataset['storage_type'] == 's3':
-        file_obj = s3_client.get_object(
-            Bucket=current_app.config['AWS_DATA_BUCKET'],
-            Key="%s/%s" % (str(project_id), dataset['file_name'])
-        )
+        if dataset['preloaded']:
+            file_obj = s3_client.get_object(
+                Bucket=current_app.config['AWS_DATA_BUCKET'],
+                Key="-1/%s" % dataset['file_name']
+            )
+        else:
+            file_obj = s3_client.get_object(
+                Bucket=current_app.config['AWS_DATA_BUCKET'],
+                Key="%s/%s" % (str(project_id), dataset['file_name'])
+            )
         accessor = file_obj['Body']
 
     if dataset['storage_type'] == 'file':
