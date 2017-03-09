@@ -12,10 +12,10 @@ def object_type(j):
 
 
 exportedRegressionGetParser = reqparse.RequestParser()
-exportedRegressionGetParser.add_argument('project_id', type=str, required=True)
+exportedRegressionGetParser.add_argument('project_id', type=int, required=True)
 
 exportedRegressionPostParser = reqparse.RequestParser()
-exportedRegressionPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedRegressionPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedRegressionPostParser.add_argument('regression_id', type=str, required=True, location='json')
 exportedRegressionPostParser.add_argument('data', type=object_type, required=True, location='json')
 exportedRegressionPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
@@ -42,7 +42,7 @@ class ExportedRegression(Resource):
 
 
 dataFromExportedRegressionGetParser = reqparse.RequestParser()
-dataFromExportedRegressionGetParser.add_argument('project_id', type=str, required=True)
+dataFromExportedRegressionGetParser.add_argument('project_id', type=int, required=True)
 class DataFromExportedRegression(Resource):
     def get(self, exported_regression_id):
         args = dataFromExportedRegressionGetParser.parse_args()
@@ -56,10 +56,10 @@ class DataFromExportedRegression(Resource):
 
 
 exportedCorrelationGetParser = reqparse.RequestParser()
-exportedCorrelationGetParser.add_argument('project_id', type=str, required=True)
+exportedCorrelationGetParser.add_argument('project_id', type=int, required=True)
 
 exportedCorrelationPostParser = reqparse.RequestParser()
-exportedCorrelationPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedCorrelationPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedCorrelationPostParser.add_argument('correlation_id', type=str, required=True, location='json')
 exportedCorrelationPostParser.add_argument('data', type=object_type, required=True, location='json')
 exportedCorrelationPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
@@ -86,7 +86,7 @@ class ExportedCorrelation(Resource):
 
 
 dataFromExportedCorrelationGetParser = reqparse.RequestParser()
-dataFromExportedCorrelationGetParser.add_argument('project_id', type=str, required=True)
+dataFromExportedCorrelationGetParser.add_argument('project_id', type=int, required=True)
 class DataFromExportedCorrelation(Resource):
     def get(self, exported_correlation_id):
         args = dataFromExportedCorrelationGetParser.parse_args()
@@ -100,10 +100,10 @@ class DataFromExportedCorrelation(Resource):
 
 
 exportedAggregationGetParser = reqparse.RequestParser()
-exportedAggregationGetParser.add_argument('project_id', type=str, required=True)
+exportedAggregationGetParser.add_argument('project_id', type=int, required=True)
 
 exportedAggregationPostParser = reqparse.RequestParser()
-exportedAggregationPostParser.add_argument('project_id', type=str, required=True, location='json')
+exportedAggregationPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedAggregationPostParser.add_argument('summary_id', type=str, required=True, location='json')
 exportedAggregationPostParser.add_argument('conditionals', type=dict, required=True, location='json')
 exportedAggregationPostParser.add_argument('config', type=dict, required=True, location='json')
@@ -129,7 +129,7 @@ class ExportedAggregation(Resource):
 
 
 dataFromExportedAggregationGetParser = reqparse.RequestParser()
-dataFromExportedAggregationGetParser.add_argument('project_id', type=str, required=True)
+dataFromExportedAggregationGetParser.add_argument('project_id', type=int, required=True)
 class DataFromExportedAggregation(Resource):
     def get(self, exported_correlation_id):
         args = dataFromExportedAggregationGetParser.parse_args()

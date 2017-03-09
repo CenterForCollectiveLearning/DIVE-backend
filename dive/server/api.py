@@ -1,4 +1,4 @@
-from dive.server.resources.datasets import UploadFile, Dataset, Datasets
+from dive.server.resources.datasets import UploadFile, Dataset, Datasets, PreloadedDatasets, SelectPreloadedDataset, DeselectPreloadedDataset
 from dive.server.resources.documents import NewDocument, Document, Documents
 from dive.server.resources.fields import Field
 from dive.server.resources.projects import Project, Projects
@@ -44,22 +44,25 @@ def add_resources(api):
 
     api.add_resource(UploadFile,                    '/datasets/v1/upload')
     api.add_resource(Datasets,                      '/datasets/v1/datasets')
-    api.add_resource(Dataset,                       '/datasets/v1/datasets/<string:dataset_id>')
+    api.add_resource(Dataset,                       '/datasets/v1/datasets/<int:dataset_id>')
+    api.add_resource(PreloadedDatasets,             '/datasets/v1/preloaded_datasets')
+    api.add_resource(SelectPreloadedDataset,        '/datasets/v1/select_preloaded_dataset')
+    api.add_resource(DeselectPreloadedDataset,      '/datasets/v1/deselect_preloaded_dataset')
 
     api.add_resource(Reduce,                        '/datasets/v1/reduce')
     api.add_resource(Unpivot,                       '/datasets/v1/unpivot')
     api.add_resource(Join,                          '/datasets/v1/join')
 
-    api.add_resource(Field,                         '/datasets/v1/fields/<string:field_id>')
+    api.add_resource(Field,                         '/datasets/v1/fields/<int:field_id>')
 
     api.add_resource(FieldProperties,               '/field_properties/v1/field_properties')
 
     api.add_resource(Specs,                         '/specs/v1/specs')
-    api.add_resource(VisualizationFromSpec,         '/specs/v1/specs/<string:spec_id>/visualization')
+    api.add_resource(VisualizationFromSpec,         '/specs/v1/specs/<int:spec_id>/visualization')
     api.add_resource(GeneratingProcedures,          '/specs/v1/generating_procedures')
 
     api.add_resource(ExportedSpecs,                 '/exported_specs/v1/exported_specs')
-    api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<string:exported_spec_id>/visualization')
+    api.add_resource(VisualizationFromExportedSpec, '/exported_specs/v1/exported_specs/<int:exported_spec_id>/visualization')
 
     api.add_resource(InteractionTerms,              '/statistics/v1/interaction_term')
 
@@ -81,17 +84,17 @@ def add_resources(api):
     api.add_resource(ExportedResults,               '/exported_results/v1/exported_results')
 
     api.add_resource(ExportedRegression,            '/exported_regression/v1/exported_regression')
-    api.add_resource(DataFromExportedRegression,    '/exported_regression/v1/exported_regression/<string:exported_spec_id>/data')
+    api.add_resource(DataFromExportedRegression,    '/exported_regression/v1/exported_regression/<int:exported_spec_id>/data')
 
     api.add_resource(ExportedCorrelation,           '/exported_correlation/v1/exported_correlation')
-    api.add_resource(DataFromExportedCorrelation,   '/exported_correlation/v1/exported_correlation/<string:exported_spec_id>/data')
+    api.add_resource(DataFromExportedCorrelation,   '/exported_correlation/v1/exported_correlation/<int:exported_spec_id>/data')
 
     api.add_resource(ExportedAggregation,           '/exported_aggregation/v1/exported_aggregation')
-    api.add_resource(DataFromExportedAggregation,   '/exported_aggregation/v1/exported_aggregation/<string:exported_spec_id>/data')
+    api.add_resource(DataFromExportedAggregation,   '/exported_aggregation/v1/exported_aggregation/<int:exported_spec_id>/data')
 
     api.add_resource(Documents,                     '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
-    api.add_resource(Document,                      '/compose/v1/document/<string:document_id>')
+    api.add_resource(Document,                      '/compose/v1/document/<int:document_id>')
 
     api.add_resource(Confirm_Token,                 '/auth/v1/confirm/<string:token>')
     api.add_resource(Register,                      '/auth/v1/register')

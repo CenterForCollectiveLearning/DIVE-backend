@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 fieldPropertiesGetParser = reqparse.RequestParser()
-fieldPropertiesGetParser.add_argument('project_id', type=str, required=True)
-fieldPropertiesGetParser.add_argument('dataset_id', type=str, required=True)
+fieldPropertiesGetParser.add_argument('project_id', type=int, required=True)
+fieldPropertiesGetParser.add_argument('dataset_id', type=int, required=True)
 fieldPropertiesGetParser.add_argument('group_by', type=str)
 class FieldProperties(Resource):
     '''
@@ -26,7 +26,7 @@ class FieldProperties(Resource):
     @login_required
     def get(self):
         args = fieldPropertiesGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
         group_by = args.get('group_by')
 

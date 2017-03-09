@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 documentsGetParser = reqparse.RequestParser()
-documentsGetParser.add_argument('project_id', type=str, required=True)
+documentsGetParser.add_argument('project_id', type=int, required=True)
 class Documents(Resource):
     '''
     GET all documents
@@ -26,16 +26,16 @@ class Documents(Resource):
 
 
 documentGetParser = reqparse.RequestParser()
-documentGetParser.add_argument('project_id', type=str)
+documentGetParser.add_argument('project_id', type=int)
 documentGetParser.add_argument('include_data', type=bool, default=False)
 
 documentPutParser = reqparse.RequestParser()
-documentPutParser.add_argument('project_id', type=str, required=True, location='json')
+documentPutParser.add_argument('project_id', type=int, required=True, location='json')
 documentPutParser.add_argument('title', type=str, location='json')
 documentPutParser.add_argument('content', type=dict, location='json')
 
 documentDeleteParser = reqparse.RequestParser()
-documentDeleteParser.add_argument('project_id', type=str, required=True)
+documentDeleteParser.add_argument('project_id', type=int, required=True)
 class Document(Resource):
     '''
     Single document endpoints given a document_id of an existing document
@@ -83,7 +83,7 @@ class Document(Resource):
 
 
 documentPostParser = reqparse.RequestParser()
-documentPostParser.add_argument('project_id', type=str, required=True, location='json')
+documentPostParser.add_argument('project_id', type=int, required=True, location='json')
 class NewDocument(Resource):
     '''
     POST to add one new document
