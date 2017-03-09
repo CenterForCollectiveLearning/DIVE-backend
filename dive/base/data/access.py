@@ -40,6 +40,7 @@ def delete_dataset(project_id, dataset_id):
 def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
     end = start + inc  # Upper bound excluded
     df = get_data(dataset_id=dataset_id, project_id=project_id)
+
     sample = map(list, df.iloc[start:end].values)
 
     result = db_access.get_dataset_properties(project_id, dataset_id)
@@ -63,7 +64,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
             Key="%s/%s" % (project_id, dataset['file_name'])
         )
         accessor = file_obj['Body']
-        
+
     if dataset['storage_type'] == 'file':
         accessor = dataset['path']
 

@@ -27,7 +27,7 @@ def allowed_file(filename):
 
 # File upload handler
 uploadFileParser = reqparse.RequestParser()
-uploadFileParser.add_argument('project_id', type=str, required=True, location='json')
+uploadFileParser.add_argument('project_id', type=int, required=True, location='json')
 class UploadFile(Resource):
     '''
     1) Saves file
@@ -36,7 +36,7 @@ class UploadFile(Resource):
     '''
     def post(self):
         form_data = json.loads(request.form.get('data'))
-        project_id = str(form_data.get('project_id'))
+        project_id = unicode(form_data.get('project_id'))
         file_obj = request.files.get('file')
 
         if file_obj and allowed_file(file_obj.filename):
@@ -58,23 +58,24 @@ class UploadFile(Resource):
 
 # Datasets list retrieval
 datasetsGetParser = reqparse.RequestParser()
-datasetsGetParser.add_argument('project_id', type=str, required=True)
+datasetsGetParser.add_argument('project_id', type=int, required=True)
 datasetsGetParser.add_argument('get_structure', type=bool, required=False, default=False)
 class Datasets(Resource):
     ''' Get dataset descriptions or samples '''
     @login_required
     def get(self):
         args = datasetsGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         datasets = db_access.get_datasets(project_id, include_preloaded=True)
 
         data_list = []
         for d in datasets:
             dataset_data = {
+                'preloaded': d.get('preloaded'),
                 'title': d.get('title'),
                 'fileName': d.get('file_name'),
-                'datasetId': d.get('id')
+                'id': d.get('id')
             }
 
             if args['get_structure']:
@@ -177,8 +178,9 @@ class Dataset(Resource):
         sample = get_dataset_sample(dataset_id, project_id)
 
         response = {
-            'datasetId': dataset_id,
+            'id': dataset_id,
             'title': dataset.get('title'),
+            'preloaded': dataset.get('preloaded'),
             'details': sample
         }
         return jsonify(response)
