@@ -104,7 +104,6 @@ class Reset_Password_With_Token(Resource):
         email = confirm_token(token)
 
         if email:
-            print 'changing password', email, password
             user = change_user_password_by_email(email, password)
             return jsonify({
                 'status': 'success',
