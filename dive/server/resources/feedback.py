@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 feedbackPostParser = reqparse.RequestParser()
-feedbackPostParser.add_argument('project_id', type=str, location='json')
+feedbackPostParser.add_argument('project_id', type=int, location='json')
 feedbackPostParser.add_argument('user_id', type=str, location='json')
 feedbackPostParser.add_argument('user_email', type=str, location='json')
 feedbackPostParser.add_argument('username', type=str, location='json')
