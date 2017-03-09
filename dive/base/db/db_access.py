@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # https://github.com/sloria/PythonORMSleepy/blob/master/sleepy/api_sqlalchemy.py
 ################
 def get_project(project_id):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
     return row_to_dict(project)
 
 def get_projects(**kwargs):
@@ -47,7 +47,7 @@ def insert_project(**kwargs):
     return row_to_dict(project)
 
 def update_project(project_id, **kwargs):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
 
     for k, v in kwargs.iteritems():
         setattr(project, k, v)
@@ -57,7 +57,7 @@ def update_project(project_id, **kwargs):
     return row_to_dict(project)
 
 def delete_project(project_id):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
     db.session.delete(project)
     db.session.commit()
     return row_to_dict(project)
@@ -66,7 +66,7 @@ def delete_project(project_id):
 # Datasets
 ################
 def get_dataset(project_id, dataset_id):
-    project_id = int(project_id)
+    project_id = project_id
     try:
         dataset = Dataset.query.filter_by(id=dataset_id).one()
         if dataset.preloaded or dataset.project_id == project_id:
@@ -84,7 +84,7 @@ def get_dataset(project_id, dataset_id):
         raise e
 
 def get_datasets(project_id, include_preloaded=True, **kwargs):
-    datasets = Dataset.query.filter_by(project_id=int(project_id), **kwargs).all()
+    datasets = Dataset.query.filter_by(project_id=project_id, **kwargs).all()
 
     if include_preloaded:
         project = Project.query.get_or_404(project_id)
@@ -154,14 +154,14 @@ def remove_preloaded_dataset_from_project(project_id, dataset_id):
         raise e
 
 def get_project_preloaded_datasets(project_id):
-    project = Project.query.get_or_404(int(project_id))
+    project = Project.query.get_or_404(project_id)
     return [ row_to_dict(d) for d in project.preloaded_datasets ]
 
 ################
 # Dataset Properties
 ################
 def get_dataset_properties(project_id, dataset_id):
-    project_id = int(project_id)
+    project_id = project_id
     try:
         dataset_properties = Dataset_Properties.query.filter_by(dataset_id=dataset_id).one()
         if dataset_properties.dataset.preloaded or dataset_properties.project_id == project_id:

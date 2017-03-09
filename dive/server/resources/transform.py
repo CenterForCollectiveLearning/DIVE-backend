@@ -25,8 +25,8 @@ def object_type(j):
 # OUTPUT: new_dataset_id
 #####################################################################
 reducePostParser = reqparse.RequestParser()
-reducePostParser.add_argument('project_id', type=str, required=True, location='json')
-reducePostParser.add_argument('dataset_id', type=str, required=True, location='json')
+reducePostParser.add_argument('project_id', type=int, required=True, location='json')
+reducePostParser.add_argument('dataset_id', type=int, required=True, location='json')
 reducePostParser.add_argument('column_ids', type=object_type, required=True, location='json')
 reducePostParser.add_argument('new_dataset_name_prefix', type=str, location='json', default='[REDUCED]')
 class Reduce(Resource):
@@ -51,8 +51,8 @@ class Reduce(Resource):
 # OUTPUT: new_dataset_id
 #####################################################################
 unpivotPostParser = reqparse.RequestParser()
-unpivotPostParser.add_argument('project_id', type=str, required=True, location='json')
-unpivotPostParser.add_argument('dataset_id', type=str, required=True, location='json')
+unpivotPostParser.add_argument('project_id', type=int, required=True, location='json')
+unpivotPostParser.add_argument('dataset_id', type=int, required=True, location='json')
 unpivotPostParser.add_argument('pivot_fields', type=object_type, required=True, location='json')
 unpivotPostParser.add_argument('variable_name', type=str, location='json', default='variable')
 unpivotPostParser.add_argument('value_name', type=str, location='json', default='value')
@@ -81,7 +81,7 @@ class Unpivot(Resource):
 # OUTPUT: new_dataset_id
 #####################################################################
 joinPostParser = reqparse.RequestParser()
-joinPostParser.add_argument('project_id', type=str, required=True, location='json')
+joinPostParser.add_argument('project_id', type=int, required=True, location='json')
 joinPostParser.add_argument('left_dataset_id', type=str, required=True, location='json')
 joinPostParser.add_argument('right_dataset_id', type=str, required=True, location='json')
 joinPostParser.add_argument('on', type=object_type, location='json', default=None)

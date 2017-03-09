@@ -36,7 +36,7 @@ class UploadFile(Resource):
     '''
     def post(self):
         form_data = json.loads(request.form.get('data'))
-        project_id = unicode(form_data.get('project_id'))
+        project_id = form_data.get('project_id')
         file_obj = request.files.get('file')
 
         if file_obj and allowed_file(file_obj.filename):
@@ -49,7 +49,7 @@ class UploadFile(Resource):
             }
             for dataset in datasets:
                 ingestion_task = ingestion_pipeline.apply_async(
-                    args=[dataset['id'], project_id],
+                    args=[ dataset['id'], project_id ],
                     link_error = error_handler.s()
                 )
             return jsonify({'task_id': ingestion_task.task_id})
@@ -163,16 +163,16 @@ class DeselectPreloadedDataset(Resource):
 
 # Dataset retrieval, editing, deletion
 datasetGetParser = reqparse.RequestParser()
-datasetGetParser.add_argument('project_id', type=str, required=True)
+datasetGetParser.add_argument('project_id', type=int, required=True)
 
 datasetDeleteParser = reqparse.RequestParser()
-datasetDeleteParser.add_argument('project_id', type=str, required=True)
+datasetDeleteParser.add_argument('project_id', type=int, required=True)
 class Dataset(Resource):
     # Get dataset descriptions or samples
     @login_required
     def get(self, dataset_id):
         args = datasetGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         dataset = db_access.get_dataset(project_id, dataset_id)
         sample = get_dataset_sample(dataset_id, project_id)
@@ -188,7 +188,7 @@ class Dataset(Resource):
     @login_required
     def delete(self, dataset_id):
         args = datasetDeleteParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         db_result = delete_dataset(project_id, dataset_id)
 

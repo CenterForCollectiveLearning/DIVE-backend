@@ -22,8 +22,8 @@ class GeneratingProcedures(Resource):
 
 
 specPostParser = reqparse.RequestParser()
-specPostParser.add_argument('project_id', type=str, required=True, location='json')
-specPostParser.add_argument('dataset_id', type=str, required=True, location='json')
+specPostParser.add_argument('project_id', type=int, required=True, location='json')
+specPostParser.add_argument('dataset_id', type=int, required=True, location='json')
 specPostParser.add_argument('field_agg_pairs', type=list, location='json', default=[])
 specPostParser.add_argument('recommendation_types', type=list, location='json', default=[])
 specPostParser.add_argument('conditionals', type=dict, location='json', default={})
@@ -61,7 +61,7 @@ class Specs(Resource):
 
 
 visualizationFromSpecPostParser = reqparse.RequestParser()
-visualizationFromSpecPostParser.add_argument('project_id', type=str, required=True, location='json')
+visualizationFromSpecPostParser.add_argument('project_id', type=int, required=True, location='json')
 visualizationFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 visualizationFromSpecPostParser.add_argument('config', type=dict, location='json', default={})
 class VisualizationFromSpec(Resource):
