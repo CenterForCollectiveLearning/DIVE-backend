@@ -34,12 +34,13 @@ class Confirm_Token(Resource):
             }, status=401)
 
         user = get_user(email=email)
+        parsed_user = row_to_dict(user)
         if user.confirmed:
             response = jsonify({
                 'status': 'success',
                 'message': 'Account for %s already activated.' % email,
                 'alreadyActivated': True,
-                'user': row_to_dict(user)
+                'user': { k: parsed_user[k] for k in ['anonymous', 'confirmed', 'email', 'id', 'username']}
             }, status=200)
         else:
             confirm_user(email=email)
@@ -48,7 +49,7 @@ class Confirm_Token(Resource):
                 'status': 'success',
                 'message': 'Account for %s successfully activated.' % email,
                 'alreadyActivated': False,
-                'user': row_to_dict(user)
+                'user': { k: parsed_user[k] for k in ['anonymous', 'confirmed', 'email', 'id', 'username']}
             })
         response = set_cookies(response, {
             'anonymous': user.anonymous,
@@ -200,10 +201,11 @@ class Register(Resource):
 
             send_email(email, 'Activate Your DIVE Account', html)
 
+            parsed_user = row_to_dict(user)
             response = jsonify({
                 'status': 'success',
                 'message': 'A confirmation e-mail has been sent to %s' % email,
-                'user': row_to_dict(user)
+                'user': { k: parsed_user[k] for k in ['anonymous', 'confirmed', 'email', 'id', 'username']}
             })
             response = set_cookies(response, {
                 'username': user.username,
@@ -237,22 +239,22 @@ class User(Resource):
 class AnonymousUser(Resource):
     def get(self):
         if current_user.is_authenticated:
-            response = jsonify({
-            })
+            user = current_user
         else:
             user = create_anonymous_user()
-            login_user(user, remember=False)
+            login_user(user, remember=True)
 
-            response = jsonify({
-                'user': row_to_dict(user)
-            })
-            response = set_cookies(response, {
-                'username': user.username,
-                'email': '',
-                'user_id': user.id,
-                'confirmed': False,
-                'anonymous': True
-            })
+        parsed_user = row_to_dict(user)
+        response = jsonify({
+            'user': { k: parsed_user[k] for k in ['anonymous', 'confirmed', 'email', 'id', 'username']}
+        })
+        response = set_cookies(response, {
+            'username': user.username,
+            'email': '',
+            'user_id': user.id,
+            'confirmed': False,
+            'anonymous': True
+        })
         return response
 
 
@@ -290,6 +292,7 @@ class Login(Resource):
         error_type = user_auth_object['error_type']
 
         if status == AuthStatus.SUCCESS.value:
+            parsed_user = row_to_dict(user)
             login_user(user, remember=remember)
             if user.username:
                 message = 'Welcome back %s!' % user.username
@@ -298,7 +301,7 @@ class Login(Resource):
             response = jsonify({
                 'status': status,
                 'message': message,
-                'user': row_to_dict(user)
+                'user': { k: parsed_user[k] for k in ['anonymous', 'confirmed', 'email', 'id', 'username']}
             })
             response = set_cookies(response, {
                 'username': user.username,
