@@ -130,7 +130,7 @@ def delete_stale_anonymous_users(days=1):
             db.session.delete(u)
             count += 1
     db.session.commit()
-    logger.info('Deleted %s stale anonymous users', %s)
+    logger.info('Deleted %s stale anonymous users', count)
 
 @manager.command
 def delete_all_anonymous_users():
