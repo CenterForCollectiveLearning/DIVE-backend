@@ -120,7 +120,7 @@ def users():
 
 import datetime
 @manager.command
-def delete_stale_anonymous_users(days=7):
+def delete_stale_anonymous_users(days=1):
     logger.info('Deleting stale anonymous users, with threshold %s days', days)
     anonymous_users = User.query.filter_by(anonymous=True).all()
     count = 0
