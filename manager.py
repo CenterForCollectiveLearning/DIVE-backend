@@ -19,6 +19,9 @@ from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.worker.ingestion.upload import get_dialect, get_encoding
 
+import logging
+logger = logging.getLogger(__name__)
+
 excluded_filetypes = ['json', 'py', 'yaml']
 
 app = create_app()
@@ -44,6 +47,7 @@ migrate = Migrate(app, db, compare_type=True)
 
 manager.add_command('db', MigrateCommand)
 
+
 @manager.command
 def fresh_migrations():
     try:
@@ -52,6 +56,7 @@ def fresh_migrations():
         pass
     command = 'DROP TABLE IF EXISTS alembic_version;'
     db.engine.execute(command)
+
 
 @manager.command
 def drop():
@@ -64,12 +69,14 @@ def drop():
     db.reflect()
     db.drop_all()
 
+
 @manager.command
 def create():
     app.logger.info("Creating tables")
     db.session.commit()
     db.create_all()
     db.session.commit()
+
 
 @manager.command
 def remove_uploads():
@@ -78,11 +85,13 @@ def remove_uploads():
         STORAGE_PATH = os.path.join(os.curdir, app.config['STORAGE_PATH'])
         shutil.rmtree(STORAGE_PATH)
 
+
 @manager.command
 def recreate():
     app.logger.info("Recreating tables")
     drop()
     create()
+
 
 @manager.command
 def delete_specs():
@@ -90,6 +99,7 @@ def delete_specs():
     all_specs = Spec.query.all()
     map(db.session.delete, all_specs)
     db.session.commit()
+
 
 @manager.command
 def users():
@@ -107,6 +117,26 @@ def users():
             confirmed=True,
             create_teams=True
         )
+
+
+import datetime
+@manager.command
+def delete_stale_anonymous_users(days=1):
+    anonymous_users = User.query.filter_by(anonymous=True).all()
+    for u in anonymous_users:
+        age = datetime.datetime.now() - u.creation_date
+        if age > datetime.timedelta(days=1):
+            db.session.delete(u)
+    db.session.commit()
+
+@manager.command
+def delete_all_anonymous_users():
+    logger.info('Deleting anonymous users')
+    anonymous_users = User.query.filter_by(anonymous=True).all()
+    for u in anonymous_users:
+        u.creation_date
+        db.session.delete(u)
+    db.session.commit()
 
 @manager.command
 def delete_preloaded_datasets():
