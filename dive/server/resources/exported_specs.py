@@ -42,7 +42,7 @@ exportedSpecsPostParser.add_argument('config', type=object_type, required=True, 
 class ExportedSpecs(Resource):
     def get(self):
         args = exportedSpecsGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         exported_specs = db_access.get_exported_specs(project_id)
         return jsonify({'result': exported_specs, 'length': len(exported_specs)})

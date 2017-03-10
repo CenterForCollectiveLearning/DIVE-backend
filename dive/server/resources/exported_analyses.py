@@ -23,7 +23,7 @@ exportedRegressionPostParser.add_argument('config', type=object_type, required=T
 class ExportedRegression(Resource):
     def get(self):
         args = exportedRegressionGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         exported_regressions = db_access.get_exported_regression(project_id)
         return jsonify({ 'result': exported_regressions })
@@ -67,7 +67,7 @@ exportedCorrelationPostParser.add_argument('config', type=object_type, required=
 class ExportedCorrelation(Resource):
     def get(self):
         args = exportedCorrelationGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         exported_correlation = db_access.get_exported_correlation(project_id)
         return jsonify({ 'result': exported_correlation })
@@ -110,7 +110,7 @@ exportedAggregationPostParser.add_argument('config', type=dict, required=True, l
 class ExportedAggregation(Resource):
     def get(self):
         args = exportedAggregationGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
 
         exported_summarys = db_access.get_exported_regressions(project_id)
         return jsonify({'result': exported_regressions, 'length': len(exported_summarys)})
