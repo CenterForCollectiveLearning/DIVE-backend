@@ -120,13 +120,15 @@ def users():
 
 import datetime
 @manager.command
-def delete_stale_anonymous_users(days=1):
+def delete_stale_anonymous_users(days=7):
     logger.info('Deleting stale anonymous users, with threshold %s days', days)
     anonymous_users = User.query.filter_by(anonymous=True).all()
     count = 0
     for u in anonymous_users:
         age = datetime.datetime.utcnow() - u.creation_date
-        if age > datetime.timedelta(days):
+        stale = age > datetime.timedelta(days)
+        logger.info('User %s: %s', u.id, stale)
+        if stale:
             db.session.delete(u)
             count += 1
     db.session.commit()
@@ -137,7 +139,6 @@ def delete_all_anonymous_users():
     logger.info('Deleting anonymous users')
     anonymous_users = User.query.filter_by(anonymous=True).all()
     for u in anonymous_users:
-        u.creation_date
         db.session.delete(u)
     db.session.commit()
 
