@@ -118,16 +118,19 @@ def users():
             create_teams=True
         )
 
-
 import datetime
 @manager.command
 def delete_stale_anonymous_users(days=1):
+    logger.info('Deleting stale anonymous users, with threshold %s days', days)
     anonymous_users = User.query.filter_by(anonymous=True).all()
+    count = 0
     for u in anonymous_users:
-        age = datetime.datetime.now() - u.creation_date
-        if age > datetime.timedelta(days=1):
+        age = datetime.datetime.utcnow() - u.creation_date
+        if age > datetime.timedelta(days):
             db.session.delete(u)
+            count += 1
     db.session.commit()
+    logger.info('Deleted %s stale anonymous users', %s)
 
 @manager.command
 def delete_all_anonymous_users():
