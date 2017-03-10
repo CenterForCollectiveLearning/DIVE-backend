@@ -16,7 +16,7 @@ exportedRegressionGetParser.add_argument('project_id', type=int, required=True)
 
 exportedRegressionPostParser = reqparse.RequestParser()
 exportedRegressionPostParser.add_argument('project_id', type=int, required=True, location='json')
-exportedRegressionPostParser.add_argument('regression_id', type=str, required=True, location='json')
+exportedRegressionPostParser.add_argument('regression_id', type=int, required=True, location='json')
 exportedRegressionPostParser.add_argument('data', type=object_type, required=True, location='json')
 exportedRegressionPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
 exportedRegressionPostParser.add_argument('config', type=object_type, required=True, location='json')
@@ -60,7 +60,7 @@ exportedCorrelationGetParser.add_argument('project_id', type=int, required=True)
 
 exportedCorrelationPostParser = reqparse.RequestParser()
 exportedCorrelationPostParser.add_argument('project_id', type=int, required=True, location='json')
-exportedCorrelationPostParser.add_argument('correlation_id', type=str, required=True, location='json')
+exportedCorrelationPostParser.add_argument('correlation_id', type=int, required=True, location='json')
 exportedCorrelationPostParser.add_argument('data', type=object_type, required=True, location='json')
 exportedCorrelationPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
 exportedCorrelationPostParser.add_argument('config', type=object_type, required=True, location='json')
@@ -104,7 +104,7 @@ exportedAggregationGetParser.add_argument('project_id', type=int, required=True)
 
 exportedAggregationPostParser = reqparse.RequestParser()
 exportedAggregationPostParser.add_argument('project_id', type=int, required=True, location='json')
-exportedAggregationPostParser.add_argument('summary_id', type=str, required=True, location='json')
+exportedAggregationPostParser.add_argument('summary_id', type=int, required=True, location='json')
 exportedAggregationPostParser.add_argument('conditionals', type=dict, required=True, location='json')
 exportedAggregationPostParser.add_argument('config', type=dict, required=True, location='json')
 class ExportedAggregation(Resource):
@@ -124,7 +124,7 @@ class ExportedAggregation(Resource):
         config = args.get('config')
 
         result = db_access.insert_exported_summary(project_id, summary_id, conditionals, config)
-        result['spec'] = db_access.get_aggregation_by_id(summary_id, project_id)['spec'] 
+        result['spec'] = db_access.get_aggregation_by_id(summary_id, project_id)['spec']
         return jsonify(result)
 
 
