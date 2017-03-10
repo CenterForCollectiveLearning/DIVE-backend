@@ -236,19 +236,23 @@ class User(Resource):
 
 class AnonymousUser(Resource):
     def get(self):
-        user = create_anonymous_user()
-        login_user(user, remember=False)
+        if current_user.is_authenticated:
+            response = jsonify({
+            })
+        else:
+            user = create_anonymous_user()
+            login_user(user, remember=False)
 
-        response = jsonify({
-            'user': row_to_dict(user)
-        })
-        response = set_cookies(response, {
-            'username': user.username,
-            'email': '',
-            'user_id': user.id,
-            'confirmed': False,
-            'anonymous': True
-        })
+            response = jsonify({
+                'user': row_to_dict(user)
+            })
+            response = set_cookies(response, {
+                'username': user.username,
+                'email': '',
+                'user_id': user.id,
+                'confirmed': False,
+                'anonymous': True
+            })
         return response
 
 

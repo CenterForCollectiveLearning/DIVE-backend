@@ -67,9 +67,9 @@ def upload_file(project_id, file_obj):
 
     # Pre-save properties
     if current_app.config['STORAGE_TYPE'] == 'file':
-        path = os.path.join(current_app.config['STORAGE_PATH'], project_id, file_name)
+        path = os.path.join(current_app.config['STORAGE_PATH'], str(project_id), file_name)
     elif current_app.config['STORAGE_TYPE'] == 's3':
-        path = 'https://s3.amazonaws.com/%s/%s/%s' % (current_app.config['AWS_DATA_BUCKET'], project_id, file_name)
+        path = 'https://s3.amazonaws.com/%s/%s/%s' % (current_app.config['AWS_DATA_BUCKET'], str(project_id), file_name)
 
     # Persisting file and saving to DB
     datasets = save_dataset_to_db(
@@ -223,7 +223,7 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, pa
             response = s3_client.upload_fileobj(
                 strIO,
                 current_app.config['AWS_DATA_BUCKET'],
-                '%s/%s' % ( project_id, csv_file_name )
+                '%s/%s' % ( str(project_id), csv_file_name )
             )
 
         if current_app.config['STORAGE_TYPE'] == 'file':
