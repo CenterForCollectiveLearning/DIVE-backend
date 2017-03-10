@@ -35,7 +35,7 @@ exportedSpecsGetParser.add_argument('project_id', type=int, required=True)
 
 exportedSpecsPostParser = reqparse.RequestParser()
 exportedSpecsPostParser.add_argument('project_id', type=int, required=True, location='json')
-exportedSpecsPostParser.add_argument('spec_id', type=str, required=True, location='json')
+exportedSpecsPostParser.add_argument('spec_id', type=int, required=True, location='json')
 exportedSpecsPostParser.add_argument('data', type=object_type, required=True, location='json')
 exportedSpecsPostParser.add_argument('conditionals', type=object_type, required=True, location='json', default={})
 exportedSpecsPostParser.add_argument('config', type=object_type, required=True, location='json', default={})

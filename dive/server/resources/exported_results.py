@@ -17,7 +17,7 @@ exportedResultsGetParser.add_argument('result_type', type=str, action='append')
 class ExportedResults(Resource):
     def get(self):
         args = exportedResultsGetParser.parse_args()
-        project_id = args.get('project_id').strip().strip('"')
+        project_id = args.get('project_id')
         result_types = args.get('result_type')
 
         exported_results = []

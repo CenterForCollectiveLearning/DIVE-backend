@@ -47,8 +47,8 @@ class RegressionEstimator(Resource):
 
 
 contributionToRSquaredPostParser = reqparse.RequestParser()
-contributionToRSquaredPostParser.add_argument('projectId', type=str, location='json')
-contributionToRSquaredPostParser.add_argument('regressionId', type=str, location='json')
+contributionToRSquaredPostParser.add_argument('projectId', type=int, location='json')
+contributionToRSquaredPostParser.add_argument('regressionId', type=int, location='json')
 class ContributionToRSquared(Resource):
     def post(self):
         args = contributionToRSquaredPostParser.parse_args()
@@ -112,7 +112,7 @@ class InitialRegressionModelRecommendation(Resource):
 # OUTPUT: {stat data}
 #####################################################################
 regressionPostParser = reqparse.RequestParser()
-regressionPostParser.add_argument('projectId', type=str, location='json')
+regressionPostParser.add_argument('projectId', type=int, location='json')
 regressionPostParser.add_argument('spec', type=dict, location='json')
 regressionPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class RegressionFromSpec(Resource):
@@ -164,7 +164,7 @@ class RegressionFromSpec(Resource):
 
 
 numericalComparisonPostParser = reqparse.RequestParser()
-numericalComparisonPostParser.add_argument('projectId', type=str, location='json')
+numericalComparisonPostParser.add_argument('projectId', type=int, location='json')
 numericalComparisonPostParser.add_argument('spec', type=dict, location='json')
 numericalComparisonPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class NumericalComparisonFromSpec(Resource):
@@ -185,7 +185,7 @@ class NumericalComparisonFromSpec(Resource):
 
 
 anovaPostParser = reqparse.RequestParser()
-anovaPostParser.add_argument('projectId', type=str, location='json')
+anovaPostParser.add_argument('projectId', type=int, location='json')
 anovaPostParser.add_argument('spec', type=dict, location='json')
 anovaPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class AnovaFromSpec(Resource):
@@ -206,7 +206,7 @@ class AnovaFromSpec(Resource):
 
 
 anovaBoxplotPostParser = reqparse.RequestParser()
-anovaBoxplotPostParser.add_argument('projectId', type=str, location='json')
+anovaBoxplotPostParser.add_argument('projectId', type=int, location='json')
 anovaBoxplotPostParser.add_argument('spec', type=dict, location='json')
 anovaBoxplotPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class AnovaBoxplotFromSpec(Resource):
@@ -227,7 +227,7 @@ class AnovaBoxplotFromSpec(Resource):
         return jsonify(result)
 
 pairwiseComparisonPostParser = reqparse.RequestParser()
-pairwiseComparisonPostParser.add_argument('projectId', type=str, location='json')
+pairwiseComparisonPostParser.add_argument('projectId', type=int, location='json')
 pairwiseComparisonPostParser.add_argument('spec', type=dict, location='json')
 pairwiseComparisonPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class PairwiseComparisonFromSpec(Resource):
@@ -248,7 +248,7 @@ class PairwiseComparisonFromSpec(Resource):
         return jsonify(result)
 
 summaryPostParser = reqparse.RequestParser()
-summaryPostParser.add_argument('projectId', type=str, location='json')
+summaryPostParser.add_argument('projectId', type=int, location='json')
 summaryPostParser.add_argument('spec', type=dict, location='json')
 class AggregationStatsFromSpec(Resource):
     def post(self):
@@ -279,7 +279,7 @@ class AggregationStatsFromSpec(Resource):
             }, status=202)
 
 oneDimensionalTableFromSpecPostParser = reqparse.RequestParser()
-oneDimensionalTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
+oneDimensionalTableFromSpecPostParser.add_argument('projectId', type=int, location='json')
 oneDimensionalTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
 oneDimensionalTableFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class OneDimensionalTableFromSpec(Resource):
@@ -314,7 +314,7 @@ class OneDimensionalTableFromSpec(Resource):
 
 
 contingencyTableFromSpecPostParser = reqparse.RequestParser()
-contingencyTableFromSpecPostParser.add_argument('projectId', type=str, location='json')
+contingencyTableFromSpecPostParser.add_argument('projectId', type=int, location='json')
 contingencyTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
 contingencyTableFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class ContingencyTableFromSpec(Resource):
@@ -350,7 +350,7 @@ class ContingencyTableFromSpec(Resource):
 
 
 correlationsFromSpecPostParser = reqparse.RequestParser()
-correlationsFromSpecPostParser.add_argument('projectId', type=str, location='json')
+correlationsFromSpecPostParser.add_argument('projectId', type=int, location='json')
 correlationsFromSpecPostParser.add_argument('spec', type=dict, location='json')
 correlationsFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class CorrelationsFromSpec(Resource):
@@ -391,7 +391,7 @@ class CorrelationsFromSpec(Resource):
 
 
 correlationScatterplotPostParser = reqparse.RequestParser()
-correlationScatterplotPostParser.add_argument('projectId', type=str, location='json')
+correlationScatterplotPostParser.add_argument('projectId', type=int, location='json')
 correlationScatterplotPostParser.add_argument('correlationId', type=str, location='json')
 correlationScatterplotPostParser.add_argument('conditionals', type=dict, location='json', default={})
 class CorrelationScatterplot(Resource):

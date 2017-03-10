@@ -185,10 +185,7 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
     raw_field_properties = db_access.get_field_properties(project_id, dataset_id)
     all_field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 
-    query_strings = {
-        'and': '',
-        'or': ''
-    }
+    query_strings = { 'and': '', 'or': '' }
 
     orig_cols = df.columns.tolist()
     safe_df = df.rename(columns=make_safe_string)
