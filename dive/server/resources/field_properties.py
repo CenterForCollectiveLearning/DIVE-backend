@@ -6,13 +6,13 @@ from flask_restful import Resource, reqparse, marshal, fields, marshal_with
 from flask_login import login_required
 
 from dive.base.db import db_access
+from dive.base.db.accounts import load_account, project_auth
 from dive.base.serialization import jsonify
 from dive.worker.ingestion.field_properties import compute_all_field_properties
 
 
 import logging
 logger = logging.getLogger(__name__)
-
 
 fieldPropertiesGetParser = reqparse.RequestParser()
 fieldPropertiesGetParser.add_argument('project_id', type=int, required=True)
@@ -29,6 +29,9 @@ class FieldProperties(Resource):
         project_id = args.get('project_id')
         dataset_id = args.get('dataset_id')
         group_by = args.get('group_by')
+
+        has_project_access, auth_message = project_auth(project_id)
+        if not has_project_access: return auth_message
 
         field_properties = db_access.get_field_properties(project_id, dataset_id)
         interaction_terms = db_access.get_interaction_terms(project_id, dataset_id)

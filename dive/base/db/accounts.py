@@ -54,6 +54,9 @@ def load_account(user_id):
 
 def is_authorized_user(current_user, project_id):
     matching_project = Project.query.get(project_id)
+    if not matching_project:
+        return False
+
     user_id = current_user.id
 
     if current_user.is_global_admin() or not matching_project.private:
