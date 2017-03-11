@@ -9,6 +9,7 @@ from flask_login import login_required
 from celery import chain
 
 from dive.base.db import db_access
+from dive.base.db.accounts import load_account, project_auth
 from dive.base.serialization import jsonify
 from dive.base.data.access import get_dataset_sample, delete_dataset
 from dive.worker.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
@@ -66,6 +67,9 @@ class Datasets(Resource):
     def get(self):
         args = datasetsGetParser.parse_args()
         project_id = args.get('project_id')
+
+        has_project_access, auth_message = project_auth(project_id)
+        if not has_project_access: return auth_message
 
         datasets = db_access.get_datasets(project_id, include_preloaded=True)
 
