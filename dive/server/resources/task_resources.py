@@ -49,6 +49,8 @@ class TaskResult(Resource):
             try:
                 if (task.info) and (task.info.get('desc')):
                     result['currentTask'] = task.info.get('desc')
+                else:
+                    result['currentTask'] = 'Loading...'
             except AttributeError:
                 if (task.info):
                     state = states.FAILURE
@@ -67,9 +69,12 @@ class TaskResult(Resource):
                 except Exception as e:
                     result['error'] = 'Unknown error occurred'
 
-        response = jsonify(result)
+
+
+        status = 200
         if state == states.PENDING:
-            response.status_code = 202
+            status = 202
         elif state == states.FAILURE:
-            response.status_code = 500
-        return response
+            status = 500
+
+        return jsonify(result, status=status)
