@@ -39,7 +39,7 @@ def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
 
     return conditionals_with_full_docs
 
-def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config):
+def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config, data_formats=['score', 'table', 'visualize', 'count']):
     '''
     Get data corresponding to each viz spec (before filtering and scoring)
     '''
@@ -66,7 +66,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
             data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config,
                 df=conditioned_df,
                 precomputed=precomputed,
-                data_formats=['score', 'table', 'visualize', 'count']
+                data_formats=data_formats
             )
 
         except Exception as e:
