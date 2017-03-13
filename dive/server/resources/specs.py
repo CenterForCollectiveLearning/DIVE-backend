@@ -80,7 +80,7 @@ class VisualizationFromSpec(Resource):
         if viz_data and (conditionals == spec.get('conditionals')) and (config == spec.get('config')):
             del spec['data']
         else:
-            viz_data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=['visualize', 'table', 'count'])
+            viz_data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=['visualize', 'count'])
 
         result = {
             'spec': spec,

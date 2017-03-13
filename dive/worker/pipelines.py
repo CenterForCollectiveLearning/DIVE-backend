@@ -4,6 +4,8 @@ Containers for celery task chains
 from celery import group, chain, states
 from dive.worker.core import celery, task_app
 
+from dive.worker.handlers import error_handler
+
 from dive.worker.ingestion.upload import save_dataset_to_db
 from dive.worker.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
 from dive.worker.ingestion.field_properties import compute_all_field_properties, save_field_properties
@@ -24,6 +26,7 @@ from dive.worker.statistics.regression.pipelines import run_regression_from_spec
 import logging
 logger = logging.getLogger(__name__)
 
+RETRY_WAIT = 1
 
 def get_chain_IDs(task):
     parent = task.parent
@@ -42,6 +45,13 @@ def full_pipeline(dataset_id, project_id):
         viz_spec_pipeline(dataset_id, project_id, [])
     ])
     return pipeline
+
+
+retry_kwargs = {
+    'max_retries': 1,
+    'countdown': RETRY_WAIT,
+    'link_error': error_handler.s()
+}
 
 
 @celery.task(bind=True)
@@ -134,8 +144,7 @@ def relationship_pipeline(self, project_id):
     return
 
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendation_types, conditionals, config):
     '''
     Enumerate, filter, score, and format viz specs in sequence
@@ -146,7 +155,7 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendat
     enumerated_viz_specs = enumerate_viz_specs(project_id, dataset_id, field_agg_pairs, recommendation_types=recommendation_types)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to %s visualization specs' % len(enumerated_viz_specs)})
-    viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config)
+    viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config, data_formats=['visualize', 'score'])
 
     self.update_state(state=states.PENDING, meta={'desc': '(3/5) Filtering %s visualization specs' % len(viz_specs_with_data)})
     filtered_viz_specs = filter_viz_specs(viz_specs_with_data)
@@ -159,8 +168,7 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendat
     return { 'result': saved_viz_specs }
 
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def ingestion_pipeline(self, dataset_id, project_id):
     '''
     Compute dataset and field properties in parallel
@@ -181,8 +189,7 @@ def ingestion_pipeline(self, dataset_id, project_id):
     result = save_field_properties(field_properties, dataset_id, project_id)
     return result
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def regression_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In regression pipeline with and project_id %s", project_id)
 
@@ -195,8 +202,7 @@ def regression_pipeline(self, spec, project_id, conditionals=[]):
 
     return { 'result': regression_data }
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def aggregation_pipeline(self, spec, project_id):
     logger.info("In aggregation pipeline with and project_id %s", project_id, conditionals=[])
 
@@ -208,8 +214,7 @@ def aggregation_pipeline(self, spec, project_id):
     aggregation_data['id'] = aggregation_doc['id']
 
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def one_dimensional_contingency_table_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In one dimensional contingency table pipeline with and project_id %s", project_id)
 
@@ -223,8 +228,7 @@ def one_dimensional_contingency_table_pipeline(self, spec, project_id, condition
     return { 'result': table_data }
 
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def contingency_table_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In contingency table pipeline with and project_id %s", project_id)
 
@@ -238,8 +242,7 @@ def contingency_table_pipeline(self, spec, project_id, conditionals=[]):
     return { 'result': table_data }
 
 
-@celery.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 5})
+@celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def correlation_pipeline(self, spec, project_id, conditionals=[]):
     logger.info("In correlation pipeline with and project_id %s", project_id)
 
