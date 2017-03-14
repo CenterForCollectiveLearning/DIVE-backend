@@ -255,7 +255,6 @@ def correlation_pipeline(self, spec, project_id, conditionals=[]):
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical correlation'})
     correlation_data, status = run_correlation_from_spec(spec, project_id, conditionals=conditionals)
 
-    x = 1 / 0
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical correlation'})
     correlation_doc = save_correlation(spec, correlation_data, project_id, conditionals=conditionals)
     correlation_data['id'] = correlation_doc['id']
