@@ -2,9 +2,9 @@ from flask import make_response, jsonify, current_app, url_for
 from flask_restful import Resource, reqparse, marshal_with
 
 from celery import states
-from celery.result import result_from_tuple, ResultSet
+from celery.result import result_from_tuple, ResultSet, AsyncResult
 
-from dive.worker.core import celery
+from dive.worker.core import celery, task_app
 from dive.base.serialization import jsonify
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline
 
@@ -32,44 +32,45 @@ class RevokeChainTask(Resource):
         # TODO Terminate or not?
         r = celery.control.revoke(task_ids, terminate=False)
 
-
 class TaskResult(Resource):
     '''
     Have consistent status codes
     '''
     def get(self, task_id):
-        task = celery.AsyncResult(task_id)
-        result = {
-            'currentTask': '',
-            'state': task.state
+        task = celery.AsyncResult(task_id)  # task_2 = AsyncResult(id=task_id, app=celery)
+
+        state_to_code = {
+            states.SUCCESS: 200,
+            states.PENDING: 202,
+            states.FAILURE: 500
         }
+
         state = task.state
+        info = task.info if task.info else {}
+        result = {
+            'state': state
+        }
 
-        if state == states.PENDING:
+        if (state == states.PENDING):
             try:
-                if (task.info) and (task.info.get('desc')):
-                    result['currentTask'] = task.info.get('desc')
+                result['currentTask'] = info.get('desc', 'Processing Data')
             except AttributeError:
-                if (task.info):
-                    state = states.FAILURE
-                    result['state'] = states.FAILURE
-                    result['currentTask'] = task.info
-            logger.info('PENDING %s: %s', task_id, state)
+                state = states.FAILURE
+                result['state'] = states.FAILURE
+                result['currentTask'] = task.info
 
-        elif state == states.SUCCESS:
-            if task.info:
-                result['result'] = task.info.get('result')
+        elif (state == states.SUCCESS):
+            result['result'] = info.get('result', None)
 
-        elif state == states.FAILURE:
-            if task.info:
-                try:
-                    result['error'] = task.info.get('error')
-                except Exception as e:
-                    result['error'] = 'Unknown error occurred'
+        elif (state == states.FAILURE):
+            print task, task.info
+            if info:
+                error_type = type(info).__name__
+                error_message = '%s: %s' % (error_type, str(info))
+            else:
+                error_type = None
+                error_message = 'Unknown error occurred'
+            result['error'] = error_message
 
-        response = jsonify(result)
-        if state == states.PENDING:
-            response.status_code = 202
-        elif state == states.FAILURE:
-            response.status_code = 500
+        response = jsonify(result, status=state_to_code[state])
         return response

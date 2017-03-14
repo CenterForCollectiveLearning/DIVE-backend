@@ -8,7 +8,7 @@ from dive.base.serialization import jsonify
 from dive.worker.visualization.constants import GeneratingProcedure
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.pipelines import viz_spec_pipeline
-from dive.worker.handlers import error_handler
+from dive.worker.handlers import worker_error_handler
 
 import logging
 logger = logging.getLogger(__name__)
@@ -50,8 +50,7 @@ class Specs(Resource):
             })
         else:
             specs_task = viz_spec_pipeline.apply_async(
-                args = [dataset_id, project_id, selected_fields, recommendation_types, conditionals, config],
-                link_error = error_handler.s()
+                args = [dataset_id, project_id, selected_fields, recommendation_types, conditionals, config]
             )
 
             return jsonify({
@@ -64,6 +63,7 @@ visualizationFromSpecPostParser = reqparse.RequestParser()
 visualizationFromSpecPostParser.add_argument('project_id', type=int, required=True, location='json')
 visualizationFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
 visualizationFromSpecPostParser.add_argument('config', type=dict, location='json', default={})
+visualizationFromSpecPostParser.add_argument('data_formats', type=list, location='json', default=['visualize', 'count'])
 class VisualizationFromSpec(Resource):
     '''
     If existing spec with same conditionals and config, return data.
@@ -74,13 +74,16 @@ class VisualizationFromSpec(Resource):
         project_id = args.get('project_id')
         conditionals = args.get('conditionals', {})
         config = args.get('config', {}).get('data', {})
+        data_formats = args.get('data_formats')
+
+        print data_formats
         spec = db_access.get_spec(spec_id, project_id)
 
         viz_data = spec.get('data', None)
-        if viz_data and (conditionals == spec.get('conditionals')) and (config == spec.get('config')):
+        if viz_data and (data_formats == spec.get('data_formats') and conditionals == spec.get('conditionals')) and (config == spec.get('config')):
             del spec['data']
         else:
-            viz_data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=['visualize', 'table', 'count'])
+            viz_data = get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, data_formats=data_formats)
 
         result = {
             'spec': spec,
