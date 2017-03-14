@@ -50,8 +50,7 @@ class Specs(Resource):
             })
         else:
             specs_task = viz_spec_pipeline.apply_async(
-                args = [dataset_id, project_id, selected_fields, recommendation_types, conditionals, config],
-                link_error = worker_error_handler.s()
+                args = [dataset_id, project_id, selected_fields, recommendation_types, conditionals, config]
             )
 
             return jsonify({
