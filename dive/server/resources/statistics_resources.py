@@ -153,8 +153,7 @@ class RegressionFromSpec(Resource):
             return jsonify(regression_data)
         else:
             regression_task = regression_pipeline.apply_async(
-                args = [spec, project_id, conditionals],
-                link_error = [ worker_error_handler.s() ]
+                args = [ spec, project_id, conditionals ]
             )
 
             return jsonify({
@@ -269,8 +268,7 @@ class AggregationStatsFromSpec(Resource):
             return jsonify(summary_data)
         else:
             summary_task = summary_pipeline.apply_async(
-                args = [spec, project_id, conditionals],
-                link_error = worker_error_handler.s()
+                args = [spec, project_id, conditionals]
             )
 
             return jsonify({
@@ -304,8 +302,7 @@ class OneDimensionalTableFromSpec(Resource):
             return jsonify(table_data)
         else:
             table_task = one_dimensional_contingency_table_pipeline.apply_async(
-                args = [spec, project_id, conditionals],
-                link_error = worker_error_handler.s()
+                args = [spec, project_id, conditionals]
             )
             return jsonify({
                 'task_id': table_task.task_id,
@@ -340,8 +337,7 @@ class ContingencyTableFromSpec(Resource):
             return jsonify(table_data)
         else:
             table_task = contingency_table_pipeline.apply_async(
-                args = [spec, project_id, conditionals],
-                link_error = worker_error_handler.s()
+                args = [spec, project_id, conditionals]
             )
             return jsonify({
                 'task_id': table_task.task_id,
@@ -380,8 +376,7 @@ class CorrelationsFromSpec(Resource):
             return jsonify(correlation_data)
         else:
             correlation_task = correlation_pipeline.apply_async(
-                args = [spec, project_id, conditionals],
-                link_error = worker_error_handler.s()
+                args = [spec, project_id, conditionals]
             )
 
             return jsonify({

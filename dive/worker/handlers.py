@@ -16,7 +16,6 @@ def worker_error_handler(request, exc, traceback):
         state=states.FAILURE,
         meta={ 'error': traceback }
     )
-    logger.error('Task {0} raised exception: {1!r}\n{2!r}'.format(
-    task_id, exc, traceback))
+    logger.error('Task {0} raised exception: {1!r}\n{2!r}'.format(task_id, exc, traceback))
     # REPORT with raven
     # return traceback
