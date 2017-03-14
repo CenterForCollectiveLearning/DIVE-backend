@@ -4,7 +4,7 @@ Containers for celery task chains
 from celery import group, chain, states
 from dive.worker.core import celery, task_app
 
-from dive.worker.handlers import error_handler
+from dive.worker.handlers import worker_error_handler
 
 from dive.worker.ingestion.upload import save_dataset_to_db
 from dive.worker.ingestion.dataset_properties import compute_dataset_properties, save_dataset_properties
@@ -48,9 +48,9 @@ def full_pipeline(dataset_id, project_id):
 
 
 retry_kwargs = {
-    'max_retries': 1,
+    'max_retries': 0,
     'countdown': RETRY_WAIT,
-    'link_error': error_handler.s()
+    'link_error': worker_error_handler.s()
 }
 
 
@@ -191,6 +191,8 @@ def ingestion_pipeline(self, dataset_id, project_id):
 
 @celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def regression_pipeline(self, spec, project_id, conditionals=[]):
+    # try:
+        # raise Exception('test')
     logger.info("In regression pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running regressions'})
@@ -201,6 +203,10 @@ def regression_pipeline(self, spec, project_id, conditionals=[]):
     regression_data['id'] = regression_doc['id']
 
     return { 'result': regression_data }
+    # except Exception as e:
+    #     print 'Updating state in exception handler', states.FAILURE, e
+    #     self.update_state(state=states.FAILURE, meta={'error': e})
+    #     return
 
 @celery.task(bind=True)  #, autoretry_for=(Exception,), retry_kwargs=retry_kwargs)
 def aggregation_pipeline(self, spec, project_id):

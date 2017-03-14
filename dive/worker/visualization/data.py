@@ -79,10 +79,11 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
 
     '''
     for f in data_formats:
-        if f not in ['score', 'visualize', 'table', 'count']:
+        if f not in [u'score', u'visualize', u'table', u'count']:
             raise ValueError('Passed incorrect data format', f)
     final_data = dict([(f, {}) for f in data_formats])
 
+    print final_data
     gp = spec['generating_procedure']
     args = spec['args']
     dataset_id = spec['dataset_id']
