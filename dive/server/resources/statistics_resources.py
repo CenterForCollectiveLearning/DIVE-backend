@@ -19,7 +19,7 @@ from dive.worker.statistics.correlation.correlation import get_correlation_scatt
 
 # Async tasks
 from dive.worker.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
-from dive.worker.handlers import error_handler
+from dive.worker.handlers import worker_error_handler
 
 import logging
 logger = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ class RegressionFromSpec(Resource):
         else:
             regression_task = regression_pipeline.apply_async(
                 args = [spec, project_id, conditionals],
-                link_error = error_handler.s()
+                link_error = [ worker_error_handler.s() ]
             )
 
             return jsonify({
@@ -270,7 +270,7 @@ class AggregationStatsFromSpec(Resource):
         else:
             summary_task = summary_pipeline.apply_async(
                 args = [spec, project_id, conditionals],
-                link_error = error_handler.s()
+                link_error = worker_error_handler.s()
             )
 
             return jsonify({
@@ -305,7 +305,7 @@ class OneDimensionalTableFromSpec(Resource):
         else:
             table_task = one_dimensional_contingency_table_pipeline.apply_async(
                 args = [spec, project_id, conditionals],
-                link_error = error_handler.s()
+                link_error = worker_error_handler.s()
             )
             return jsonify({
                 'task_id': table_task.task_id,
@@ -341,7 +341,7 @@ class ContingencyTableFromSpec(Resource):
         else:
             table_task = contingency_table_pipeline.apply_async(
                 args = [spec, project_id, conditionals],
-                link_error = error_handler.s()
+                link_error = worker_error_handler.s()
             )
             return jsonify({
                 'task_id': table_task.task_id,
@@ -381,7 +381,7 @@ class CorrelationsFromSpec(Resource):
         else:
             correlation_task = correlation_pipeline.apply_async(
                 args = [spec, project_id, conditionals],
-                link_error = error_handler.s()
+                link_error = worker_error_handler.s()
             )
 
             return jsonify({
