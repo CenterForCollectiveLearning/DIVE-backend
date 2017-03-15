@@ -74,9 +74,10 @@ def get_num_bins(v, procedure='freedman', default_num_bins=10):
 ###
 # Get bin specifier (e.g. bin edges) given a numeric vector
 ###
+import dateutil.parser as dparser
 DEFAULT_BINS = 10
 MAX_BINS = 20
-def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_decimals=2):
+def get_bin_edges(v, field_type='q', procedural=True, procedure='freedman', num_bins=10, num_decimals=2):
     '''
     Given a quantitative vector, either:
     1) Automatically bin according to Freedman
@@ -85,25 +86,42 @@ def get_bin_edges(v, procedural=True, procedure='freedman', num_bins=10, num_dec
 
     Returns the edges of each bin
     '''
-    v = v.astype(float, raise_on_error=False)
     n = len(v)
-    min_v = min(v)
-    max_v = max(v)
+
+    if field_type == 'q':
+        v = v.astype(float, raise_on_error=False)
+        min_v = min(v)
+        max_v = max(v)
+
+    if field_type == 't':
+        v = pd.to_datetime(v)
+        min_v = min(v).value
+        max_v = max(v).value
 
     if procedural:
         num_bins = get_num_bins(v, procedure=procedure)
 
-    rounding_string = '%.' + str(num_decimals) + 'f'
+    rounding_string = '{0:.' + str(num_decimals) + 'f}'
     try:
         edges = np.linspace(min_v, max_v, num_bins+1)
+        if field_type == 't':
+            edges = pd.to_datetime(edges)
+
     except Exception as e:
         logger.error('Error binning: %s', e, exc_info=True)
+
+    # print edges
     rounded_edges = []
-    if num_decimals == 0:
-        for i in range(len(edges)):
-            rounded_edges.append(int(float(rounding_string % edges[i])))
-    else:
-        for i in range(len(edges)):
-            rounded_edges.append(float(rounding_string % edges[i]))
-    rounded_edges[-1] += 0.0001 * max_v
+
+    for edge in edges:
+        if field_type == 'q':
+            rounded_edge = float(rounding_string.format(edge))
+            if num_decimals == 0:
+                rounded_edge = int(rounded_edge)
+        elif field_type == 't':
+            rounded_edge = edge
+        rounded_edges.append(rounded_edge)
+
+    if field_type == 'q':
+        rounded_edges[-1] += 0.0001 * max_v
     return rounded_edges
