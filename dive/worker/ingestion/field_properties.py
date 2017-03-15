@@ -79,14 +79,16 @@ def sample_with_maximum_distance(li, num_samples, random_start=True):
     return samples
 
 
-def calculate_field_stats(field_type, field_values, logging=False):
+def calculate_field_stats(field_type, general_type, field_values, logging=False):
     if logging: start_time = time()
     percentiles = [(i * .5) / 10 for i in range(1, 20)]
 
+    if field_type in [ DataType.DATETIME.value ]:
+        field_values = pd.to_datetime(field_values)
+
     df = pd.DataFrame(field_values)
     stats = df.describe(percentiles=percentiles).to_dict().values()[0]
-    num_rows = df.shape[0]
-    stats['total_count'] = num_rows
+    stats['total_count'] = df.shape[0]
     return stats
 
 
@@ -176,7 +178,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         else:
             unique_values = None
 
-        stats = calculate_field_stats(field_type, field_values)
+        stats = calculate_field_stats(field_type, general_type, field_values)
         is_id = detect_id(field_name, field_type, is_unique)
 
         # Binning
@@ -199,7 +201,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
             try:
                 viz_data = get_val_count_data(df, val_count_spec)
             except Exception as e:
-                logger.info('ERROR GETTING VAL COUNT DATA')
                 logger.error(e, exc_info=True)
                 continue
 
