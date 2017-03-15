@@ -184,7 +184,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         if general_type in ['q', 't'] and not contiguous:
             binning_spec = {
                 'binning_field': { 'name': field_name, 'type': field_type },
-                'agg_field_a': { 'name': field_name },
+                'agg_field_a': { 'name': field_name, 'type': field_type },
                 'agg_fn': 'count'
             }
             try:
