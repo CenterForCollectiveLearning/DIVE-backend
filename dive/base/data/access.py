@@ -128,12 +128,12 @@ def coerce_types(df, field_properties):
     for integer_field in integer_fields:
         df[integer_field] = pd.to_numeric(df[integer_field], errors='coerce')
 
-    # for datetime_field in datetime_fields:
-    #     try:
-    #         df[datetime_field] = pd.to_datetime(df[datetime_field], errors='coerce', infer_datetime_format=True)
-    #     except ValueError:
-    #         df[datetime_field] = pd.to_datetime(df[datetime_field], errors='coerce')
-
+    for datetime_field in datetime_fields:
+        df[datetime_field] = pd.to_datetime(
+            df[datetime_field],
+            errors='coerce',
+            infer_datetime_format=True
+        )
     return df
 
 
