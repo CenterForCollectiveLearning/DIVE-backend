@@ -467,6 +467,8 @@ def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visuali
 def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_BINS=25):
     final_data = {}
 
+    field_type = args['agg_field_a']['general_type']
+
     binning_field = args['binning_field']['name']
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
@@ -498,6 +500,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
 
     bin_edges_list = get_bin_edges(
         binning_field_values,
+        field_type=field_type,
         procedural=procedural,
         procedure=procedure,
         num_bins=num_bins,
@@ -512,19 +515,32 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
             bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
         bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-        if precision > 0:
-            rounded_left_bin_edge = float(float_formatting_string % left_bin_edge)
-            rounded_right_bin_edge = float(float_formatting_string % right_bin_edge)
-        else:
-            rounded_left_bin_edge = int(float_formatting_string % left_bin_edge)
-            rounded_right_bin_edge = int(float_formatting_string % right_bin_edge)
+        if field_type == 'q':
+            if precision > 0:
+                rounded_left_bin_edge = float(float_formatting_string % left_bin_edge)
+                rounded_right_bin_edge = float(float_formatting_string % right_bin_edge)
+            else:
+                rounded_left_bin_edge = int(float_formatting_string % left_bin_edge)
+                rounded_right_bin_edge = int(float_formatting_string % right_bin_edge)
+        elif field_type == 't':
+            rounded_left_bin_edge = left_bin_edge
+            rounded_right_bin_edge = right_bin_edge
+
         formatted_bin_edge = (rounded_left_bin_edge, rounded_right_bin_edge)
         formatted_bin_edges_list.append(formatted_bin_edge)
 
         bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
 
     # Faster digitize? https://github.com/numpy/numpy/pull/4184
-    df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
+    if field_type == 'q':
+        df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
+    elif field_type == 't':
+        print bin_edges_list
+        print binning_field_values
+        binning_field_values = pd.to_datetime(binning_field_values).view('i8')
+        print binning_field_values
+        df_bin_indices = np.digitize(binning_field_values, pd.to_datetime(bin_edges_list).view('i8'), right=False)
+
     groupby = df.groupby(df_bin_indices, sort=True)
     agg_df = get_aggregated_df(groupby, aggregation_function_name)
     agg_bins_to_values = agg_df[agg_field_a].to_dict()
