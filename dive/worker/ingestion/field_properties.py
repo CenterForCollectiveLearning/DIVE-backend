@@ -64,6 +64,7 @@ total_palette = [
     '#055D2A',
 ]
 
+
 def sample_with_maximum_distance(li, num_samples, random_start=True):
     num_elements = len(li)
     skip_length = int(num_elements / float(num_samples))
@@ -77,13 +78,15 @@ def sample_with_maximum_distance(li, num_samples, random_start=True):
     samples = [ li[(sample_index % num_elements)] for sample_index in sample_indices_range ]
     return samples
 
+
 def calculate_field_stats(field_type, field_values, logging=False):
     if logging: start_time = time()
     percentiles = [(i * .5) / 10 for i in range(1, 20)]
 
     df = pd.DataFrame(field_values)
     stats = df.describe(percentiles=percentiles).to_dict().values()[0]
-
+    num_rows = df.shape[0]
+    stats['total_count'] = num_rows
     return stats
 
 
@@ -178,7 +181,6 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
 
         # Binning
         viz_data = None
-        logger.info('General type: %s', general_type)
         if general_type in ['q', 't'] and not contiguous:
             binning_spec = {
                 'binning_field': { 'name': field_name, 'type': field_type },
