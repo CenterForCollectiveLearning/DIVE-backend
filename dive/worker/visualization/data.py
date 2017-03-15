@@ -17,7 +17,7 @@ from flask import current_app
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.ingestion.type_detection import detect_time_series
-from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals
+from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals, format_bin_edges_list
 from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure, aggregation_functions
 
 from time import time
@@ -464,11 +464,11 @@ def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_BINS=25):
+def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_BINS=25, DEFAULT_BINS=3):
     final_data = {}
 
-    field_type = args['agg_field_a']['general_type']
-
+    # Argument parsing
+    general_type = args['agg_field_a']['general_type']
     binning_field = args['binning_field']['name']
     agg_field_a = args['agg_field_a']['name']
     aggregation_function_name = args['agg_fn']
@@ -477,8 +477,6 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     pre_cleaned_binning_field_values = df[binning_field]
     df = df.dropna(subset=[ binning_field ])
     binning_field_values = df[binning_field]
-    if len(binning_field_values) == 0:
-        return None
 
     # Configuration
     data_config = config
@@ -488,57 +486,30 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     num_bins = data_config.get('num_bins')
     precision = config.get('precision', get_bin_decimals(binning_field_values))
 
-    # Max number of bins for integers is number of unique values
-    float_formatting_string = ('%.' + str(precision) + 'f') if (precision > 0) else '%d'
 
+    # Max number of bins for integers is number of unique values
     if not (procedural or num_bins):
-        if args['binning_field']['type'] == 'integer':
-            num_bins = len(np.unique(binning_field_values))
-        else:
-            num_bins = 3
+        num_bins = len(np.unique(binning_field_values)) if (args['binning_field']['type'] == 'integer') else DEFAULT_BINS
     num_bins = min(num_bins, MAX_BINS)
 
     bin_edges_list = get_bin_edges(
         binning_field_values,
-        field_type=field_type,
+        general_type=general_type,
         procedural=procedural,
         procedure=procedure,
         num_bins=num_bins,
         num_decimals=precision
     )
-
-    bin_num_to_edges = {}  # {1: [left_edge, right_edge]}
-    bin_num_to_formatted_edges = {}  # {1: [left_edge, right_edge]}
-    formatted_bin_edges_list = []  # [(left_edge, right_edge)]
-    for bin_num in range(0, len(bin_edges_list) - 1):
-        left_bin_edge, right_bin_edge = \
-            bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
-        bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
-
-        if field_type == 'q':
-            if precision > 0:
-                rounded_left_bin_edge = float(float_formatting_string % left_bin_edge)
-                rounded_right_bin_edge = float(float_formatting_string % right_bin_edge)
-            else:
-                rounded_left_bin_edge = int(float_formatting_string % left_bin_edge)
-                rounded_right_bin_edge = int(float_formatting_string % right_bin_edge)
-        elif field_type == 't':
-            rounded_left_bin_edge = left_bin_edge
-            rounded_right_bin_edge = right_bin_edge
-
-        formatted_bin_edge = (rounded_left_bin_edge, rounded_right_bin_edge)
-        formatted_bin_edges_list.append(formatted_bin_edge)
-
-        bin_num_to_formatted_edges[bin_num] = formatted_bin_edge
+    formatted_bin_edges_object = format_bin_edges_list(bin_edges_list, precision, general_type=general_type)
+    bin_num_to_edges = formatted_bin_edges_object['bin_num_to_edges']  # {1: [left_edge, right_edge]}
+    bin_num_to_formatted_edges = formatted_bin_edges_object['bin_num_to_formatted_edges']  # {1: [left_edge, right_edge]}
+    formatted_bin_edges_list = formatted_bin_edges_object['formatted_bin_edges_list']  # [(left_edge, right_edge)]
 
     # Faster digitize? https://github.com/numpy/numpy/pull/4184
-    if field_type == 'q':
+    if general_type == 'q':
         df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
-    elif field_type == 't':
-        print bin_edges_list
-        print binning_field_values
+    elif general_type == 't':
         binning_field_values = pd.to_datetime(binning_field_values).view('i8')
-        print binning_field_values
         df_bin_indices = np.digitize(binning_field_values, pd.to_datetime(bin_edges_list).view('i8'), right=False)
 
     groupby = df.groupby(df_bin_indices, sort=True)
@@ -589,16 +560,17 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
         final_data['visualize'] = data_array
         final_data['bins'] = bins
 
-    # logger.info(bin_num_to_formatted_edges)
-    # logger.info(agg_df)
-    # logger.info(len(agg_df.ix[:, 0].tolist()))
+
     if 'table' in data_formats:
         table_data = []
         if aggregation_function_name == 'count':
             columns = columns = [ 'bins of %s' % binning_field, 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
-                new_row = [bin_num_to_formatted_edges[i], count]
-                table_data.append(new_row)
+                try:
+                    new_row = [ bin_num_to_formatted_edges[i], count ]
+                    table_data.append(new_row)
+                except KeyError:
+                    continue
 
         else:
             columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
