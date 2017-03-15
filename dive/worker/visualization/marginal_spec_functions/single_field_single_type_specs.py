@@ -1,5 +1,6 @@
 from itertools import combinations
 
+from dive.worker.ingestion.constants import DataType as DT
 from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     VizType as VT, TermType, aggregation_functions
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
@@ -21,7 +22,7 @@ def single_q(q_field):
 
     q_label = q_field['name']
 
-    if (q_field['type'] == 'integer') and q_field['contiguous']:
+    if (q_field['type'] == DT.INTEGER.value ) and q_field['contiguous']:
         # { Value: count }
         count_spec = {
             'generating_procedure': GP.VAL_COUNT.value,
@@ -77,6 +78,29 @@ def single_t(t_field):
     specs = []
 
     t_label = t_field['name']
+    # if (t_field['type'] in [ DT.DATETIME.value, DT.DATE.value ]):
+    #     raw_time_series_viz_types = [ VT.LINE.value ]
+    #
+    raw_time_series_spec = {
+        'case': 'single_tq',
+        'generating_procedure': GP.VAL_COUNT.value,
+        'type_structure': TS.T_Q.value,
+        'viz_types': [ VT.LINE.value ],
+        'field_ids': [ t_field['id'] ],
+        'args': {
+            'field_a': t_field
+        },
+        'meta': {
+            'desc': 'Count of %s' % (t_label),
+            'construction': [
+                { 'string': 'count', 'type': TermType.OPERATION.value },
+                { 'string': 'of', 'type': TermType.PLAIN.value },
+                { 'string': t_label, 'type': TermType.FIELD.value },
+            ],
+        }
+    }
+    specs.append(raw_time_series_spec)
+
     bin_spec = {
         'generating_procedure': GP.BIN_AGG.value,
         'type_structure': TS.B_Q.value,

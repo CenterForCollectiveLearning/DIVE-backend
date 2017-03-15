@@ -13,6 +13,7 @@ import scipy.stats as stats
 import math
 from decimal import Decimal
 import random
+from datetime import timedelta
 
 from dive.base.data.access import get_data
 
@@ -121,33 +122,31 @@ def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', nu
     Returns the edges of each bin
     '''
     n = len(v)
+    if general_type == 't':
+        try:
+            min_v = min(v).value
+            max_v = max(v).value
+        except AttributeError:
+            min_v = min(v)
+            max_v = max(v)
 
     if general_type == 'q':
         v = v.astype(float, raise_on_error=False)
         min_v = min(v)
         max_v = max(v)
 
-    if general_type == 't':
-        v = pd.to_datetime(v)
-        min_v = min(v).value
-        max_v = max(v).value
-
     if procedural:
         num_bins = get_num_bins(v, procedure=procedure)
 
-    print general_type
     edges = []
     try:
         if general_type == 'q':
-            print 'In Q'
             edges = np.linspace(min_v, max_v, num_bins+1)
         elif general_type == 't':
-            print 'In T'
-            edges = np.linspace(min_v, max_v, num_bins+1)
-            edges = pd.to_datetime(edges)
-
+            edges = pd.to_datetime(np.linspace(min_v, max_v, num_bins+1))
     except Exception as e:
         logger.error('Error binning: %s', e, exc_info=True)
+    print edges
 
     rounded_edges = []
     rounding_string = '{0:.' + str(num_decimals) + 'f}'
@@ -162,4 +161,6 @@ def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', nu
 
     if general_type == 'q':
         rounded_edges[-1] += 0.0001 * max_v
+    elif general_type == 't':
+        rounded_edges[-1] += timedelta(seconds=0.001)
     return rounded_edges

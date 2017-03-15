@@ -26,8 +26,6 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
     specs = []
     num_selected_fields = len(selected_fields)
 
-    logger.info('Recommendation Types %s', recommendation_types)
-
     # Get field properties
     desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'name', 'id', 'contiguous']
     raw_field_properties = db_access.get_field_properties(project_id, dataset_id, is_id=False)

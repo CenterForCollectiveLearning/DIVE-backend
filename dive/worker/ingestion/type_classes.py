@@ -169,20 +169,11 @@ class DateType(CellType):
     def instances(cls):
         return [cls(v) for v in cls.formats]
 
-    def test(self, value):
-        if isinstance(value, string_types) and not is_date(value):
-            return False
-        return CellType.test(self, value)
-
     def cast(self, value):
-        if isinstance(value, self.result_type):
-            return value
         if value in ('', None):
             return None
-        if self.format is None:
-            return value
-        return datetime.datetime.strptime(value, self.format)
-
+        if isinstance(value, self.result_type) or (self.format is None) or is_date(value):
+            return True
 
 class DateUtilType(CellType):
     ''' The date util type uses the dateutil library to

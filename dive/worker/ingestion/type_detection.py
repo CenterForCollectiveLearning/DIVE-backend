@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 FIELD_TYPES = [
-    IntegerType, StringType, DecimalType,
+    IntegerType, StringType, DecimalType, DateType,
     BooleanType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type,
     CountryNameType, ContinentNameType
 ]
@@ -47,7 +47,7 @@ def get_type_scores_from_field_name(field_name):
     for datatype, strings in header_strings['is'].iteritems():
         for s in strings:
             if field_name is s:
-                type_scores[datatype] += 1000
+                type_scores[datatype] += 2000
 
     for datatype, strings in header_strings['in'].iteritems():
         for s in strings:
@@ -84,7 +84,7 @@ def get_type_scores_from_field_values(field_values, field_types):
     return type_scores
 
 
-def calculate_field_type(field_name, field_values, field_position, num_fields, field_types=FIELD_TYPES, num_samples=1000, random=True):
+def calculate_field_type(field_name, field_values, field_position, num_fields, field_types=FIELD_TYPES, num_samples=100, random=True):
     '''
     For each field, returns highest-scoring field type of first num_samples non-empty
     instances.
