@@ -1,7 +1,6 @@
 from enum import Enum
 
 class DataType(Enum):
-
     # Fundamental
     INTEGER = 'integer'
     STRING = 'string'
