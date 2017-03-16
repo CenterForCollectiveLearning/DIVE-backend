@@ -1,5 +1,20 @@
 from enum import Enum
 
+class GeneralDataType(Enum):
+    CATEGORICAL = 'c'
+    TEMPORAL = 't'
+    QUANTIATIVE = 'q'
+    C = CATEGORICAL
+    T = TEMPORAL
+    Q = QUANTIATIVE
+
+
+class GeneralDataCharacteristic(Enum):
+    NOMINAL = 'nom'
+    ORDINAL = 'ord'
+    CONTINUOUS = 'cat'
+
+
 class DataType(Enum):
     # Fundamental
     INTEGER = 'integer'
@@ -62,11 +77,11 @@ categorical_types = [
 
 specific_to_general_type = {}
 for data_type in quantitative_types:
-    specific_to_general_type[data_type] = 'q'
+    specific_to_general_type[data_type] = GeneralDataType.Q.value
 for data_type in temporal_types:
-    specific_to_general_type[data_type] = 't'
+    specific_to_general_type[data_type] = GeneralDataType.T.value
 for data_type in categorical_types:
-    specific_to_general_type[data_type] = 'c'
+    specific_to_general_type[data_type] = GeneralDataType.C.value
 
 
 class DataTypeWeights(Enum):
