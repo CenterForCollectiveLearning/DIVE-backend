@@ -16,6 +16,7 @@ from flask import current_app
 
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.data.access import get_data, get_conditioned_data
+from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT
 from dive.worker.ingestion.type_detection import detect_time_series
 from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals, format_bin_edges_list
 from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure, aggregation_functions
@@ -475,8 +476,8 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
 
     # Handling NAs
     pre_cleaned_binning_field_values = df[binning_field]
-    df = df.dropna(subset=[ binning_field ])
-    binning_field_values = df[binning_field]
+    df_no_nas = df.dropna(subset=[ binning_field ])
+    binning_field_values = df_no_nas[binning_field]
 
     # Configuration
     data_config = config
@@ -485,7 +486,6 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     procedural = (binning_type == 'procedural')
     num_bins = data_config.get('num_bins')
     precision = config.get('precision', get_bin_decimals(binning_field_values))
-
 
     # Max number of bins for integers is number of unique values
     if not (procedural or num_bins):
@@ -506,10 +506,10 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     formatted_bin_edges_list = formatted_bin_edges_object['formatted_bin_edges_list']  # [(left_edge, right_edge)]
 
     # Faster digitize? https://github.com/numpy/numpy/pull/4184
-    if general_type == 'q':
+    if general_type == GDT.Q.value:
         df_bin_indices = np.digitize(binning_field_values, bin_edges_list, right=False)
-    elif general_type == 't':
-        binning_field_values = pd.to_datetime(binning_field_values).view('i8')
+    elif general_type == GDT.T.value:
+        binning_field_values = binning_field_values.view('i8')
         df_bin_indices = np.digitize(binning_field_values, pd.to_datetime(bin_edges_list).view('i8'), right=False)
 
     groupby = df.groupby(df_bin_indices, sort=True)
@@ -542,7 +542,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
             if (i + 1) == len(formatted_bin_edges_list):
                 right_interval = ']'
 
-            formatted_interval = '%s%s, %s%s' % (left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
+            formatted_interval = '{}{}, {}{}'.format(left_interval, formatted_bin_edges[0], formatted_bin_edges[1], right_interval)
 
             data_array.append([
                 i + 0.5,
@@ -564,7 +564,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     if 'table' in data_formats:
         table_data = []
         if aggregation_function_name == 'count':
-            columns = columns = [ 'bins of %s' % binning_field, 'count' ]
+            columns = columns = [ 'bins of {}'.format(binning_field), 'count' ]
             for i, count in enumerate(agg_df.ix[:, 0].tolist()):
                 try:
                     new_row = [ bin_num_to_formatted_edges[i], count ]
@@ -573,7 +573,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
                     continue
 
         else:
-            columns = [ 'bins of %s' % binning_field ] + agg_df.columns.tolist()
+            columns = [ 'bins of {}'.format(binning_field) ] + agg_df.columns.tolist()
             for i, row in enumerate(agg_df.values.tolist()):
                 new_row = [bin_num_to_formatted_edges[i]] + row
                 table_data.append(new_row)

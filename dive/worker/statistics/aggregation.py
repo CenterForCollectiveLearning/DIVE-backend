@@ -8,7 +8,9 @@ from dive.worker.ingestion.utilities import get_unique
 from dive.worker.ingestion.binning import get_num_bins
 
 from celery.utils.log import get_task_logger
+from dive.worker.ingestion.constants import GeneralDataType as GDT
 from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals
+
 logger = get_task_logger(__name__)
 
 
@@ -280,7 +282,7 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
             if weight_variable_name != 'UNIFORM':
                 weight_dict[var] = [df.get_value(index, weight_variable_name)]
 
-    if type_string == 'q':
+    if type_string in [ GDT.Q.value, GDT.T.value ]:
         for var in unique_indep_values:
             if dep_var_dict.get(var):
                 result_dict[var] = parse_aggregation_function(aggregation_function_name, weight_dict[var])(dep_var_dict[var])
@@ -312,7 +314,7 @@ def create_one_dimensional_contingency_table_with_no_dependent_variable(df, vari
     for index in df.index:
         var = parse_variable(0, index, variable_type_aggregation, df)
         if count_dict.get(var):
-            count_dict[var]+= 1
+            count_dict[var] += 1
         else:
             count_dict[var] = 1
 
@@ -348,16 +350,23 @@ def create_one_dimensional_contingency_table(df, aggregation_variable, dep_varia
 
     aggregationMean = False
 
-    if aggregation_variable[0] == 'c':
-        unique_indep_values = get_unique(df[aggregation_variable[1]], True)
-        variable_type_aggregation.append(('cat', aggregation_variable[1]))
-    elif aggregation_variable[0] == 'q':
-        values = df[aggregation_variable[1]].dropna(how='any')
-        config = aggregation_variable[2]
-        (binning_edges, names) = get_binning_edges_and_names(values, config)
+    if len(aggregation_variable) == 2:
+        aggregation_variable_type, name = aggregation_variable
+    else:
+        aggregation_variable_type, name, aggregation_config = aggregation_variable
+
+
+    if aggregation_variable_type == GDT.C.value:
+        unique_indep_values = get_unique(df[name], True)
+        variable_type_aggregation.append(('cat', name))
+
+    elif aggregation_variable_type in [ GDT.Q.value, GDT.T.value ]:
+
+        values = df[name].dropna(how='any')
+        (binning_edges, names) = get_binning_edges_and_names(values, aggregation_config)
         num_bins = len(binning_edges) -1
         unique_indep_values = names
-        variable_type_aggregation.append(('num', [aggregation_variable[1], num_bins], binning_edges, names))
+        variable_type_aggregation.append(('num', [name, num_bins], binning_edges, names))
 
     if dep_variable:
         (results_dict, aggregationMean) = create_one_dimensional_contingency_table_with_dependent_variable(df, variable_type_aggregation, dep_variable, unique_indep_values)
@@ -427,7 +436,7 @@ def create_contingency_table_with_dependent_variable(df, variable_type_aggregati
             if weight_variable_name != 'UNIFORM':
                 weight_dict[row][col] = [df.get_value(index, weight_variable_name)]
 
-    if dep_variable_type == 'q':
+    if dep_variable_type in [ GDT.Q.value, GDT.T.value ]:
         for row in unique_indep_values[1]:
             result_dict[row] = {}
             if dep_var_dict.get(row):
@@ -522,13 +531,12 @@ def create_contingency_table(df, aggregation_variables, dep_variable):
 
     aggregationMean = False
 
-    for var in aggregation_variables:
-        if var[0] == 'c':
-            unique_indep_values.append(get_unique(df[var[1]], True))
-            variable_type_aggregation.append(('cat', var[1]))
-        elif var[0] == 'q':
-            name = var[1]
-            config = var[2]
+    for (var_type, name, config) in aggregation_variables:
+        print var_type, (var_type in [ GDT.Q.value, GDT.T.value ])
+        if var_type == GDT.C.value:
+            unique_indep_values.append(get_unique(df[name], True))
+            variable_type_aggregation.append(('cat', name))
+        elif var_type in [ GDT.Q.value, GDT.T.value ]:
             values = df[name].dropna(how='any')
             (binning_edges, names) = get_binning_edges_and_names(values, config)
 

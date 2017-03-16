@@ -9,27 +9,25 @@ class GeneralDataType(Enum):
     Q = QUANTIATIVE
 
 
-class GeneralDataCharacteristic(Enum):
-    NOMINAL = 'nom'
-    ORDINAL = 'ord'
-    CONTINUOUS = 'cat'
+class Scale(Enum):
+    NOMINAL = 'nominal'
+    ORDINAL = 'ordinal'
+    CONTINUOUS = 'continous'
 
 
 class DataType(Enum):
-    # Fundamental
-    INTEGER = 'integer'
     STRING = 'string'
-    DECIMAL = 'decimal'
     BOOLEAN = 'boolean'
-
-    # Special strings
     TEXT = 'text'
     URL = 'url'
 
+    INTEGER = 'integer'
+    DECIMAL = 'decimal'
+
     # Geographic
+    CITY = 'city'
     LATITUDE = 'latitude'
     LONGITUDE = 'longitude'
-    CITY = 'city'
     COUNTRY_CODE_2 = 'countryCode2'
     COUNTRY_CODE_3 = 'countryCode3'
     COUNTRY_NAME = 'countryName'
@@ -42,11 +40,6 @@ class DataType(Enum):
     YEAR = 'year'
     MONTH = 'month'
     DAY = 'day'
-
-numeric_types = [
-    DataType.INTEGER.value,
-    DataType.DECIMAL.value
-]
 
 quantitative_types = [
     DataType.INTEGER.value,
@@ -74,15 +67,47 @@ categorical_types = [
     DataType.CONTINENT_NAME.value,
 ]
 
-
-specific_to_general_type = {}
+specific_type_to_general_type = {}
 for data_type in quantitative_types:
-    specific_to_general_type[data_type] = GeneralDataType.Q.value
+    specific_type_to_general_type[data_type] = GeneralDataType.Q.value
 for data_type in temporal_types:
-    specific_to_general_type[data_type] = GeneralDataType.T.value
+    specific_type_to_general_type[data_type] = GeneralDataType.T.value
 for data_type in categorical_types:
-    specific_to_general_type[data_type] = GeneralDataType.C.value
+    specific_type_to_general_type[data_type] = GeneralDataType.C.value
 
+continuous_types = [
+    DataType.INTEGER.value,
+    DataType.DECIMAL.value,
+    DataType.DATETIME.value,
+    DataType.DATE.value,
+    DataType.TIME.value,
+]
+
+ordinal_types = [
+    DataType.YEAR.value,
+    DataType.MONTH.value,
+    DataType.DAY.value
+]
+
+nominal_types = [
+    DataType.STRING.value,
+    DataType.BOOLEAN.value,
+    DataType.TEXT.value,
+    DataType.URL.value,
+    DataType.CITY.value,
+    DataType.COUNTRY_CODE_2.value,
+    DataType.COUNTRY_CODE_3.value,
+    DataType.COUNTRY_NAME.value,
+    DataType.CONTINENT_NAME.value,
+]
+
+specific_type_to_scale = {}
+for data_type in continuous_types:
+    specific_type_to_scale[data_type] = Scale.CONTINUOUS.value
+for data_type in ordinal_types:
+    specific_type_to_scale[data_type] = Scale.ORDINAL.value
+for data_type in nominal_types:
+    specific_type_to_scale[data_type] = Scale.NOMINAL.value
 
 class DataTypeWeights(Enum):
     # Fundamental

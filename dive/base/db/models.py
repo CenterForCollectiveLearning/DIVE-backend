@@ -166,6 +166,7 @@ class Field_Properties(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(250))  # Have these here, vs. in dataset_properties?
     type = Column(Unicode(250))
+    scale = Column(Unicode(250))
     general_type = Column(Unicode(250))
     color = Column(Unicode(250))
     type_scores = Column(JSONB)
