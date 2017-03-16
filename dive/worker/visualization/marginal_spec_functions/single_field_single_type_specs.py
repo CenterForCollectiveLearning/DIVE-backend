@@ -20,7 +20,9 @@ def single_q(q_field):
     specs = []
     logger.debug('A: Single Q - %s', q_field['name'])
 
+    print q_field
     q_label = q_field['name']
+    scale = q_field['scale']
 
     if (q_field['type'] == DT.INTEGER.value ) and q_field['contiguous']:
         # { Value: count }
@@ -44,31 +46,32 @@ def single_q(q_field):
         specs.append(count_spec)
 
     # { Bins: Aggregate(binned values) }
-    bin_spec = {
-        'generating_procedure': GP.BIN_AGG.value,
-        'type_structure': TS.B_Q.value,
-        'viz_types': [ VT.HIST.value ],
-        'field_ids': [ q_field['id'] ],
-        'args': {
-            'agg_fn': 'count',
-            'agg_field_a': q_field,
-            'binning_field': q_field
-        },
-        'meta': {
-            'desc': '%s of %s by bin' % ('count', q_label),
-            'construction': [
-                { 'string': 'count', 'type': TermType.OPERATION.value },
-                { 'string': 'of', 'type': TermType.PLAIN.value },
-                { 'string': q_label, 'type': TermType.FIELD.value },
-                { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
-            ],
-            'labels': {
-                'x': '%s by bin' % q_label,
-                'y': 'Count by bin'
+    else:
+        bin_spec = {
+            'generating_procedure': GP.BIN_AGG.value,
+            'type_structure': TS.B_Q.value,
+            'viz_types': [ VT.HIST.value ],
+            'field_ids': [ q_field['id'] ],
+            'args': {
+                'agg_fn': 'count',
+                'agg_field_a': q_field,
+                'binning_field': q_field
             },
+            'meta': {
+                'desc': '%s of %s by bin' % ('count', q_label),
+                'construction': [
+                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'of', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                    { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+                ],
+                'labels': {
+                    'x': '%s by bin' % q_label,
+                    'y': 'Count by bin'
+                },
+            }
         }
-    }
-    specs.append(bin_spec)
+        specs.append(bin_spec)
     return specs
 
 

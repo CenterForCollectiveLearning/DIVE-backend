@@ -93,8 +93,10 @@ def calculate_field_stats(field_type, general_type, field_values, logging=False)
 
 def detect_contiguous_integers(field_values):
     sorted_unique_list = sorted(np.unique(field_values))
+
     for i in range(len(sorted_unique_list) - 1):
         diff = abs(sorted_unique_list[i + 1] - sorted_unique_list[i])
+        print sorted_unique_list[i], sorted_unique_list[i + 1]
         if diff > 1:
             return False
     return True
@@ -111,8 +113,8 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
 
     contiguous = get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type)
     scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
-    viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, is_id, contiguous)
-    normality = get_normality(field_name, field_values, field_type, general_type)
+    viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, scale, is_id, contiguous)
+    normality = get_normality(field_name, field_values, field_type, general_type, scale)
 
     return {
         'scale': scale,
@@ -135,6 +137,7 @@ def get_scale(field_name, field_values, field_type, general_type, contiguous):
         scale = Scale.ORDINAL.value
     return scale
 
+
 def get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type, MAX_CONTIGUOUS_FIELDS=30):
     contiguous = False
 
@@ -145,32 +148,35 @@ def get_contiguity(field_name, field_values, field_values_no_na, field_type, gen
     return contiguous
 
 
-def get_field_distribution_viz_data(field_name, field_values, field_type, general_type, is_id, contiguous):
+def get_field_distribution_viz_data(field_name, field_values, field_type, general_type, scale, is_id, contiguous):
     viz_data = None
     if is_id: return viz_data
 
     df = pd.DataFrame.from_dict({ field_name: field_values })
-    if general_type in [ GDT.Q.value, GDT.T.value ] and not contiguous:
-        binning_spec = {
+
+    if scale in [ Scale.CONTINUOUS.value ]:
+        spec = {
             'binning_field': { 'name': field_name, 'general_type': general_type },
             'agg_field_a': { 'name': field_name, 'general_type': general_type },
             'agg_fn': 'count'
         }
-        try:
-            viz_data = get_bin_agg_data(df, binning_spec)
-        except Exception as e:
-            print df, binning_spec
+        viz_data_function = get_bin_agg_data
 
-    elif general_type in [ GDT.C.value ] or (general_type == GDT.Q.value and contiguous):
-        val_count_spec = {
+    elif scale in [ Scale.ORDINAL.value, Scale.NOMINAL.value ]:
+        spec = {
             'field_a': { 'name': field_name }
         }
-        viz_data = get_val_count_data(df, val_count_spec)
+        viz_data_function = get_val_count_data
+    try:
+        viz_data = viz_data_function(df, spec)
+    except Exception as e:
+        logger.error('Error getting viz data: %s', e, exc_info=True)
+        return None
 
     return viz_data
 
 
-def get_normality(field_name, field_values, field_type, general_type):
+def get_normality(field_name, field_values, field_type, general_type, scale):
     normality = None
     if general_type is 'q':
         try:
