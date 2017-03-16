@@ -16,7 +16,7 @@ from dive.base.db import db_access
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
-from dive.worker.ingestion.constants import DataType, specific_to_general_type
+from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, specific_to_general_type
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
 from dive.worker.ingestion.utilities import get_unique
@@ -83,7 +83,7 @@ def calculate_field_stats(field_type, general_type, field_values, logging=False)
     if logging: start_time = time()
     percentiles = [(i * .5) / 10 for i in range(1, 20)]
 
-    if field_type in [ DataType.DATETIME.value ]:
+    if field_type in [ DT.DATETIME.value ]:
         field_values = pd.to_datetime(field_values)
 
     df = pd.DataFrame(field_values)
@@ -111,7 +111,7 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
     stats = calculate_field_stats(field_type, general_type, field_values)
     is_id = detect_id(field_name, field_type, is_unique)
 
-    contiguous = get_contiguity(field_name, field_values, field_type, general_type)
+    contiguous = get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type)
     viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous)
     normality = get_normality(field_name, field_values, field_type, general_type)
 
@@ -130,12 +130,10 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
     }
 
 
-def get_contiguity(field_name, field_values, field_type, general_type, MAX_CONTIGUOUS_FIELDS=30):
+def get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type, MAX_CONTIGUOUS_FIELDS=30):
     contiguous = False
-    field_values_no_na = field_values.dropna(how='any')
-    # Only adding contiguity if number of unique integers <= 30 (arbitrary)
-    # Right now just a workaround for not having proper ordinal handling
-    if field_type == 'integer':
+
+    if field_type == DT.INTEGER.value:
         value_range = max(field_values_no_na) - min(field_values_no_na) + 1
         if (value_range <= MAX_CONTIGUOUS_FIELDS):
             contiguous = detect_contiguous_integers(field_values_no_na)
@@ -144,7 +142,8 @@ def get_contiguity(field_name, field_values, field_type, general_type, MAX_CONTI
 
 def get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous):
     viz_data = None
-    if general_type in ['q', 't'] and not contiguous:
+
+    if general_type in [GDT.Q.value, GDT.T.value] and not contiguous:
         binning_spec = {
             'binning_field': { 'name': field_name, 'general_type': general_type },
             'agg_field_a': { 'name': field_name, 'general_type': general_type },
@@ -152,11 +151,12 @@ def get_field_distribution_viz_data(field_name, field_values, field_type, genera
         }
         viz_data = get_bin_agg_data(pd.DataFrame(field_values), binning_spec)
 
-    elif general_type in ['c'] or (general_type == 'q' and contiguous):
+    elif general_type in [GDT.C.value] or (general_type is GDT.Q.value and contiguous):
         val_count_spec = {
             'field_a': { 'name': field_name }
         }
         viz_data = get_val_count_data(pd.DataFrame(field_values), val_count_spec)
+
     return viz_data
 
 
