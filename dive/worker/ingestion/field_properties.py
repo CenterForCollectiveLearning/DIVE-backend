@@ -92,13 +92,6 @@ def calculate_field_stats(field_type, general_type, field_values, logging=False)
     return stats
 
 
-def compute_single_field_property():
-    '''
-    Attributes:
-    stats
-    '''
-    return
-
 
 def detect_contiguous_integers(field_values):
     sorted_unique_list = sorted(np.unique(field_values))
@@ -107,6 +100,95 @@ def detect_contiguous_integers(field_values):
         if diff > 1:
             return False
     return True
+
+
+def compute_single_field_property_nontype(field_name, field_values, field_type, general_type):
+    field_values_no_na = field_values.dropna(how='any')
+    num_na = len(field_values) - len(field_values_no_na)
+    is_unique = detect_unique_list(field_values)
+
+    unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
+    stats = calculate_field_stats(field_type, general_type, field_values)
+    is_id = detect_id(field_name, field_type, is_unique)
+
+    contiguous = get_contiguity(field_name, field_values, field_type, general_type)
+    viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous)
+    normality = get_normality(field_name, field_values, field_type, general_type)
+
+    return {
+        'contiguous': contiguous,
+        'viz_data': viz_data,
+        'is_id': is_id,
+        'stats': stats,
+        'num_na': num_na,
+        'normality': normality,
+        'is_unique': is_unique,
+        'unique_values': unique_values,
+        'child': None,
+        'is_child': False,
+        'manual': {}
+    }
+
+
+def get_contiguity(field_name, field_values, field_type, general_type, MAX_CONTIGUOUS_FIELDS=30):
+    contiguous = False
+    field_values_no_na = field_values.dropna(how='any')
+    # Only adding contiguity if number of unique integers <= 30 (arbitrary)
+    # Right now just a workaround for not having proper ordinal handling
+    if field_type == 'integer':
+        value_range = max(field_values_no_na) - min(field_values_no_na) + 1
+        if (value_range <= MAX_CONTIGUOUS_FIELDS):
+            contiguous = detect_contiguous_integers(field_values_no_na)
+    return contiguous
+
+
+def get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous):
+    viz_data = None
+    if general_type in ['q', 't'] and not contiguous:
+        binning_spec = {
+            'binning_field': { 'name': field_name, 'general_type': general_type },
+            'agg_field_a': { 'name': field_name, 'general_type': general_type },
+            'agg_fn': 'count'
+        }
+        viz_data = get_bin_agg_data(pd.DataFrame(field_values), binning_spec)
+
+    elif general_type in ['c'] or (general_type == 'q' and contiguous):
+        val_count_spec = {
+            'field_a': { 'name': field_name }
+        }
+        viz_data = get_val_count_data(pd.DataFrame(field_values), val_count_spec)
+    return viz_data
+
+
+def get_normality(field_name, field_values, field_type, general_type):
+    normality = None
+    if general_type is 'q':
+        try:
+            d = field_values.astype(np.float)
+            normality_test_result = sc_stats.normaltest(d)
+            if normality_test_result:
+                statistic = normality_test_result.statistic
+                pvalue = normality_test_result.pvalue
+                if pvalue < 0.05:
+                    normality = True
+                else:
+                    normality = False
+        except ValueError:
+            normality = None
+    return normality
+
+
+def compute_single_field_property_type(field_name, field_values, field_position=None, num_fields=None, field_type=None, general_type=None, type_scores={}):
+    field_properties = {}
+
+    field_type, type_scores = calculate_field_type(field_name, field_values, field_position, num_fields)
+    general_type = specific_to_general_type[field_type]
+
+    return {
+        'type': field_type,
+        'general_type': general_type,
+        'type_scores': type_scores
+    }
 
 
 def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
@@ -121,145 +203,69 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
     logger.debug("Computing field properties for dataset_id %s", dataset_id)
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
-
     num_fields = len(df.columns)
     field_properties = [ {} for i in range(num_fields) ]
 
+    palette = total_palette + [ '#007BD7' for i in range(0, num_fields - len(total_palette)) ]
     if num_fields <= len(total_palette):
         palette = sample_with_maximum_distance(total_palette, num_fields, random_start=True)
-    else:
-        palette = total_palette + [ '#007BD7' for i in range(0, num_fields - len(total_palette)) ]
-        # palette = sample_with_maximum_distance(padded_palette, num_fields, random_start=True)
 
     # 1) Detect field types
     for (i, field_name) in enumerate(df):
-        logger.info('Detecting field properties for field %s', field_name)
+        logger.info('[%s | %s] Detecting type for field %s', project_id, dataset_id, field_name)
         field_values = df[field_name]
-        field_type, field_type_scores = calculate_field_type(field_name, field_values, i, num_fields)
-        general_type = specific_to_general_type[field_type]
-
+        d = field_property_type_object = compute_single_field_property_type(field_name, field_values, field_position=i, num_fields=num_fields)
         field_properties[i].update({
             'index': i,
             'name': field_name,
-            'type': field_type,
-            'general_type': general_type,
-            'type_scores': field_type_scores,
         })
+        field_properties[i].update(d)
 
-    df = coerce_types(df, field_properties)
-    IMD.insertData(dataset_id, df)
+    # Necessary to coerce here?
+    coerced_df = coerce_types(df, field_properties)
+    IMD.insertData(dataset_id, coerced_df)
 
     # 2) Rest
-    for (i, field_name) in enumerate(df):
-
-        field_values = df[field_name]
-        field_values_no_na = field_values.dropna(how='any')
-
-        num_na = len(field_values) - len(field_values_no_na)
-
-        field_type = field_properties[i]['type']
-        general_type = field_properties[i]['general_type']
-
-        # Uniqueness
-        is_unique = detect_unique_list(field_values)
-
-        contiguous = False
-        # Only adding contiguity if number of unique integers <= 30 (arbitrary)
-        # Right now just a workaround for not having proper ordinal handling
-        max_contiguous_fields = 20
-        if field_type == 'integer':
-            value_range = max(field_values_no_na) - min(field_values_no_na) + 1
-            if (value_range <= max_contiguous_fields):
-                contiguous = detect_contiguous_integers(field_values_no_na)
-
-        # Unique values for categorical fields
-        if general_type == 'c' and not is_unique:
-            unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ]
-        else:
-            unique_values = None
-
-        stats = calculate_field_stats(field_type, general_type, field_values)
-        is_id = detect_id(field_name, field_type, is_unique)
-
-        # Binning
-        viz_data = None
-        if general_type in ['q', 't'] and not contiguous:
-            binning_spec = {
-                'binning_field': { 'name': field_name, 'general_type': general_type },
-                'agg_field_a': { 'name': field_name, 'general_type': general_type },
-                'agg_fn': 'count'
-            }
-            try:
-                viz_data = get_bin_agg_data(df, binning_spec)
-            except Exception as e:
-                logger.error(e, exc_info=True)
-                continue
-        elif general_type in ['c'] or (general_type == 'q' and contiguous ):
-            val_count_spec = {
-                'field_a': { 'name': field_name }
-            }
-            try:
-                viz_data = get_val_count_data(df, val_count_spec)
-            except Exception as e:
-                logger.error(e, exc_info=True)
-                continue
-
-        # Normality
-        # Skip for now
-        normality = None
-        if general_type is 'q':
-            try:
-                d = field_values.astype(np.float)
-                normality_test_result = sc_stats.normaltest(d)
-                if normality_test_result:
-                    statistic = normality_test_result.statistic
-                    pvalue = normality_test_result.pvalue
-                    if pvalue < 0.05:
-                        normality = True
-                    else:
-                        normality = False
-            except ValueError:
-                normality = None
-
+    for (i, field_name) in enumerate(coerced_df):
+        field_values = coerced_df[field_name]
+        d = field_properties_nontype_object = compute_single_field_property_nontype(
+            field_name,
+            field_values,
+            field_properties[i]['type'],
+            field_properties[i]['general_type'],
+        )
         field_properties[i].update({
-            'contiguous': contiguous,
             'color': palette[i],
-            'viz_data': viz_data,
-            'is_id': is_id,
-            'stats': stats,
-            'num_na': num_na,
-            'normality': normality,
-            'is_unique': is_unique,
-            'unique_values': unique_values,
             'child': None,
             'is_child': False,
             'manual': {}
         })
+        field_properties[i].update(d)
 
     logger.debug("Detecting hierarchical relationships")
     # Detect hierarchical relationships
     # Hierarchical relationships
     # Given the unique values of current field, are the corresponding values
     # in another field a complete set of t?
-    if compute_hierarchical_relationships:
-        MAX_UNIQUE_VALUES_THRESHOLD = 100
-        for field_a, field_b in permutations(field_properties, 2):
-            logger.debug('%s - %s', field_a['name'], field_b['name'])
-            if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
-                continue
-
-            field_b_unique_corresponding_values = []
-            for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
-                if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
-                    continue
-                sub_df = df.loc[df[field_a['name']] == unique_value_a]
-                field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
-
-            if detect_unique_list(field_b_unique_corresponding_values):
-                field_properties[field_properties.index(field_a)]['child'] = field_b['name']
-                field_properties[field_properties.index(field_b)]['is_child'] = True
-
-    logger.debug("Done computing field properties")
+    # if compute_hierarchical_relationships:
+    #     MAX_UNIQUE_VALUES_THRESHOLD = 100
+    #     for field_a, field_b in permutations(field_properties, 2):
+    #         logger.debug('%s - %s', field_a['name'], field_b['name'])
+    #         if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
+    #             continue
+    #
+    #         field_b_unique_corresponding_values = []
+    #         for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
+    #             if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
+    #                 continue
+    #             sub_df = df.loc[df[field_a['name']] == unique_value_a]
+    #             field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
+    #
+    #         if detect_unique_list(field_b_unique_corresponding_values):
+    #             field_properties[field_properties.index(field_a)]['child'] = field_b['name']
+    #             field_properties[field_properties.index(field_b)]['is_child'] = True
+    #
+    # logger.debug("Done computing field properties")
 
     return {
         'desc': 'Done computing field properties for %s fields' % len(field_properties),
