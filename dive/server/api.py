@@ -2,7 +2,7 @@ from dive.server.resources.datasets import UploadFile, Dataset, Datasets, Preloa
 from dive.server.resources.documents import NewDocument, Document, Documents
 from dive.server.resources.fields import Field
 from dive.server.resources.projects import Project, Projects
-from dive.server.resources.field_properties import FieldProperties
+from dive.server.resources.field_properties_resources import FieldProperties
 from dive.server.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
 
 from dive.server.resources.statistics_resources import AnovaFromSpec, CorrelationsFromSpec, RegressionEstimator, \
