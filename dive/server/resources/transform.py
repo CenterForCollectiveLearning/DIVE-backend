@@ -15,9 +15,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def object_type(j):
-    return j
-
 #####################################################################
 # Endpoint creating new dataset given a subset of columns of an existing dataset
 # REQUIRED INPUT: project_id, dataset_id, fieldIndicesToKeep
@@ -27,7 +24,7 @@ def object_type(j):
 reducePostParser = reqparse.RequestParser()
 reducePostParser.add_argument('project_id', type=int, required=True, location='json')
 reducePostParser.add_argument('dataset_id', type=int, required=True, location='json')
-reducePostParser.add_argument('column_ids', type=object_type, required=True, location='json')
+reducePostParser.add_argument('column_ids', type=dict, required=True, location='json')
 reducePostParser.add_argument('new_dataset_name_prefix', type=str, location='json', default='[REDUCED]')
 class Reduce(Resource):
     def post(self):
@@ -52,7 +49,7 @@ class Reduce(Resource):
 unpivotPostParser = reqparse.RequestParser()
 unpivotPostParser.add_argument('project_id', type=int, required=True, location='json')
 unpivotPostParser.add_argument('dataset_id', type=int, required=True, location='json')
-unpivotPostParser.add_argument('pivot_fields', type=object_type, required=True, location='json')
+unpivotPostParser.add_argument('pivot_fields', type=dict, required=True, location='json')
 unpivotPostParser.add_argument('variable_name', type=str, location='json', default='variable')
 unpivotPostParser.add_argument('value_name', type=str, location='json', default='value')
 unpivotPostParser.add_argument('new_dataset_name_prefix', type=str, location='json', default='[UNPIVOTED]')
@@ -82,10 +79,10 @@ joinPostParser = reqparse.RequestParser()
 joinPostParser.add_argument('project_id', type=int, required=True, location='json')
 joinPostParser.add_argument('left_dataset_id', type=str, required=True, location='json')
 joinPostParser.add_argument('right_dataset_id', type=str, required=True, location='json')
-joinPostParser.add_argument('on', type=object_type, location='json', default=None)
-joinPostParser.add_argument('left_on', type=object_type, location='json', default=None)
-joinPostParser.add_argument('right_on', type=object_type, location='json', default=None)
-joinPostParser.add_argument('how', type=object_type, location='json', default='inner')
+joinPostParser.add_argument('on', type=dict, location='json', default=None)
+joinPostParser.add_argument('left_on', type=dict, location='json', default=None)
+joinPostParser.add_argument('right_on', type=dict, location='json', default=None)
+joinPostParser.add_argument('how', type=dict, location='json', default='inner')
 joinPostParser.add_argument('sort', type=bool, location='json', default=False)
 joinPostParser.add_argument('left_suffix', type=str, location='json', default='_left')
 joinPostParser.add_argument('right_suffix', type=str, location='json', default='_right')
