@@ -111,7 +111,7 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
 
     contiguous = get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type)
     scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
-    viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous)
+    viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, is_id, contiguous)
     normality = get_normality(field_name, field_values, field_type, general_type)
 
     return {
@@ -145,22 +145,27 @@ def get_contiguity(field_name, field_values, field_values_no_na, field_type, gen
     return contiguous
 
 
-def get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous):
+def get_field_distribution_viz_data(field_name, field_values, field_type, general_type, is_id, contiguous):
     viz_data = None
+    if is_id: return viz_data
 
-    if general_type in [GDT.Q.value, GDT.T.value] and not contiguous:
+    df = pd.DataFrame.from_dict({ field_name: field_values })
+    if general_type in [ GDT.Q.value, GDT.T.value ] and not contiguous:
         binning_spec = {
             'binning_field': { 'name': field_name, 'general_type': general_type },
             'agg_field_a': { 'name': field_name, 'general_type': general_type },
             'agg_fn': 'count'
         }
-        viz_data = get_bin_agg_data(pd.DataFrame(field_values), binning_spec)
+        try:
+            viz_data = get_bin_agg_data(df, binning_spec)
+        except Exception as e:
+            print df, binning_spec
 
-    elif general_type in [GDT.C.value] or (general_type == GDT.Q.value and contiguous):
+    elif general_type in [ GDT.C.value ] or (general_type == GDT.Q.value and contiguous):
         val_count_spec = {
             'field_a': { 'name': field_name }
         }
-        viz_data = get_val_count_data(pd.DataFrame(field_values), val_count_spec)
+        viz_data = get_val_count_data(df, val_count_spec)
 
     return viz_data
 
