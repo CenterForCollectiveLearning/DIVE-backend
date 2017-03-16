@@ -12,7 +12,7 @@ class GeneralDataType(Enum):
 class Scale(Enum):
     NOMINAL = 'nominal'
     ORDINAL = 'ordinal'
-    CONTINUOUS = 'continous'
+    CONTINUOUS = 'continuous'
 
 
 class DataType(Enum):
