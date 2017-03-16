@@ -73,6 +73,7 @@ def format_bin_edges_list(bin_edges_list, precision, general_type=GDT.Q.value):
         'formatted_bin_edges_list': formatted_bin_edges_list
     }
 
+
 def get_num_bins(v, procedure='freedman', default_num_bins=10):
     v = v.astype(float, raise_on_error=False)
     n = len(v)
@@ -113,7 +114,7 @@ def get_num_bins(v, procedure='freedman', default_num_bins=10):
 import dateutil.parser as dparser
 DEFAULT_BINS = 10
 MAX_BINS = 20
-def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', num_bins=10, num_decimals=2):
+def get_bin_edges(v, num_bins, general_type=GDT.Q.value, num_decimals=2):
     '''
     Given a quantitative vector, either:
     1) Automatically bin according to Freedman
@@ -135,9 +136,6 @@ def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', nu
         v = v.astype(float, raise_on_error=False)
         min_v = min(v)
         max_v = max(v)
-
-    if procedural:
-        num_bins = get_num_bins(v, procedure=procedure)
 
     edges = []
     try:
