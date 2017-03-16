@@ -16,6 +16,7 @@ import random
 from datetime import timedelta
 
 from dive.base.data.access import get_data
+from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT
 
 import logging
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def get_bin_decimals(v, max_sample=100, default=3):
     return min(max_decimals, default)
 
 
-def format_bin_edges_list(bin_edges_list, precision, general_type='q'):
+def format_bin_edges_list(bin_edges_list, precision, general_type=GDT.Q.value):
     bin_num_to_edges = {}
     bin_num_to_formatted_edges = {}
     formatted_bin_edges_list = []
@@ -50,14 +51,14 @@ def format_bin_edges_list(bin_edges_list, precision, general_type='q'):
             bin_edges_list[bin_num], bin_edges_list[bin_num + 1]
         bin_num_to_edges[bin_num] = [ left_bin_edge, right_bin_edge ]
 
-        if general_type == 'q':
+        if general_type == GDT.Q.value:
             if precision > 0:
                 rounded_left_bin_edge = float(float_formatting_string % left_bin_edge)
                 rounded_right_bin_edge = float(float_formatting_string % right_bin_edge)
             else:
                 rounded_left_bin_edge = int(float_formatting_string % left_bin_edge)
                 rounded_right_bin_edge = int(float_formatting_string % right_bin_edge)
-        elif general_type == 't':
+        elif general_type == GDT.T.value:
             rounded_left_bin_edge = left_bin_edge
             rounded_right_bin_edge = right_bin_edge
 
@@ -122,7 +123,7 @@ def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', nu
     Returns the edges of each bin
     '''
     n = len(v)
-    if general_type == 't':
+    if general_type == GDT.T.value:
         try:
             min_v = min(v).value
             max_v = max(v).value
@@ -130,7 +131,7 @@ def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', nu
             min_v = min(v)
             max_v = max(v)
 
-    if general_type == 'q':
+    if general_type == GDT.Q.value:
         v = v.astype(float, raise_on_error=False)
         min_v = min(v)
         max_v = max(v)
@@ -140,27 +141,26 @@ def get_bin_edges(v, general_type='q', procedural=True, procedure='freedman', nu
 
     edges = []
     try:
-        if general_type == 'q':
+        if general_type == GDT.Q.value:
             edges = np.linspace(min_v, max_v, num_bins+1)
-        elif general_type == 't':
+        elif general_type == GDT.T.value:
             edges = pd.to_datetime(np.linspace(min_v, max_v, num_bins+1))
     except Exception as e:
         logger.error('Error binning: %s', e, exc_info=True)
-    print edges
 
     rounded_edges = []
     rounding_string = '{0:.' + str(num_decimals) + 'f}'
     for edge in edges:
-        if general_type == 'q':
+        if general_type == GDT.Q.value:
             rounded_edge = float(rounding_string.format(edge))
             if num_decimals == 0:
                 rounded_edge = int(rounded_edge)
-        elif general_type == 't':
+        elif general_type == GDT.T.value:
             rounded_edge = edge
         rounded_edges.append(rounded_edge)
 
-    if general_type == 'q':
+    if general_type == GDT.Q.value:
         rounded_edges[-1] += 0.0001 * max_v
-    elif general_type == 't':
+    elif general_type == GDT.T.value:
         rounded_edges[-1] += timedelta(seconds=0.001)
     return rounded_edges

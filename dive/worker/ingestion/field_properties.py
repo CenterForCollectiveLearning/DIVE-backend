@@ -13,10 +13,11 @@ from flask import current_app
 from itertools import permutations
 
 from dive.base.db import db_access
-from dive.worker.core import celery, task_app
+from dive.base.serialization import dates_to_iso
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
-from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, specific_to_general_type
+from dive.worker.core import celery, task_app
+from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, Scale, specific_type_to_general_type, specific_type_to_scale
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
 from dive.worker.ingestion.utilities import get_unique
@@ -83,9 +84,6 @@ def calculate_field_stats(field_type, general_type, field_values, logging=False)
     if logging: start_time = time()
     percentiles = [(i * .5) / 10 for i in range(1, 20)]
 
-    if field_type in [ DT.DATETIME.value ]:
-        field_values = pd.to_datetime(field_values)
-
     df = pd.DataFrame(field_values)
     stats = df.describe(percentiles=percentiles).to_dict().values()[0]
     stats['total_count'] = df.shape[0]
@@ -112,14 +110,16 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
     is_id = detect_id(field_name, field_type, is_unique)
 
     contiguous = get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type)
+    scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
     viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, contiguous)
     normality = get_normality(field_name, field_values, field_type, general_type)
 
     return {
+        'scale': scale,
         'contiguous': contiguous,
         'viz_data': viz_data,
         'is_id': is_id,
-        'stats': stats,
+        'stats': dates_to_iso(stats),
         'num_na': num_na,
         'normality': normality,
         'is_unique': is_unique,
@@ -129,6 +129,11 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         'manual': {}
     }
 
+def get_scale(field_name, field_values, field_type, general_type, contiguous):
+    scale = specific_type_to_scale[field_type]
+    if contiguous:
+        scale = Scale.ORDINAL.value
+    return scale
 
 def get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type, MAX_CONTIGUOUS_FIELDS=30):
     contiguous = False
@@ -151,7 +156,7 @@ def get_field_distribution_viz_data(field_name, field_values, field_type, genera
         }
         viz_data = get_bin_agg_data(pd.DataFrame(field_values), binning_spec)
 
-    elif general_type in [GDT.C.value] or (general_type is GDT.Q.value and contiguous):
+    elif general_type in [GDT.C.value] or (general_type == GDT.Q.value and contiguous):
         val_count_spec = {
             'field_a': { 'name': field_name }
         }
@@ -182,7 +187,7 @@ def compute_single_field_property_type(field_name, field_values, field_position=
     field_properties = {}
 
     field_type, type_scores = calculate_field_type(field_name, field_values, field_position, num_fields)
-    general_type = specific_to_general_type[field_type]
+    general_type = specific_type_to_general_type[field_type]
 
     return {
         'type': field_type,
@@ -242,7 +247,7 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         })
         field_properties[i].update(d)
 
-    logger.debug("Detecting hierarchical relationships")
+    # logger.debug("Detecting hierarchical relationships")
     # Detect hierarchical relationships
     # Hierarchical relationships
     # Given the unique values of current field, are the corresponding values

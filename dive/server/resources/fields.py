@@ -10,7 +10,7 @@ from flask_login import login_required
 from dive.base.db import db_access
 from dive.base.data.access import get_data
 from dive.worker.ingestion.field_properties import compute_single_field_property_nontype
-from dive.worker.ingestion.constants import quantitative_types, categorical_types, temporal_types, specific_to_general_type
+from dive.worker.ingestion.constants import quantitative_types, categorical_types, temporal_types, specific_type_to_general_type
 from dive.base.serialization import jsonify
 
 import logging
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 fieldPostParser = reqparse.RequestParser()
 fieldPostParser.add_argument('project_id', type=int, required=True, location='json')
 fieldPostParser.add_argument('dataset_id', type=int, required=True, location='json')
-fieldPostParser.add_argument('type', type=dict, location='json')
+fieldPostParser.add_argument('type', type=str, location='json')
 fieldPostParser.add_argument('isId', type=bool, location='json')
 fieldPostParser.add_argument('color', type=str, location='json')
 class Field(Resource):
@@ -38,7 +38,7 @@ class Field(Resource):
                 and (field_type not in categorical_types) \
                 and (field_type not in temporal_types):
                 return make_response(jsonify({'status': 'Invalid field type.'}))
-            general_type = specific_to_general_type[field_type]
+            general_type = specific_type_to_general_type[field_type]
 
             field_property = db_access.get_field_property(project_id, dataset_id, field_id)
             field_name = field_property['name']
