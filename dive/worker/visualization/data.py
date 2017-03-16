@@ -18,7 +18,7 @@ from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT
 from dive.worker.ingestion.type_detection import detect_time_series
-from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals, format_bin_edges_list
+from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals, format_bin_edges_list, get_num_bins
 from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure, aggregation_functions
 
 from time import time
@@ -465,7 +465,7 @@ def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_BINS=25, DEFAULT_BINS=3):
+def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_NUM_BINS=30, DEFAULT_BINS=3):
     final_data = {}
 
     # Argument parsing
@@ -487,16 +487,16 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     precision = config.get('precision', get_bin_decimals(binning_field_values))
 
     # Max number of bins for integers is number of unique values
-    if not (procedural or num_bins):
-        num_bins = len(np.unique(binning_field_values)) if (args['binning_field']['type'] == 'integer') else DEFAULT_BINS
-    num_bins = min(num_bins, MAX_BINS)
+    if procedural:
+        num_bins = get_num_bins(binning_field_values, procedure=procedure)
+        if (args['binning_field']['type'] == DT.INTEGER.value):
+            MAX_NUM_BINS = len(np.unique(binning_field_values))
+        num_bins = min(num_bins, MAX_NUM_BINS)
 
     bin_edges_list = get_bin_edges(
         binning_field_values,
+        num_bins,
         general_type=general_type,
-        procedural=procedural,
-        procedure=procedure,
-        num_bins=num_bins,
         num_decimals=precision
     )
     formatted_bin_edges_object = format_bin_edges_list(bin_edges_list, precision, general_type=general_type)
