@@ -475,7 +475,6 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     aggregation_function_name = args['agg_fn']
 
     # Handling NAs
-    pre_cleaned_binning_field_values = df[binning_field]
     df_no_nas = df.dropna(subset=[ binning_field ])
     binning_field_values = df_no_nas[binning_field]
 
@@ -512,7 +511,9 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
         binning_field_values = binning_field_values.view('i8')
         df_bin_indices = np.digitize(binning_field_values, pd.to_datetime(bin_edges_list).view('i8'), right=False)
 
-    groupby = df.groupby(df_bin_indices, sort=True)
+    groupby = df_no_nas.groupby(df_bin_indices, sort=True)
+
+
     agg_df = get_aggregated_df(groupby, aggregation_function_name)
     agg_bins_to_values = agg_df[agg_field_a].to_dict()
     agg_values = agg_bins_to_values.values()
