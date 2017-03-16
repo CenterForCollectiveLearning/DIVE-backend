@@ -7,19 +7,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def object_type(j):
-    return j
-
-
 exportedRegressionGetParser = reqparse.RequestParser()
 exportedRegressionGetParser.add_argument('project_id', type=int, required=True)
 
 exportedRegressionPostParser = reqparse.RequestParser()
 exportedRegressionPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedRegressionPostParser.add_argument('regression_id', type=int, required=True, location='json')
-exportedRegressionPostParser.add_argument('data', type=object_type, required=True, location='json')
-exportedRegressionPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
-exportedRegressionPostParser.add_argument('config', type=object_type, required=True, location='json')
+exportedRegressionPostParser.add_argument('data', type=dict, required=True, location='json')
+exportedRegressionPostParser.add_argument('conditionals', type=dict, required=True, location='json')
+exportedRegressionPostParser.add_argument('config', type=dict, required=True, location='json')
 class ExportedRegression(Resource):
     def get(self):
         args = exportedRegressionGetParser.parse_args()
@@ -61,9 +57,9 @@ exportedCorrelationGetParser.add_argument('project_id', type=int, required=True)
 exportedCorrelationPostParser = reqparse.RequestParser()
 exportedCorrelationPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedCorrelationPostParser.add_argument('correlation_id', type=int, required=True, location='json')
-exportedCorrelationPostParser.add_argument('data', type=object_type, required=True, location='json')
-exportedCorrelationPostParser.add_argument('conditionals', type=object_type, required=True, location='json')
-exportedCorrelationPostParser.add_argument('config', type=object_type, required=True, location='json')
+exportedCorrelationPostParser.add_argument('data', type=dict, required=True, location='json')
+exportedCorrelationPostParser.add_argument('conditionals', type=dict, required=True, location='json')
+exportedCorrelationPostParser.add_argument('config', type=dict, required=True, location='json')
 class ExportedCorrelation(Resource):
     def get(self):
         args = exportedCorrelationGetParser.parse_args()
