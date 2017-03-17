@@ -16,7 +16,7 @@ import random
 from datetime import timedelta
 
 from dive.base.data.access import get_data
-from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT
+from dive.base.constants import GeneralDataType as GDT, DataType as DT
 
 import logging
 logger = logging.getLogger(__name__)

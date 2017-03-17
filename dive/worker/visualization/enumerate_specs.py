@@ -3,8 +3,8 @@ from itertools import combinations
 
 from dive.base.db import db_access
 from dive.worker.core import celery, task_app
-from dive.worker.ingestion.constants import specific_type_to_general_type
-from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure, TermType
+from dive.base.constants import specific_type_to_general_type
+from dive.base.constants import GeneratingProcedure, TypeStructure, TermType
 from dive.worker.visualization.marginal_spec_functions import *
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.visualization.type_mapping import get_viz_types_from_spec

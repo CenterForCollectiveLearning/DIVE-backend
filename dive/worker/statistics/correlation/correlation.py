@@ -72,7 +72,7 @@ def run_correlation(df, correlation_variables):
     return correlation_result
 
 
-def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=[], max_points=300):
+def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=[], max_points=100):
     correlation_variables = correlation_spec['correlationVariables']
     dataset_id = correlation_spec['datasetId']
 

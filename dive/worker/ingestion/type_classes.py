@@ -9,7 +9,7 @@ import datetime
 import dateutil.parser as dparser
 from dateparser import DATE_FORMATS, is_date
 
-from dive.worker.ingestion.constants import DataType, DataTypeWeights
+from dive.base.constants import DataType, DataTypeWeights
 
 import logging
 logger = logging.getLogger(__name__)
