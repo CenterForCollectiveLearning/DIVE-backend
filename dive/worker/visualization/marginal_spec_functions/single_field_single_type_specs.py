@@ -1,6 +1,6 @@
 from itertools import combinations
 
-from dive.worker.ingestion.constants import DataType as DT
+from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, Scale
 from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     VizType as VT, TermType, aggregation_functions
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
@@ -20,11 +20,10 @@ def single_q(q_field):
     specs = []
     logger.debug('A: Single Q - %s', q_field['name'])
 
-    print q_field
     q_label = q_field['name']
     scale = q_field['scale']
 
-    if (q_field['type'] == DT.INTEGER.value ) and q_field['contiguous']:
+    if (scale == Scale.ORDINAL):
         # { Value: count }
         count_spec = {
             'generating_procedure': GP.VAL_COUNT.value,
@@ -81,14 +80,19 @@ def single_t(t_field):
     specs = []
 
     t_label = t_field['name']
-    # if (t_field['type'] in [ DT.DATETIME.value, DT.DATE.value ]):
-    #     raw_time_series_viz_types = [ VT.LINE.value ]
-    #
-    raw_time_series_spec = {
+    t_scale = t_field['scale']
+
+
+    if (t_scale == Scale.CONTINUOUS.value):
+        raw_count_spec_types = [ VT.LINE.value, VT.SCATTER.value ]
+    elif (t_scale == Scale.ORDINAL.value):
+        raw_count_spec_types = [ VT.BAR.value, VT.TREE.value, VT.PIE.value ]
+
+    raw_count_spec = {
         'case': 'single_tq',
         'generating_procedure': GP.VAL_COUNT.value,
         'type_structure': TS.T_Q.value,
-        'viz_types': [ VT.LINE.value ],
+        'viz_types': raw_count_spec_types,
         'field_ids': [ t_field['id'] ],
         'args': {
             'field_a': t_field
@@ -100,35 +104,40 @@ def single_t(t_field):
                 { 'string': 'of', 'type': TermType.PLAIN.value },
                 { 'string': t_label, 'type': TermType.FIELD.value },
             ],
-        }
-    }
-    specs.append(raw_time_series_spec)
-
-    bin_spec = {
-        'generating_procedure': GP.BIN_AGG.value,
-        'type_structure': TS.B_Q.value,
-        'viz_types': [ VT.HIST.value ],
-        'field_ids': [ t_field['id'] ],
-        'args': {
-            'agg_fn': 'count',
-            'agg_field_a': t_field,
-            'binning_field': t_field
-        },
-        'meta': {
-            'desc': '%s of %s by bin' % ('count', t_label),
-            'construction': [
-                { 'string': 'count', 'type': TermType.OPERATION.value },
-                { 'string': 'of', 'type': TermType.PLAIN.value },
-                { 'string': t_label, 'type': TermType.FIELD.value },
-                { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
-            ],
             'labels': {
-                'x': '%s by bin' % t_label,
-                'y': 'Count by bin'
-            },
+                'x': t_label,
+                'y': 'Count'
+            }
         }
     }
-    specs.append(bin_spec)
+    specs.append(raw_count_spec)
+
+    if (t_scale == Scale.CONTINUOUS.value):
+        bin_spec = {
+            'generating_procedure': GP.BIN_AGG.value,
+            'type_structure': TS.B_Q.value,
+            'viz_types': [ VT.HIST.value ],
+            'field_ids': [ t_field['id'] ],
+            'args': {
+                'agg_fn': 'count',
+                'agg_field_a': t_field,
+                'binning_field': t_field
+            },
+            'meta': {
+                'desc': '%s of %s by bin' % ('count', t_label),
+                'construction': [
+                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'of', 'type': TermType.PLAIN.value },
+                    { 'string': t_label, 'type': TermType.FIELD.value },
+                    { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+                ],
+                'labels': {
+                    'x': '%s by bin' % t_label,
+                    'y': 'Count by bin'
+                },
+            }
+        }
+        specs.append(bin_spec)
     return specs
 
 

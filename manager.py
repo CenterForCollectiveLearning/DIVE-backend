@@ -85,6 +85,13 @@ def remove_uploads():
         STORAGE_PATH = os.path.join(os.curdir, app.config['STORAGE_PATH'])
         shutil.rmtree(STORAGE_PATH)
 
+from dive.worker.ingestion.constants import specific_type_to_scale
+@manager.command
+def migrate_scale_type():
+    all_field_properties = Field_Properties.query.filter_by().all()
+    for fp in all_field_properties:
+        setattr(fp, 'scale', specific_type_to_scale[fp.type])
+    db.session.commit()
 
 @manager.command
 def recreate():
