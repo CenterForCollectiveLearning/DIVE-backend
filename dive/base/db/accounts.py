@@ -8,7 +8,7 @@ from dive.base.serialization import jsonify
 from dive.base.core import db, login_manager
 from dive.base.db import ModelName, AuthStatus, AuthMessage, AuthErrorType, row_to_dict
 from dive.base.db.models import Team, User, Project
-from dive.base.db.constants import Role
+from dive.base.constants import Role
 
 import logging
 logger = logging.getLogger(__name__)

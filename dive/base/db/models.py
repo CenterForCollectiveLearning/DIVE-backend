@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from constants import Role, User_Status
 
+from dive.base.constants import Role, User_Status
 from dive.base.core import db
 from dive.base.db import ModelName
 
@@ -166,6 +166,7 @@ class Field_Properties(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(250))  # Have these here, vs. in dataset_properties?
     type = Column(Unicode(250))
+    scale = Column(Unicode(250))
     general_type = Column(Unicode(250))
     color = Column(Unicode(250))
     type_scores = Column(JSONB)

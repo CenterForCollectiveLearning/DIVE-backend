@@ -3,8 +3,8 @@ from itertools import combinations
 
 from dive.base.db import db_access
 from dive.worker.core import celery, task_app
-from dive.worker.ingestion.constants import specific_to_general_type
-from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure, TermType
+from dive.base.constants import specific_type_to_general_type
+from dive.base.constants import GeneratingProcedure, TypeStructure, TermType
 from dive.worker.visualization.marginal_spec_functions import *
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.visualization.type_mapping import get_viz_types_from_spec
@@ -26,10 +26,8 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
     specs = []
     num_selected_fields = len(selected_fields)
 
-    logger.info('Recommendation Types %s', recommendation_types)
-
     # Get field properties
-    desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'name', 'id', 'contiguous']
+    desired_keys = ['is_id', 'is_unique', 'general_type', 'type', 'scale', 'name', 'id', 'contiguous']
     raw_field_properties = db_access.get_field_properties(project_id, dataset_id, is_id=False)
     field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 

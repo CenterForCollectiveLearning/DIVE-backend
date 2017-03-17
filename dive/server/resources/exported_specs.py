@@ -8,10 +8,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def object_type(j):
-    return j
-
-
 visualizationFromExportedSpecGetParser = reqparse.RequestParser()
 visualizationFromExportedSpecGetParser.add_argument('project_id', type=int, required=True)
 class VisualizationFromExportedSpec(Resource):
@@ -36,9 +32,9 @@ exportedSpecsGetParser.add_argument('project_id', type=int, required=True)
 exportedSpecsPostParser = reqparse.RequestParser()
 exportedSpecsPostParser.add_argument('project_id', type=int, required=True, location='json')
 exportedSpecsPostParser.add_argument('spec_id', type=int, required=True, location='json')
-exportedSpecsPostParser.add_argument('data', type=object_type, required=True, location='json')
-exportedSpecsPostParser.add_argument('conditionals', type=object_type, required=True, location='json', default={})
-exportedSpecsPostParser.add_argument('config', type=object_type, required=True, location='json', default={})
+exportedSpecsPostParser.add_argument('data', type=dict, required=True, location='json')
+exportedSpecsPostParser.add_argument('conditionals', type=dict, required=True, location='json', default={})
+exportedSpecsPostParser.add_argument('config', type=dict, required=True, location='json', default={})
 class ExportedSpecs(Resource):
     def get(self):
         args = exportedSpecsGetParser.parse_args()

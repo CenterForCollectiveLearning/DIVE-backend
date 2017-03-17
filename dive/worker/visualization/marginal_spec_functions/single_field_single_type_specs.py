@@ -1,6 +1,7 @@
 from itertools import combinations
 
-from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
+from dive.base.constants import GeneralDataType as GDT, DataType as DT, Scale
+from dive.base.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     VizType as VT, TermType, aggregation_functions
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
 
@@ -20,8 +21,9 @@ def single_q(q_field):
     logger.debug('A: Single Q - %s', q_field['name'])
 
     q_label = q_field['name']
+    scale = q_field['scale']
 
-    if (q_field['type'] == 'integer') and q_field['contiguous']:
+    if (scale == Scale.ORDINAL):
         # { Value: count }
         count_spec = {
             'generating_procedure': GP.VAL_COUNT.value,
@@ -43,31 +45,32 @@ def single_q(q_field):
         specs.append(count_spec)
 
     # { Bins: Aggregate(binned values) }
-    bin_spec = {
-        'generating_procedure': GP.BIN_AGG.value,
-        'type_structure': TS.B_Q.value,
-        'viz_types': [ VT.HIST.value ],
-        'field_ids': [ q_field['id'] ],
-        'args': {
-            'agg_fn': 'count',
-            'agg_field_a': q_field,
-            'binning_field': q_field
-        },
-        'meta': {
-            'desc': '%s of %s by bin' % ('count', q_label),
-            'construction': [
-                { 'string': 'count', 'type': TermType.OPERATION.value },
-                { 'string': 'of', 'type': TermType.PLAIN.value },
-                { 'string': q_label, 'type': TermType.FIELD.value },
-                { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
-            ],
-            'labels': {
-                'x': '%s by bin' % q_label,
-                'y': 'Count by bin'
+    else:
+        bin_spec = {
+            'generating_procedure': GP.BIN_AGG.value,
+            'type_structure': TS.B_Q.value,
+            'viz_types': [ VT.HIST.value ],
+            'field_ids': [ q_field['id'] ],
+            'args': {
+                'agg_fn': 'count',
+                'agg_field_a': q_field,
+                'binning_field': q_field
             },
+            'meta': {
+                'desc': '%s of %s by bin' % ('count', q_label),
+                'construction': [
+                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'of', 'type': TermType.PLAIN.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value },
+                    { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+                ],
+                'labels': {
+                    'x': '%s by bin' % q_label,
+                    'y': 'Count by bin'
+                },
+            }
         }
-    }
-    specs.append(bin_spec)
+        specs.append(bin_spec)
     return specs
 
 
@@ -77,31 +80,64 @@ def single_t(t_field):
     specs = []
 
     t_label = t_field['name']
-    bin_spec = {
-        'generating_procedure': GP.BIN_AGG.value,
-        'type_structure': TS.B_Q.value,
-        'viz_types': [ VT.HIST.value ],
+    t_scale = t_field['scale']
+
+
+    if (t_scale == Scale.CONTINUOUS.value):
+        raw_count_spec_types = [ VT.LINE.value, VT.SCATTER.value ]
+    elif (t_scale == Scale.ORDINAL.value):
+        raw_count_spec_types = [ VT.BAR.value, VT.TREE.value, VT.PIE.value ]
+
+    raw_count_spec = {
+        'case': 'single_tq',
+        'generating_procedure': GP.VAL_COUNT.value,
+        'type_structure': TS.T_Q.value,
+        'viz_types': raw_count_spec_types,
         'field_ids': [ t_field['id'] ],
         'args': {
-            'agg_fn': 'count',
-            'agg_field_a': t_field,
-            'binning_field': t_field
+            'field_a': t_field
         },
         'meta': {
-            'desc': '%s of %s by bin' % ('count', t_label),
+            'desc': 'Count of %s' % (t_label),
             'construction': [
                 { 'string': 'count', 'type': TermType.OPERATION.value },
                 { 'string': 'of', 'type': TermType.PLAIN.value },
                 { 'string': t_label, 'type': TermType.FIELD.value },
-                { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
             ],
             'labels': {
-                'x': '%s by bin' % t_label,
-                'y': 'Count by bin'
-            },
+                'x': t_label,
+                'y': 'Count'
+            }
         }
     }
-    specs.append(bin_spec)
+    specs.append(raw_count_spec)
+
+    if (t_scale == Scale.CONTINUOUS.value):
+        bin_spec = {
+            'generating_procedure': GP.BIN_AGG.value,
+            'type_structure': TS.B_Q.value,
+            'viz_types': [ VT.HIST.value ],
+            'field_ids': [ t_field['id'] ],
+            'args': {
+                'agg_fn': 'count',
+                'agg_field_a': t_field,
+                'binning_field': t_field
+            },
+            'meta': {
+                'desc': '%s of %s by bin' % ('count', t_label),
+                'construction': [
+                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'of', 'type': TermType.PLAIN.value },
+                    { 'string': t_label, 'type': TermType.FIELD.value },
+                    { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+                ],
+                'labels': {
+                    'x': '%s by bin' % t_label,
+                    'y': 'Count by bin'
+                },
+            }
+        }
+        specs.append(bin_spec)
     return specs
 
 

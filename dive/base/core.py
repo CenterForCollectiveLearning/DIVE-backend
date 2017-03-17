@@ -14,6 +14,8 @@ from flask_mail import Mail
 from raven.contrib.flask import Sentry
 from werkzeug.local import LocalProxy
 
+from dive.base.serialization import pjson_dumps, pjson_loads
+
 # Setup logging config
 from setup_logging import setup_logging
 setup_logging()
@@ -24,8 +26,8 @@ psycopg2.extras.register_default_json(
 
 class CustomSQLAlchemy(SQLAlchemy):
     def apply_driver_hacks(self, app, info, options):
-        if not "json_serializer" in options:
-            options["json_serializer"] = pjson.dumps
+        options["json_serializer"] = pjson_dumps
+        options["json_deserializer"] = pjson_loads
         return super(CustomSQLAlchemy, self).apply_driver_hacks(app, info, options)
 
 
