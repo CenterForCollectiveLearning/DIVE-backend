@@ -89,9 +89,7 @@ def get_type_scores_from_field_values(field_values, field_types=FIELD_TYPES):
     for field_value in field_values:
         for type_instance in type_instances:
             if type_instance.test(field_value):
-                logger.info('%s: %s %s', field_value, type_instance.name, type_instance.weight)
                 type_scores[type_instance.name] += type_instance.weight
-    logger.info(type_scores)
     return type_scores
 
 

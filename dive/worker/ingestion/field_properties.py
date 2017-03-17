@@ -96,7 +96,6 @@ def detect_contiguous_integers(field_values):
 
     for i in range(len(sorted_unique_list) - 1):
         diff = abs(sorted_unique_list[i + 1] - sorted_unique_list[i])
-        print sorted_unique_list[i], sorted_unique_list[i + 1]
         if diff > 1:
             return False
     return True
@@ -209,10 +208,6 @@ def compute_single_field_property_type(field_name, field_values, field_position=
 
     field_type, type_scores = calculate_field_type(field_name, field_values, field_position, num_fields)
     general_type = specific_type_to_general_type[field_type]
-
-    print field_name
-    print field_type
-    print type_scores
 
     return {
         'type': field_type,
