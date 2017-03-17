@@ -130,12 +130,12 @@ class DataTypeWeights(Enum):
     CONTINENT_NAME = 10
 
     # Temporal
-    DATETIME = 1
-    DATE = 1
-    TIME = 1
-    YEAR = 1
-    MONTH = 1
-    DAY = 1
+    DATETIME = 5
+    DATE = 5
+    TIME = 5
+    YEAR = 5
+    MONTH = 5
+    DAY = 5
 
 
 class PseudoType(Enum):
