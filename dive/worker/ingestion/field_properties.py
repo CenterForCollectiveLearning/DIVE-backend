@@ -13,10 +13,11 @@ from flask import current_app
 from itertools import permutations
 
 from dive.base.db import db_access
-from dive.base.serialization import dates_to_iso
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.worker.core import celery, task_app
+from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
+    VizType as VT, TermType, aggregation_functions
 from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, Scale, specific_type_to_general_type, specific_type_to_scale
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
@@ -121,7 +122,7 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         'contiguous': contiguous,
         'viz_data': viz_data,
         'is_id': is_id,
-        'stats': dates_to_iso(stats),
+        'stats': stats,
         'num_na': num_na,
         'normality': normality,
         'is_unique': is_unique,
@@ -153,18 +154,28 @@ def get_field_distribution_viz_data(field_name, field_values, field_type, genera
     if is_id: return viz_data
 
     df = pd.DataFrame.from_dict({ field_name: field_values })
-
+    field_document = { 'name': field_name, 'type': field_type, 'scale': scale, 'general_type': general_type }
     if scale in [ Scale.CONTINUOUS.value ]:
-        spec = {
-            'binning_field': { 'name': field_name, 'general_type': general_type },
-            'agg_field_a': { 'name': field_name, 'general_type': general_type },
-            'agg_fn': 'count'
-        }
-        viz_data_function = get_bin_agg_data
+        if general_type == GDT.T.value:
+            spec = {
+                'field_a': field_document,
+                'agg_fn': 'count',
+                'viz_types': [ VT.LINE.value ]
+            }
+            viz_data_function = get_val_count_data
+        else:
+            spec = {
+                'binning_field': field_document,
+                'agg_field_a': field_document,
+                'agg_fn': 'count',
+                'viz_types': [ VT.HIST.value ]
+            }
+            viz_data_function = get_bin_agg_data
 
     elif scale in [ Scale.ORDINAL.value, Scale.NOMINAL.value ]:
         spec = {
-            'field_a': { 'name': field_name }
+            'field_a': field_document,
+            'viz_types': [ VT.BAR.value ]
         }
         viz_data_function = get_val_count_data
     try:
@@ -173,7 +184,7 @@ def get_field_distribution_viz_data(field_name, field_values, field_type, genera
         logger.error('Error getting viz data: %s', e, exc_info=True)
         return None
 
-    return viz_data
+    return { 'spec': spec, 'data': viz_data }
 
 
 def get_normality(field_name, field_values, field_type, general_type, scale):
