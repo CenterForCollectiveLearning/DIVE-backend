@@ -2,10 +2,11 @@
 From https://github.com/okfn/messytables/blob/master/messytables/types.py
 '''
 import re
+import pandas as pd
 import numpy as np
 import locale
 import decimal
-import datetime
+from datetime import datetime, date
 import dateutil.parser as dparser
 from dateparser import DATE_FORMATS, is_date
 
@@ -33,23 +34,19 @@ class CellType(object):
         that throws an exception. True or False'''
 
         # Simplest isinstance test
-        if isinstance(value, self.result_type):
-            return True
+        # if isinstance(value, self.result_type):
+        #     return True
 
         # Casting
         try:
             cast_value = self.cast(value)
-            if cast_value is not None:
-                return True
-            else:
-                return False
+            return (cast_value is not None)
         except Exception as e:
-            # logger.error(e, exc_info=False)
             return False
 
     @classmethod
     def instances(cls):
-        return [cls()]
+        return [ cls() ]
 
     def cast(self, value):
         ''' Convert the value to the type. This may throw
@@ -159,21 +156,25 @@ class DateType(CellType):
     '''
     formats = DATE_FORMATS
     name = DataType.DATETIME.value
-    result_type = datetime.datetime
+    result_types = [ datetime, date, np.datetime64]
     weight = DataTypeWeights.DATETIME.value
-
-    def __init__(self, format):
-        self.format = format
-
-    @classmethod
-    def instances(cls):
-        return [cls(v) for v in cls.formats]
 
     def cast(self, value):
         if value in ('', None):
             return None
-        if isinstance(value, self.result_type) or (self.format is None) or is_date(value):
-            return True
+        if not is_date(value):
+            return None
+        for result_type in self.result_types:
+            if isinstance(value, result_type):
+                return True
+        for date_format in self.formats:
+            try:
+                if datetime.strptime(value, date_format):
+                    return True
+            except:
+                pass
+        return None
+
 
 class DateUtilType(CellType):
     ''' The date util type uses the dateutil library to
@@ -183,7 +184,7 @@ class DateUtilType(CellType):
     Do not use this together with the DateType'''
     name = DataType.DATETIME.value
     weight = DataTypeWeights.DATETIME.value
-    result_type = datetime.datetime
+    result_type = datetime
 
     def cast(self, value):
         if value in ('', None):
