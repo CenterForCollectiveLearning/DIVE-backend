@@ -1,5 +1,5 @@
 from itertools import combinations
-from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
+from dive.base.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     TermType, aggregation_functions, VizType as VT
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
 

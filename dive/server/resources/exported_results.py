@@ -7,10 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def object_type(j):
-    return j
-
-
 exportedResultsGetParser = reqparse.RequestParser()
 exportedResultsGetParser.add_argument('project_id', type=int, required=True)
 exportedResultsGetParser.add_argument('result_type', type=str, action='append')

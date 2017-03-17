@@ -9,8 +9,8 @@ from dive.base.db import db_access
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.worker.core import celery, task_app
 from dive.worker.utilities import timeit
-from dive.worker.ingestion.constants import specific_to_general_type
-from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, TermType as TT
+from dive.base.constants import specific_type_to_general_type
+from dive.base.constants import GeneratingProcedure as GP, TypeStructure as TS, TermType as TT
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.visualization.score_specs import score_spec
 
