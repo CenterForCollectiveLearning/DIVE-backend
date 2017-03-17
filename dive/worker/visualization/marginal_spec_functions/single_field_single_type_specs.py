@@ -1,7 +1,7 @@
 from itertools import combinations
 
-from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, Scale
-from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
+from dive.base.constants import GeneralDataType as GDT, DataType as DT, Scale
+from dive.base.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     VizType as VT, TermType, aggregation_functions
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
 

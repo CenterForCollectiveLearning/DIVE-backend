@@ -1,6 +1,5 @@
-from dive.worker.ingestion.constants import DataType
+from enum import Enum
 import numpy as np
-
 
 class GeneratingProcedure(Enum):
     AGG = 'agg'

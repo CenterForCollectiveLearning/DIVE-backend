@@ -8,7 +8,7 @@ from collections import defaultdict
 from dive.worker.ingestion.type_classes import IntegerType, StringType, DecimalType, \
     BooleanType, DateType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
     CountryNameType, ContinentNameType
-from dive.worker.ingestion.constants import DataType, DataTypeWeights
+from dive.base.constants import DataType, DataTypeWeights
 
 import logging
 logger = logging.getLogger(__name__)

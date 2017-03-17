@@ -8,7 +8,7 @@ from dive.worker.ingestion.utilities import get_unique
 from dive.worker.ingestion.binning import get_num_bins
 
 from celery.utils.log import get_task_logger
-from dive.worker.ingestion.constants import GeneralDataType as GDT
+from dive.base.constants import GeneralDataType as GDT
 from dive.worker.ingestion.binning import get_bin_edges, get_bin_decimals
 
 logger = get_task_logger(__name__)
