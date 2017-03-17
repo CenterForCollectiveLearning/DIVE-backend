@@ -47,22 +47,22 @@ def get_type_scores_from_field_name(field_name):
     for datatype, strings in header_strings['is'].iteritems():
         for s in strings:
             if field_name is s:
-                type_scores[datatype] += 2000
+                type_scores[datatype] += 200
 
     for datatype, strings in header_strings['in'].iteritems():
         for s in strings:
             if s in field_name:
-                type_scores[datatype] += 1000
+                type_scores[datatype] += 100
 
     for datatype, strings in header_strings['pre'].iteritems():
         for s in strings:
             if field_name.startswith(s):
-                type_scores[datatype] += 1000
+                type_scores[datatype] += 100
 
     for datatype, strings in header_strings['post'].iteritems():
         for s in strings:
             if field_name.endswith(s):
-                type_scores[datatype] += 1000
+                type_scores[datatype] += 100
     return type_scores
 
 

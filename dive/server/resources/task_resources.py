@@ -59,7 +59,6 @@ class TaskResult(Resource):
             result['result'] = info.get('result', None)
 
         elif (state == states.FAILURE):
-            print task, task.info
             if info:
                 error_type = type(info).__name__
                 error_message = '%s: %s' % (error_type, str(info))
