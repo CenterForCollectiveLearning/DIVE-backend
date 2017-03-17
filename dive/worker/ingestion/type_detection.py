@@ -15,9 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 FIELD_TYPES = [
-    IntegerType, StringType, DecimalType, DateType,
-    BooleanType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type,
-    CountryNameType, ContinentNameType
+    IntegerType,
+    StringType,
+    DecimalType,
+    DateType,
+    BooleanType,
+    DateUtilType,
+    MonthType,
+    DayType,
+    CountryCode2Type,
+    CountryCode3Type,
+    CountryNameType,
+    ContinentNameType
 ]
 
 header_strings = {
@@ -40,33 +49,33 @@ header_strings = {
     }
 }
 
-def get_type_scores_from_field_name(field_name):
+def get_type_scores_from_field_name(field_name, num_samples=100):
     type_scores = defaultdict(int)
     type_scores[DataType.STRING.value] = 0  # Default to string
 
     for datatype, strings in header_strings['is'].iteritems():
         for s in strings:
             if field_name is s:
-                type_scores[datatype] += 200
+                type_scores[datatype] += 2 * num_samples
 
     for datatype, strings in header_strings['in'].iteritems():
         for s in strings:
             if s in field_name:
-                type_scores[datatype] += 100
+                type_scores[datatype] += 1 * num_samples
 
     for datatype, strings in header_strings['pre'].iteritems():
         for s in strings:
             if field_name.startswith(s):
-                type_scores[datatype] += 100
+                type_scores[datatype] += 1 * num_samples
 
     for datatype, strings in header_strings['post'].iteritems():
         for s in strings:
             if field_name.endswith(s):
-                type_scores[datatype] += 100
+                type_scores[datatype] += 1 * num_samples
     return type_scores
 
 
-def get_type_scores_from_field_values(field_values, field_types):
+def get_type_scores_from_field_values(field_values, field_types=FIELD_TYPES):
     type_scores = defaultdict(int)
     type_scores[DataType.STRING.value] = 0  # Default to string
 
@@ -80,11 +89,13 @@ def get_type_scores_from_field_values(field_values, field_types):
     for field_value in field_values:
         for type_instance in type_instances:
             if type_instance.test(field_value):
+                logger.info('%s: %s %s', field_value, type_instance.name, type_instance.weight)
                 type_scores[type_instance.name] += type_instance.weight
+    logger.info(type_scores)
     return type_scores
 
 
-def calculate_field_type(field_name, field_values, field_position, num_fields, field_types=FIELD_TYPES, num_samples=100, random=True):
+def calculate_field_type(field_name, field_values, field_position, num_fields, num_samples=100, random=True):
     '''
     For each field, returns highest-scoring field type of first num_samples non-empty
     instances.
@@ -95,8 +106,8 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, f
     num_samples = min(len(field_values), num_samples)
     field_sample = random_sample(field_values, num_samples) if random else field_values[:num_samples]
 
-    type_scores_from_name = get_type_scores_from_field_name(field_name)
-    type_scores_from_values = get_type_scores_from_field_values(field_sample, field_types)
+    type_scores_from_name = get_type_scores_from_field_name(field_name, num_samples=num_samples)
+    type_scores_from_values = get_type_scores_from_field_values(field_sample)
 
     # Combine type score dictionaries
     final_type_scores = defaultdict(int)
