@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from dive.base.core import create_app
 from dive.base.db import db_access
 from dive.base.db.accounts import register_user
-from dive.base.db.constants import Role
+from dive.base.constants import Role
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
@@ -85,6 +85,13 @@ def remove_uploads():
         STORAGE_PATH = os.path.join(os.curdir, app.config['STORAGE_PATH'])
         shutil.rmtree(STORAGE_PATH)
 
+from dive.base.constants import specific_type_to_scale
+@manager.command
+def migrate_scale_type():
+    all_field_properties = Field_Properties.query.filter_by().all()
+    for fp in all_field_properties:
+        setattr(fp, 'scale', specific_type_to_scale[fp.type])
+    db.session.commit()
 
 @manager.command
 def recreate():

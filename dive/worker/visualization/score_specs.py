@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 from scipy.stats import entropy, normaltest, mode, pearsonr, linregress
-from dive.worker.visualization.constants import GeneratingProcedure, TypeStructure
+from dive.base.constants import GeneratingProcedure, TypeStructure
 
 import logging
 logger = logging.getLogger(__name__)

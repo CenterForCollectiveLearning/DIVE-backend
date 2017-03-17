@@ -12,17 +12,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def object_type(j):
-    return j
-
-
 class RevokeTask(Resource):
     def get(self, task_id):
         logger.debug('Revoking task: %s', task_id)
         r = celery.control.revoke(task_id)
 
 revokeChainTaskPostParser = reqparse.RequestParser()
-revokeChainTaskPostParser.add_argument('task_ids', type=object_type, required=True, location='json')
+revokeChainTaskPostParser.add_argument('task_ids', type=dict, required=True, location='json')
 class RevokeChainTask(Resource):
     def post(self):
         args = revokeChainTaskPostParser.parse_args()
@@ -63,7 +59,6 @@ class TaskResult(Resource):
             result['result'] = info.get('result', None)
 
         elif (state == states.FAILURE):
-            print task, task.info
             if info:
                 error_type = type(info).__name__
                 error_message = '%s: %s' % (error_type, str(info))
