@@ -10,7 +10,7 @@ from flask_login import login_required
 from dive.base.db import db_access
 from dive.base.data.access import get_data
 from dive.worker.ingestion.field_properties import compute_single_field_property_nontype
-from dive.worker.ingestion.constants import quantitative_types, categorical_types, temporal_types, specific_type_to_general_type
+from dive.base.constants import quantitative_types, categorical_types, temporal_types, specific_type_to_general_type
 from dive.base.serialization import jsonify
 
 import logging

@@ -5,7 +5,7 @@ from flask_login import login_required
 
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
-from dive.worker.visualization.constants import GeneratingProcedure
+from dive.base.constants import GeneratingProcedure
 from dive.worker.visualization.data import get_viz_data_from_enumerated_spec
 from dive.worker.pipelines import viz_spec_pipeline
 from dive.worker.handlers import worker_error_handler

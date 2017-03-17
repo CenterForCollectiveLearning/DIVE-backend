@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from constants import Role, User_Status
 
+from dive.base.constants import Role, User_Status
 from dive.base.core import db
 from dive.base.db import ModelName
 

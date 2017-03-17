@@ -16,9 +16,9 @@ from dive.base.db import db_access
 from dive.base.data.access import get_data, coerce_types
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.worker.core import celery, task_app
-from dive.worker.visualization.constants import GeneratingProcedure as GP, TypeStructure as TS, \
+from dive.base.constants import GeneratingProcedure as GP, TypeStructure as TS, \
     VizType as VT, TermType, aggregation_functions
-from dive.worker.ingestion.constants import GeneralDataType as GDT, DataType as DT, Scale, specific_type_to_general_type, specific_type_to_scale
+from dive.base.constants import GeneralDataType as GDT, DataType as DT, Scale, specific_type_to_general_type, specific_type_to_scale
 from dive.worker.ingestion.type_detection import calculate_field_type
 from dive.worker.ingestion.id_detection import detect_id
 from dive.worker.ingestion.utilities import get_unique
