@@ -583,17 +583,14 @@ def get_binning_edges_and_names(array, config):
     else:
         procedural = False
 
-    precision = config.get('precision', None)
+    precision = config.get('precision', get_bin_decimals(array))
     num_bins = config.get('num_bins', 3)
 
-    if not precision:
-        precision = get_bin_decimals(array)
-
+    if procedural:
+        num_bins = get_num_bins(array, procedure=procedure)
     bin_edges = bin_edges_list = get_bin_edges(
         array,
-        procedural=procedural,
-        procedure=procedure,
-        num_bins=num_bins,
+        num_bins,
         num_decimals=precision
     )
 
