@@ -117,7 +117,7 @@ def get_dialect(file_obj, sample_size=1024*1024):
     return result
 
 
-def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, path, storage_type):
+def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, path, storage_type, limit_flat_file_size=False):
     encoding = 'utf-8'
 
     # Default dialect (for Excel and JSON conversion)
@@ -130,7 +130,8 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
     }
 
     file_docs = []
-    if file_type in ['csv', 'tsv', 'txt'] :
+
+    if file_type in ['csv', 'tsv', 'txt']:
         dialect = get_dialect(file_obj)
         encoding = get_encoding(file_obj)
         file_obj.seek(0)
@@ -149,16 +150,17 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
             file_obj.write(coerced_content)
             file_obj.seek(0)
 
-        rows = file_obj.readlines()
-        cols = rows[0].split(dialect['delimiter'])
-        num_rows = len(rows)
-        num_cols = len(cols)
-        file_obj.seek(0)
+        if limit_flat_file_size:  # False by default, because implemented on front-end
+            rows = file_obj.readlines()
+            cols = rows[0].split(dialect['delimiter'])
+            num_rows = len(rows)
+            num_cols = len(cols)
+            file_obj.seek(0)
 
-        if (num_rows > current_app.config['ROW_LIMIT']):
-            raise UploadTooLargeException('Uploaded file has {} rows, exceeding row limit of {}'.format(num_rows, current_app.config['ROW_LIMIT']))
-        elif (num_cols > current_app.config['COLUMN_LIMIT']):
-            raise UploadTooLargeException('Uploaded file has {} columns, exceeding row limit of {}'.format(num_cols, current_app.config['COLUMN_LIMIT']))
+            if (num_rows > current_app.config['ROW_LIMIT']):
+                raise UploadTooLargeException('Uploaded file has {} rows, exceeding row limit of {}'.format(num_rows, current_app.config['ROW_LIMIT']))
+            elif (num_cols > current_app.config['COLUMN_LIMIT']):
+                raise UploadTooLargeException('Uploaded file has {} columns, exceeding row limit of {}'.format(num_cols, current_app.config['COLUMN_LIMIT']))
 
         file_doc = save_flat_table(project_id, file_obj, file_title, file_name, file_type, path)
         file_docs.append(file_doc)
