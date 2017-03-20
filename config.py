@@ -1,6 +1,7 @@
 import os
 from os import walk
 from os.path import join, dirname, abspath
+import sys
 from dive.base.serialization import pjson_dumps, pjson_loads
 from kombu.serialization import register, registry
 env = os.environ.get
@@ -30,11 +31,12 @@ class BaseConfig(object):
     COMPRESS = True
     PROPAGATE_EXCEPTIONS = True
 
+    # Cookies
     COOKIE_DOMAIN = None
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
-    MAX_CONTENT_LENGTH = 100 * 1024 * 1024
 
+    # Mail
     MAIL_SERVER = 'smtp.postmarkapp.com'
     MAIL_USERNAME = '99b4b664-9751-492c-b48d-2bd492e9912a'
     MAIL_PASSWORD = '99b4b664-9751-492c-b48d-2bd492e9912a'
@@ -44,6 +46,11 @@ class BaseConfig(object):
     MAIL_DEFAULT_SENDER = 'dive@media.mit.edu'
     MAIL_SUPPRESS_SEND = False
     MAIL_DEBUG = False
+
+    # Data
+    MAX_CONTENT_LENGTH = sys.maxint
+    ROW_LIMIT = sys.maxint
+    COLUMN_LIMIT = sys.maxint
 
     # Resources
     METADATA_FILE_NAME_SUFFIX = 'dev'
@@ -109,6 +116,11 @@ class ProductionConfig(BaseConfig):
     # Mail
     MAIL_USERNAME = env('DIVE_MAIL_USERNAME')
     MAIL_PASSWORD = env('DIVE_MAIL_PASSWORD')
+
+    # Data
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+    ROW_LIMIT = 100000
+    COLUMN_LIMIT = 50
 
     # Resources
     METADATA_FILE_NAME_SUFFIX = 'PROD'
