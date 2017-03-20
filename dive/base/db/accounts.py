@@ -35,7 +35,7 @@ def project_auth(project_id):
 def is_authorized_user(current_user, matching_project):
     logger.info('Global admin: %s', current_user.is_global_admin())
     logger.info('Matching project private: %s', matching_project.private)
-    logger.info('Matching project id: %s, %s', matching_project.user_id, current_user.id)
+    logger.info('Matching project id: %s, %s (%s) (%s)', matching_project.user_id, current_user.id, (matching_project.user_id == current_user.id), (matching_project.user_id is current_user.id))
     if current_user.is_global_admin() or not matching_project.private:
         return True
 
