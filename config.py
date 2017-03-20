@@ -35,7 +35,6 @@ class BaseConfig(object):
     COOKIE_DOMAIN = None
     REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
-    MAX_CONTENT_LENGTH = 100 * 1024 * 1024
 
     # Mail
     MAIL_SERVER = 'smtp.postmarkapp.com'
@@ -49,7 +48,8 @@ class BaseConfig(object):
     MAIL_DEBUG = False
 
     # Data
-    ROW_LIMIT = 100 # sys.maxint
+    MAX_CONTENT_LENGTH = sys.maxint
+    ROW_LIMIT = sys.maxint
     COLUMN_LIMIT = sys.maxint
 
     # Resources
@@ -118,6 +118,7 @@ class ProductionConfig(BaseConfig):
     MAIL_PASSWORD = env('DIVE_MAIL_PASSWORD')
 
     # Data
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024
     ROW_LIMIT = 100000
     COLUMN_LIMIT = 50
 
