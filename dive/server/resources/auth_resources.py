@@ -1,6 +1,6 @@
 from flask import render_template, current_app, request, make_response
 from flask_restful import Resource, reqparse
-from flask_login import current_user, login_user, logout_user
+from flask_login import current_user, login_user, logout_user, login_fresh, confirm_login
 from datetime import timedelta, datetime
 
 from dive.server.auth.token import generate_confirmation_token, confirm_token
@@ -240,6 +240,9 @@ class AnonymousUser(Resource):
     def get(self):
         if current_user.is_authenticated:
             user = current_user
+            fresh = login_fresh()
+            logger.info('User %s (%s) already authenticated. Fresh: %s', user.username, user.id, fresh)
+            confirm_login()
         else:
             user = create_anonymous_user()
             login_user(user, remember=True)
