@@ -15,13 +15,32 @@ logger = logging.getLogger(__name__)
 
 
 def project_auth(project_id):
-    if is_authorized_user(current_user, project_id):
-        return True, None
+    matching_project = Project.query.get_or_404(project_id)
+
+    logger.info('Matching project: %s', matching_project)
+    authorized = False
+    message = {}
+    status = 401
+    if is_authorized_user(current_user, matching_project):
+        authorized = True
+        status = 200
     else:
-        return False, jsonify({
+        message = {
             'status': 'error',
             'message': 'Not authorized'
-        }, status=401)
+        }
+    return authorized, jsonify(message, status=status)
+
+
+def is_authorized_user(current_user, matching_project):
+    logger.info('Global admin: %s', current_user.is_global_admin())
+    logger.info('Matching project private: %s', matching_project.private)
+    logger.info('Matching project id: %s, %s', matching_project.user_id, current_user.id)
+    if current_user.is_global_admin() or not matching_project.private:
+        return True
+
+    if matching_project.private:
+        return (matching_project.user_id is current_user.id)
 
 
 def logged_in():
@@ -50,23 +69,6 @@ def delete(account):
 @login_manager.user_loader
 def load_account(user_id):
     return User.query.get(user_id)
-
-
-def is_authorized_user(current_user, project_id):
-    matching_project = Project.query.get(project_id)
-    if not matching_project:
-        return False
-
-    user_id = current_user.id
-
-    if current_user.is_global_admin() or not matching_project.private:
-        return True
-
-    if matching_project.private:
-        if matching_project.user_id is user_id:
-            return True
-        else:
-            return False
 
 
 def check_email_exists(email):
