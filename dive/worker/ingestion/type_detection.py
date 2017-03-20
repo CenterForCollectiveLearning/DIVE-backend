@@ -8,7 +8,7 @@ from collections import defaultdict
 from dive.worker.ingestion.type_classes import IntegerType, StringType, DecimalType, \
     BooleanType, DateType, DateUtilType, MonthType, DayType, CountryCode2Type, CountryCode3Type, \
     CountryNameType, ContinentNameType
-from dive.base.constants import DataType, DataTypeWeights
+from dive.base.constants import DataType as DT, DataTypeWeights
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,19 +31,19 @@ FIELD_TYPES = [
 
 header_strings = {
     'is': {
-        DataType.YEAR.value: ['y', 'Y', 'year', 'Year', 'YEAR'],
-        DataType.MONTH.value: ['m', 'M', 'month', 'Month', 'MONTH'],
-        DataType.DAY.value: ['d', 'D', 'day', 'Days', 'DAY'],
-        DataType.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+        DT.YEAR.value: ['y', 'Y', 'year', 'Year', 'YEAR'],
+        DT.MONTH.value: ['m', 'M', 'month', 'Month', 'MONTH'],
+        DT.DAY.value: ['d', 'D', 'day', 'Days', 'DAY'],
+        DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
     },
     'in': {
-        DataType.YEAR.value: ['year', 'Year', 'YEAR', 'YOB'],
-        DataType.MONTH.value: ['month', 'Month', 'MONTH'],
-        DataType.DAY.value: ['day', 'Days', 'DAY'],
-        DataType.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+        DT.YEAR.value: ['year', 'Year', 'YEAR', 'YOB'],
+        DT.MONTH.value: ['month', 'Month', 'MONTH'],
+        DT.DAY.value: ['day', 'Days', 'DAY'],
+        DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
     },
     'pre': {
-        DataType.BOOLEAN.value: ['is']
+        DT.BOOLEAN.value: ['is']
     },
     'post': {
     }
@@ -51,7 +51,7 @@ header_strings = {
 
 def get_type_scores_from_field_name(field_name, num_samples=100):
     type_scores = defaultdict(int)
-    type_scores[DataType.STRING.value] = 0  # Default to string
+    type_scores[DT.STRING.value] = 0  # Default to string
 
     for datatype, strings in header_strings['is'].iteritems():
         for s in strings:
@@ -77,7 +77,7 @@ def get_type_scores_from_field_name(field_name, num_samples=100):
 
 def get_type_scores_from_field_values(field_values, field_types=FIELD_TYPES):
     type_scores = defaultdict(int)
-    type_scores[DataType.STRING.value] = 0  # Default to string
+    type_scores[DT.STRING.value] = 0  # Default to string
 
     type_instances = []
     for field_type in field_types:
@@ -118,12 +118,15 @@ def calculate_field_type(field_name, field_values, field_position, num_fields, n
     score_tuples = []
     normalized_type_scores = {}
     total_score = sum(final_type_scores.values())
-    for type_name, score in final_type_scores.iteritems():
-        score_tuples.append((type_name, score))
-        normalized_type_scores[type_name] = float(score) / total_score
+    if total_score:
+        for type_name, score in final_type_scores.iteritems():
+            score_tuples.append((type_name, score))
+            normalized_type_scores[type_name] = float(score) / total_score
 
-    final_field_type = max(score_tuples, key=lambda t: t[1])[0]
-    return (final_field_type, normalized_type_scores)
+        final_field_type = max(score_tuples, key=lambda t: t[1])[0]
+        return (final_field_type, normalized_type_scores)
+    else:
+        return (DT.STRING.value, normalized_type_scores)
 
 
 def get_first_n_nonempty_values(df, n=100):

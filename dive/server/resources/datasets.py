@@ -59,7 +59,9 @@ class UploadFile(Resource):
                 ingestion_task = ingestion_pipeline.apply_async(
                     args=[ dataset['id'], project_id ]
                 )
-            return jsonify({'task_id': ingestion_task.task_id})
+            return jsonify({
+                'task_id': ingestion_task.task_id
+                }, status=202)
         return jsonify({'status': 'Upload failed'})
 
 
