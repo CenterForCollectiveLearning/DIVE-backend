@@ -10,6 +10,7 @@ from celery import chain
 
 from dive.base.db import db_access
 from dive.base.db.accounts import load_account, project_auth
+from dive.base.exceptions import UploadTooLargeException
 from dive.base.serialization import jsonify
 from dive.base.data.access import get_dataset_sample, delete_dataset
 from dive.worker.pipelines import full_pipeline, ingestion_pipeline, get_chain_IDs
@@ -43,7 +44,13 @@ class UploadFile(Resource):
         if file_obj and allowed_file(file_obj.filename):
 
             # Get dataset_ids corresponding to file if successful upload
-            datasets = upload_file(project_id, file_obj)
+            try:
+                datasets = upload_file(project_id, file_obj)
+            except UploadTooLargeException as e:
+                return jsonify({
+                    'status': 'error',
+                    'message': str(e)
+                }, status=413)
             result = {
                 'status': 'success',
                 'datasets': datasets

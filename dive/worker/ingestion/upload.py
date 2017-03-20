@@ -24,6 +24,7 @@ from flask import current_app
 
 from dive.base.core import s3_client, compress
 from dive.base.db import db_access
+from dive.base.exceptions import UploadTooLargeException
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data
 from dive.base.data.in_memory_data import InMemoryData as IMD
@@ -97,8 +98,6 @@ def get_encoding(file_obj, sample_size=100*1024*1024):
 
 
 def get_dialect(file_obj, sample_size=1024*1024):
-    DELIMITERS = ''.join([',', ';', '|', '$', ';', ' ', ' | ', '\t'])
-
     try:
         sample = file_obj.read(sample_size)
     except StopIteration:
@@ -150,9 +149,16 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
             file_obj.write(coerced_content)
             file_obj.seek(0)
 
-            # print 'New encoding of strings:', get_encoding(coerced_content)
-            # print 'New encoding of file:', get_encoding(file_obj)
-            # file_obj.seek(0)
+        rows = file_obj.readlines()
+        cols = rows[0].split(dialect['delimiter'])
+        num_rows = len(rows)
+        num_cols = len(cols)
+        file_obj.seek(0)
+
+        if (num_rows > current_app.config['ROW_LIMIT']):
+            raise UploadTooLargeException('Uploaded file has {} rows, exceeding row limit of {}'.format(num_rows, current_app.config['ROW_LIMIT']))
+        elif (num_cols > current_app.config['COLUMN_LIMIT']):
+            raise UploadTooLargeException('Uploaded file has {} columns, exceeding row limit of {}'.format(num_cols, current_app.config['COLUMN_LIMIT']))
 
         file_doc = save_flat_table(project_id, file_obj, file_title, file_name, file_type, path)
         file_docs.append(file_doc)
@@ -182,6 +188,7 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
 
     return datasets
 
+
 def save_flat_table(project_id, file_obj, file_title, file_name, file_type, path):
     file_doc = {
         'file_title': file_title,
@@ -208,6 +215,11 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, pa
     for sheet_name in sheet_names:
         sheet = book.sheet_by_name(sheet_name)
 
+        if (sheet.nrows > current_app.config['ROW_LIMIT']):
+            raise UploadTooLargeException('Uploaded file has {} rows, exceeding row limit of {}'.format(sheet.nrows, current_app.config['ROW_LIMIT']))
+        elif (sheet.ncols > current_app.config['COLUMN_LIMIT']):
+            raise UploadTooLargeException('Uploaded file has {} columns, exceeding row limit of {}'.format(sheet.ncols, current_app.config['COLUMN_LIMIT']))
+
         if sheet.nrows == 0: continue
         csv_file_title = file_name + "_" + sheet_name
         csv_file_name = csv_file_title + ".csv"
@@ -233,6 +245,7 @@ def save_excel_to_csv(project_id, file_obj, file_title, file_name, file_type, pa
             for rn in xrange(sheet.nrows) :
                 wr.writerow([ unicode(v).encode('utf-8') for v in sheet.row_values(rn) ])
             csv_file.close()
+
         file_doc = {
             'file_title': csv_file_title,
             'file_name': csv_file_name,
@@ -257,6 +270,13 @@ def save_json_to_csv(project_id, file_obj, file_title, file_name, file_type, pat
     wr = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
 
     header = json_data[0].keys()
+    num_rows = len(json_data)
+    num_cols = len(header)
+
+    if (num_rows > current_app.config['ROW_LIMIT']):
+        raise UploadTooLargeException('Uploaded file has {} rows, exceeding row limit of {}'.format(num_rows, current_app.config['ROW_LIMIT']))
+    elif (num_cols > current_app.config['COLUMN_LIMIT']):
+        raise UploadTooLargeException('Uploaded file has {} columns, exceeding row limit of {}'.format(num_cols, current_app.config['COLUMN_LIMIT']))
 
     wr.writerow([v.encode('utf-8') for v in header])
     for i in range(len(json_data)) :
