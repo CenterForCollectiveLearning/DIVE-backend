@@ -103,17 +103,22 @@ def detect_contiguous_integers(field_values):
 
 def compute_single_field_property_nontype(field_name, field_values, field_type, general_type):
     field_values_no_na = field_values.dropna(how='any')
+    all_null = (len(field_values_no_na) == 0)
     num_na = len(field_values) - len(field_values_no_na)
     is_unique = detect_unique_list(field_values)
 
     unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
-    stats = calculate_field_stats(field_type, general_type, field_values)
     is_id = detect_id(field_name, field_type, is_unique)
 
-    contiguous = get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type)
-    scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
-    viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, scale, is_id, contiguous)
-    normality = get_normality(field_name, field_values, field_type, general_type, scale)
+
+    stats, contiguous, scale, viz_data, normality = [ None ]*5
+
+    if not all_null:
+        stats = calculate_field_stats(field_type, general_type, field_values)
+        contiguous = get_contiguity(field_name, field_values, field_values_no_na, field_type, general_type)
+        scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
+        viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, scale, is_id, contiguous)
+        normality = get_normality(field_name, field_values, field_type, general_type, scale)
 
     return {
         'scale': scale,
