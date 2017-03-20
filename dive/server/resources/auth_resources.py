@@ -224,7 +224,7 @@ class Register(Resource):
 
 
 userDeleteParser = reqparse.RequestParser()
-userDeleteParser.add_argument('user_id', type=str, required=True)
+userDeleteParser.add_argument('user_id', type=int, required=True)
 userDeleteParser.add_argument('password', type=str, required=True)
 class User(Resource):
     def delete(self):
