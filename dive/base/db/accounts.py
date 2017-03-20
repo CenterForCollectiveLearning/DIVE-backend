@@ -25,7 +25,7 @@ def project_auth(project_id):
 
 
 def logged_in():
-    return current_user.is_authenticated() and current_user.is_active()
+    return current_user.is_authenticated and current_user.is_active()
 
 
 def is_admin():
