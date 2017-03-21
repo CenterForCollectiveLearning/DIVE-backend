@@ -29,49 +29,62 @@ FIELD_TYPES = [
     ContinentNameType
 ]
 
-header_strings = {
-    'is': {
-        DT.YEAR.value: ['y', 'Y', 'year', 'Year', 'YEAR'],
-        DT.MONTH.value: ['m', 'M', 'month', 'Month', 'MONTH'],
-        DT.DAY.value: ['d', 'D', 'day', 'Days', 'DAY'],
-        DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+header_string_types = [
+    {
+        'type': 'is',
+        'weight': 9,
+        'operation': lambda e, s: (e == s),
+        'mappings': {
+            DT.YEAR.value: ['y', 'Y', 'year', 'Year', 'YEAR'],
+            DT.MONTH.value: ['m', 'M', 'month', 'Month', 'MONTH'],
+            DT.DAY.value: ['d', 'D', 'day', 'Days', 'DAY'],
+            DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+        }
     },
-    'in': {
-        DT.YEAR.value: ['year', 'Year', 'YEAR', 'YOB'],
-        DT.MONTH.value: ['month', 'Month', 'MONTH'],
-        DT.DAY.value: ['day', 'Days', 'DAY'],
-        DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+    {
+        'type': 'in',
+        'weight': 5,
+        'operation': lambda e, s: (s in e),
+        'mappings': {
+            DT.YEAR.value: ['year', 'Year', 'YEAR', 'YOB'],
+            DT.MONTH.value: ['month', 'Month', 'MONTH'],
+            DT.DAY.value: ['day', 'Days', 'DAY'],
+            DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+        }
     },
-    'pre': {
-        DT.BOOLEAN.value: ['is']
+    {
+        'type': 'pre',
+        'weight': 2,
+        'operation': lambda e, s: (e.startswith(s)),
+        'mappings': {
+            DT.BOOLEAN.value: ['is']
+        }
     },
-    'post': {
+    {
+        'type': 'post',
+        'weight': 2,
+        'operation': lambda e, s: (e.startswith(s)),
+        'mappings': {
+        }
     }
-}
+]
 
 def get_type_scores_from_field_name(field_name, num_samples=100):
     type_scores = defaultdict(int)
     type_scores[DT.STRING.value] = 0  # Default to string
 
-    for datatype, strings in header_strings['is'].iteritems():
-        for s in strings:
-            if field_name is s:
-                type_scores[datatype] += 2 * num_samples
+    matched = False
+    for d in header_string_types:
+        header_string_type = d['type']
+        weight = d['weight']
+        operation = d['operation']
+        mappings = d['mappings']
 
-    for datatype, strings in header_strings['in'].iteritems():
-        for s in strings:
-            if s in field_name:
-                type_scores[datatype] += 1 * num_samples
-
-    for datatype, strings in header_strings['pre'].iteritems():
-        for s in strings:
-            if field_name.startswith(s):
-                type_scores[datatype] += 1 * num_samples
-
-    for datatype, strings in header_strings['post'].iteritems():
-        for s in strings:
-            if field_name.endswith(s):
-                type_scores[datatype] += 1 * num_samples
+        for datatype, strings in mappings.iteritems():
+            for s in strings:
+                if operation(field_name, s):
+                    type_scores[datatype] += weight * num_samples
+                    return type_scores
     return type_scores
 
 
@@ -81,8 +94,7 @@ def get_type_scores_from_field_values(field_values, field_types=FIELD_TYPES):
 
     type_instances = []
     for field_type in field_types:
-        for type_instance in field_type.instances():
-            type_instances.append(type_instance)
+        type_instances.extend(field_type.instances())
 
     # Detection from values
     # N_values * N_types iterations (no hierarchical tests)
