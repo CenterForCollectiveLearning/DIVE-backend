@@ -110,7 +110,6 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
     unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
     is_id = detect_id(field_name, field_type, is_unique)
 
-
     stats, contiguous, scale, viz_data, normality = [ None ]*5
 
     if not all_null:
@@ -214,6 +213,10 @@ def compute_single_field_property_type(field_name, field_values, field_position=
     field_type, type_scores = calculate_field_type(field_name, field_values, field_position, num_fields)
     general_type = specific_type_to_general_type[field_type]
 
+    if field_name == 'year':
+        print field_name
+        print field_type
+        print type_scores
     return {
         'type': field_type,
         'general_type': general_type,
