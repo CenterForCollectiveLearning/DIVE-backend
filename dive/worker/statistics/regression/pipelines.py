@@ -18,7 +18,7 @@ from dive.base.data.access import get_data, get_conditioned_data
 
 from dive.worker.statistics.utilities import create_patsy_model
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
-from dive.worker.statistics.regression import ModelCompletionType as MCT
+from dive.base.constants import ModelCompletionType as MCT
 from dive.worker.statistics.regression.table_layout import one_at_a_time, leave_one_out, all_variables
 
 from celery.utils.log import get_task_logger
