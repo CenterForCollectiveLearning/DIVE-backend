@@ -18,7 +18,7 @@ class RevokeTask(Resource):
         r = celery.control.revoke(task_id)
 
 revokeChainTaskPostParser = reqparse.RequestParser()
-revokeChainTaskPostParser.add_argument('task_ids', type=list, required=True, location='json')
+revokeChainTaskPostParser.add_argument('task_ids', type=dict, required=True, location='json')
 class RevokeChainTask(Resource):
     def post(self):
         args = revokeChainTaskPostParser.parse_args()
