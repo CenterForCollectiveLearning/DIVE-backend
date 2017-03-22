@@ -100,12 +100,31 @@ def detect_contiguous_integers(field_values):
             return False
     return True
 
+def get_temporal_uniqueness(field_name, field_type, general_type, df, temporal_fields, MAX_TIMES_TO_SAMPLE=5):
+    is_unique_by_time = False
+    if temporal_fields and (df is not None) and (general_type == GDT.C.value or field_type == DT.INTEGER.value):
+        uniqueness_by_time_fields = []
+        for temporal_field in temporal_fields:
+            temporal_field_name = temporal_field['name']
+            df_column_subset = df[[field_name, temporal_field_name]]
+            unique_times = get_unique(df_column_subset[temporal_field_name])
+            final_df = df
+            if len(unique_times) > MAX_TIMES_TO_SAMPLE:
+                unique_times = unique_times[:MAX_TIMES_TO_SAMPLE]
+                final_df = df_column_subset[df_column_subset[temporal_field_name].isin(unique_times)]
 
-def compute_single_field_property_nontype(field_name, field_values, field_type, general_type):
+            unique_by_time_field = all(final_df.groupby([temporal_field_name])[field_name].apply(detect_unique_list))
+            uniqueness_by_time_fields.append(unique_by_time_field)
+        is_unique_by_time = any(uniqueness_by_time_fields)
+    return is_unique_by_time
+
+def compute_single_field_property_nontype(field_name, field_values, field_type, general_type, df=None, temporal_fields=[]):
+    temporal = (len(temporal_fields) > 0)
+
     field_values_no_na = field_values.dropna(how='any')
     all_null = (len(field_values_no_na) == 0)
     num_na = len(field_values) - len(field_values_no_na)
-    is_unique = detect_unique_list(field_values)
+    is_unique = detect_unique_list(field_values) if not temporal else get_temporal_uniqueness(field_name, field_type, general_type, df, temporal_fields)
 
     unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
     is_id = detect_id(field_name, field_type, is_unique)
@@ -120,7 +139,7 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         normality = get_normality(field_name, field_values, field_type, general_type, scale)
 
     return {
-        'scale': scale,
+        'scale': scale,  # Recompute if continguous
         'contiguous': contiguous,
         'viz_data': viz_data,
         'is_id': is_id,
@@ -133,6 +152,7 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         'is_child': False,
         'manual': {}
     }
+
 
 def get_scale(field_name, field_values, field_type, general_type, contiguous):
     scale = specific_type_to_scale[field_type]
@@ -212,15 +232,13 @@ def compute_single_field_property_type(field_name, field_values, field_position=
 
     field_type, type_scores = calculate_field_type(field_name, field_values, field_position, num_fields)
     general_type = specific_type_to_general_type[field_type]
+    scale = specific_type_to_scale[field_type]
 
-    if field_name == 'year':
-        print field_name
-        print field_type
-        print type_scores
     return {
         'type': field_type,
         'general_type': general_type,
-        'type_scores': type_scores
+        'type_scores': type_scores,
+        'scale': scale
     }
 
 
@@ -254,6 +272,9 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         })
         field_properties[i].update(d)
 
+
+    temporal_fields = [ fp for fp in field_properties if (fp['general_type'] == GDT.T.value)]
+
     # Necessary to coerce here?
     coerced_df = coerce_types(df, field_properties)
     IMD.insertData(dataset_id, coerced_df)
@@ -261,11 +282,14 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
     # 2) Rest
     for (i, field_name) in enumerate(coerced_df):
         field_values = coerced_df[field_name]
+
         d = field_properties_nontype_object = compute_single_field_property_nontype(
             field_name,
             field_values,
             field_properties[i]['type'],
             field_properties[i]['general_type'],
+            df=coerced_df,
+            temporal_fields=temporal_fields
         )
         field_properties[i].update({
             'color': palette[i],
