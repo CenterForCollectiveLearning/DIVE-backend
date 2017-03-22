@@ -9,6 +9,7 @@ import statsmodels.api as sm
 from sklearn import linear_model
 from sklearn.svm import SVR
 from sklearn.feature_selection import RFE, f_regression
+from flask import current_app
 
 from dive.base.data.access import get_data
 from dive.base.db import db_access
@@ -20,7 +21,8 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.FORWARD_R2.value, table_layout=MCT.LEAVE_ONE_OUT.value, categorical_value_limit=20):
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.FORWARD_R2.value, table_layout=MCT.LEAVE_ONE_OUT.value, categorical_value_limit=current_app.config['ANALYSIS_CATEGORICAL_VALUE_LIMIT']):
+    print 'Reading data'
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     field_properties = db_access.get_field_properties(project_id, dataset_id)
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
@@ -32,7 +34,7 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
     independent_variables = []
     for fp in field_properties:
         if (fp['name'] != dependent_variable['name']):
-            if (fp['general_type'] == 'c' and fp['is_unique']):
+            if (fp['general_type'] == 'c' and (fp['is_unique'] or len(fp['unique_values']) > categorical_value_limit)):
                 continue
             independent_variables.append(fp)
 
@@ -43,6 +45,7 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
         MRT.FORWARD_F.value: f_regression
     }
 
+    print 'Getting recommendation result'
     result = recommendationTypeToFunction[recommendation_type](df, dependent_variable, independent_variables)
 
     return {
@@ -70,9 +73,12 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
     last_variable_set = []
     remaining_variables = independent_variables
 
+    print 'In forward_r2'
     for number_considered_variables in range(0, len(independent_variables)):
+        print number_considered_variables
         r2s = []
         for variable in remaining_variables:
+            print variable['name']
             considered_variables = last_variable_set + [ variable ]
 
             considered_independent_variables_per_model, patsy_models = \
@@ -99,6 +105,7 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
         if len(selected_variables) >= model_limit:
             break
 
+    print 'Returning'
     return selected_variables
 
 
