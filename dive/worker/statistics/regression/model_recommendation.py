@@ -13,15 +13,15 @@ from flask import current_app
 
 from dive.base.data.access import get_data
 from dive.base.db import db_access
+from dive.base.constants import ModelRecommendationType as MRT, ModelCompletionType as MCT
 
-from dive.worker.statistics.regression import ModelRecommendationType as MRT, ModelCompletionType as MCT
 from dive.worker.statistics.regression.pipelines import run_models, format_results, construct_models
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.FORWARD_R2.value, table_layout=MCT.LEAVE_ONE_OUT.value, categorical_value_limit=current_app.config['ANALYSIS_CATEGORICAL_VALUE_LIMIT']):
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO.value, table_layout=MCT.LEAVE_ONE_OUT.value, categorical_value_limit=current_app.config['ANALYSIS_CATEGORICAL_VALUE_LIMIT']):
     print 'Reading data'
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     field_properties = db_access.get_field_properties(project_id, dataset_id)

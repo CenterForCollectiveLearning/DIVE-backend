@@ -7,7 +7,7 @@ from dive.base.serialization import jsonify
 
 
 # Sync tasks
-from dive.worker.statistics.regression import ModelRecommendationType as MRT, ModelCompletionType as MCT
+from dive.base.constants import ModelRecommendationType as MRT, ModelCompletionType as MCT
 from dive.worker.statistics.comparison.numeric import run_numerical_comparison_from_spec
 from dive.worker.statistics.comparison.anova import run_anova_from_spec
 from dive.worker.statistics.comparison.anova_boxplot import get_anova_boxplot_data
