@@ -53,6 +53,7 @@ class BaseConfig(object):
     COLUMN_LIMIT = sys.maxint
 
     # Parameters
+    ANALYSIS_DATA_SIZE_CUTOFF=10000
     ANALYSIS_CATEGORICAL_VALUE_LIMIT=20
 
     # Resources

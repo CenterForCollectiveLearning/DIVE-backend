@@ -21,9 +21,10 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO.value, table_layout=MCT.LEAVE_ONE_OUT.value, categorical_value_limit=current_app.config['ANALYSIS_CATEGORICAL_VALUE_LIMIT']):
-    print 'Reading data'
+def get_initial_regression_model_recommendation(project_id, dataset_id, dependent_variable_id=None, recommendation_type=MRT.LASSO.value, table_layout=MCT.LEAVE_ONE_OUT.value, data_size_cutoff=current_app.config['ANALYSIS_DATA_SIZE_CUTOFF'], categorical_value_limit=current_app.config['ANALYSIS_CATEGORICAL_VALUE_LIMIT']):
     df = get_data(project_id=project_id, dataset_id=dataset_id)
+    if len(df) > data_size_cutoff:
+        df = df.sample(data_size_cutoff)
     field_properties = db_access.get_field_properties(project_id, dataset_id)
     quantitative_field_properties = [ fp for fp in field_properties if fp['general_type'] == 'q']
 
@@ -45,7 +46,6 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
         MRT.FORWARD_F.value: f_regression
     }
 
-    print 'Getting recommendation result'
     result = recommendationTypeToFunction[recommendation_type](df, dependent_variable, independent_variables)
 
     return {
@@ -73,12 +73,9 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
     last_variable_set = []
     remaining_variables = independent_variables
 
-    print 'In forward_r2'
     for number_considered_variables in range(0, len(independent_variables)):
-        print number_considered_variables
         r2s = []
         for variable in remaining_variables:
-            print variable['name']
             considered_variables = last_variable_set + [ variable ]
 
             considered_independent_variables_per_model, patsy_models = \
@@ -117,8 +114,8 @@ def recursive_feature_elimination(df, dependent_variable, independent_variables,
     estimator = SVR(kernel='linear')
     selector = RFE(estimator, 5, step=1)
     selector = selector.fit(X, y)
-    print selector.support_
-    print selector.ranking_
+    logger.info(selector.support_)
+    logger.info(selector.ranking_)
     return
 
 def f_regression(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
@@ -127,8 +124,8 @@ def f_regression(df, dependent_variable, independent_variables, interaction_term
     y, X = dmatrices(patsy_models[0], df, return_type='dataframe')
 
     f_test, r = f_regression(X, y, center=True)
-    print f_test
-    print r
+    logger.info(f_test)
+    logger.info(r)
     return
 
 
