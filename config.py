@@ -52,6 +52,9 @@ class BaseConfig(object):
     ROW_LIMIT = sys.maxint
     COLUMN_LIMIT = sys.maxint
 
+    # Parameters
+    ANALYSIS_CATEGORICAL_VALUE_LIMIT=20
+
     # Resources
     METADATA_FILE_NAME_SUFFIX = 'dev'
     STORAGE_TYPE = 'file'
