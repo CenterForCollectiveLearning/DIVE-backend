@@ -19,21 +19,53 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def run_numerical_comparison_from_spec(spec, project_id, conditionals={}):
-    comparison_result = {}
+# args must be a list of lists
+def run_valid_numerical_comparison_tests(df, variable_names, independence=True):
+    '''
+    Run non-regression tests
+    Performs comparisons between different data sets
+    Requires more than one data set to be sent
+    '''
+    args = []
+    for name in variable_names:
+        args.append(df[name])
 
-    variable_names = spec.get('variableNames', [])
-    independence = spec.get('independence', True)
-    dataset_id = spec.get('datasetId')
-    if not (len(variable_names) >= 2 and dataset_id):
-        return 'Not passed required parameters', 400
+    results = []
+    normal = sets_normal(.25, *args)
+    numDataSets = len(args)
+    variations_equal = are_variations_equal(.25, *args)
 
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    df = df.dropna()  # Remove unclean
+    # Assuming independence
+    valid_tests = get_valid_tests(variations_equal, True, normal, numDataSets)
+    results = [ {
+        'test': test,
+        'values': format_results(valid_tests[test](*args))
+    } for test in valid_tests]
 
-    comparison_result['tests'] = run_valid_comparison_tests(df, variable_names, independence)
-    return comparison_result, 200
+    return results
+
+
+def format_results(test_result):
+    return {
+        'statistic': test_result.statistic,
+        'pvalue': test_result.pvalue
+    }
+
+# def run_numerical_comparison_from_spec(spec, project_id, conditionals={}):
+#     comparison_result = {}
+#
+#     variable_names = spec.get('variableNames', [])
+#     independence = spec.get('independence', True)
+#     dataset_id = spec.get('datasetId')
+#     if not (len(variable_names) >= 2 and dataset_id):
+#         return 'Not passed required parameters', 400
+#
+#     df = get_data(project_id=project_id, dataset_id=dataset_id)
+#     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+#     df = df.dropna()  # Remove unclean
+#
+#     comparison_result['tests'] =
+#     return comparison_result, 200
 
 
 def find_unique_values_and_max_frequency(list):
@@ -74,27 +106,6 @@ def parse_aggregation_function(string_function, list_weights):
 def parse_string_mapping_function(list_function):
     if list_function[0] == "FILTER":
         return (lambda x: x == list_function[1])
-
-
-def parse_variable(num, index, variable_type_summary, df):
-    '''
-    helper function to return the appropriate independent variable value from the dataframe
-    num: 0 represents parsing the column, 1 represents parsing the row
-    index: represents the index of the dataframe we are extracting the value from
-    variable_type_summary:
-       for cat variables: ['cat', field]
-       for num variables: ['num', [field, num_bins], binning_edges, binning_names]
-    df : dataframe
-    '''
-    type_variable = variable_type_summary[num][0]
-    passed_variable = variable_type_summary[num][1]
-
-    if type_variable == 'cat':
-        return df.get_value(index, passed_variable)
-    elif type_variable == 'num':
-        binning_edges = variable_type_summary[num][2]
-        binning_names = variable_type_summary[num][3]
-        return find_bin(df.get_value(index, passed_variable[0]), binning_edges, binning_names, passed_variable[1])
 
 
 def find_binning_edges_equal_spaced(array, num_bins):
@@ -147,31 +158,6 @@ def find_bin(target, binningEdges, binningNames, num_bins):
     #subtraction of 1 since indexing starts at 0
     return binningNames[searchIndex(binningEdges, target, num_bins, 0)-1]
 
-
-# args must be a list of lists
-def run_valid_comparison_tests(df, variable_names, independence):
-    '''
-    Run non-regression tests
-    Performs comparisons between different data sets
-    Requires more than one data set to be sent
-    '''
-    args = []
-    for name in variable_names:
-        args.append(df[name])
-
-    results = []
-    normal = sets_normal(.25, *args)
-    numDataSets = len(args)
-    variations_equal = are_variations_equal(.25, *args)
-
-    # Assuming independence
-    valid_tests = get_valid_tests(variations_equal, True, normal, numDataSets)
-    results = [ {
-        'test': test,
-        'values': valid_tests[test](*args)
-    } for test in valid_tests]
-
-    return results
 
 def run_comparison_from_spec(spec, project_id):
     # 1) Parse and validate arguments

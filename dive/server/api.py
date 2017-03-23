@@ -5,10 +5,10 @@ from dive.server.resources.projects import Project, Projects
 from dive.server.resources.field_properties_resources import FieldProperties
 from dive.server.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
 
-from dive.server.resources.statistics_resources import AnovaFromSpec, CorrelationsFromSpec, RegressionEstimator, \
-    RegressionFromSpec, AggregationStatsFromSpec, NumericalComparisonFromSpec, \
+from dive.server.resources.statistics_resources import ComparisonFromSpec, CorrelationsFromSpec, RegressionEstimator, \
+    RegressionFromSpec, AggregationStatsFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, InteractionTerms, \
-    ContributionToRSquared, CorrelationScatterplot, AnovaBoxplotFromSpec, PairwiseComparisonFromSpec, \
+    ContributionToRSquared, CorrelationScatterplot, \
     InitialRegressionModelRecommendation
 
 from dive.server.resources.exported_results import ExportedResults
@@ -71,11 +71,12 @@ def add_resources(api):
     api.add_resource(AggregationStatsFromSpec,      '/statistics/v1/aggregation_stats')
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
 
-    api.add_resource(AnovaFromSpec,                 '/statistics/v1/anova')
-    api.add_resource(AnovaBoxplotFromSpec,          '/statistics/v1/anova_boxplot')
-    api.add_resource(PairwiseComparisonFromSpec,    '/statistics/v1/pairwise_comparison')
-    api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
-    api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
+    api.add_resource(ComparisonFromSpec,            '/statistics/v1/comparison')
+    # api.add_resource(AnovaFromSpec,                 '/statistics/v1/anova')
+    # api.add_resource(AnovaBoxplotFromSpec,          '/statistics/v1/anova_boxplot')
+    # api.add_resource(PairwiseComparisonFromSpec,    '/statistics/v1/pairwise_comparison')
+    # api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
+    # api.add_resource(NumericalComparisonFromSpec,   '/statistics/v1/numerical_comparison')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(CorrelationScatterplot,        '/statistics/v1/correlation_scatterplot')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')

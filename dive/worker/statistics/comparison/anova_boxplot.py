@@ -16,33 +16,24 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_anova_boxplot_data(spec, project_id, conditionals={}):
+def get_anova_boxplot_data(project_id, dataset_id, df, independent_variables_names, dependent_variables_names):
     anova_result = {}
-
-    dependent_variables = spec.get('dependentVariables', [])
-    independent_variables = spec.get('independentVariables', [])
-    dependent_variables_names = dependent_variables
-    independent_variables_names = [ iv[1] for iv in independent_variables ]
-    dataset_id = spec.get('datasetId')
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
+    considered_independent_variable_name = independent_variables_names[0]
+    considered_dependent_variable_name = dependent_variables_names[0]
 
     # Only return boxplot data if number of groups < THRESHOLD
-    num_groups = len(get_unique(df[independent_variables_names[0]]))
+    num_groups = len(get_unique(df[considered_independent_variable_name]))
     NUM_GROUP_THRESHOLD = 15
     if num_groups > NUM_GROUP_THRESHOLD:
-        return None, 200
+        return None
 
-    df_subset = df[ dependent_variables_names + independent_variables_names ]
-    df_ready = df_subset.dropna(how='all')  # Remove unclean
 
     val_box_spec = {
-        'grouped_field': { 'name': independent_variables[0][1] },
-        'boxed_field': { 'name': dependent_variables[0] }
+        'grouped_field': { 'name': considered_independent_variable_name },
+        'boxed_field': { 'name': considered_dependent_variable_name }
     }
 
-    viz_data = get_val_box_data(df_ready, val_box_spec)
+    viz_data = get_val_box_data(df, val_box_spec)
 
     result = {
         'project_id': project_id,
@@ -50,11 +41,11 @@ def get_anova_boxplot_data(spec, project_id, conditionals={}):
         'spec': val_box_spec,
         'meta': {
             'labels': {
-                'x': independent_variables[0][1],
-                'y': dependent_variables[0]
+                'x': considered_independent_variable_name,
+                'y': considered_dependent_variable_name
             },
         },
         'data': viz_data
     }
 
-    return result, 200
+    return result
