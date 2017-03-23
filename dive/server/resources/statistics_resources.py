@@ -8,7 +8,6 @@ from dive.base.serialization import jsonify
 
 # Sync tasks
 from dive.base.constants import ModelRecommendationType as MRT, ModelCompletionType as MCT
-from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.worker.statistics.regression.model_recommendation import get_initial_regression_model_recommendation
 
 # Async tasks
@@ -39,19 +38,6 @@ class RegressionEstimator(Resource):
         result, status = timeEstimator(numInputs, sizeArray, funcArraySize)
         return make_response(jsonify(result))
 
-
-contributionToRSquaredPostParser = reqparse.RequestParser()
-contributionToRSquaredPostParser.add_argument('projectId', type=int, location='json')
-contributionToRSquaredPostParser.add_argument('regressionId', type=int, location='json')
-class ContributionToRSquared(Resource):
-    def post(self):
-        args = contributionToRSquaredPostParser.parse_args()
-        project_id = args.get('projectId')
-        regression_id = args.get('regressionId')
-        regression_doc = db_access.get_regression_by_id(regression_id, project_id)
-        regression_data = regression_doc['data']
-        data = get_contribution_to_r_squared_data(regression_data)
-        return jsonify({ 'data': data })
 
 # For interaction term creation
 interactionTermPostParser = reqparse.RequestParser()
