@@ -8,7 +8,6 @@ from dive.server.resources.specs import Specs, VisualizationFromSpec, Generating
 from dive.server.resources.statistics_resources import ComparisonFromSpec, CorrelationsFromSpec, RegressionEstimator, \
     RegressionFromSpec, AggregationStatsFromSpec, \
     OneDimensionalTableFromSpec, ContingencyTableFromSpec, InteractionTerms, \
-    ContributionToRSquared, \
     InitialRegressionModelRecommendation
 
 from dive.server.resources.exported_results import ExportedResults
@@ -67,7 +66,6 @@ def add_resources(api):
     api.add_resource(InteractionTerms,              '/statistics/v1/interaction_term')
 
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
-    api.add_resource(ContributionToRSquared,        '/statistics/v1/contribution_to_r_squared')
     api.add_resource(AggregationStatsFromSpec,      '/statistics/v1/aggregation_stats')
     api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
 

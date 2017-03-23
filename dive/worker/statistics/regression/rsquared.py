@@ -1,5 +1,6 @@
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
 
+
 def get_contribution_to_r_squared_data(regression_result):
     regressions_by_column = regression_result['regressions_by_column']
 
@@ -22,7 +23,7 @@ def get_contribution_to_r_squared_data(regression_result):
     all_fields_r_squared_adj = fields_to_r_squared_adj[str(all_fields)]
 
     if max_fields_length <= 1:
-        return
+        return []
 
     maximum_r_squared_adj = max(fields_to_r_squared_adj.values())
 

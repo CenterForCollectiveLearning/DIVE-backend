@@ -14,11 +14,11 @@ from math import log10, floor
 from patsy import dmatrices
 
 from dive.base.db import db_access
+from dive.base.constants import ModelCompletionType as MCT
 from dive.base.data.access import get_data, get_conditioned_data
 
-from dive.worker.statistics.utilities import create_patsy_model
-from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
-from dive.base.constants import ModelCompletionType as MCT
+from dive.worker.statistics.utilities import create_patsy_model, sets_normal, difference_of_two_lists
+from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.worker.statistics.regression.table_layout import one_at_a_time, leave_one_out, all_variables
 
 from celery.utils.log import get_task_logger
@@ -51,17 +51,19 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
 
     dependent_variable, independent_variables, interaction_terms, df = \
         load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id)
-
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     considered_independent_variables_per_model, patsy_models = \
         construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=table_layout)
+    raw_table_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
-    raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
+    formatted_table_results = format_results(raw_table_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
+    contribution_to_r_squared = get_contribution_to_r_squared_data(formatted_table_results)
 
-    formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
-
-    return formatted_results, 200
+    return {
+        'table': formatted_table_results,
+        'contribution_to_r_squared': contribution_to_r_squared
+    }, 200
 
 def load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id):
     '''
