@@ -10,7 +10,7 @@ from dive.base.serialization import jsonify
 from dive.base.constants import ModelRecommendationType as MRT, ModelCompletionType as MCT
 from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.worker.statistics.regression.model_recommendation import get_initial_regression_model_recommendation
-from dive.worker.statistics.correlation.correlation import get_correlation_scatterplot_data
+
 # Async tasks
 from dive.worker.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline, comparison_pipeline
 from dive.worker.handlers import worker_error_handler
@@ -349,22 +349,3 @@ class CorrelationsFromSpec(Resource):
                 'task_id': correlation_task.task_id,
                 'compute': True
             }, status=202)
-
-
-correlationScatterplotPostParser = reqparse.RequestParser()
-correlationScatterplotPostParser.add_argument('projectId', type=int, location='json')
-correlationScatterplotPostParser.add_argument('correlationId', type=str, location='json')
-correlationScatterplotPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class CorrelationScatterplot(Resource):
-    def post(self):
-        args = correlationScatterplotPostParser.parse_args()
-        project_id = args.get('projectId')
-        correlation_id = args.get('correlationId')
-        conditionals = args.get('conditionals')
-
-        correlation_doc = db_access.get_correlation_by_id(correlation_id, project_id)
-
-        correlation_spec = correlation_doc['spec']
-        data = get_correlation_scatterplot_data(correlation_spec, project_id, conditionals)
-
-        return jsonify({ 'data': data })

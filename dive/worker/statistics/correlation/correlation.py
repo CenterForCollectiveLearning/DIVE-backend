@@ -33,7 +33,11 @@ def run_correlation_from_spec(spec, project_id, conditionals=[]):
     df_ready = df_subset.dropna(how='all')
 
     correlation_result = run_correlation(df_ready, correlation_variables)
-    return correlation_result, 200
+    correlation_scatterplots = get_correlation_scatterplot_data(df_ready, correlation_variables)
+    return {
+        'table': correlation_result,
+        'scatterplots': correlation_scatterplots
+    }, 200
 
 
 def run_correlation(df, correlation_variables):
@@ -68,17 +72,10 @@ def run_correlation(df, correlation_variables):
                 row_data.append(r2)
         correlation_result['rows'].append({'field': row_name, 'data': row_data})
 
-    logger.info(correlation_result)
     return correlation_result
 
 
-def get_correlation_scatterplot_data(correlation_spec, project_id, conditionals=[], max_points=100):
-    correlation_variables = correlation_spec['correlationVariables']
-    dataset_id = correlation_spec['datasetId']
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-
+def get_correlation_scatterplot_data(df, correlation_variables, max_points=100):
     result = []
     for (var_a, var_b) in combinations(correlation_variables, 2):
         df_subset_pair = df[[var_a, var_b]].dropna(how='any')
