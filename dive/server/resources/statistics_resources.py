@@ -8,17 +8,11 @@ from dive.base.serialization import jsonify
 
 # Sync tasks
 from dive.base.constants import ModelRecommendationType as MRT, ModelCompletionType as MCT
-from dive.worker.statistics.comparison.numeric import run_numerical_comparison_from_spec
-from dive.worker.statistics.comparison.anova import run_anova_from_spec
-from dive.worker.statistics.comparison.anova_boxplot import get_anova_boxplot_data
-from dive.worker.statistics.comparison.pairwise_comparison import get_pairwise_comparison_data
 from dive.worker.statistics.regression.rsquared import get_contribution_to_r_squared_data
 from dive.worker.statistics.regression.model_recommendation import get_initial_regression_model_recommendation
 from dive.worker.statistics.correlation.correlation import get_correlation_scatterplot_data
-# from dive.worker.statistics.regression.interaction_terms import
-
 # Async tasks
-from dive.worker.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline
+from dive.worker.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline, comparison_pipeline
 from dive.worker.handlers import worker_error_handler
 
 import logging
@@ -162,89 +156,61 @@ class RegressionFromSpec(Resource):
             }, status=202)
 
 
-numericalComparisonPostParser = reqparse.RequestParser()
-numericalComparisonPostParser.add_argument('projectId', type=int, location='json')
-numericalComparisonPostParser.add_argument('spec', type=dict, location='json')
-numericalComparisonPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class NumericalComparisonFromSpec(Resource):
+#####################################################################
+# Endpoint returning comparison data given a specification
+# INPUT: project_id, spec
+# OUTPUT: {stat data}
+#####################################################################
+comparisonPostParser = reqparse.RequestParser()
+comparisonPostParser.add_argument('projectId', type=int, location='json')
+comparisonPostParser.add_argument('spec', type=dict, location='json')
+comparisonPostParser.add_argument('conditionals', type=dict, location='json', default={})
+class ComparisonFromSpec(Resource):
     def post(self):
         '''
         spec: {
-            variable_names : list names
-            dataset_id : integer
-            independence : boolean
+            independentVariables
+            dependentVariable
+            interactionTerms
+            model
+            estimator
+            degree
+            weights
+            functions
+            datasetId
+            tableLayout
         }
         '''
-        args = numericalComparisonPostParser.parse_args()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        conditionals = args.get('conditionals')
-        result, status = run_numerical_comparison_from_spec(spec, project_id)
-        return jsonify(result)
 
-
-anovaPostParser = reqparse.RequestParser()
-anovaPostParser.add_argument('projectId', type=int, location='json')
-anovaPostParser.add_argument('spec', type=dict, location='json')
-anovaPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class AnovaFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            dataset_id
-            independent_variables - list names, must be categorical
-            dependent_variables - list names, must be numerical
-        }
-        '''
-        args = anovaPostParser.parse_args()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        conditionals = args.get('conditionals', {})
-        result, status = run_anova_from_spec(spec, project_id, conditionals=conditionals)
-        return jsonify(result)
-
-
-anovaBoxplotPostParser = reqparse.RequestParser()
-anovaBoxplotPostParser.add_argument('projectId', type=int, location='json')
-anovaBoxplotPostParser.add_argument('spec', type=dict, location='json')
-anovaBoxplotPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class AnovaBoxplotFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            dataset_id
-            independent_variables - list names, must be categorical
-            dependent_variables - list names, must be numerical
-        }
-        '''
-        args = anovaBoxplotPostParser.parse_args()
+        args = comparisonPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
         conditionals = args.get('conditionals', {})
 
-        result, status = get_anova_boxplot_data(spec, project_id, conditionals=conditionals)
-        return jsonify(result)
+        comparison_doc = db_access.get_comparison_from_spec(project_id, spec, conditionals=conditionals)
 
-pairwiseComparisonPostParser = reqparse.RequestParser()
-pairwiseComparisonPostParser.add_argument('projectId', type=int, location='json')
-pairwiseComparisonPostParser.add_argument('spec', type=dict, location='json')
-pairwiseComparisonPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class PairwiseComparisonFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            dataset_id
-            independent_variables - list names, must be categorical
-            dependent_variables - list names, must be numerical
-        }
-        '''
-        args = pairwiseComparisonPostParser.parse_args()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        conditionals = args.get('conditionals', {})
+        # check to see if comparison is in db; if so, send back data
+        if comparison_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            comparison_data = comparison_doc['data']
+            comparison_data['id'] = comparison_doc['id']
 
-        result, status = get_pairwise_comparison_data(spec, project_id, conditionals=conditionals)
-        return jsonify(result)
+            exported_comparison_doc = db_access.get_exported_comparison_by_comparison_id(project_id, comparison_doc['id'])
+            if exported_comparison_doc:
+                comparison_data['exported'] = True
+                comparison_data['exportedComparisonId'] = exported_comparison_doc['id']
+            else:
+                comparison_data['exported'] = False
+            return jsonify(comparison_data)
+        else:
+            comparison_task = comparison_pipeline.apply_async(
+                args = [ spec, project_id, conditionals ]
+            )
+
+            return jsonify({
+                'task_id': comparison_task.task_id,
+                'compute': True
+            }, status=202)
+
 
 summaryPostParser = reqparse.RequestParser()
 summaryPostParser.add_argument('projectId', type=int, location='json')
