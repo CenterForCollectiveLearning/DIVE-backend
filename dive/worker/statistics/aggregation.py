@@ -532,7 +532,6 @@ def create_contingency_table(df, aggregation_variables, dep_variable):
     aggregationMean = False
 
     for (var_type, name, config) in aggregation_variables:
-        print var_type, (var_type in [ GDT.Q.value, GDT.T.value ])
         if var_type == GDT.C.value:
             unique_indep_values.append(get_unique(df[name], True))
             variable_type_aggregation.append(('cat', name))
