@@ -13,7 +13,7 @@ from dive.base.core import db
 from dive.base.db import ModelName, row_to_dict
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Team, User, \
-    Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation, Feedback
+    Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation, Comparison, Exported_Comparison, Feedback
 from dive.server.resources import ContentType
 
 import logging
@@ -551,6 +551,52 @@ def delete_regression(project_id, regression_id, **kwargs):
     db.session.commit()
     return row_to_dict(regression)
 
+################
+# Comparison
+################
+
+def get_comparison_by_id(comparison_id, project_id, **kwargs):
+    comparison = Comparison.query.filter_by(id=comparison_id, project_id=project_id, **kwargs).one()
+    if comparison is None:
+        abort(404)
+    return row_to_dict(comparison)
+
+
+def get_comparison_from_spec(project_id, spec, **kwargs):
+    try:
+        comparison = Comparison.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
+    except NoResultFound:
+        return None
+    return row_to_dict(comparison)
+
+
+def insert_comparison(project_id, spec, data, **kwargs):
+    comparison = Comparison(
+        project_id = project_id,
+        spec = spec,
+        data = data,
+        **kwargs
+    )
+    db.session.add(comparison)
+    db.session.commit()
+    return row_to_dict(comparison)
+
+def delete_comparison(project_id, comparison_id, **kwargs):
+    try:
+        comparison = Comparison.query.filter_by(project_id=project_id, id=comparison_id, **kwargs).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    db.session.delete(comparison)
+    db.session.commit()
+    return row_to_dict(comparison)
+
+
+################
+# Correlation
+################
+
 def get_correlation_by_id(correlation_id, project_id, **kwargs):
     correlation = Correlation.query.filter_by(id=correlation_id, project_id=project_id, **kwargs).one()
     if correlation is None:
@@ -587,6 +633,7 @@ def delete_correlation(project_id, correlation_id, **kwargs):
     db.session.delete(correlation)
     db.session.commit()
     return row_to_dict(correlation)
+
 
 ################
 # Summaries

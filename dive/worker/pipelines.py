@@ -18,6 +18,7 @@ from dive.worker.transformation.pivot import unpivot_dataset
 from dive.worker.visualization.spec_pipeline import attach_data_to_viz_specs, filter_viz_specs, score_viz_specs, save_viz_specs
 from dive.worker.visualization.enumerate_specs import enumerate_viz_specs
 
+from dive.worker.statistics.comparison.pipelines import run_comparison_from_spec, save_comparison
 from dive.worker.statistics.aggregation import run_aggregation_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_aggregation
 from dive.worker.statistics.correlation.correlation import run_correlation_from_spec, save_correlation
 from dive.worker.statistics.regression.pipelines import run_regression_from_spec, save_regression
@@ -57,6 +58,7 @@ retry_kwargs = {
 class DIVETask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         logger.error('Task {0!r} failed in on_failure: {1!r}'.format(task_id, exc))
+
 
 @celery.task(bind=True, base=DIVETask)
 def reduce_pipeline(self, column_ids_to_keep, new_dataset_name_prefix, dataset_id, project_id):
@@ -192,6 +194,21 @@ def ingestion_pipeline(self, dataset_id, project_id):
     self.update_state(state=states.PENDING, meta={'desc': '(4/4) Saving dataset field properties'})
     result = save_field_properties(field_properties, dataset_id, project_id)
     return result
+
+
+@celery.task(bind=True, base=DIVETask)
+def comparison_pipeline(self, spec, project_id, conditionals=[]):
+    logger.info("In comparison pipeline with and project_id %s", project_id)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Running comparisons'})
+    comparison_data, status = run_comparison_from_spec(spec, project_id, conditionals=conditionals)
+
+    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving comparison results'})
+    comparison_doc = save_comparison(spec, comparison_data, project_id, conditionals=conditionals)
+    comparison_data['id'] = comparison_doc['id']
+
+
+    return { 'result': comparison_data }
 
 
 @celery.task(bind=True, base=DIVETask)

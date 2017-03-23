@@ -15,35 +15,23 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 # http://stackoverflow.com/questions/25791053/anova-and-hsd-tests-from-python-dataframe
-def get_pairwise_comparison_data(spec, project_id, conditionals={}):
+def get_pairwise_comparison_data(df, independent_variables_names, dependent_variables_names, significance_cutoff=0.05):
     '''
-    For now, spec will be form:
         datasetId
         independentVariables - list names, must be categorical
         dependentVariables - list names, must be numerical
         numBins - number of bins for the independent quantitative variables (if they exist)
     '''
-    anova_result = {}
-
-    dependent_variables = spec.get('dependentVariables', [])
-    independent_variables = spec.get('independentVariables', [])
-    significance_cutoff = spec.get('significanceCutoff', 0.05)
-    dataset_id = spec.get('datasetId')
-
-    dependent_variable_names = dependent_variables
-    independent_variable_names = [ iv[1] for iv in independent_variables ]
-
-    df = get_data(project_id=project_id, dataset_id=dataset_id)
-    df = get_conditioned_data(project_id, dataset_id, df, conditionals)
-    df = df.dropna()  # Remove unclean
+    considered_independent_variable_name = independent_variables_names[0]
+    considered_dependent_variable_name = dependent_variables_names[0]
 
     # Only return pairwise comparison data if number of groups < THRESHOLD
-    num_groups = len(get_unique(df[independent_variable_names[0]]))
+    num_groups = len(get_unique(df[considered_independent_variable_name]))
     NUM_GROUP_THRESHOLD = 15
     if num_groups > NUM_GROUP_THRESHOLD:
-        return None, 200
+        return None
 
-    hsd_result = pairwise_tukeyhsd(df[dependent_variable_names[0]], df[independent_variable_names[0]], alpha=significance_cutoff)
+    hsd_result = pairwise_tukeyhsd(df[considered_dependent_variable_name], df[considered_independent_variable_name], alpha=significance_cutoff)
     hsd_raw_data = hsd_result.summary().data[1:]
     st_range = np.abs(hsd_result.meandiffs) / hsd_result.std_pairs
     p_values = psturng(st_range, len(hsd_result.groupsunique), hsd_result.df_total)
@@ -59,26 +47,22 @@ def get_pairwise_comparison_data(spec, project_id, conditionals={}):
     ]
     hsd_data = []
     for i in range(0, len(hsd_raw_data)):
-        try:
-            if len(p_values) == 1:
-                p_value = p_values
-            else:
-                p_value = p_values[i] if i < len(p_values) else None
-            hsd_data_row = [
-                hsd_raw_data[i][0],
-                hsd_raw_data[i][1],
-                hsd_result.meandiffs[i],
-                hsd_result.confint[i][0],
-                hsd_result.confint[i][1],
-                p_value,
-                ( 'False' if (p_value <= significance_cutoff) else 'True' )
-            ]
-            hsd_data.append(hsd_data_row)
-        except Exception as e:
-            logger.error(e, exc_info=True)
-
+        if isinstance(p_values, float):
+            p_value = p_values
+        else:
+            p_value = p_values[i] if i < len(p_values) else None
+        hsd_data_row = [
+            hsd_raw_data[i][0],
+            hsd_raw_data[i][1],
+            hsd_result.meandiffs[i],
+            hsd_result.confint[i][0],
+            hsd_result.confint[i][1],
+            p_value,
+            ( 'False' if (p_value <= significance_cutoff) else 'True' )
+        ]
+        hsd_data.append(hsd_data_row)
 
     return {
         'column_headers': hsd_headers,
         'rows': hsd_data
-    }, 200
+    }
