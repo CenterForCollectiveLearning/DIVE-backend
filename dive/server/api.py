@@ -6,8 +6,7 @@ from dive.server.resources.field_properties_resources import FieldProperties
 from dive.server.resources.specs import Specs, VisualizationFromSpec, GeneratingProcedures
 
 from dive.server.resources.statistics_resources import ComparisonFromSpec, CorrelationsFromSpec, RegressionEstimator, \
-    RegressionFromSpec, AggregationStatsFromSpec, \
-    OneDimensionalTableFromSpec, ContingencyTableFromSpec, InteractionTerms, \
+    RegressionFromSpec, AggregationFromSpec, InteractionTerms, \
     InitialRegressionModelRecommendation
 
 from dive.server.resources.exported_results import ExportedResults
@@ -16,7 +15,6 @@ from dive.server.resources.exported_analyses import ExportedRegression, DataFrom
     ExportedCorrelation, DataFromExportedCorrelation, ExportedAggregation, DataFromExportedAggregation
 
 from dive.server.resources.transform import Reduce, Unpivot, Join
-
 from dive.server.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
 from dive.server.resources.auth_resources import Register, Login, Logout, User, Confirm_Token, Resend_Email, Reset_Password_Link, Reset_Password_With_Token, AnonymousUser, DeleteAnonymousData
 
@@ -66,11 +64,9 @@ def add_resources(api):
     api.add_resource(InteractionTerms,              '/statistics/v1/interaction_term')
 
     api.add_resource(RegressionFromSpec,            '/statistics/v1/regression')
-    api.add_resource(AggregationStatsFromSpec,      '/statistics/v1/aggregation_stats')
-    api.add_resource(OneDimensionalTableFromSpec,   '/statistics/v1/one_dimensional_contingency_table')
+    api.add_resource(AggregationFromSpec,           '/statistics/v1/aggregation')
 
     api.add_resource(ComparisonFromSpec,            '/statistics/v1/comparison')
-    api.add_resource(ContingencyTableFromSpec,      '/statistics/v1/contingency_table')
     api.add_resource(CorrelationsFromSpec,          '/statistics/v1/correlations')
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
     api.add_resource(InitialRegressionModelRecommendation, '/statistics/v1/initial_regression_state')
