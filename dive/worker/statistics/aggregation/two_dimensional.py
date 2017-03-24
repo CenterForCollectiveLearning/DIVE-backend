@@ -23,7 +23,6 @@ def create_contingency_table(df, aggregation_variables, dep_variable, config={})
     bin_data = {}
     aggregation_mean = False
 
-    print config
     for i, variable in enumerate(aggregation_variables):
         binningConfigKey = 'binningConfigX' if (i == 0) else 'binningConfigY'
         name = variable['name']
@@ -79,13 +78,10 @@ def create_contingency_table_with_no_dependent_variable(df, variables, unique_in
     result_dict = {}
     count_dict = defaultdict(int)
 
-    print 'NO DEPENDENT VARIABLE'
-    print bin_data
-
     (col_variable, row_variable) = variables
     for index in df.index:
-        col = parse_variable(index, col_variable, df, bin_data=bin_data[col_variable['name']])
-        row = parse_variable(index, row_variable, df, bin_data=bin_data[row_variable['name']])
+        col = parse_variable(index, col_variable, df, bin_data=bin_data.get(col_variable['name']))
+        row = parse_variable(index, row_variable, df, bin_data=bin_data.get(row_variable['name']))
 
         if row in count_dict:
             count_dict[row][col] += 1
@@ -118,7 +114,6 @@ def create_contingency_table_with_dependent_variable(df, variables, dep_variable
         for cat variable: [type, numerical variable name, aggregation function name, filter function name]
         for num variable: [type, numerical variable name, aggregation function name]
     '''
-    print config
     result_dict = {}
     dep_var_dict = {}
 
@@ -161,7 +156,6 @@ def create_contingency_table_with_dependent_variable(df, variables, dep_variable
                 for col in unique_indep_values[0]:
                     if dep_var_dict[row].get(col) != None:
                         result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(dep_var_dict[row][col])
-
                     else:
                         result_dict[row][col] = 0
 
@@ -174,7 +168,7 @@ def create_contingency_table_with_dependent_variable(df, variables, dep_variable
             if dep_var_dict.get(col):
                 for col in unique_indep_values[0]:
                     if dep_var_dict[row].get(col) != None:
-                        result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(map(parse_string_mapping_function(mapping_function_name),dep_var_dict[row][col]))
+                        result_dict[row][col] = parse_aggregation_function(aggregation_function_name, weight_dict[row][col])(map(parse_string_mapping_function(mapping_function_name), dep_var_dict[row][col]))
 
                     else:
                         result_dict[row][col] = 0

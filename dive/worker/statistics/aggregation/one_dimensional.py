@@ -28,8 +28,6 @@ def create_one_dimensional_contingency_table(df, aggregation_variable, dep_varia
     name = aggregation_variable['name']
     bin_data = {}
 
-    print config
-
     if scale == Scale.NOMINAL.value:
         unique_indep_values = get_unique(df[name], True)
 

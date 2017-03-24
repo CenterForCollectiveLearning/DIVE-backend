@@ -11,17 +11,17 @@ from celery.utils.log import get_task_logger
 from dive.base.constants import GeneralDataType as GDT
 from dive.worker.statistics.aggregation.one_dimensional import create_one_dimensional_contingency_table
 from dive.worker.statistics.aggregation.two_dimensional import create_contingency_table
+from dive.worker.ingestion.utilities import get_unique
 
 logger = get_task_logger(__name__)
 
-from pprint import pprint
+
 def run_aggregation_from_spec(spec, project_id, config={}, conditionals=[]):
     aggregation_variables_names = spec.get('aggregationVariablesNames')
     dataset_id = spec.get('datasetId')
     dependent_variable_name = spec.get('dependentVariableName')
+    weight_variable_name = config.get('weightVariableName')
     num_variables = len(aggregation_variables_names)
-
-    print config
 
     if not (dataset_id): return 'Not passed required parameters', 400
 
@@ -30,8 +30,11 @@ def run_aggregation_from_spec(spec, project_id, config={}, conditionals=[]):
     dependent_variable = next((fp for fp in all_field_properties if fp['name'] == dependent_variable_name), None)
 
     subset_variables = aggregation_variables_names
-    if dependent_variable_name:
+    if dependent_variable_name and dependent_variable_name != 'count':
         subset_variables += [ dependent_variable_name ]
+    if weight_variable_name and weight_variable_name != 'UNIFORM':
+        subset_variables += [ weight_variable_name ]
+    subset_variables = get_unique(subset_variables, preserve_order=True)
 
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df_conditioned = get_conditioned_data(project_id, dataset_id, df, conditionals)
@@ -39,16 +42,10 @@ def run_aggregation_from_spec(spec, project_id, config={}, conditionals=[]):
     df_ready = df_subset.dropna(how='all')  # Remove unclean
 
     result = {}
-    print num_variables
     if num_variables == 1:
         result['one_dimensional_contingency_table'] = create_one_dimensional_contingency_table(df_ready, aggregation_variables[0], dependent_variable, config=config)
     elif num_variables == 2:
         result['two_dimensional_contingency_table'] = create_contingency_table(df_ready, aggregation_variables, dependent_variable, config=config)
-    # field_ids = set(field_ids)
-    # relevant_field_properties = filter(lambda field: field['id'] in field_ids, field_properties)
-
-    # aggregation_statistics_result = get_variable_aggregation_statistics(df_ready, relevant_field_properties)
-
 
     return result, 200
 
