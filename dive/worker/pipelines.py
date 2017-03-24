@@ -19,8 +19,8 @@ from dive.worker.visualization.spec_pipeline import attach_data_to_viz_specs, fi
 from dive.worker.visualization.enumerate_specs import enumerate_viz_specs
 
 from dive.worker.statistics.comparison.pipelines import run_comparison_from_spec, save_comparison
-from dive.worker.statistics.aggregation import run_aggregation_from_spec, create_one_dimensional_contingency_table_from_spec, create_contingency_table_from_spec, save_aggregation
-from dive.worker.statistics.correlation.correlation import run_correlation_from_spec, save_correlation
+from dive.worker.statistics.aggregation.pipelines import run_aggregation_from_spec, save_aggregation
+from dive.worker.statistics.correlation.pipelines import run_correlation_from_spec, save_correlation
 from dive.worker.statistics.regression.pipelines import run_regression_from_spec, save_regression
 
 
@@ -226,43 +226,17 @@ def regression_pipeline(self, spec, project_id, conditionals=[]):
 
 
 @celery.task(bind=True, base=DIVETask)
-def aggregation_pipeline(self, spec, project_id):
-    logger.info("In aggregation pipeline with and project_id %s", project_id, conditionals=[])
+def aggregation_pipeline(self, spec, project_id, config={}, conditionals=[]):
+    logger.info("In aggregation pipeline with and project_id %s", project_id)
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating statistical aggregation'})
-    aggregation_data, status = run_aggregation_from_spec(spec, project_id, conditionals=conditionals)
+    aggregation_data, status = run_aggregation_from_spec(spec, project_id, config=config, conditionals=conditionals)
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving statistical aggregation'})
-    aggregation_doc = save_aggregation(spec, aggregation_data, project_id, conditionals=conditionals)
+    aggregation_doc = save_aggregation(spec, aggregation_data, project_id, config=config, conditionals=conditionals)
     aggregation_data['id'] = aggregation_doc['id']
 
-
-@celery.task(bind=True, base=DIVETask)
-def one_dimensional_contingency_table_pipeline(self, spec, project_id, conditionals=[]):
-    logger.info("In one dimensional contingency table pipeline with and project_id %s", project_id)
-
-    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating one dimensional aggregation table'})
-    table_data, status = create_one_dimensional_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
-
-    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving one dimensional aggregation table'})
-    table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
-    table_data['id'] = table_doc['id']
-
-    return { 'result': table_data }
-
-
-@celery.task(bind=True, base=DIVETask)
-def contingency_table_pipeline(self, spec, project_id, conditionals=[]):
-    logger.info("In contingency table pipeline with and project_id %s", project_id)
-
-    self.update_state(state=states.PENDING, meta={'desc': '(1/2) Calculating aggregation table'})
-    table_data, status = create_contingency_table_from_spec(spec, project_id, conditionals=conditionals)
-
-    self.update_state(state=states.PENDING, meta={'desc': '(2/2) Saving aggregation table'})
-    table_doc = save_aggregation(spec, table_data, project_id, conditionals=conditionals)
-    table_data['id'] = table_doc['id']
-
-    return { 'result': table_data }
+    return { 'result': aggregation_data }
 
 
 @celery.task(bind=True, base=DIVETask)

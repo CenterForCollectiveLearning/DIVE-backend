@@ -28,19 +28,16 @@ class RevokeChainTask(Resource):
         # TODO Terminate or not?
         r = celery.control.revoke(task_ids, terminate=False)
 
+task_state_to_code = {
+    states.SUCCESS: 200,
+    states.PENDING: 202,
+    states.FAILURE: 500,
+    states.REVOKED: 500
+}
+
 class TaskResult(Resource):
-    '''
-    Have consistent status codes
-    '''
     def get(self, task_id):
         task = celery.AsyncResult(task_id)  # task_2 = AsyncResult(id=task_id, app=celery)
-
-        state_to_code = {
-            states.SUCCESS: 200,
-            states.PENDING: 202,
-            states.FAILURE: 500
-        }
-
         state = task.state
         info = task.info if task.info else {}
         result = {
@@ -67,5 +64,5 @@ class TaskResult(Resource):
                 error_message = 'Unknown error occurred'
             result['error'] = error_message
 
-        response = jsonify(result, status=state_to_code[state])
+        response = jsonify(result, status=task_state_to_code[state])
         return response
