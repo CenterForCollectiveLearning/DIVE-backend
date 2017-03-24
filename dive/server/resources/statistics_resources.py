@@ -11,7 +11,7 @@ from dive.base.constants import ModelRecommendationType as MRT, ModelCompletionT
 from dive.worker.statistics.regression.model_recommendation import get_initial_regression_model_recommendation
 
 # Async tasks
-from dive.worker.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, one_dimensional_contingency_table_pipeline, contingency_table_pipeline, comparison_pipeline
+from dive.worker.pipelines import regression_pipeline, aggregation_pipeline, correlation_pipeline, comparison_pipeline
 from dive.worker.handlers import worker_error_handler
 
 import logging
@@ -198,101 +198,31 @@ class ComparisonFromSpec(Resource):
             }, status=202)
 
 
-summaryPostParser = reqparse.RequestParser()
-summaryPostParser.add_argument('projectId', type=int, location='json')
-summaryPostParser.add_argument('spec', type=dict, location='json')
-class AggregationStatsFromSpec(Resource):
+
+aggregationFromSpecPostParser = reqparse.RequestParser()
+aggregationFromSpecPostParser.add_argument('projectId', type=int, location='json')
+aggregationFromSpecPostParser.add_argument('spec', type=dict, location='json')
+aggregationFromSpecPostParser.add_argument('config', type=dict, location='json')
+aggregationFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
+class AggregationFromSpec(Resource):
     def post(self):
-        '''
-        spec: {
-            datasetId : integer
-            fieldIds : list
-        }
-        '''
-        args = summaryPostParser.parse_args()
+        args = aggregationFromSpecPostParser.parse_args()
         project_id = args.get('projectId')
         spec = args.get('spec')
-
-        summary_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
-        if summary_doc and not current_app.config['RECOMPUTE_STATISTICS']:
-            summary_data = summary_doc['data']
-            summary_data['id'] = summary_doc['id']
-            return jsonify(summary_data)
-        else:
-            summary_task = summary_pipeline.apply_async(
-                args = [spec, project_id, conditionals]
-            )
-
-            return jsonify({
-                'task_id': summary_task.task_id,
-                'compute': True
-            }, status=202)
-
-oneDimensionalTableFromSpecPostParser = reqparse.RequestParser()
-oneDimensionalTableFromSpecPostParser.add_argument('projectId', type=int, location='json')
-oneDimensionalTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
-oneDimensionalTableFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class OneDimensionalTableFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            dataset_id
-            categoricalIndependentVariableNames
-            numericalIndependentVariableNames
-            dependentVariable
-        }
-        '''
-        args = oneDimensionalTableFromSpecPostParser.parse_args()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
+        config = args.get('config')
         conditionals = args.get('conditionals')
 
-        table_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
-        if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
-            table_data = table_doc['data']
-            table_data['id'] = table_doc['id']
-            return jsonify(table_data)
+        aggregation_doc = db_access.get_aggregation_from_spec(project_id, spec, config=config, conditionals=conditionals)
+        if aggregation_doc and not current_app.config['RECOMPUTE_STATISTICS']:
+            aggregation_data = aggregation_doc['data']
+            aggregation_data['id'] = aggregation_doc['id']
+            return jsonify(aggregation_data)
         else:
-            table_task = one_dimensional_contingency_table_pipeline.apply_async(
-                args = [spec, project_id, conditionals]
+            aggregation_task = aggregation_pipeline.apply_async(
+                args = [spec, project_id, config, conditionals]
             )
             return jsonify({
-                'task_id': table_task.task_id,
-                'compute': True
-            }, status=202)
-
-
-contingencyTableFromSpecPostParser = reqparse.RequestParser()
-contingencyTableFromSpecPostParser.add_argument('projectId', type=int, location='json')
-contingencyTableFromSpecPostParser.add_argument('spec', type=dict, location='json')
-contingencyTableFromSpecPostParser.add_argument('conditionals', type=dict, location='json', default={})
-class ContingencyTableFromSpec(Resource):
-    def post(self):
-        '''
-        spec: {
-            datasetId
-            categoricalIndependentVariableNames
-            numericalIndependentVariableNames
-            dependentVariable
-        }
-        '''
-        args = contingencyTableFromSpecPostParser.parse_args()
-        project_id = args.get('projectId')
-        spec = args.get('spec')
-        conditionals = args.get('conditionals', {})
-
-        table_doc = db_access.get_aggregation_from_spec(project_id, spec, conditionals=conditionals)
-
-        if table_doc and not current_app.config['RECOMPUTE_STATISTICS']:
-            table_data = table_doc['data']
-            table_data['id'] = table_doc['id']
-            return jsonify(table_data)
-        else:
-            table_task = contingency_table_pipeline.apply_async(
-                args = [spec, project_id, conditionals]
-            )
-            return jsonify({
-                'task_id': table_task.task_id,
+                'task_id': aggregation_task.task_id,
                 'compute': True
             }, status=202)
 
