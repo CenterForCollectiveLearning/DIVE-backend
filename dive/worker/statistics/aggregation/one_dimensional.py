@@ -35,7 +35,7 @@ def create_one_dimensional_contingency_table(df, aggregation_variable, dep_varia
 
     elif scale in [ Scale.ORDINAL.value, Scale.CONTINUOUS.value ]:
         values = df[name].dropna(how='any')
-        (binning_edges, bin_names) = get_binning_edges_and_names(values, config.get('binningConfigY'))  # TODO Update binning function
+        (binning_edges, bin_names) = get_binning_edges_and_names(values, config.get('binningConfigX'))  # TODO Update binning function
         num_bins = len(binning_edges) -1
         bin_data = {
             'num_bins': num_bins,
