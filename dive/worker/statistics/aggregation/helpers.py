@@ -18,7 +18,6 @@ def get_binning_edges_and_names(array, config):
     procedure = config.get('binning_procedure', 'freedman')
     binning_type = config.get('binning_type', 'procedural')
     procedural = (binning_type == 'procedural')
-
     precision = config.get('precision', get_bin_decimals(array))
     num_bins = config.get('num_bins', 3)
 
@@ -117,6 +116,7 @@ def parse_aggregation_function(string_function, list_weights):
                     counter += list_weights[index]
                 return sum/counter
             return weight_sum
+
 
 def return_data_list_numerical(data_column, variable_name):
     '''
