@@ -9,10 +9,10 @@ from dive.server.resources.statistics_resources import ComparisonFromSpec, Corre
     RegressionFromSpec, AggregationFromSpec, InteractionTerms, \
     InitialRegressionModelRecommendation
 
-from dive.server.resources.exported_results import ExportedResults
 from dive.server.resources.exported_specs import ExportedSpecs, VisualizationFromExportedSpec
-from dive.server.resources.exported_analyses import ExportedRegression, DataFromExportedRegression, \
-    ExportedCorrelation, DataFromExportedCorrelation, ExportedAggregation, DataFromExportedAggregation
+from dive.server.resources.exported_analyses import ExportedAnalyses, ExportedRegression, DataFromExportedRegression, \
+    ExportedCorrelation, DataFromExportedCorrelation, ExportedAggregation, DataFromExportedAggregation, \
+    ExportedComparison, DataFromExportedComparison
 
 from dive.server.resources.transform import Reduce, Unpivot, Join
 from dive.server.resources.task_resources import TaskResult, RevokeTask, RevokeChainTask
@@ -71,7 +71,7 @@ def add_resources(api):
     api.add_resource(RegressionEstimator,           '/statistics/v1/regression_estimator')
     api.add_resource(InitialRegressionModelRecommendation, '/statistics/v1/initial_regression_state')
 
-    api.add_resource(ExportedResults,               '/exported_results/v1/exported_results')
+    api.add_resource(ExportedAnalyses,               '/exported_analyses/v1/exported_analyses')
 
     api.add_resource(ExportedRegression,            '/exported_regression/v1/exported_regression')
     api.add_resource(DataFromExportedRegression,    '/exported_regression/v1/exported_regression/<int:exported_spec_id>/data')
@@ -81,6 +81,9 @@ def add_resources(api):
 
     api.add_resource(ExportedAggregation,           '/exported_aggregation/v1/exported_aggregation')
     api.add_resource(DataFromExportedAggregation,   '/exported_aggregation/v1/exported_aggregation/<int:exported_spec_id>/data')
+
+    api.add_resource(ExportedComparison,            '/exported_comparison/v1/exported_comparison')
+    api.add_resource(DataFromExportedComparison,    '/exported_comparison/v1/exported_comparison/<int:exported_spec_id>/data')
 
     api.add_resource(Documents,                     '/compose/v1/documents')
     api.add_resource(NewDocument,                   '/compose/v1/document')
