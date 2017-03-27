@@ -10,7 +10,7 @@ from flask import abort
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.base.core import db
-from dive.base.db import ModelName, row_to_dict
+from dive.base.db.helpers import row_to_dict
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Team, User, \
     Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation, Comparison, Exported_Comparison, Feedback
@@ -870,6 +870,46 @@ def delete_exported_aggregation(project_id, exported_aggregation_id):
     db.session.delete(exported_aggregation)
     db.session.commit()
     return row_to_dict(exported_aggregation)
+
+
+# Comparison
+def get_exported_comparison_by_id(project_id, exported_comparison_id):
+    exported_comparison = Exported_Comparison.query.filter_by(id=exported_comparison_id,
+        project_id=project_id).one()
+    if exported_comparison is None:
+        abort(404)
+    return row_to_dict(exported_comparison)
+
+def get_exported_comparisons(project_id):
+    exported_comparisons = Exported_Comparison.query.filter_by(project_id=project_id).all()
+    for e in exported_comparisons:
+        setattr(e, 'spec', e.comparison.spec)
+        setattr(e, 'type', 'comparison')
+    return [ row_to_dict(exported_comparison, custom_fields=['type', 'spec']) for exported_comparison in exported_comparisons ]
+
+def insert_exported_comparison(project_id, comparison_id, data, conditionals, config):
+    exported_comparison = Exported_Comparison(
+        project_id = project_id,
+        comparison_id = comparison_id,
+        data = data,
+        conditionals = conditionals,
+        config = config
+    )
+    db.session.add(exported_comparison)
+    db.session.commit()
+    return row_to_dict(exported_comparison)
+
+def delete_exported_comparison(project_id, exported_comparison_id):
+    try:
+        exported_comparison = Exported_Comparison.query.filter_by(project_id=project_id, id=exported_comparison_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+
+    db.session.delete(exported_comparison)
+    db.session.commit()
+    return row_to_dict(exported_comparison)    
 
 ################
 # Documents

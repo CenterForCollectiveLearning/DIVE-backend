@@ -5,10 +5,10 @@ from haikunator import Haikunator
 from flask_login import current_user
 
 from dive.base.serialization import jsonify
-from dive.base.core import db, login_manager
-from dive.base.db import ModelName, AuthStatus, AuthMessage, AuthErrorType, row_to_dict
+from dive.base.core import db, login_manager 
+from dive.base.constants import Role, ModelName, AuthStatus, AuthMessage, AuthErrorType
+from dive.base.db.helpers import row_to_dict
 from dive.base.db.models import Team, User, Project
-from dive.base.constants import Role
 
 import logging
 logger = logging.getLogger(__name__)
