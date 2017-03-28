@@ -36,3 +36,10 @@ class ModelName(Enum):
     SPEC = 'spec'
     TEAM = 'team'
     USER = 'user'
+
+class ContentType(Enum):
+    VISUALIZATION = 'VISUALIZATION'
+    CORRELATION = 'CORRELATION'
+    REGRESSION = 'REGRESSION'
+    COMPARISON = 'COMPARISON'
+    AGGREGATION = 'AGGREGATION'
