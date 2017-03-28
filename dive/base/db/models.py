@@ -4,9 +4,8 @@ from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Un
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
-from dive.base.constants import Role, User_Status
+from dive.base.constants import Role, User_Status, ModelName
 from dive.base.core import db
-from dive.base.db import ModelName
 
 
 def make_uuid():
@@ -341,8 +340,8 @@ class Aggregation(db.Model):
     config = Column(JSONB)
 
     # One-to-many with exported specs
-    exported_summary = relationship('Exported_Aggregation',
-        backref='summary',
+    exported_aggregation = relationship('Exported_Aggregation',
+        backref='aggregation',
         cascade='all, delete-orphan',
         lazy='dynamic')
 
@@ -361,7 +360,7 @@ class Exported_Aggregation(db.Model):
     conditionals = Column(JSONB)
     config = Column(JSONB)
 
-    summary_id = Column(Integer, ForeignKey('summary.id',
+    aggregation_id = Column(Integer, ForeignKey('aggregation.id',
         onupdate='CASCADE', ondelete='CASCADE'))
 
     project_id = Column(Integer, ForeignKey('project.id',
@@ -384,7 +383,7 @@ class Comparison(db.Model):
 
     # One-to-many with exported specs
     exported_comparison = relationship('Exported_Comparison',
-        backref='correlation',
+        backref='comparison',
         cascade='all, delete-orphan',
         lazy='dynamic')
 
