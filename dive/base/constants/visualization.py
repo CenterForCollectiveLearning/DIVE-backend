@@ -92,5 +92,7 @@ aggregation_functions = {
     'min': np.min,
     'max': np.max,
     'mean': np.mean,
-    'count': np.size
+    'median': np.median,
+    'count': np.size,
+    'std': np.std
 }
