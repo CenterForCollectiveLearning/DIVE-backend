@@ -14,7 +14,7 @@ from dive.base.db.helpers import row_to_dict
 from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
     Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Team, User, \
     Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation, Comparison, Exported_Comparison, Feedback
-from dive.server.resources import ContentType
+from dive.base.constants import ContentType
 
 import logging
 logger = logging.getLogger(__name__)
@@ -413,20 +413,36 @@ def get_public_exported_spec(exported_spec_id, spec_type):
                 value = getattr(exported_spec.spec, desired_spec_key)
                 setattr(exported_spec, desired_spec_key, value)
             return row_to_dict(exported_spec, custom_fields=desired_spec_keys)
+        else:
+            if spec_type == ContentType.CORRELATION.value:
+                exported_spec = Exported_Correlation.query.filter_by(
+                    id=exported_spec_id
+                ).one()
+                setattr(exported_spec, 'spec', exported_spec.correlation.spec)
+                setattr(exported_spec, 'type', 'correlation')            
 
-        elif spec_type == ContentType.CORRELATION.value:
-            exported_spec = Exported_Correlation.query.filter_by(
-                id=exported_spec_id
-            ).one()
-            return row_to_dict(exported_spec)
+            elif spec_type == ContentType.REGRESSION.value:
+                exported_spec = Exported_Regression.query.filter_by(
+                    id=exported_spec_id
+                ).one()
+                setattr(exported_spec, 'spec', exported_spec.regression.spec)
+                setattr(exported_spec, 'type', 'regression')
 
-        elif spec_type == ContentType.REGRESSION.value:
-            exported_spec = Exported_Regression.query.filter_by(
-                id=exported_spec_id
-            ).one()
-            setattr(exported_spec, 'spec', exported_spec.regression.spec)
-            setattr(exported_spec, 'type', 'regression')
+            elif spec_type == ContentType.AGGREGATION.value:
+                exported_spec = Exported_Aggregation.query.filter_by(
+                    id=exported_spec_id
+                ).one()
+                setattr(exported_spec, 'spec', exported_spec.aggregation.spec)
+                setattr(exported_spec, 'type', 'aggregation')
+                
+            elif spec_type == ContentType.COMPARISON.value:
+                exported_spec = Exported_Comparison.query.filter_by(
+                    id=exported_spec_id
+                ).one()
+                setattr(exported_spec, 'spec', exported_spec.comparison.spec)
+                setattr(exported_spec, 'type', 'comparison')
             return row_to_dict(exported_spec, custom_fields=['type', 'spec'])
+
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
