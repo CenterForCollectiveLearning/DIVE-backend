@@ -856,6 +856,16 @@ def get_exported_aggregation_by_id(project_id, exported_aggregation_id):
         abort(404)
     return row_to_dict(exported_aggregation)
 
+def get_exported_aggregation_by_aggregation_id(project_id, aggregation_id):
+    try:
+        exported_aggregation = Exported_Aggregation.query.filter_by(aggregation_id=aggregation_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_aggregation)    
+
 def get_exported_aggregations(project_id):
     exported_aggregations = Exported_Aggregation.query.filter_by(project_id=project_id).all()
     for e in exported_aggregations:
@@ -895,6 +905,16 @@ def get_exported_comparison_by_id(project_id, exported_comparison_id):
     if exported_comparison is None:
         abort(404)
     return row_to_dict(exported_comparison)
+
+def get_exported_comparison_by_comparison_id(project_id, comparison_id):
+    try:
+        exported_comparison = Exported_Comparison.query.filter_by(comparison_id=comparison_id,
+            project_id=project_id).one()
+    except NoResultFound, e:
+        return None
+    except MultipleResultsFound, e:
+        raise e
+    return row_to_dict(exported_comparison)     
 
 def get_exported_comparisons(project_id):
     exported_comparisons = Exported_Comparison.query.filter_by(project_id=project_id).all()
