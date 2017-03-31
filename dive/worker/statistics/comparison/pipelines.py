@@ -16,7 +16,7 @@ def run_comparison_from_spec(spec, project_id, conditionals=[]):
 
     if not (dataset_id): return 'Not passed required parameters', 400
 
-    all_fields = db_access.get_field_properties(project_id, dataset_id)
+    all_fields = FieldPropertiesModel.get_multiple(project_id=project_id, dataset_id=dataset_id)
     dependent_variables = [ f for f in all_fields if f['name'] in dependent_variables_names ]
     independent_variables = [ f for f in all_fields if f['name'] in independent_variables_names ]
     can_run_numerical_comparison_independent = len([ iv for iv in independent_variables if iv['general_type'] == 'q' ]) >= 2 and len(dependent_variables_names) == 0

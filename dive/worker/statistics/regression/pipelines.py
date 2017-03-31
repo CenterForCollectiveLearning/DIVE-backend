@@ -70,7 +70,7 @@ def load_data(dependent_variable_name, independent_variables_names, interaction_
     Load DF and full field documents
     '''
     # Map variables to field documents
-    all_fields = db_access.get_field_properties(project_id, dataset_id)
+    all_fields = FieldPropertiesModel.get_multiple(project_id=project_id, dataset_id=dataset_id)
     interaction_terms = db_access.get_interaction_term_properties(interaction_term_ids)
     dependent_variable = next((f for f in all_fields if f['name'] == dependent_variable_name), None)
 

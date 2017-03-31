@@ -11,101 +11,11 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from dive.base.core import db
 from dive.base.db.helpers import row_to_dict
-from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, \
-    Spec, Exported_Spec, Regression, Exported_Regression, Interaction_Term, Team, User, \
-    Relationship, Document, Aggregation, Exported_Aggregation, Correlation, Exported_Correlation, Comparison, Exported_Comparison, Feedback
+from dive.base.db.models import *
 from dive.base.constants import ContentType
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-################
-# Projects
-# https://github.com/sloria/PythonORMSleepy/blob/master/sleepy/api_sqlalchemy.py
-################
-def get_project(project_id):
-    project = Project.query.get_or_404(project_id)
-    return row_to_dict(project)
-
-def get_projects(**kwargs):
-    projects = Project.query.filter_by(**kwargs).all()
-    for project in projects:
-        setattr(project, 'included_datasets', [ row_to_dict(d) for d in project.datasets ])
-        setattr(project, 'num_specs', project.specs.count())
-        setattr(project, 'num_datasets', project.datasets.count())
-        setattr(project, 'num_documents', project.documents.count())
-        setattr(project, 'num_analyses', project.aggregations.count() + project.comparisons.count() + project.correlations.count() + project.regressions.count())
-    return [ row_to_dict(project, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents', 'num_analyses' ]) for project in projects ]
-
-def insert_project(**kwargs):
-    project = Project(
-        **kwargs
-    )
-    db.session.add(project)
-    db.session.commit()
-    return row_to_dict(project)
-
-def update_project(project_id, **kwargs):
-    project = Project.query.get_or_404(project_id)
-
-    for k, v in kwargs.iteritems():
-        setattr(project, k, v)
-
-    db.session.add(project)
-    db.session.commit()
-    return row_to_dict(project)
-
-def delete_project(project_id):
-    project = Project.query.get_or_404(project_id)
-    db.session.delete(project)
-    db.session.commit()
-    return row_to_dict(project)
-
-################
-# Datasets
-################
-def get_dataset(project_id, dataset_id):
-    project_id = project_id
-    try:
-        dataset = Dataset.query.filter_by(id=dataset_id).one()
-        if dataset.preloaded or dataset.project_id == project_id:
-            return row_to_dict(dataset)
-        else:
-            return None
-
-    # TODO Decide between raising error and aborting with 404
-    except NoResultFound, e:
-        logger.error(e)
-        return None
-
-    except MultipleResultsFound, e:
-        logger.error(e)
-        raise e
-
-def get_datasets(project_id, include_preloaded=True, **kwargs):
-    datasets = Dataset.query.filter_by(project_id=project_id, **kwargs).all()
-
-    if include_preloaded:
-        project = Project.query.get_or_404(project_id)
-        datasets.extend(project.preloaded_datasets.all())
-    return [ row_to_dict(dataset) for dataset in datasets ]
-
-def insert_dataset(project_id, **kwargs):
-    dataset = Dataset(
-        project_id=project_id,
-        **kwargs
-    )
-    db.session.add(dataset)
-    db.session.commit()
-    return row_to_dict(dataset)
-
-
-def delete_dataset(project_id, dataset_id):
-    dataset = Dataset.query.filter_by(project_id=project_id, id=dataset_id).one()
-    db.session.delete(dataset)
-    db.session.commit()
-    return row_to_dict(dataset)
 
 
 ################
@@ -152,10 +62,6 @@ def remove_preloaded_dataset_from_project(project_id, dataset_id):
         return None
     except MultipleResultsFound, e:
         raise e
-
-def get_project_preloaded_datasets(project_id):
-    project = Project.query.get_or_404(project_id)
-    return [ row_to_dict(d) for d in project.preloaded_datasets ]
 
 ################
 # Dataset Properties

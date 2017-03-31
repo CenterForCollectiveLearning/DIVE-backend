@@ -25,7 +25,7 @@ def run_aggregation_from_spec(spec, project_id, config={}, conditionals=[]):
 
     if not (dataset_id): return 'Not passed required parameters', 400
 
-    all_field_properties = db_access.get_field_properties(project_id, dataset_id)
+    all_field_properties = FieldPropertiesModel.get_multiple(project_id=project_id, dataset_id=dataset_id)
     aggregation_variables = [ next((fp for fp in all_field_properties if fp['name'] == n), None) for n in aggregation_variables_names ]
     dependent_variable = next((fp for fp in all_field_properties if fp['name'] == dependent_variable_name), None)
 

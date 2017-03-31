@@ -52,6 +52,7 @@ def create_app(**kwargs):
         app.config.from_object('config.DevelopmentConfig')
     elif mode == 'TESTING':
         app.config.from_object('config.TestingConfig')
+        sentry.init_app(app)
     elif mode == 'PRODUCTION':
         app.config.from_object('config.ProductionConfig')
         sentry.init_app(app)

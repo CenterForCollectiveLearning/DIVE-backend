@@ -3,7 +3,7 @@ Get and compute whole-dataset properties
 '''
 import pandas as pd
 
-from dive.base.db import db_access
+from dive.base.db.models import *
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data
 from dive.base.data.in_memory_data import InMemoryData as IMD
@@ -19,7 +19,7 @@ def compute_dataset_properties(dataset_id, project_id, path=None):
     import pandas as pd-dataset properties '''
 
     if not path:
-        dataset = db_access.get_dataset(project_id, dataset_id)
+        dataset = DatasetModel.get_one(project_id=project_id, id=dataset_id)
         path = dataset['path']
         df = get_data(project_id=project_id, dataset_id=dataset_id)
 

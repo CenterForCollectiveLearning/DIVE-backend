@@ -14,7 +14,7 @@ from dive.base.core import create_app
 from dive.base.db import db_access
 from dive.base.db.accounts import register_user
 from dive.base.constants import Role
-from dive.base.db.models import Project, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
+# from dive.base.db.models import ;roject, Dataset, Dataset_Properties, Field_Properties, Spec, Exported_Spec, Team, User
 from dive.worker.core import celery, task_app
 from dive.worker.pipelines import ingestion_pipeline, viz_spec_pipeline, full_pipeline, relationship_pipeline
 from dive.worker.ingestion.upload import get_dialect, get_encoding
@@ -102,7 +102,7 @@ def recreate():
 
 @manager.command
 def delete_specs():
-    from dive.base.db.models import Spec
+    from dive.base.db.models import SpecModel
     all_specs = Spec.query.all()
     map(db.session.delete, all_specs)
     db.session.commit()

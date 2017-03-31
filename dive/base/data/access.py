@@ -15,7 +15,7 @@ from flask_restful import abort
 
 from dive.base.core import s3_client
 from dive.base.data.in_memory_data import InMemoryData as IMD
-from dive.base.db import db_access
+from dive.base.db.models import *
 from dive.worker.core import task_app
 
 
@@ -26,7 +26,7 @@ locale.setlocale(locale.LC_NUMERIC, '')
 
 
 def delete_dataset(project_id, dataset_id):
-    deleted_dataset = db_access.delete_dataset(project_id, dataset_id)
+    deleted_dataset = DatasetModel.delete(dataset_id)
     if deleted_dataset['storage_type'] == 's3':
         file_obj = s3_client.delete_object(
             Bucket=current_app.config['AWS_DATA_BUCKET'],
@@ -43,7 +43,7 @@ def get_dataset_sample(dataset_id, project_id, start=0, inc=100):
 
     sample = map(list, df.iloc[start:end].values)
 
-    result = db_access.get_dataset_properties(project_id, dataset_id)
+    result = DatasetPropertiesModel.get_one(project_id=project_id, dataset_id=dataset_id)
     result['sample'] = sample
     return result
 
@@ -54,7 +54,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
         df = IMD.getData(dataset_id)
         return df
 
-    dataset = db_access.get_dataset(project_id, dataset_id)
+    dataset = DatasetModel.get_one(project_id=project_id, id=dataset_id)
     dialect = dataset['dialect']
     encoding = dataset.get('encoding', 'utf-8')
 
@@ -75,7 +75,7 @@ def get_data(project_id=None, dataset_id=None, nrows=None, field_properties=[]):
         accessor = dataset['path']
 
     if not field_properties:
-        field_properties = db_access.get_field_properties(project_id, dataset_id)
+        field_properties = FieldPropertiesModel.get_multiple(project_id=project_id, dataset_id=dataset_id)
 
     df = pd.read_table(
         accessor,
@@ -182,7 +182,7 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
         return df
 
     desired_keys = ['general_type', 'name', 'id']
-    raw_field_properties = db_access.get_field_properties(project_id, dataset_id)
+    raw_field_properties = FieldPropertiesModel.get_multiple(project_id=project_id, dataset_id=dataset_id)
     all_field_properties = [{ k: field[k] for k in desired_keys } for field in raw_field_properties]
 
     query_strings = { 'and': '', 'or': '' }

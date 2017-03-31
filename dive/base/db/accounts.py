@@ -8,14 +8,14 @@ from dive.base.serialization import jsonify
 from dive.base.core import db, login_manager 
 from dive.base.constants import Role, ModelName, AuthStatus, AuthMessage, AuthErrorType
 from dive.base.db.helpers import row_to_dict
-from dive.base.db.models import Team, User, Project
+from dive.base.db.models import *
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 def project_auth(project_id):
-    matching_project = Project.query.get_or_404(project_id)
+    matching_project = ProjectModel.get_one(id=project_id)
 
     authorized = False
     message = {}
@@ -64,23 +64,23 @@ def delete(account):
 
 @login_manager.user_loader
 def load_account(user_id):
-    return User.query.get(user_id)
+    return UserModel._get_one_object(id=user_id)
 
 
 def check_email_exists(email):
-    user = User.query.filter_by(email=email).first()
+    user = UserModel._get_one_object(email=email)
     if user:
         return user
     else:
         return False
 
 def validate_registration(username, email):
-    matching_email = User.query.filter_by(email=email).first()
+    matching_email = UserModel._get_one_object(email=email)
     result = {}
     if matching_email:
         result['email'] = 'Account with e-mail already exists'
 
-    matching_username = User.query.filter_by(username=username).first()
+    matching_username = UserModel.query.filter_by(username=username).first()
     if matching_username:
         result['username'] = 'Account with username already exists'
 
@@ -91,61 +91,40 @@ def validate_registration(username, email):
 
 
 def team_exists(team_name):
-    return (Team.query.filter_by(name=team_name).count() > 0)
+    return TeamModel.get_count(name=team_name)
 
 def create_team(team_name):
-    t = Team(name=team_name)
-    db.session.add(t)
-    db.session.commit()
+    t = TeamModel.create(name=team_name)
 
 def confirm_user(**kwargs):
-    try:
-        user = User.query.filter_by(**kwargs).one()
-    except NoResultFound, e:
-        return None
-    except MultipleResultsFound, e:
-        raise e
-
-    user.confirmed = True
-    user.confirmed_on = datetime.datetime.now()
-    db.session.commit()
-
-    return user
+    return UserModel.confirm_user(**kwargs)
 
 def get_user(**kwargs):
-    try:
-        user = User.query.filter_by(**kwargs).one()
-    except NoResultFound, e:
-        return None
-    except MultipleResultsFound, e:
-        raise e
+    return UserModel._get_one_object(**kwargs)
 
-    return user
 
 haikunator = Haikunator()
 def create_anonymous_user():
-    user = User(
+    user = User.create(
         username=haikunator.haikunate(),
         email='',
         password='',
         confirmed=None,
         anonymous=True
     )
-    db.session.add(user)
-    db.session.commit()
     return user
 
 
 def register_user(username, email, password, user_id=None, confirmed=True, anonymous=False, admin=[], teams=[], create_teams=True):
     if user_id:
-        user = User.query.get_or_404(user_id)
+        user = UserModel._get_one_object(user_id)
         setattr(user, 'username', username)
         setattr(user, 'email', email)
         setattr(user, 'password', password)
         setattr(user, 'confirmed', confirmed)
         setattr(user, 'anonymous', anonymous)
     else:
-        user = User(
+        user = UserModel.create(
             username=username,
             email=email,
             password=password,
@@ -155,10 +134,10 @@ def register_user(username, email, password, user_id=None, confirmed=True, anony
     if admin:
         for admin_team_name in admin:
             if team_exists(admin_team_name):
-                t = Team.query.filter_by(name=admin_team_name).one()
+                t = TeamModel.query.filter_by(name=admin_team_name).one()
             else:
                 if create_teams:
-                    t = Team(name=admin_team_name)
+                    t = TeamModel(name=admin_team_name)
                     db.session.add(t)
                     db.session.commit()
             if t:
@@ -166,10 +145,10 @@ def register_user(username, email, password, user_id=None, confirmed=True, anony
     if teams:
         for team_name in teams:
             if team_exists(team_name):
-                t = Team.query.filter_by(name=team_name).one()
+                t = TeamModel.query.filter_by(name=team_name).one()
             else:
                 if create_teams:
-                    t = Team(name=team_name)
+                    t = TeamModel(name=team_name)
                     db.session.add(t)
                     db.session.commit()
             if t:
@@ -180,7 +159,7 @@ def register_user(username, email, password, user_id=None, confirmed=True, anony
     return user  # Not turning to dictionary because of flask-login
 
 def change_user_password_by_email(email, password):
-    try: user = User.query.filter_by(email=email).one()
+    try: user = UserModel.query.filter_by(email=email).one()
     except NoResultFound, e: return None
     except MultipleResultsFound, e: raise e
 
@@ -192,7 +171,7 @@ def change_user_password_by_email(email, password):
 
 def delete_user(user_id, password, name=None):
     try:
-        user = User.query.filter_by(id=user_id, password=password).one()
+        user = UserModel.query.filter_by(id=user_id, password=password).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -217,8 +196,8 @@ def check_user_auth(password, email=None, username=None):
         status = AuthStatus.ERROR.value
     else:
         if email:
-            if User.query.filter_by(email=email).count():
-                user = User.query.filter_by(email=email, password=password).first()
+            if UserModel.query.filter_by(email=email).count():
+                user = UserModel.query.filter_by(email=email, password=password).first()
             else:
                 result = {
                     'user': None,
@@ -229,8 +208,8 @@ def check_user_auth(password, email=None, username=None):
                 return result
 
         if username:
-            if User.query.filter_by(username=username).count():
-                user = User.query.filter_by(username=username, password=password).first()
+            if UserModel.query.filter_by(username=username).count():
+                user = UserModel.query.filter_by(username=username, password=password).first()
             else:
                 result = {
                     'user': None,
@@ -254,7 +233,7 @@ def check_user_auth(password, email=None, username=None):
 
 
 def delete_anonymous_data(user_id):
-    user = User.query.get_or_404(user_id)
+    user = UserModel.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
     return user

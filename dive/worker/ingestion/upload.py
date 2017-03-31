@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 '''
 Functions for reading, sampling, and detecting types of datasets
 
-No manipulation or calculation, only description
+No manipulation or calculation, wonly description
 '''
 
 import os
@@ -23,7 +23,7 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 
 from dive.base.core import s3_client, compress
-from dive.base.db import db_access
+from dive.base.db.models import *
 from dive.base.exceptions import UploadTooLargeException
 from dive.worker.core import celery, task_app
 from dive.base.data.access import get_data
@@ -176,7 +176,8 @@ def save_dataset_to_db(project_id, file_obj, file_title, file_name, file_type, p
     for file_doc in file_docs:
         path = file_doc['path']
 
-        dataset = db_access.insert_dataset(project_id,
+        dataset = DatasetModel.create(
+            project_id=project_id,
             path = path,
             encoding = encoding,
             dialect = dialect,

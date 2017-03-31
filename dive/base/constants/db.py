@@ -18,6 +18,7 @@ class ModelName(Enum):
     AGGREGATION = 'aggregation'
     COMPARISON = 'comparison'
     CORRELATION = 'correlation'
+    CRUD_BASE = 'crud_base'
     DATASET = 'dataset'
     DATASET_PROPERTIES = 'dataset_properties'
     DOCUMENT = 'document'

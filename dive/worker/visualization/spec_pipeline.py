@@ -22,7 +22,7 @@ logger = get_task_logger(__name__)
 
 def get_full_fields_for_conditionals(conditionals, dataset_id, project_id):
     conditionals_with_full_docs = {'and': [], 'or': []}
-    field_properties = db_access.get_field_properties(project_id, dataset_id)
+    field_properties = FieldPropertiesModel.get_multiple(project_id=project_id, dataset_id=dataset_id)
 
     for clause, conditional_list in conditionals.iteritems():
         for conditional in conditional_list:

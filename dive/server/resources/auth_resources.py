@@ -9,7 +9,7 @@ from dive.base.core import login_manager, db
 from dive.base.constants import AuthStatus, AuthMessage
 from dive.base.db.helpers import row_to_dict
 from dive.base.db.accounts import validate_registration, register_user, delete_user, check_user_auth, confirm_user, get_user, check_email_exists, change_user_password_by_email, create_anonymous_user, delete_anonymous_data
-from dive.base.db.models import User
+from dive.base.db.models import *
 from dive.base.serialization import jsonify
 
 import logging

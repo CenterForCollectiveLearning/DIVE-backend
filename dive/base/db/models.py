@@ -2,10 +2,15 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Table, Column, Integer, Boolean, ForeignKey, DateTime, Unicode, Enum, Float, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
-from dive.base.constants import Role, User_Status, ModelName
 from dive.base.core import db
+from dive.base.constants import Role, User_Status, ModelName
+from dive.base.db.helpers import row_to_dict
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def make_uuid():
@@ -20,7 +25,63 @@ project_preloaded_dataset_association_table = Table('project_preloaded_dataset_a
 )
 
 
-class Project(db.Model):
+class CRUDBase(db.Model):
+    __abstract__ = True
+    creation_date = Column(DateTime, default=datetime.utcnow)
+    update_date = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
+
+    @classmethod
+    def _get_one_object(cls, **kwargs):
+        try:
+            obj = cls.query.filter_by(**kwargs).one()
+            return obj
+        except NoResultFound, e:
+            logger.error(e)
+            return None
+        except MultipleResultsFound, e:
+            logger.error(e)
+            raise e    
+
+    @classmethod
+    def get_one(cls, **kwargs):
+        return row_to_dict(cls._get_one_object(**kwargs))
+
+    @classmethod
+    def get_multiple(cls, **kwargs):
+        objs = cls.query.filter_by(**kwargs).all()
+        return [ row_to_dict(obj) for obj in objs ]
+
+    @classmethod
+    def get_count(cls, **kwargs):
+        return cls.query.filter_by(**kwargs).count()
+
+    @classmethod
+    def create(cls, **kwargs):
+        obj = cls(**kwargs)
+        db.session.add(obj)
+        db.session.commit()
+        return row_to_dict(obj)
+
+    @classmethod
+    def update_by_id(cls, id, **kwargs):
+        obj = cls._get_one_object(id=id)
+        for k, v in kwargs.iteritems():
+            setattr(obj, k, v)
+
+        db.session.add(obj)
+        db.session.commit()
+        return row_to_dict(obj)        
+
+    @classmethod
+    def delete(cls, id):
+        obj = cls._get_one_object(id=id)
+        db.session.delete(obj)
+        db.session.commit()
+        return row_to_dict(obj) 
+
+
+class ProjectModel(CRUDBase):
     __tablename__ = ModelName.PROJECT.value
     id = Column(Integer, primary_key=True)
     title = Column(Unicode(250))
@@ -35,53 +96,75 @@ class Project(db.Model):
     user_id = Column(Integer, ForeignKey('user.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
-    datasets = relationship('Dataset',
+    datasets = relationship('DatasetModel',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
 
-    preloaded_datasets = relationship('Dataset',
+    preloaded_datasets = relationship('DatasetModel',
         secondary=project_preloaded_dataset_association_table,
         back_populates='projects_using',
         lazy='dynamic')
 
-    specs = relationship('Spec',
+    specs = relationship('SpecModel',
         cascade='all, delete-orphan',
         backref='projects',
         lazy='dynamic')
 
-    documents = relationship('Document',
+    documents = relationship('DocumentModel',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
 
-    correlations = relationship('Correlation',
+    correlations = relationship('CorrelationModel',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
 
-    aggregations = relationship('Aggregation',
+    aggregations = relationship('AggregationModel',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
 
-    comparisons = relationship('Comparison',
+    comparisons = relationship('ComparisonModel',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
 
-    regressions = relationship('Regression',
+    regressions = relationship('RegressionModel',
         cascade='all, delete-orphan',
         backref='project',
         lazy='dynamic')
 
+    @classmethod
+    def get_multiple(cls, **kwargs):
+        objs = cls.query.filter_by(**kwargs).all()
+        for obj in objs:
+            setattr(obj, 'included_datasets', [ row_to_dict(d) for d in obj.datasets ])
+            setattr(obj, 'num_specs', obj.specs.count())
+            setattr(obj, 'num_datasets', obj.datasets.count())
+            setattr(obj, 'num_documents', obj.documents.count())
+            setattr(obj, 'num_analyses', obj.aggregations.count() + obj.comparisons.count() + obj.correlations.count() + obj.regressions.count())
+        return [ row_to_dict(obj, custom_fields=[ 'included_datasets', 'num_datasets', 'num_specs', 'num_documents', 'num_analyses' ]) for obj in objs ]
 
-    creation_date = Column(DateTime, default=datetime.utcnow)
-    update_date = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
+    @classmethod
+    def get_preloaded_datasets(cls, **kwargs):
+        project = cls._get_one_object(**kwargs)
+        print project
+        return [ row_to_dict(d) for d in project.preloaded_datasets ]
 
+    @classmethod
+    def add_preloaded_dataset_to_project(cls, project_id, dataset_id):
+        project = cls._get_one_object(id=project_id)
+        preloaded_dataset = Dataset._get_one_object(id=dataset_id)
+        if preloaded_dataset not in project.preloaded_datasets:
+            project.preloaded_datasets.append(preloaded_dataset)
+            db.session.commit()
+            return row_to_dict(preloaded_dataset)
+        else:
+            return None
 
-class Dataset(db.Model):
+class DatasetModel(CRUDBase):
     '''
     The dataset is the core entity of any access to data.
     The dataset keeps an in-memory representation of the data model
@@ -106,24 +189,24 @@ class Dataset(db.Model):
     info_url = Column(Unicode(250))
 
     # One-to-one with dataset_properties
-    dataset_properties = relationship('Dataset_Properties',
+    dataset_properties = relationship('DatasetPropertiesModel',
         uselist=False,
         cascade='all, delete-orphan',
         backref='dataset')
 
     # One-to-many with field_properties
-    fields_properties = relationship('Field_Properties',
+    fields_properties = relationship('FieldPropertiesModel',
         backref='dataset',
         cascade='all, delete-orphan',
         lazy='dynamic')
 
     # One-to-many with specs
-    specs = relationship('Spec',
+    specs = relationship('SpecModel',
         backref='dataset',
         cascade='all, delete-orphan',
         lazy='dynamic')
 
-    projects_using = relationship('Project',
+    projects_using = relationship('ProjectModel',
         secondary=project_preloaded_dataset_association_table,
         back_populates='preloaded_datasets',
         lazy='dynamic')
@@ -132,13 +215,27 @@ class Dataset(db.Model):
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
+    @classmethod
+    def get_one(cls, **kwargs):
+        obj = cls._get_one_object(**kwargs)
+        if obj and obj.preloaded or obj.project_id == kwargs.get('project_id'):
+            return row_to_dict(obj)
+        else:
+            return None
 
-    creation_date = Column(DateTime, default=datetime.utcnow)
-    update_date = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
+    @classmethod
+    def get_multiple(cls, include_preloaded=True, **kwargs):
+        print 'Get multiple datasets', kwargs
+        objs = cls.query.filter_by(**kwargs).all()
+
+        if include_preloaded:
+            project = ProjectModel._get_one_object(id=kwargs.get('project_id'))
+            objs.extend(project.preloaded_datasets.all())        
+
+        return [ row_to_dict(obj) for obj in objs ]
 
 
-class Dataset_Properties(db.Model):
+class DatasetPropertiesModel(CRUDBase):
     __tablename__ = ModelName.DATASET_PROPERTIES.value
     id = Column(Integer, primary_key=True)
     n_rows = Column(Integer)
@@ -153,14 +250,14 @@ class Dataset_Properties(db.Model):
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class Field_Properties(db.Model):
+class FieldPropertiesModel(CRUDBase):
     __tablename__ = ModelName.FIELD_PROPERTIES.value
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(250))  # Have these here, vs. in dataset_properties?
@@ -188,7 +285,7 @@ class Field_Properties(db.Model):
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -196,7 +293,7 @@ class Field_Properties(db.Model):
 
 
 # TODO Make this not dataset-specific?
-class Spec(db.Model):
+class SpecModel(CRUDBase):
     '''
     Many-to-one with Dataset
     '''
@@ -218,7 +315,7 @@ class Spec(db.Model):
     config = Column(JSONB)
 
     # One-to-many with exported specs
-    exported_specs = relationship('Exported_Spec',
+    exported_specs = relationship('ExportedSpecModel',
         backref='spec',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -233,7 +330,7 @@ class Spec(db.Model):
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-class Exported_Spec(db.Model):
+class ExportedSpecModel(CRUDBase):
     '''
     Many-to-one with Specification
     '''
@@ -248,14 +345,14 @@ class Exported_Spec(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class Document(db.Model):
+class DocumentModel(CRUDBase):
     __tablename__ = ModelName.DOCUMENT.value
     id = Column(Integer, primary_key=True)
     title = Column(Unicode(250))
@@ -269,7 +366,9 @@ class Document(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class Regression(db.Model):
+
+
+class RegressionModel(CRUDBase):
     '''
     Many-to-one with Dataset
     '''
@@ -282,7 +381,7 @@ class Regression(db.Model):
     config = Column(JSONB)
 
     # One-to-many with exported specs
-    exported_regression = relationship('Exported_Regression',
+    exported_regression = relationship('ExportedRegressionModel',
         backref='regression',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -295,7 +394,7 @@ class Regression(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class Exported_Regression(db.Model):
+class ExportedRegressionModel(CRUDBase):
     __tablename__ = ModelName.EXPORTED_REGRESSION.value
     id = Column(Integer, primary_key=True)
     data = Column(JSONB)
@@ -307,13 +406,13 @@ class Exported_Regression(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-class Interaction_Term(db.Model):
+class InteractionTermModel(CRUDBase):
     __tablename__ = ModelName.INTERACTION_TERM.value
     id = Column(Integer, primary_key=True)
     variables = Column(JSONB)
@@ -321,7 +420,7 @@ class Interaction_Term(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     dataset_id = Column(Integer, ForeignKey('dataset.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
@@ -330,7 +429,7 @@ class Interaction_Term(db.Model):
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-class Aggregation(db.Model):
+class AggregationModel(CRUDBase):
     __tablename__ = ModelName.AGGREGATION.value
     id = Column(Integer, primary_key=True)
 
@@ -340,7 +439,7 @@ class Aggregation(db.Model):
     config = Column(JSONB)
 
     # One-to-many with exported specs
-    exported_aggregation = relationship('Exported_Aggregation',
+    exported_aggregation = relationship('ExportedAggregationModel',
         backref='aggregation',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -353,7 +452,7 @@ class Aggregation(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class Exported_Aggregation(db.Model):
+class ExportedAggregationModel(CRUDBase):
     __tablename__ = ModelName.EXPORTED_AGGREGATION.value
     id = Column(Integer, primary_key=True)
     data = Column(JSONB)
@@ -365,14 +464,14 @@ class Exported_Aggregation(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class Comparison(db.Model):
+class ComparisonModel(CRUDBase):
     __tablename__ = ModelName.COMPARISON.value
     id = Column(Integer, primary_key=True)
 
@@ -382,7 +481,7 @@ class Comparison(db.Model):
     config = Column(JSONB)
 
     # One-to-many with exported specs
-    exported_comparison = relationship('Exported_Comparison',
+    exported_comparison = relationship('ExportedComparisonModel',
         backref='comparison',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -395,7 +494,7 @@ class Comparison(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class Exported_Comparison(db.Model):
+class ExportedComparisonModel(CRUDBase):
     __tablename__ = ModelName.EXPORTED_COMPARISON.value
     id = Column(Integer, primary_key=True)
     data = Column(JSONB)
@@ -407,14 +506,14 @@ class Exported_Comparison(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class Correlation(db.Model):
+class CorrelationModel(CRUDBase):
     __tablename__ = ModelName.CORRELATION.value
     id = Column(Integer, primary_key=True)
 
@@ -424,7 +523,7 @@ class Correlation(db.Model):
     config = Column(JSONB)
 
     # One-to-many with exported specs
-    exported_correlation = relationship('Exported_Correlation',
+    exported_correlation = relationship('ExportedCorrelationModel',
         backref='correlation',
         cascade='all, delete-orphan',
         lazy='dynamic')
@@ -437,7 +536,7 @@ class Correlation(db.Model):
                         onupdate=datetime.utcnow)
 
 
-class Exported_Correlation(db.Model):
+class ExportedCorrelationModel(CRUDBase):
     __tablename__ = ModelName.EXPORTED_CORRELATION.value
     id = Column(Integer, primary_key=True)
     data = Column(JSONB)
@@ -449,14 +548,14 @@ class Exported_Correlation(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class Feedback(db.Model):
+class FeedbackModel(CRUDBase):
     __tablename__ = ModelName.FEEDBACK.value
     id = Column(Integer, primary_key=True)
 
@@ -473,14 +572,14 @@ class Feedback(db.Model):
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class Relationship(db.Model):
+class RelationshipModel(CRUDBase):
     '''
     Relationships between fields in different datasets
     '''
@@ -502,7 +601,7 @@ class Relationship(db.Model):
 
     project_id = Column(Integer, ForeignKey('project.id',
         onupdate='CASCADE', ondelete='CASCADE'))
-    project = relationship(Project)
+    project = relationship(ProjectModel)
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
@@ -521,22 +620,22 @@ team_admin_association_table = Table('team_admin_association',
     Column('admin_id', Integer, ForeignKey('user.id'))
 )
 
-class Team(db.Model):
+class TeamModel(CRUDBase):
     '''
     Many-to-many with User
     '''
     __tablename__ = ModelName.TEAM.value
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(50), unique=True)
-    users = relationship('User', secondary=team_user_association_table, back_populates="teams", lazy='dynamic')
-    admins = relationship('User', secondary=team_admin_association_table, back_populates="admin", lazy='dynamic')
+    users = relationship('UserModel', secondary=team_user_association_table, back_populates="teams", lazy='dynamic')
+    admins = relationship('UserModel', secondary=team_admin_association_table, back_populates="admin", lazy='dynamic')
 
     creation_date = Column(DateTime, default=datetime.utcnow)
     update_date = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
 
-class User(db.Model):
+class UserModel(CRUDBase):
     '''
     Many-to-one with Group
     '''
@@ -554,12 +653,12 @@ class User(db.Model):
 
     api_key = Column(Unicode(2000), default=make_uuid)
 
-    admin = relationship('Team', secondary=team_admin_association_table, back_populates="admins", lazy='dynamic')
-    teams = relationship('Team', secondary=team_user_association_table, back_populates="users", lazy='dynamic')
+    admin = relationship('TeamModel', secondary=team_admin_association_table, back_populates="admins", lazy='dynamic')
+    teams = relationship('TeamModel', secondary=team_user_association_table, back_populates="users", lazy='dynamic')
 
     status = Column(Unicode(20), default=User_Status.NEW.value)
 
-    projects = relationship('Project',
+    projects = relationship('ProjectModel',
         backref='user',
         cascade='all, delete-orphan',
         lazy='dynamic'
@@ -592,3 +691,11 @@ class User(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    def confirm_user(cls, **kwargs):
+        user = cls._get_one_object(**kwargs)
+        user.confirmed = True
+        user.confirmed_on = datetime.datetime.now()
+        db.session.commit()
+        return user

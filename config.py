@@ -164,41 +164,41 @@ class TestingConfig(BaseConfig):
     PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
 
     # Flask
-    DEBUG = False
-    COMPRESS = False
-    COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', 'usedive.com')
-    REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
-    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+    # DEBUG = False
+    # COMPRESS = False
+    # COOKIE_DOMAIN = env('DIVE_COOKIE_DOMAIN', 'usedive.com')
+    # REMEMBER_COOKIE_DOMAIN = COOKIE_DOMAIN
+    # SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
-    # Analytics
+    # # Analytics
     SENTRY_DSN = env('SENTRY_DSN')
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
-    # Resources
-    STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
-    if STORAGE_TYPE == 'file':
-        STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
-    else:
-        AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
-        AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-        AWS_REGION = env('DIVE_AWS_REGION')
+    # # Resources
+    # STORAGE_TYPE = env('DIVE_STORAGE_TYPE', 'file')
+    # if STORAGE_TYPE == 'file':
+    #     STORAGE_PATH = env('DIVE_STORAGE_PATH', base_dir_path('uploads'))
+    # else:
+    #     AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+    #     AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+    #     AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+    #     AWS_REGION = env('DIVE_AWS_REGION')
 
-    # DB
-    DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
+    # # DB
+    # DATABASE_URI = '%s:%s@%s/%s' % (env('SQLALCHEMY_DATABASE_USER'), env('SQLALCHEMY_DATABASE_PASSWORD'), env('SQLALCHEMY_DATABASE_ENDPOINT'), env('SQLALCHEMY_DATABASE_NAME'))
+    # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s?client_encoding=utf8' % DATABASE_URI
 
-    # Worker
-    CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
-    CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
+    # # Worker
+    # CELERY_BROKER_URL = env('DIVE_AMQP_URL', 'librabbitmq://admin:password@localhost/dive')
+    # CELERY_RESULT_BACKEND =  'db+postgresql://%s' % DATABASE_URI
 
-    # S3
-    AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
-    AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
-    AWS_REGION = env('DIVE_AWS_REGION')
+    # # S3
+    # AWS_ACCESS_KEY_ID = env('DIVE_AWS_ACCESS_KEY_ID')
+    # AWS_SECRET_ACCESS_KEY = env('DIVE_AWS_SECRET_ACCESS_KEY')
+    # AWS_DATA_BUCKET = env('DIVE_AWS_DATA_BUCKET')
+    # AWS_REGION = env('DIVE_AWS_REGION')
 
     # Result persistence
-    RECOMPUTE_FIELD_PROPERTIES = True
-    RECOMPUTE_VIZ_SPECS = True
-    RECOMPUTE_STATISTICS = True
+    RECOMPUTE_FIELD_PROPERTIES = False
+    RECOMPUTE_VIZ_SPECS = False
+    RECOMPUTE_STATISTICS = False

@@ -8,7 +8,7 @@ from flask_restful import Resource, reqparse
 from flask_login import login_required
 from celery import chain
 
-from dive.base.db import db_access
+from dive.base.db.models import *
 from dive.base.db.accounts import load_account, project_auth
 from dive.base.exceptions import UploadTooLargeException
 from dive.base.serialization import jsonify
@@ -79,14 +79,14 @@ class Datasets(Resource):
         has_project_access, auth_message = project_auth(project_id)
         if not has_project_access: return auth_message
 
-        datasets = db_access.get_datasets(project_id, include_preloaded=True)
+        datasets = DatasetModel.get_multiple(project_id=project_id, include_preloaded=True)
 
         data_list = []
         for d in datasets:
             dataset_data = { k: d[k] for k in [ 'title', 'file_name', 'id', 'description', 'info_url', 'tags', 'preloaded' ]}
 
             if args['get_structure']:
-                dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
+                dataset_data['details'] = DatasetPropertiesModel.get_multiple(project_id=project_id, dataset_id=d.get('id'))
 
             data_list.append(dataset_data)
 
@@ -103,11 +103,11 @@ class PreloadedDatasets(Resource):
         project_id = args.get('project_id')
         get_structure = args.get('get_structure')
 
-        preloaded_datasets = db_access.get_preloaded_datasets(**args)
+        preloaded_datasets = DatasetModel.get_multiple(preloaded=True, project_id=project_id)
 
         selected_preloaded_dataset_ids = []
         if project_id:
-            selected_preloaded_datasets = db_access.get_project_preloaded_datasets(project_id)
+            selected_preloaded_datasets = ProjectModel.get_preloaded_datasets(id=project_id)
             selected_preloaded_dataset_ids = [ d['id'] for d in selected_preloaded_datasets ]
 
         data_list = []
@@ -181,7 +181,7 @@ class Dataset(Resource):
         args = datasetGetParser.parse_args()
         project_id = args.get('project_id')
 
-        dataset = db_access.get_dataset(project_id, dataset_id)
+        dataset = DatasetModel.get_one(project_id=project_id, id=dataset_id)
         sample = get_dataset_sample(dataset_id, project_id)
 
         response = {

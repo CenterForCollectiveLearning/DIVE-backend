@@ -7,7 +7,7 @@ from flask_restful import Resource, reqparse, marshal_with
 from flask_login import login_required
 
 from dive.base.core import s3_client
-from dive.base.db import db_access
+from dive.base.db.models import *
 from dive.base.db.accounts import load_account, project_auth
 from dive.base.serialization import jsonify
 
@@ -31,7 +31,7 @@ class Project(Resource):
         has_project_access, auth_message = project_auth(project_id)
         if not has_project_access: return auth_message
 
-        result = db_access.get_project(project_id)
+        result = ProjectModel.get_one(id=project_id)
         return jsonify(result)
 
     @login_required
@@ -40,12 +40,12 @@ class Project(Resource):
         title = args.get('title')
         description = args.get('description')
         starred = args.get('starred')
-        result = db_access.update_project(project_id, title=title, description=description, starred=starred)
+        result = ProjectModel.update_by_id(project_id, title=title, description=description, starred=starred)
         return jsonify(result)
 
     @login_required
     def delete(self, project_id):
-        result = db_access.delete_project(project_id)
+        result = ProjectModel.delete_by_id(project_id)
 
         if current_app.config['STORAGE_TYPE'] == 'file':
             project_dir = os.path.join(current_app.config['STORAGE_PATH'], str(result['id']))
@@ -108,7 +108,7 @@ class Projects(Resource):
             if not user.is_global_admin() and not preloaded:
                 query_args['user_id'] = user_id
 
-        return jsonify({'projects': db_access.get_projects(**query_args)})
+        return jsonify({'projects': ProjectModel.get_multiple(**query_args)})
 
     # Create project, initialize directories and collections
     @login_required
@@ -120,7 +120,7 @@ class Projects(Resource):
         anonymous = args.get('anonymous')
         private = args.get('private')
 
-        result = db_access.insert_project(
+        result = ProjectModel.create(
             title=title,
             description=description,
             user_id=user_id,
