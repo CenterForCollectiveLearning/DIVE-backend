@@ -6,6 +6,8 @@ from flask_restful import Resource, reqparse
 from dive.base.db import db_access
 from dive.base.serialization import jsonify
 
+from dive.base.constants import ContentType
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,8 @@ class Document(Resource):
             new_document = document
             new_blocks = []
             for block in document['content']['blocks']:
+                if block['contentType'] == ContentType.TEXT.value:
+                    continue
                 new_block = block
                 exported_spec_id = block['exportedSpecId']
                 exported_spec_type = block['contentType']
