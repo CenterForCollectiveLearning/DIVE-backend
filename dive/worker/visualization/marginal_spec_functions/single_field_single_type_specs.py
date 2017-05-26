@@ -34,9 +34,9 @@ def single_q(q_field):
                 'field_a': q_field
             },
             'meta': {
-                'desc': 'Count of %s' % q_label,
+                'desc': 'Distribution of %s' % q_label,
                 'construction': [
-                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'Distribution', 'type': TermType.OPERATION.value },
                     { 'string': 'of', 'type': TermType.PLAIN.value },
                     { 'string': q_label, 'type': TermType.FIELD.value },
                 ]
@@ -57,16 +57,15 @@ def single_q(q_field):
                 'binning_field': q_field
             },
             'meta': {
-                'desc': '%s of %s by bin' % ('count', q_label),
+                'desc': 'Distribution of %s' % (q_label),
                 'construction': [
-                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'Distribution', 'type': TermType.OPERATION.value },
                     { 'string': 'of', 'type': TermType.PLAIN.value },
-                    { 'string': q_label, 'type': TermType.FIELD.value },
-                    { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },
+                    { 'string': q_label, 'type': TermType.FIELD.value }
                 ],
                 'labels': {
                     'x': '%s by bin' % q_label,
-                    'y': 'Count by bin'
+                    'y': 'Frequency'
                 },
             }
         }
@@ -159,15 +158,14 @@ def single_c(c_field):
             'field_a': c_field
         },
         'meta': {
-            'desc': 'Count of %s' % (c_label),
+            'desc': '%s distribution' % (c_label),
             'construction': [
-                { 'string': 'count', 'type': TermType.OPERATION.value },
-                { 'string': 'of', 'type': TermType.PLAIN.value },
                 { 'string': c_label, 'type': TermType.FIELD.value },
+                { 'string': 'distribution', 'type': TermType.OPERATION.value },                
             ],
             'labels': {
                 'x': c_label,
-                'y': 'Count'
+                'y': 'Frequency'
             },
         }
     }
