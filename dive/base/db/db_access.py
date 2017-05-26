@@ -441,7 +441,9 @@ def get_public_exported_spec(exported_spec_id, spec_type):
                 ).one()
                 setattr(exported_spec, 'spec', exported_spec.comparison.spec)
                 setattr(exported_spec, 'type', 'comparison')
-            return row_to_dict(exported_spec, custom_fields=['type', 'spec'])
+            elif spec_type == ContentType.TEXT.value:
+                exported_spec = { 'type': ContentType.TEXT.value }
+                return row_to_dict(exported_spec, custom_fields=['type', 'spec'])
 
     except NoResultFound, e:
         return None
