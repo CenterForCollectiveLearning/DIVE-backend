@@ -124,7 +124,7 @@ class ProductionConfig(BaseConfig):
     # Data
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024
     ROW_LIMIT = 100000
-    COLUMN_LIMIT = 50
+    COLUMN_LIMIT = 60
 
     # Resources
     METADATA_FILE_NAME_SUFFIX = 'PROD'
