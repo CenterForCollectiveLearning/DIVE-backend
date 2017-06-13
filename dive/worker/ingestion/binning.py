@@ -36,6 +36,7 @@ def get_bin_decimals(v, max_sample=100, default=3):
         max_decimals = max(num_decimals)
     except:
         return default
+
     return min(max_decimals, default)
 
 
@@ -136,6 +137,9 @@ def get_bin_edges(v, num_bins, general_type=GDT.Q.value, num_decimals=2):
         v = v.astype(float, raise_on_error=False)
         min_v = min(v)
         max_v = max(v)
+
+    if num_decimals > 0:
+        num_decimals += 1
 
     edges = []
     try:
