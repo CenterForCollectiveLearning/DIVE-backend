@@ -23,7 +23,7 @@ def single_q(q_field):
     q_label = q_field['name']
     scale = q_field['scale']
 
-    if (scale == Scale.ORDINAL):
+    if (scale == Scale.ORDINAL.value):
         # { Value: count }
         count_spec = {
             'generating_procedure': GP.VAL_COUNT.value,
