@@ -1,8 +1,8 @@
 from itertools import combinations
 from dive.base.constants import GeneratingProcedure as GP, TypeStructure as TS, \
-    TermType, aggregation_functions, VizType as VT
+    TermType, aggregation_functions, VizType as VT, Scale
 from dive.worker.visualization.marginal_spec_functions import elementwise_functions, binning_procedures
-
+from dive.worker.visualization.marginal_spec_functions.single_field_multi_type_specs import single_cq
 
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -81,31 +81,42 @@ def multi_q(q_fields):
     for (q_field_a, q_field_b) in combinations(q_fields, 2):
         q_label_a = q_field_a['name']
         q_label_b = q_field_b['name']
+        q_scale_a = q_field_a['scale']
+        q_scale_b = q_field_b['scale']
 
-        # Raw comparison
-        raw_comparison_spec = {
-            'generating_procedure': GP.VAL_VAL.value,
-            'type_structure': TS.Q_Q.value,
-            'field_ids': [ q_field_a['id'], q_field_b['id'] ],
-            'viz_types': [ VT.SCATTER.value ],
-            'args': {
-                'field_a': q_field_a,
-                'field_b': q_field_b
-            },
-            'meta': {
-                'desc': '%s vs. %s' % (q_label_a, q_label_b),
-                'construction': [
-                    { 'string': q_label_a, 'type': TermType.FIELD.value },
-                    { 'string': 'vs.', 'type': TermType.PLAIN.value },
-                    { 'string': q_label_b, 'type': TermType.FIELD.value },
-                ],
-                'labels': {
-                    'x': q_label_a,
-                    'y': q_label_b
+        if (q_scale_a == Scale.CONTINUOUS.value and q_scale_b == Scale.CONTINUOUS.value):
+            # Raw comparison
+            raw_comparison_spec = {
+                'generating_procedure': GP.VAL_VAL.value,
+                'type_structure': TS.Q_Q.value,
+                'field_ids': [ q_field_a['id'], q_field_b['id'] ],
+                'viz_types': [ VT.SCATTER.value ],
+                'args': {
+                    'field_a': q_field_a,
+                    'field_b': q_field_b
                 },
+                'meta': {
+                    'desc': '%s vs. %s' % (q_label_a, q_label_b),
+                    'construction': [
+                        { 'string': q_label_a, 'type': TermType.FIELD.value },
+                        { 'string': 'vs.', 'type': TermType.PLAIN.value },
+                        { 'string': q_label_b, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': q_label_a,
+                        'y': q_label_b
+                    },
+                }
             }
-        }
-        specs.append(raw_comparison_spec)
+            specs.append(raw_comparison_spec)
+
+        if (q_scale_a in [Scale.ORDINAL.value, Scale.NOMINAL.value] and q_scale_b == Scale.CONTINUOUS.value):
+            specs.extend(single_cq(q_field_a, q_field_b))
+        if (q_scale_a == Scale.CONTINUOUS.value and q_scale_b in [Scale.ORDINAL.value, Scale.NOMINAL.value]):   
+            specs.extend(single_cq(q_field_b, q_field_a))
+        if (q_scale_a in [Scale.ORDINAL.value, Scale.NOMINAL.value] and q_scale_b in [Scale.ORDINAL.value, Scale.NOMINAL.value]): 
+            specs.extend(multi_c([q_field_a, q_field_b]))
+
     return specs
 
 
