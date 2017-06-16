@@ -10,11 +10,19 @@ def get_design_matrices(df, dependent_variable, independent_variables, interacti
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
     return (y, X)
 
+transformation_to_format_string = {
+    'linear': '{}',
+    'log': 'np.log({})',
+    'square': '{}**2'
+}
 
-def create_patsy_model(dependent_variable, independent_variables, interactions=[]):
+def create_patsy_model(dependent_variable, independent_variables, transformations={}, interactions=[]):
     '''
     Construct and return patsy formula (object representation)
     '''
+
+    logger.info('Creating patsy model')
+    print 'transformations', transformations
 
     # 1) Handling passing in [{'name': X}] vs [X]
     lhs_var = dependent_variable
@@ -52,12 +60,20 @@ def create_patsy_model(dependent_variable, independent_variables, interactions=[
         if type(rhs_var) is list:
             rhs += [ Term([ LookupFactor(term) for term in rhs_var ]) ]
         else:
-            rhs += [ Term([LookupFactor(rhs_var)]) ]
+            if rhs_var in transformations:
+                transformation = transformations[rhs_var]    
+                if transformation == 'square':
+                    rhs += [ Term([LookupFactor(rhs_var)]) ]
+                format_string = transformation_to_format_string[transformation]
+                rhs += [ Term([ EvalFactor(format_string.format(rhs_var)) ]) ]                    
+            else:
+                rhs += [ Term([LookupFactor(rhs_var)]) ]
 
     if interactions:
         rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]
 
     model = ModelDesc(lhs, rhs)
+    logger.info(model)
     return model
 
 
