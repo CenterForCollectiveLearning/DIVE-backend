@@ -103,7 +103,7 @@ def get_full_field_documents_from_field_names(all_fields, names):
     return fields
 
 
-def construct_models(df, dependent_variable, independent_variables, transformations={}, interaction_terms=None, table_layout=MCT.LEAVE_ONE_OUT.value):
+def construct_models(df, dependent_variable, independent_variables, transformations={}, interaction_terms=[], table_layout=MCT.LEAVE_ONE_OUT.value):
     '''
     Given dependent and independent variables, return list of patsy models completing
     the regression table. NOT model recommendation.
@@ -323,7 +323,7 @@ def _get_fields_categorical_variable(s):
     return base_field, value_field
 
 from pprint import pprint
-def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms):
+def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms=[]):
 
     independent_variable_names = []
     for model_result in model_results:
