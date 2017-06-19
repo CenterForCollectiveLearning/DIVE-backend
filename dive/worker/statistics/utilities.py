@@ -21,9 +21,6 @@ def create_patsy_model(dependent_variable, independent_variables, transformation
     Construct and return patsy formula (object representation)
     '''
 
-    logger.info('Creating patsy model')
-    print 'transformations', transformations
-
     # 1) Handling passing in [{'name': X}] vs [X]
     lhs_var = dependent_variable
     rhs_vars = independent_variables
