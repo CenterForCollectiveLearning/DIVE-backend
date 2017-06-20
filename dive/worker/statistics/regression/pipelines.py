@@ -165,9 +165,7 @@ def parse_confidence_intervals(model_result):
     return parsed_conf_int
 
 def run_linear_regression(df, patsy_model, dependent_variable, estimator, weights):
-    logger.info('Running linear regression')
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
-
     model_result = sm.OLS(y, X).fit()
 
     p_values = model_result.pvalues.to_dict()
@@ -304,7 +302,8 @@ def _get_fields_categorical_variable(s):
         if bracket_count == 1:
             if colon_count == 0:
                 base_field = s.split('[')[0]
-                value_field = s.split('[T.')[1].strip(']')
+                if '[T.' in s:
+                    value_field = s.split('[T.')[1].strip(']')
             elif colon_count == 1:
                 q_first = (s.split(':')[0].count('[') == 0)
                 if q_first:

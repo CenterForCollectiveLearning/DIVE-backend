@@ -12,7 +12,9 @@ def get_design_matrices(df, dependent_variable, independent_variables, interacti
 
 transformation_to_format_string = {
     'linear': '{}',
-    'log': 'np.log({})',
+    # 'log': 'np.log( {0} + np.min(np.nonzero({0}))*0.01 )',
+    # 'log': 'np.log( {0} + np.min(np.nonzero({0})) )',  ;  
+    'log': 'np.log( {0} + np.min({0}.iloc[np.nonzero( {0} )]) * 0.01 )',
     'square': '{}**2'
 }
 
@@ -60,17 +62,16 @@ def create_patsy_model(dependent_variable, independent_variables, transformation
             if rhs_var in transformations:
                 transformation = transformations[rhs_var]    
                 if transformation == 'square':
-                    rhs += [ Term([LookupFactor(rhs_var)]) ]
+                    rhs += [ Term([ LookupFactor(rhs_var) ]) ]
                 format_string = transformation_to_format_string[transformation]
                 rhs += [ Term([ EvalFactor(format_string.format(rhs_var)) ]) ]                    
             else:
-                rhs += [ Term([LookupFactor(rhs_var)]) ]
+                rhs += [ Term([ LookupFactor(rhs_var) ]) ]
 
     if interactions:
         rhs += [ Term([ LookupFactor(term) for term in interaction ]) for interaction in rhs_interactions ]
 
     model = ModelDesc(lhs, rhs)
-    logger.info(model)
     return model
 
 
