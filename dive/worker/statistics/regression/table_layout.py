@@ -1,4 +1,4 @@
-def one_at_a_time(df, dependent_variable, independent_variables, interaction_terms):    
+def one_at_a_time(df, dependent_variable, independent_variables, interaction_terms=[]):    
     regression_variable_combinations = []
     for independent_variable in independent_variables:
         regression_variable_combinations.append([ independent_variable ])
@@ -8,7 +8,7 @@ def one_at_a_time(df, dependent_variable, independent_variables, interaction_ter
     return regression_variable_combinations
 
 
-def leave_one_out(df, dependent_variable, independent_variables, interaction_terms):
+def leave_one_out(df, dependent_variable, independent_variables, interaction_terms=[]):
     '''
     Return one model with all variables, and N-1 models with one variable left out
     '''
@@ -36,9 +36,10 @@ def leave_one_out(df, dependent_variable, independent_variables, interaction_ter
     return regression_variable_combinations
 
 
-def all_variables(df, dependent_variable, independent_variables, interaction_terms):
+def all_variables(df, dependent_variable, independent_variables, interaction_terms=[]):
     '''
     Returns model including all independent_variables
     '''
+    print dependent_variable, independent_variables
     regression_variable_combinations = [ independent_variables + interaction_terms ]
     return regression_variable_combinations
