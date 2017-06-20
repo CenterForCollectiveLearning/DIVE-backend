@@ -39,6 +39,7 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     independent_variables_names = spec.get('independentVariables', [])
     dependent_variable_name = spec.get('dependentVariable', [])
     interaction_term_ids = spec.get('interactionTerms', [])
+    transformations = spec.get('transformations', {})    
     estimator = spec.get('estimator', 'ols')
     degree = spec.get('degree', 1)  # need to find quantitative, categorical
     weights = spec.get('weights', None)
@@ -54,7 +55,7 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
     considered_independent_variables_per_model, patsy_models = \
-        construct_models(df, dependent_variable, independent_variables, interaction_terms, table_layout=table_layout)
+        construct_models(df, dependent_variable, independent_variables, transformations, interaction_terms, table_layout=table_layout)
     raw_table_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
     formatted_table_results = format_results(raw_table_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
@@ -102,7 +103,7 @@ def get_full_field_documents_from_field_names(all_fields, names):
     return fields
 
 
-def construct_models(df, dependent_variable, independent_variables, interaction_terms=None, table_layout=MCT.LEAVE_ONE_OUT.value):
+def construct_models(df, dependent_variable, independent_variables, transformations={}, interaction_terms=[], table_layout=MCT.LEAVE_ONE_OUT.value):
     '''
     Given dependent and independent variables, return list of patsy models completing
     the regression table. NOT model recommendation.
@@ -123,15 +124,15 @@ def construct_models(df, dependent_variable, independent_variables, interaction_
 
     table_layout_function = table_layout_name_to_function[table_layout]
     regression_variable_combinations = table_layout_function(df, dependent_variable, independent_variables, interaction_terms)
-    patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations)
+    patsy_models = convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations, transformations)
 
     return ( regression_variable_combinations, patsy_models )
 
 
-def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations):
+def convert_regression_variable_combinations_to_patsy_models(dependent_variable, regression_variable_combinations, transformations={}):
     patsy_models = []
     for regression_variable_combination in regression_variable_combinations:
-        model = create_patsy_model(dependent_variable, regression_variable_combination)
+        model = create_patsy_model(dependent_variable, regression_variable_combination, transformations)
         patsy_models.append(model)
 
     return patsy_models
@@ -165,7 +166,6 @@ def parse_confidence_intervals(model_result):
 
 def run_linear_regression(df, patsy_model, dependent_variable, estimator, weights):
     y, X = dmatrices(patsy_model, df, return_type='dataframe')
-
     model_result = sm.OLS(y, X).fit()
 
     p_values = model_result.pvalues.to_dict()
@@ -302,7 +302,8 @@ def _get_fields_categorical_variable(s):
         if bracket_count == 1:
             if colon_count == 0:
                 base_field = s.split('[')[0]
-                value_field = s.split('[T.')[1].strip(']')
+                if '[T.' in s:
+                    value_field = s.split('[T.')[1].strip(']')
             elif colon_count == 1:
                 q_first = (s.split(':')[0].count('[') == 0)
                 if q_first:
@@ -320,9 +321,18 @@ def _get_fields_categorical_variable(s):
 
     return base_field, value_field
 
-def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms):
+from pprint import pprint
+def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms=[]):
+
+    independent_variable_names = []
+    for model_result in model_results:
+        for field_property in model_result['properties_by_field']:
+            if field_property['base_field'] != 'Intercept':
+                independent_variable_names.append(field_property['base_field'])
     # Initialize returned data structures
-    independent_variable_names = [ iv['name'] for iv in independent_variables ]
+
+
+    # independent_variable_names = [ iv['name'] for iv in independent_variables ]
     regression_fields_dict = OrderedDict([(ivn, None) for ivn in independent_variable_names ])
     regression_results = {
         'regressions_by_column': [],
