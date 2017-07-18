@@ -90,7 +90,6 @@ def calculate_field_stats(field_type, general_type, field_values, logging=False)
     return stats
 
 
-
 def detect_contiguous_integers(field_values):
     sorted_unique_list = sorted(np.unique(field_values))
 
@@ -194,7 +193,21 @@ def get_field_distribution_viz_data(field_name, field_values, field_type, genera
             }
             viz_data_function = get_bin_agg_data
 
-    elif scale in [ Scale.ORDINAL.value, Scale.NOMINAL.value ]:
+    elif scale in [ Scale.ORDINAL.value ]:
+        if general_type == GDT.T.value:
+            spec = {
+                'field_a': field_document,
+                'agg_fn': 'count',
+                'viz_types': [ VT.LINE.value ]
+            }
+        else:        
+            spec = {
+                'field_a': field_document,
+                'viz_types': [ VT.BAR.value ]
+            }
+        viz_data_function = get_val_count_data
+
+    elif scale in [ Scale.NOMINAL.value ]:
         spec = {
             'field_a': field_document,
             'viz_types': [ VT.BAR.value ]
