@@ -14,6 +14,7 @@ from random import sample
 from itertools import combinations
 from flask import current_app
 
+from dive.base.db import db_access
 from dive.base.data.in_memory_data import InMemoryData as IMD
 from dive.base.data.access import get_data, get_conditioned_data
 from dive.base.constants import GeneralDataType as GDT, DataType as DT
@@ -25,6 +26,26 @@ from time import time
 
 import logging
 logger = logging.getLogger(__name__)
+
+tooltip_object = {
+    'role': 'tooltip',
+    'type': 'string',
+    'p': { 'html': True }
+}
+
+id_content_format_string = '<div>%s</div>'
+field_value_content_format_string = '<div><b>%s</b>: %s</div>'
+def generate_tooltip_content(id_values, field_values):
+    id_value_content = ''.join([ (id_content_format_string  % id_value) for id_value in id_values ])
+    field_value_content = ''.join([ ( field_value_content_format_string % (field_label, field_value)) for (field_label, field_value) in field_values ])
+
+    tooltip_content = '''
+    <div style="padding: 8px 12px;">
+        <div style="white-space: nowrap; font-size: 18px;">%s</div>
+        <div style="white-space: nowrap; font-weight: 500; font-size: 12px; padding-top: 4px;">%s</div>
+    </div>
+    ''' % (id_value_content, field_value_content)
+    return tooltip_content
 
 
 def make_safe_string(s):
@@ -96,6 +117,8 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
         df = get_data(project_id=project_id, dataset_id=dataset_id)
         df = get_conditioned_data(project_id, dataset_id, df, conditionals)
 
+    id_fields = [ fp for fp in db_access.get_field_properties(project_id, dataset_id) if fp['is_id']]
+
     generating_procedure_to_data_function = {
         GeneratingProcedure.AGG.value: get_agg_data,
         GeneratingProcedure.IND_VAL.value: get_ind_val_data,
@@ -110,6 +133,7 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
     }
     data = generating_procedure_to_data_function[gp](df,
         args,
+        id_fields=id_fields,
         precomputed=precomputed,
         config=config,
         data_formats=data_formats
@@ -119,12 +143,14 @@ def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df
     return data
 
 
-def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_raw_comparison_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
+
+    id_field_labels = [ id_field['name'] for id_field in id_fields[:3] ]
     field_a_label = args['field_a']['name']
     field_b_label = args['field_b']['name']
 
-    df = df.dropna(subset=[field_a_label, field_b_label])
+    df = df.dropna(subset=[field_a_label, field_b_label] + id_field_labels)
 
     subset = config.get('subset', 100)
     is_subset = False
@@ -134,7 +160,8 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
 
     field_a_list = df[field_a_label].tolist()
     field_b_list = df[field_b_label].tolist()
-    zipped_list = zip(field_a_list, field_b_list)
+    id_value_list = [ df[id_field_label].tolist() for id_field_label in id_field_labels ] 
+    zipped_list = zip(field_a_list, field_b_list, *id_value_list)
 
     if 'score' in data_formats:
         final_data['score'] = {
@@ -143,9 +170,16 @@ def get_raw_comparison_data(df, args, precomputed={}, config={}, data_formats=['
         }
     if 'visualize' in data_formats:
         data_array = []
-        data_array.append([ field_a_label, field_b_label ])
-        for (a, b) in zipped_list:
-            data_array.append([a, b])
+        data_array.append([ field_a_label, field_b_label, tooltip_object])
+        for item in zipped_list:
+
+            (a, b), id_values = item[:2], item[2:]
+            data_array.append([
+                a,
+                b,
+                generate_tooltip_content(id_values, [[field_a_label, a], [field_b_label, b]])
+
+            ])
         final_data['visualize'] = data_array
     if 'table' in data_formats:
         final_data['table'] = {
@@ -465,7 +499,7 @@ def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize'], MAX_NUM_BINS=30, DEFAULT_BINS=3):
+def get_bin_agg_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize'], MAX_NUM_BINS=30, DEFAULT_BINS=3):
     final_data = {}
 
     # Argument parsing
@@ -526,11 +560,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
         }
 
     if 'visualize' in data_formats:
-        data_array = [['Bin', 'Value', {
-            'role': 'tooltip',
-            'type': 'string',
-            'p': { 'html': True }
-        }]]
+        data_array = [['Bin', 'Value', tooltip_object]]
 
         bins = []
         for i, formatted_bin_edges in enumerate(formatted_bin_edges_list):
@@ -587,7 +617,7 @@ def get_bin_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
         final_data['count'] = df.shape[0]
     return final_data
 
-def get_val_box_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_val_box_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     grouped_field_name = args['grouped_field']['name']
     boxed_field_name = args['boxed_field']['name']
@@ -668,7 +698,7 @@ def get_val_box_data(df, args, precomputed={}, config={}, data_formats=['visuali
 
 
 
-def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_val_agg_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     aggregation_function_name = args['agg_fn']
     grouped_field_name = args['grouped_field']['name']
@@ -736,7 +766,7 @@ def get_val_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_val_count_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_val_count_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
 
