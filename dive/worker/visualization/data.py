@@ -194,7 +194,7 @@ def get_raw_comparison_data(df, args, id_fields=[], precomputed={}, config={}, d
     return final_data
 
 
-def get_multigroup_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_multigroup_agg_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     '''
     Group by two groups then aggregate on the third
 
@@ -321,7 +321,7 @@ def get_multigroup_agg_data(df, args, precomputed={}, config={}, data_formats=['
     return final_data
 
 
-def get_multigroup_count_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_multigroup_count_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     '''
     Group by one field, then by another
 
@@ -389,7 +389,7 @@ def get_multigroup_count_data(df, args, precomputed={}, config={}, data_formats=
     return final_data
 
 
-def get_agg_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_agg_agg_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     '''
     1) Group by a categorical field
     2) Aggregate two other quantitative fields
@@ -441,7 +441,7 @@ def get_agg_agg_data(df, args, precomputed={}, config={}, data_formats=['visuali
     return final_data
 
 
-def get_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_agg_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     agg_field_label = args['agg_field_a']['name']
     df = df.dropna(subset=[agg_field_label])
@@ -460,7 +460,7 @@ def get_agg_data(df, args, precomputed={}, config={}, data_formats=['visualize']
     return final_data
 
 
-def get_ind_val_data(df, args, precomputed={}, config={}, data_formats=['visualize']):
+def get_ind_val_data(df, args, id_fields=[], precomputed={}, config={}, data_formats=['visualize']):
     final_data = {}
     field_a_label = args['field_a']['name']
 
