@@ -198,7 +198,7 @@ def get_field_distribution_viz_data(field_name, field_values, field_type, genera
             spec = {
                 'field_a': field_document,
                 'agg_fn': 'count',
-                'viz_types': [ VT.LINE.value ]
+                'viz_types': [ VT.BAR.value ]
             }
         else:        
             spec = {
