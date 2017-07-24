@@ -165,7 +165,7 @@ def get_dataset_properties(project_id, dataset_id):
     try:
         dataset_properties = Dataset_Properties.query.filter_by(dataset_id=dataset_id).one()
         if dataset_properties.dataset.preloaded or dataset_properties.project_id == project_id:
-            return row_to_dict(dataset_properties)
+            return row_to_dict(dataset_properties, custom_fields=['n_rows', 'n_cols'])
         else:
             return None
     except NoResultFound, e:

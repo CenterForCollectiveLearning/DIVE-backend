@@ -85,8 +85,7 @@ class Datasets(Resource):
         for d in datasets:
             dataset_data = { k: d[k] for k in [ 'title', 'file_name', 'id', 'description', 'info_url', 'tags', 'preloaded' ]}
 
-            if args['get_structure']:
-                dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
+            dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
 
             data_list.append(dataset_data)
 
@@ -117,9 +116,7 @@ class PreloadedDatasets(Resource):
                 dataset_data['selected'] = True
             else:
                 dataset_data['selected'] = False
-
-            if args['get_structure']:
-                dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
+            dataset_data['details'] = db_access.get_dataset_properties(project_id, d.get('id'))
             data_list.append(dataset_data)
 
 
