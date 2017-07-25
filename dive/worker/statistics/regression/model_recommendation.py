@@ -102,7 +102,6 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
         if len(selected_variables) >= model_limit:
             break
 
-    print 'Returning'
     return selected_variables
 
 

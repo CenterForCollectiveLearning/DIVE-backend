@@ -76,7 +76,6 @@ class VisualizationFromSpec(Resource):
         config = args.get('config', {}).get('data', {})
         data_formats = args.get('data_formats')
 
-        print data_formats
         spec = db_access.get_spec(spec_id, project_id)
 
         viz_data = spec.get('data', None)
