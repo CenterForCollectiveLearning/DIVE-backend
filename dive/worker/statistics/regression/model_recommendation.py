@@ -57,6 +57,7 @@ def get_initial_regression_model_recommendation(project_id, dataset_id, dependen
     }
 
 
+from time import time
 def forward_r2(df, dependent_variable, independent_variables, interaction_terms=[], model_limit=5):
     '''
     Return forward selection model based on r-squared. Returns full (last) model
@@ -67,24 +68,27 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
     selected_variables = []
     regression_type = 'linear'
 
+    SAMPLE_SIZE = 1000
     MARGINAL_THRESHOLD_PERCENTAGE = 0.1  # Need x * r2 of last model to include variable
 
     last_r2 = 0.0
     last_variable_set = []
     remaining_variables = independent_variables
 
+    num_iterations = 0
+
+    df_sample = df.sample(SAMPLE_SIZE)
+
     for number_considered_variables in range(0, len(independent_variables)):
         r2s = []
         for variable in remaining_variables:
-            considered_variables = last_variable_set + [ variable ]
+            considered_variables = last_variable_set + [ variable ]          
 
             considered_independent_variables_per_model, patsy_models = \
-                construct_models(df, dependent_variable, considered_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
+                construct_models(df_sample, dependent_variable, considered_variables, interaction_terms, table_layout=MCT.ALL_VARIABLES.value)
 
-            raw_results = run_models(df, patsy_models, dependent_variable, regression_type)
-            formatted_results = format_results(raw_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
-
-            r_squared_adj = formatted_results['regressions_by_column'][0]['column_properties']['r_squared']
+            raw_results = run_models(df_sample, patsy_models, dependent_variable, regression_type)
+            r_squared_adj = raw_results[0]['total_regression_properties']['r_squared_adj']
             r2s.append(r_squared_adj)
 
         max_r2 = max(r2s)
