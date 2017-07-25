@@ -1,8 +1,12 @@
+from dive.base.constants import ModelCompletionType as MCT
 from dive.worker.statistics.utilities import sets_normal, difference_of_two_lists
 
 
-def get_contribution_to_r_squared_data(regression_result):
+def get_contribution_to_r_squared_data(regression_result, table_layout):
     regressions_by_column = regression_result['regressions_by_column']
+
+    if not (table_layout == MCT.LEAVE_ONE_OUT):
+        return []
 
     considered_fields_length_to_names = {}
     fields_to_r_squared_adj = {}

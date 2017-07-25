@@ -40,6 +40,5 @@ def all_variables(df, dependent_variable, independent_variables, interaction_ter
     '''
     Returns model including all independent_variables
     '''
-    print dependent_variable, independent_variables
     regression_variable_combinations = [ independent_variables + interaction_terms ]
     return regression_variable_combinations

@@ -59,12 +59,13 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     raw_table_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
     formatted_table_results = format_results(raw_table_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
-    contribution_to_r_squared = get_contribution_to_r_squared_data(formatted_table_results)
+    contribution_to_r_squared = get_contribution_to_r_squared_data(formatted_table_results, table_layout)
 
     return {
         'table': formatted_table_results,
         'contribution_to_r_squared': contribution_to_r_squared
     }, 200
+
 
 def load_data(dependent_variable_name, independent_variables_names, interaction_term_ids, dataset_id, project_id):
     '''
@@ -321,7 +322,6 @@ def _get_fields_categorical_variable(s):
 
     return base_field, value_field
 
-from pprint import pprint
 def format_results(model_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms=[]):
 
     independent_variable_names = []
