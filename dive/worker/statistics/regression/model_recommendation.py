@@ -77,7 +77,10 @@ def forward_r2(df, dependent_variable, independent_variables, interaction_terms=
 
     num_iterations = 0
 
-    df_sample = df.sample(SAMPLE_SIZE)
+    if len(df) > SAMPLE_SIZE:
+        df_sample = df.sample(SAMPLE_SIZE)
+    else:
+        df_sample = df
 
     for number_considered_variables in range(0, len(independent_variables)):
         r2s = []
