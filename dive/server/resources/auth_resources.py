@@ -63,6 +63,7 @@ class Confirm_Token(Resource):
 
 
 resendEmailPostParser = reqparse.RequestParser()
+resendEmailPostParser.add_argument('site_url', type=str, required=True, location='json')
 resendEmailPostParser.add_argument('email', type=str, required=True, location='json')
 resendEmailPostParser.add_argument('os', type=str, required=True, location='json')
 resendEmailPostParser.add_argument('browser', type=str, required=True, location='json')
@@ -72,11 +73,12 @@ class Resend_Email(Resource):
         email = args.get('email')
         os = args.get('os')
         browser = args.get('browser')
+        site_url = args.get('site_url', current_app.config['SITE_URL'])        
 
         user = check_email_exists(email)
         if user:
             token = generate_confirmation_token(email)
-            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
+            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], site_url)
             confirm_url = '%s/auth/activate/%s' % (site_url, token)
             html = render_template('confirm_email.html',
                 username=user.username,
@@ -119,6 +121,7 @@ class Reset_Password_With_Token(Resource):
 
 
 resetPasswordLinkPostParser = reqparse.RequestParser()
+resetPasswordLinkPostParser.add_argument('site_url', type=str, required=True, location='json')
 resetPasswordLinkPostParser.add_argument('email', type=str, required=True, location='json')
 resetPasswordLinkPostParser.add_argument('os', type=str, required=True, location='json')
 resetPasswordLinkPostParser.add_argument('browser', type=str, required=True, location='json')
@@ -132,7 +135,7 @@ class Reset_Password_Link(Resource):
         user = check_email_exists(email)
         if user:
             token = generate_confirmation_token(email)
-            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
+            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], site_url)
             confirm_url = '%s/auth/reset/%s' % (site_url, token)
             html = render_template('reset_password.html',
                 username=user.username,
@@ -162,6 +165,7 @@ registerPostParser.add_argument('email', type=str, location='json')
 registerPostParser.add_argument('password', type=str, location='json')
 registerPostParser.add_argument('os', type=str, location='json')
 registerPostParser.add_argument('browser', type=str, location='json')
+registerPostParser.add_argument('site_url', type=str, location='json')
 registerPostParser.add_argument('rememberMe', type=bool, default=True, location='json')
 class Register(Resource):
     def post(self):
@@ -174,6 +178,7 @@ class Register(Resource):
         os = args.get('os')
         browser = args.get('browser')
         remember = args.get('rememberMe', True)
+        site_url = args.get('site_url', current_app.config['SITE_URL'])
 
         registration_result, valid_registration = validate_registration(username, email)
         if valid_registration:
@@ -188,7 +193,7 @@ class Register(Resource):
 
             login_user(user, remember=remember)
 
-            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], current_app.config['SITE_URL'])
+            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], site_url)
             token = generate_confirmation_token(email)
             confirm_url = '%s/auth/activate/%s' % (site_url, token)
             html = render_template('confirm_email.html',
