@@ -99,7 +99,7 @@ def single_t(t_field):
         'meta': {
             'desc': 'Count of %s' % (t_label),
             'construction': [
-                { 'string': 'count', 'type': TermType.OPERATION.value },
+                { 'string': 'Count', 'type': TermType.OPERATION.value },
                 { 'string': 'of', 'type': TermType.PLAIN.value },
                 { 'string': t_label, 'type': TermType.FIELD.value },
             ],
@@ -125,7 +125,7 @@ def single_t(t_field):
             'meta': {
                 'desc': '%s of %s by bin' % ('count', t_label),
                 'construction': [
-                    { 'string': 'count', 'type': TermType.OPERATION.value },
+                    { 'string': 'Count', 'type': TermType.OPERATION.value },
                     { 'string': 'of', 'type': TermType.PLAIN.value },
                     { 'string': t_label, 'type': TermType.FIELD.value },
                     { 'string': 'by bin', 'type': TermType.TRANSFORMATION.value },

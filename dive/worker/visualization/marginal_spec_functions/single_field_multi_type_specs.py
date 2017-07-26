@@ -157,7 +157,7 @@ def single_tq(t_field, q_field):
                 'meta': {
                     'desc': '%s of %s by %s' % (agg_fn, t_label, q_label),
                     'construction': [
-                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': agg_fn.capitalize(), 'type': TermType.OPERATION.value },
                         { 'string': 'of', 'type': TermType.PLAIN.value },
                         { 'string': q_label, 'type': TermType.FIELD.value },
                         { 'string': 'by', 'type': TermType.OPERATION.value },
@@ -198,7 +198,7 @@ def single_ctq(c_field, t_field, q_field):
                 'meta': {
                     'desc': '%s of %s by %s and %s' % (agg_fn, q_label, c_label, t_label),
                     'construction': [
-                        { 'string': agg_fn, 'type': TermType.OPERATION.value },
+                        { 'string': agg_fn.capitalize(), 'type': TermType.OPERATION.value },
                         { 'string': 'of', 'type': TermType.PLAIN.value },
                         { 'string': q_label, 'type': TermType.FIELD.value },
                         { 'string': 'by', 'type': TermType.OPERATION.value },
