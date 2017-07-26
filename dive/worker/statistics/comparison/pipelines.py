@@ -32,10 +32,11 @@ def run_comparison_from_spec(spec, project_id, conditionals=[]):
     df_ready = df_subset.dropna(how='any')  # Remove unclean
     
     result = {}
+    NUM_GROUPS_CUTOFF = 15
     if can_run_anova:
-        anova = run_anova(df_ready, independent_variables_names, dependent_variables_names)
-        anova_boxplot_data = get_anova_boxplot_data(project_id, dataset_id, df_ready, independent_variables_names, dependent_variables_names)
-        pairwise_comparison_data = get_pairwise_comparison_data(df_ready, independent_variables_names, dependent_variables_names, significance_cutoff=significance_cutoff)
+        anova = run_anova(df_ready, independent_variables_names, dependent_variables_names, NUM_GROUPS_CUTOFF=NUM_GROUPS_CUTOFF)
+        anova_boxplot_data = get_anova_boxplot_data(project_id, dataset_id, df_ready, independent_variables_names, dependent_variables_names, NUM_GROUPS_CUTOFF=NUM_GROUPS_CUTOFF)
+        pairwise_comparison_data = get_pairwise_comparison_data(df_ready, independent_variables_names, dependent_variables_names, significance_cutoff=significance_cutoff, NUM_GROUPS_CUTOFF=NUM_GROUPS_CUTOFF)
         result.update({
             'anova': anova,
             'anova_boxplot': anova_boxplot_data,

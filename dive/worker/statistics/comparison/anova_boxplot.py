@@ -16,15 +16,14 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
-def get_anova_boxplot_data(project_id, dataset_id, df, independent_variables_names, dependent_variables_names):
+def get_anova_boxplot_data(project_id, dataset_id, df, independent_variables_names, dependent_variables_names, NUM_GROUPS_CUTOFF=15):
     anova_result = {}
     considered_independent_variable_name = independent_variables_names[0]
     considered_dependent_variable_name = dependent_variables_names[0]
 
     # Only return boxplot data if number of groups < THRESHOLD
     num_groups = len(get_unique(df[considered_independent_variable_name]))
-    NUM_GROUP_THRESHOLD = 15
-    if num_groups > NUM_GROUP_THRESHOLD:
+    if num_groups > NUM_GROUPS_CUTOFF:
         return None
 
 

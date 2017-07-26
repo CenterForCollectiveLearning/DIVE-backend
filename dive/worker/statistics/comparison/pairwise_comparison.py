@@ -15,7 +15,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 # http://stackoverflow.com/questions/25791053/anova-and-hsd-tests-from-python-dataframe
-def get_pairwise_comparison_data(df, independent_variables_names, dependent_variables_names, significance_cutoff=0.05):
+def get_pairwise_comparison_data(df, independent_variables_names, dependent_variables_names, significance_cutoff=0.05, NUM_GROUPS_CUTOFF=15):
     '''
         datasetId
         independentVariables - list names, must be categorical
@@ -27,8 +27,7 @@ def get_pairwise_comparison_data(df, independent_variables_names, dependent_vari
 
     # Only return pairwise comparison data if number of groups < THRESHOLD
     num_groups = len(get_unique(df[considered_independent_variable_name]))
-    NUM_GROUP_THRESHOLD = 15
-    if num_groups > NUM_GROUP_THRESHOLD:
+    if num_groups > NUM_GROUPS_CUTOFF:
         return None
 
     hsd_result = pairwise_tukeyhsd(df[considered_dependent_variable_name], df[considered_independent_variable_name], alpha=significance_cutoff)
