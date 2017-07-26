@@ -126,10 +126,9 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
     num_na = len(field_values) - len(field_values_no_na)
     is_unique = detect_unique_list(field_values_no_na) if not temporal else get_temporal_uniqueness(field_name, field_type, general_type, df, temporal_fields)
 
-    unique_values = [ e for e in get_unique(field_values_no_na) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
     is_id = detect_id(field_name, field_type, is_unique)
 
-    stats, contiguous, scale, viz_data, normality = [ None ]*5
+    stats, contiguous, scale, viz_data, normality, unique_values = [ None ]*6
 
     if not all_null:
         stats = calculate_field_stats(field_type, general_type, field_values)
@@ -137,6 +136,9 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
         viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, scale, is_id, contiguous)
         normality = get_normality(field_name, field_values, field_type, general_type, scale)
+        print scale, (scale in [ Scale.NOMINAL.value, Scale.ORDINAL.value ]), get_unique(field_values_no_na)
+
+        unique_values = [ e for e in get_unique(field_values_no_na) if not pd.isnull(e) ] if (scale in [ Scale.NOMINAL.value, Scale.ORDINAL.value ] and not is_unique) else None
 
     return {
         'scale': scale,  # Recompute if continguous

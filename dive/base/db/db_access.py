@@ -538,7 +538,7 @@ def get_regression_by_id(regression_id, project_id, **kwargs):
 
 def get_regression_from_spec(project_id, spec, **kwargs):
     try:
-        regression = Regression.query.filter_by(project_id=project_id, spec=spec, **kwargs).first()
+        regression = Regression.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound, e:
         return None
     except MultipleResultsFound, e:
@@ -582,7 +582,7 @@ def get_comparison_by_id(comparison_id, project_id, **kwargs):
 
 def get_comparison_from_spec(project_id, spec, **kwargs):
     try:
-        comparison = Comparison.query.filter_by(project_id=project_id, spec=spec, **kwargs).first()
+        comparison = Comparison.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound:
         return None
     return row_to_dict(comparison)
@@ -624,7 +624,7 @@ def get_correlation_by_id(correlation_id, project_id, **kwargs):
 
 def get_correlation_from_spec(project_id, spec, **kwargs):
     try:
-        correlation = Correlation.query.filter_by(project_id=project_id, spec=spec, **kwargs).first()
+        correlation = Correlation.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound:
         return None
     return row_to_dict(correlation)
@@ -665,7 +665,7 @@ def get_aggregation_by_id(aggregation_id, project_id, **kwargs):
 
 def get_aggregation_from_spec(project_id, spec, **kwargs):
     try:
-        aggregation = Aggregation.query.filter_by(project_id=project_id, spec=spec, **kwargs).first()
+        aggregation = Aggregation.query.filter_by(project_id=project_id, spec=spec, **kwargs).one()
     except NoResultFound:
         return None
     return row_to_dict(aggregation)
