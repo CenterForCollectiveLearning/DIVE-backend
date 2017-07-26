@@ -30,7 +30,7 @@ def run_comparison_from_spec(spec, project_id, conditionals=[]):
     df_conditioned = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df_subset = df_conditioned[ dependent_variables_names + independent_variables_names ]
     df_ready = df_subset.dropna(how='any')  # Remove unclean
-
+    
     result = {}
     if can_run_anova:
         anova = run_anova(df_ready, independent_variables_names, dependent_variables_names)
