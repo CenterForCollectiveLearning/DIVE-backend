@@ -123,9 +123,9 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
     field_values_no_na = field_values.dropna(how='any')
     all_null = (len(field_values_no_na) == 0)
     num_na = len(field_values) - len(field_values_no_na)
-    is_unique = detect_unique_list(field_values) if not temporal else get_temporal_uniqueness(field_name, field_type, general_type, df, temporal_fields)
+    is_unique = detect_unique_list(field_values_no_na) if not temporal else get_temporal_uniqueness(field_name, field_type, general_type, df, temporal_fields)
 
-    unique_values = [ e for e in get_unique(field_values) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
+    unique_values = [ e for e in get_unique(field_values_no_na) if not pd.isnull(e) ] if (general_type == 'c' and not is_unique) else None
     is_id = detect_id(field_name, field_type, is_unique)
 
     stats, contiguous, scale, viz_data, normality = [ None ]*5
