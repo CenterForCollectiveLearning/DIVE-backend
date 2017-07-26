@@ -152,7 +152,8 @@ def get_raw_comparison_data(df, args, id_fields=[], precomputed={}, config={}, d
 
     df = df.dropna(subset=[field_a_label, field_b_label] + id_field_labels)
 
-    subset = config.get('subset', 100)
+    DEFAULT_SUBSET = 200
+    subset = config.get('subset', DEFAULT_SUBSET)
     is_subset = False
     if subset and (subset != 'all') and len(df.index) > subset:
         is_subset = True
@@ -172,13 +173,11 @@ def get_raw_comparison_data(df, args, id_fields=[], precomputed={}, config={}, d
         data_array = []
         data_array.append([ field_a_label, field_b_label, tooltip_object])
         for item in zipped_list:
-
             (a, b), id_values = item[:2], item[2:]
             data_array.append([
                 a,
                 b,
                 generate_tooltip_content(id_values, [[field_a_label, a], [field_b_label, b]])
-
             ])
         final_data['visualize'] = data_array
     if 'table' in data_formats:
@@ -190,7 +189,6 @@ def get_raw_comparison_data(df, args, id_fields=[], precomputed={}, config={}, d
         final_data['count'] = df.shape[0]
 
     final_data['subset'] = subset if (is_subset or subset == 'all') else None
-
     return final_data
 
 
