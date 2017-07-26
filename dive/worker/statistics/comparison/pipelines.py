@@ -25,7 +25,6 @@ def run_comparison_from_spec(spec, project_id, conditionals=[]):
     can_run_numerical_comparison = (can_run_numerical_comparison_dependent or can_run_numerical_comparison_independent)
 
     can_run_anova = (len(dependent_variables) and len(independent_variables))
-
     df = get_data(project_id=project_id, dataset_id=dataset_id)
     df_conditioned = get_conditioned_data(project_id, dataset_id, df, conditionals)
     df_subset = df_conditioned[ dependent_variables_names + independent_variables_names ]
