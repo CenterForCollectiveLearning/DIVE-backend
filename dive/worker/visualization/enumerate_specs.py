@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def get_list_of_unique_dicts(li):
     return list(np.unique(np.array(li)))
 
-def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_types=[], spec_limit=None):
+def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_types=[], spec_limit=None, expanded_spec_limit=20):
     '''
     TODO Move key filtering to the db query
     TODO Incorporate 0D and 1D data returns
@@ -49,6 +49,8 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
 
         if 'expanded' in recommendation_types:
             expanded_viz_specs = get_expanded_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_fields_not_selected, t_fields_not_selected)
+            if expanded_spec_limit:
+                expanded_viz_specs = expanded_viz_specs[:expanded_spec_limit]
             specs.extend([dict(s, recommendation_type='expanded') for s in expanded_viz_specs ])
 
     else:
@@ -56,12 +58,12 @@ def enumerate_viz_specs(project_id, dataset_id, selected_fields, recommendation_
             baseline_viz_specs = get_baseline_viz_specs(field_properties)
             specs.extend([dict(s, recommendation_type='exact') for s in baseline_viz_specs ])
 
+    # Deduplicate
+    specs = get_list_of_unique_dicts(specs)
+
     # Limit Number of specs
     if spec_limit:
         specs = specs[:spec_limit]
-
-    # Deduplicate
-    specs = get_list_of_unique_dicts(specs)
 
     # Assign viz_types and dataset_id
     for spec in specs:
@@ -189,6 +191,8 @@ def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_f
     n_c = len(c_fields)
     n_q = len(q_fields)
     n_t = len(t_fields)
+
+    print 'GETTING EXACT VIZ SPECS', n_c, n_t, n_q
 
     # Multi field specs, multi type
     if (n_c > 1) and (n_t > 1) and (n_q == 0):
