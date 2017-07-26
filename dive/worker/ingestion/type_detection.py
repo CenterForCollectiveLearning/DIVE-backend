@@ -49,7 +49,7 @@ header_string_types = [
             DT.YEAR.value: ['year', 'Year', 'YEAR', 'YOB'],
             DT.MONTH.value: ['month', 'Month', 'MONTH'],
             DT.DAY.value: ['day', 'Days', 'DAY'],
-            DT.DATETIME.value: ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
+            DT.DATETIME.value: [' date', ' Date', ' DATE', ' time', ' Time', 'TIME', 'datetime', 'Datetime', 'DATETIME']
         }
     },
     {
