@@ -43,7 +43,7 @@ def get_pairwise_comparison_data(df, independent_variables_names, dependent_vari
         'Lower Bound',
         'Upper Bound',
         'p-value',
-        'Reject'
+        'Distinct (p < %s)' % significance_cutoff
     ]
     hsd_data = []
     for i in range(0, len(hsd_raw_data)):
@@ -58,7 +58,7 @@ def get_pairwise_comparison_data(df, independent_variables_names, dependent_vari
             hsd_result.confint[i][0],
             hsd_result.confint[i][1],
             p_value,
-            ( 'False' if (p_value <= significance_cutoff) else 'True' )
+            ( 'True' if (p_value <= significance_cutoff) else 'False' )
         ]
         hsd_data.append(hsd_data_row)
 
