@@ -5,7 +5,7 @@ from dive.worker.statistics.utilities import sets_normal, difference_of_two_list
 def get_contribution_to_r_squared_data(regression_result, table_layout):
     regressions_by_column = regression_result['regressions_by_column']
 
-    if not (table_layout == MCT.LEAVE_ONE_OUT):
+    if not (table_layout == MCT.LEAVE_ONE_OUT.value):
         return []
 
     considered_fields_length_to_names = {}
