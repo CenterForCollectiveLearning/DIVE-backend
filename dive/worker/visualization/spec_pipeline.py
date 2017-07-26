@@ -46,6 +46,7 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
     viz_specs_with_data = []
 
     start_time = time()
+    TIME_CUTOFF = 10
     # Get dataframe
     if project_id and dataset_id:
         df = get_data(project_id=project_id, dataset_id=dataset_id)
@@ -55,6 +56,8 @@ def attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, condi
         'groupby': {}
     }
     for i, spec in enumerate(enumerated_viz_specs):
+        if (time() - start_time) > TIME_CUTOFF:
+            continue
         viz_spec_with_data = spec
         # TODO Move this into another function
         if spec['args'].get('grouped_field'):
