@@ -146,16 +146,16 @@ def sanitize_df(df):
 
 
 def make_safe_string(s):
-    invalid_chars = '-_.+^$ '
+    invalid_chars = '-_.+^$#/\() '
     if not s.startswith('temp_name_'):
         for invalid_char in invalid_chars:
+
             s = s.replace(invalid_char, '_')
         s = 'temp_name_' + s
     return s
 
 
-def _construct_conditional_clause(all_field_properties, field_id, operation, criteria):
-    field = next((field for field in all_field_properties if field_id == field['id']), None)
+def _construct_conditional_clause(field, operation, criteria):
     field_general_type = field['general_type']
     field_name = make_safe_string(field['name'])
     if (field_general_type == 'q') or (field_general_type == 't'):
@@ -190,15 +190,20 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
     orig_cols = df.columns.tolist()
     safe_df = df.rename(columns=make_safe_string)
 
+
     if and_clause_list:
         for c in and_clause_list:
-            clause = _construct_conditional_clause(all_field_properties, c['field_id'], c['operation'], c['criteria'])
-            query_strings['and'] = query_strings['and'] + ' & ' + clause
+            field = next((field for field in all_field_properties if c['field_id'] == field['id']), None)
+            if field and c['criteria'] is not None:
+                clause = _construct_conditional_clause(field, c['operation'], c['criteria'])
+                query_strings['and'] = query_strings['and'] + ' & ' + clause
 
     if or_clause_list:
         for c in or_clause_list:
-            clause = _construct_conditional_clause(all_field_properties, c['field_id'], c['operation'], c['criteria'])
-            query_strings['or'] = query_strings['or'] + ' | ' + clause
+            field = next((field for field in all_field_properties if c['field_id'] == field['id']), None)
+            if field and c['criteria'] is not None:
+                clause = _construct_conditional_clause(field, c['operation'], c['criteria'])
+                query_strings['or'] = query_strings['or'] + ' | ' + clause
 
     query_strings['and'] = query_strings['and'].strip(' & ')
     query_strings['or'] = query_strings['or'].strip(' | ')
@@ -211,6 +216,9 @@ def get_conditioned_data(project_id, dataset_id, df, conditional_arg):
         final_query_string = query_strings['and']
     elif query_strings['or'] and not query_strings['and']:
         final_query_string = query_strings['or']
+
+    if not final_query_string:
+        return df
 
     conditioned_df = safe_df.query(final_query_string)
     conditioned_df.columns = orig_cols
