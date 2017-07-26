@@ -112,7 +112,7 @@ for data_type in nominal_types:
 class DataTypeWeights(Enum):
     # Fundamental
     INTEGER = 8
-    STRING = 2
+    STRING = 4
     DECIMAL = 6
     BOOLEAN = 7
 
