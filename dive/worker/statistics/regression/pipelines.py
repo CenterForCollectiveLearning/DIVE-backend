@@ -59,6 +59,7 @@ def run_regression_from_spec(spec, project_id, conditionals=[]):
     raw_table_results = run_models(df, patsy_models, dependent_variable, regression_type)
 
     formatted_table_results = format_results(raw_table_results, dependent_variable, independent_variables, considered_independent_variables_per_model, interaction_terms)
+
     contribution_to_r_squared = get_contribution_to_r_squared_data(formatted_table_results, table_layout)
 
     return {
