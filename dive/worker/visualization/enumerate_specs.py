@@ -192,8 +192,6 @@ def get_exact_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_f
     n_q = len(q_fields)
     n_t = len(t_fields)
 
-    print 'GETTING EXACT VIZ SPECS', n_c, n_t, n_q
-
     # Multi field specs, multi type
     if (n_c > 1) and (n_t > 1) and (n_q == 0):
         specs.extend(multi_ct(c_fields, t_fields))
