@@ -74,9 +74,9 @@ def parse_variable(index, variable, df, bin_data={}):
     scale = variable['scale']
     name = variable['name']
 
-    if scale in [ Scale.NOMINAL.value ] :
+    if scale in [  Scale.ORDINAL.value, Scale.NOMINAL.value ] :
         return df.get_value(index, name)
-    elif scale in [ Scale.ORDINAL.value, Scale.CONTINUOUS.value ] :
+    elif scale in [ Scale.CONTINUOUS.value ] :
         binning_edges = bin_data['binning_edges']
         bin_names = bin_data['bin_names']
         num_bins = bin_data['num_bins']

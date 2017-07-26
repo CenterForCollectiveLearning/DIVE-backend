@@ -136,7 +136,6 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         scale = get_scale(field_name, field_values, field_type, general_type, contiguous)
         viz_data = get_field_distribution_viz_data(field_name, field_values, field_type, general_type, scale, is_id, contiguous)
         normality = get_normality(field_name, field_values, field_type, general_type, scale)
-        print scale, (scale in [ Scale.NOMINAL.value, Scale.ORDINAL.value ]), get_unique(field_values_no_na)
 
         unique_values = [ e for e in get_unique(field_values_no_na) if not pd.isnull(e) ] if (scale in [ Scale.NOMINAL.value, Scale.ORDINAL.value ] and not is_unique) else None
 
