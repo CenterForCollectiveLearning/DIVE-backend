@@ -159,7 +159,7 @@ def viz_spec_pipeline(self, dataset_id, project_id, field_agg_pairs, recommendat
 
     self.update_state(state=states.PENDING, meta={'desc': '(1/5) Enumerating visualization specs'})
     enumerated_viz_specs = enumerate_viz_specs(project_id, dataset_id, field_agg_pairs, recommendation_types=recommendation_types)
-    enumerated_viz_specs = enumerated_viz_specs[:SPEC_LIMIT]
+    # enumerated_viz_specs = enumerated_viz_specs[:SPEC_LIMIT]
 
     self.update_state(state=states.PENDING, meta={'desc': '(2/5) Attaching data to %s visualization specs' % len(enumerated_viz_specs)})
     viz_specs_with_data = attach_data_to_viz_specs(enumerated_viz_specs, dataset_id, project_id, conditionals, config, data_formats=['visualize', 'score'])

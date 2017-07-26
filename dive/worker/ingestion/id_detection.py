@@ -22,6 +22,7 @@ def detect_id_from_name(field_name):
             name_is_id = True
     return name_is_id
 
+
 def detect_id(field_name, field_type, is_unique):
     is_id = False
 
