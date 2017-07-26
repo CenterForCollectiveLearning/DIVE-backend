@@ -15,7 +15,7 @@ logger = get_task_logger(__name__)
 
 
 
-def run_anova(df, independent_variables_names, dependent_variables_names):
+def run_anova(df, independent_variables_names, dependent_variables_names, NUM_GROUPS_CUTOFF=15):
     '''
     Returns either a dictionary with the anova stats are an empty list (if the anova test
     is not valid)

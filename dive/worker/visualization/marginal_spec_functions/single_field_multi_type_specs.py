@@ -19,7 +19,6 @@ def single_cq(c_field, q_field):
     specs = []
     c_label = c_field['name']
     q_label = q_field['name']
-    logger.debug('D: Single C Single Q')
 
     if c_field['is_unique']:
         spec = {
