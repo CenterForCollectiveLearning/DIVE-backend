@@ -29,10 +29,10 @@ def create_contingency_table(df, aggregation_variables, dep_variable, config={})
         general_type = variable['general_type']
         scale = variable['scale'] 
 
-        if scale == Scale.NOMINAL.value:
+        if scale in [ Scale.NOMINAL.value, Scale.ORDINAL.value ]:
             unique_indep_values.append(get_unique(df[name], True))
 
-        elif scale in [ Scale.ORDINAL.value, Scale.CONTINUOUS.value ]:
+        elif scale in [ Scale.CONTINUOUS.value ]:
             values = df[name].dropna(how='any')
             (binning_edges, bin_names) = get_binning_edges_and_names(values, config[binningConfigKey])
             num_bins = len(binning_edges) - 1
@@ -127,6 +127,9 @@ def create_contingency_table_with_dependent_variable(df, variables, dep_variable
     weight_dict = {}
 
     (col_variable, row_variable) = variables
+
+    df = df.dropna(how='any', subset=[dep_variable_name, col_variable['name'], row_variable['name']])
+    
     for index in df.index:
         col = parse_variable(index, col_variable, df, bin_data=bin_data.get(col_variable['name']))
         row = parse_variable(index, row_variable, df, bin_data=bin_data.get(row_variable['name']))
