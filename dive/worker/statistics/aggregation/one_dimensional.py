@@ -28,10 +28,10 @@ def create_one_dimensional_contingency_table(df, aggregation_variable, dep_varia
     name = aggregation_variable['name']
     bin_data = {}
 
-    if scale == Scale.NOMINAL.value:
+    if scale in [ Scale.ORDINAL.value, Scale.NOMINAL.value ]:
         unique_indep_values = get_unique(df[name], True)
 
-    elif scale in [ Scale.ORDINAL.value, Scale.CONTINUOUS.value ]:
+    elif scale in [ Scale.CONTINUOUS.value ]:
         values = df[name].dropna(how='any')
         (binning_edges, bin_names) = get_binning_edges_and_names(values, config.get('binningConfigX'))  # TODO Update binning function
         num_bins = len(binning_edges) -1
@@ -100,6 +100,8 @@ def create_one_dimensional_contingency_table_with_dependent_variable(df, variabl
     aggregation_mean = (aggregation_function_name == 'MEAN')
     weight_variable_name = config.get('weightVariableName', 'UNIFORM')
     weight_dict = {}
+
+    df = df.dropna(how='any', subset=[variable['name'], dep_variable_name])
 
     for index in df.index:
         unique_value = parse_variable(index, variable, df, bin_data=bin_data)
