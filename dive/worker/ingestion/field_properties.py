@@ -101,6 +101,7 @@ def detect_contiguous_integers(field_values):
 
 def get_temporal_uniqueness(field_name, field_type, general_type, df, temporal_fields, MAX_TIMES_TO_SAMPLE=5):
     is_unique_by_time = False
+
     if temporal_fields and (df is not None) and (general_type == GDT.C.value or field_type == DT.INTEGER.value):
         uniqueness_by_time_fields = []
         for temporal_field in temporal_fields:
@@ -374,12 +375,11 @@ def get_attributes(project_id, datasets):
 
 
 # Detect if a list is comprised of unique elements
-def detect_unique_list(l):
+def detect_unique_list(l, THRESHOLD=0.95):
     # TODO Vary threshold by number of elements (be smarter about it)
-    THRESHOLD = 0.95
 
     # Comparing length of uniqued elements with original list
-    if (len(np.unique(l)) / float(len(l))) >= THRESHOLD:
+    if len(l) and ((len(np.unique(l)) / float(len(l))) >= THRESHOLD):
         return True
     return False
 
