@@ -419,7 +419,7 @@ def get_public_exported_spec(exported_spec_id, spec_type):
                     id=exported_spec_id
                 ).one()
                 setattr(exported_spec, 'spec', exported_spec.correlation.spec)
-                setattr(exported_spec, 'type', 'correlation')            
+                setattr(exported_spec, 'type', 'correlation')       
 
             elif spec_type == ContentType.REGRESSION.value:
                 exported_spec = Exported_Regression.query.filter_by(
@@ -443,7 +443,7 @@ def get_public_exported_spec(exported_spec_id, spec_type):
                 setattr(exported_spec, 'type', 'comparison')
             elif spec_type == ContentType.TEXT.value:
                 exported_spec = { 'type': ContentType.TEXT.value }
-                return row_to_dict(exported_spec, custom_fields=['type', 'spec'])
+            return row_to_dict(exported_spec, custom_fields=['type', 'spec'])
 
     except NoResultFound, e:
         return None
