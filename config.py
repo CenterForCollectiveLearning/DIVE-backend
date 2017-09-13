@@ -37,6 +37,7 @@ class BaseConfig(object):
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 
     # Mail
+    MAIL_AUTHENTICATION = True
     MAIL_SERVER = 'smtp.postmarkapp.com'
     MAIL_USERNAME = '99b4b664-9751-492c-b48d-2bd492e9912a'
     MAIL_PASSWORD = '99b4b664-9751-492c-b48d-2bd492e9912a'
@@ -99,6 +100,9 @@ class BaseConfig(object):
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
 
+    # Mail
+    MAIL_AUTHENTICATION = False
+
 class ProductionConfig(BaseConfig):
     # General
     SITE_URL = 'staging.usedive.com'
@@ -118,6 +122,7 @@ class ProductionConfig(BaseConfig):
     SENTRY_USER_ATTRS = [ 'username', 'email' ]
 
     # Mail
+    MAIL_AUTHENTICATION = True    
     MAIL_USERNAME = env('DIVE_MAIL_USERNAME')
     MAIL_PASSWORD = env('DIVE_MAIL_PASSWORD')
 
