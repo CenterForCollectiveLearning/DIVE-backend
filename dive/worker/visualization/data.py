@@ -78,10 +78,11 @@ def get_aggregated_df(groupby, aggregation_function_name):
             agg_df = groupby.mean()
         elif aggregation_function_name == 'count':
             agg_df = groupby.count()
+        return agg_df
+
     except Exception as e:
         logger.error(e)
         agg_df = groupby.aggregate(aggregation_functions[aggregation_function_name])
-    return agg_df
 
 
 def get_viz_data_from_enumerated_spec(spec, project_id, conditionals, config, df=None, precomputed={}, data_formats=['visualize', 'table', 'score']):

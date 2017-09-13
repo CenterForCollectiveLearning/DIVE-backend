@@ -181,38 +181,45 @@ class Register(Resource):
         site_url = args.get('site_url', current_app.config['SITE_URL'])
 
         registration_result, valid_registration = validate_registration(username, email)
+
         if valid_registration:
+            confirmed = (False if current_app.config['MAIL_AUTHENTICATION'] else True)
+
             user = register_user(
                 username,
                 email,
                 password,
                 user_id=user_id,
-                confirmed=False,
+                confirmed=confirmed,
                 anonymous=False
             )
 
             login_user(user, remember=remember)
-
-            site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], site_url)
-            token = generate_confirmation_token(email)
-            confirm_url = '%s/auth/activate/%s' % (site_url, token)
-            html = render_template('confirm_email.html',
-                username=username,
-                confirm_url=confirm_url,
-                site_url=site_url,
-                support_url='mailto:dive@media.mit.edu',
-                os=os,
-                browser=browser
-            )
-
-            send_email(email, 'Activate Your DIVE Account', html)
-
             parsed_user = row_to_dict(user)
+
+            if current_app.config['MAIL_AUTHENTICATION']:
+                site_url = '%s://%s' % (current_app.config['PREFERRED_URL_SCHEME'], site_url)
+                token = generate_confirmation_token(email)
+                confirm_url = '%s/auth/activate/%s' % (site_url, token)
+                html = render_template('confirm_email.html',
+                    username=username,
+                    confirm_url=confirm_url,
+                    site_url=site_url,
+                    support_url='mailto:dive@media.mit.edu',
+                    os=os,
+                    browser=browser
+                )
+                send_email(email, 'Activate Your DIVE Account', html)
+                message = 'A confirmation e-mail has been sent to %s' % email
+            else:
+                message = 'Successfully registered'
+
             response = jsonify({
                 'status': 'success',
-                'message': 'A confirmation e-mail has been sent to %s' % email,
+                'message': message,
                 'user': { k: parsed_user[k] for k in ['anonymous', 'confirmed', 'email', 'id', 'username']}
-            })
+            })                
+
             response = set_cookies(response, {
                 'username': user.username,
                 'email': user.email,
