@@ -168,13 +168,13 @@ def get_subset_viz_specs(c_fields, q_fields, t_fields, c_fields_not_selected, q_
                 single_c_multi_q_specs = single_c_multi_q(c_field, q_fields)
                 specs.extend(single_c_multi_q_specs)
 
-    if (n_c and n_q) and ((n_c != 1) or (n_q != 1)):
+    if (n_c and n_q):
         for c_field in c_fields:
             for q_field in q_fields:
                 single_cq_specs = single_cq(c_field, q_field)
                 specs.extend(single_cq_specs)
-
-    if (n_t and n_q) and ((n_t != 1) or (n_q != 1)):
+                
+    if (n_t and n_q):
         for t_field in t_fields:
             for q_field in q_fields:
                 single_tq_specs = single_tq(t_field, q_field)
