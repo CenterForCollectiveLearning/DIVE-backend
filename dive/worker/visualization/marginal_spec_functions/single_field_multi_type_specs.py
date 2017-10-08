@@ -46,37 +46,37 @@ def single_cq(c_field, q_field):
         }
         specs.append(spec)
     else:
-    #     for agg_fn in aggregation_functions.keys():
-    #         if agg_fn == 'count':
-    #             continue
+        for agg_fn in aggregation_functions.keys():
+            if agg_fn != 'sum':
+                continue
 
-    #         spec = {
-    #             'case': 'single_cq',
-    #             'generating_procedure': GP.VAL_AGG.value,
-    #             'type_structure': TS.C_Q.value,
-    #             'viz_types': [ VT.BAR.value ],
-    #             'field_ids': [ c_field['id'], q_field['id'] ],
-    #             'args': {
-    #                 'agg_fn': agg_fn,
-    #                 'grouped_field': c_field,
-    #                 'agg_field': q_field,
-    #             },
-    #             'meta': {
-    #                 'desc': '%s of %s by %s' % (agg_fn, q_label, c_label),
-    #                 'construction': [
-    #                     { 'string': agg_fn, 'type': TermType.OPERATION.value },
-    #                     { 'string': 'of', 'type': TermType.PLAIN.value },
-    #                     { 'string': q_label, 'type': TermType.FIELD.value },
-    #                     { 'string': 'by', 'type': TermType.OPERATION.value },
-    #                     { 'string': c_label, 'type': TermType.FIELD.value },
-    #                 ],
-    #                 'labels': {
-    #                     'x': c_label,
-    #                     'y': '%s of %s' % (agg_fn, q_label),
-    #                 }
-    #             }
-    #         }
-    #         specs.append(spec)
+            spec = {
+                'case': 'single_cq',
+                'generating_procedure': GP.VAL_AGG.value,
+                'type_structure': TS.C_Q.value,
+                'viz_types': [ VT.BAR.value ],
+                'field_ids': [ c_field['id'], q_field['id'] ],
+                'args': {
+                    'agg_fn': agg_fn,
+                    'grouped_field': c_field,
+                    'agg_field': q_field,
+                },
+                'meta': {
+                    'desc': '%s of %s by %s' % (agg_fn, q_label, c_label),
+                    'construction': [
+                        { 'string': agg_fn.capitalize(), 'type': TermType.OPERATION.value },
+                        { 'string': 'of', 'type': TermType.PLAIN.value },
+                        { 'string': q_label, 'type': TermType.FIELD.value },
+                        { 'string': 'by', 'type': TermType.OPERATION.value },
+                        { 'string': c_label, 'type': TermType.FIELD.value },
+                    ],
+                    'labels': {
+                        'x': c_label,
+                        'y': '%s of %s' % (agg_fn, q_label),
+                    }
+                }
+            }
+            specs.append(spec)
 
         spec = {
             'case': 'single_cq',

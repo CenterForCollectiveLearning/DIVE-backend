@@ -41,7 +41,7 @@ $ createuser admin -P
 $ createdb dive -O admin
 ```
 
-Start RabbitMQ
+Start RabbitMQ AMQP Server
 ---------
 1. Add rabbitmq-server executable to path (add `PATH=$PATH:/usr/local/sbin` to ~/.bash_profile or ~/.profile)
 2. Run the server as a background process
@@ -55,7 +55,7 @@ $ sudo rabbitmqctl set_permissions -p dive admin ".*" ".*" ".*"
 ```
 
 
-Install and get into a virtual environment
+Install and Enter Virtual Python Environment
 ---------
 1. Installation: See [this fine tutorial](http://simononsoftware.com/virtualenv-tutorial/).
 2. Starting virtual env: `source venv/bin/activate`.
@@ -69,7 +69,7 @@ $ pip install numpy
 $ pip install -r requirements.txt
 ```
 
-Start Celery worker
+Start Celery Worker
 ---------
 1. Start celery worker: `./run_worker.sh`
 2. Start celery monitor (flower): `celery -A base.core flower`
