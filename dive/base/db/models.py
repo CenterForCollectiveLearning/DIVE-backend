@@ -176,8 +176,11 @@ class Field_Properties(db.Model):
     is_unique = Column(Boolean())
     is_id = Column(Boolean())
     unique_values = Column(JSONB)
+
+    parent = Column(Unicode(250))
     child = Column(Unicode(250))
-    is_child = Column(Boolean())
+    one_to_one = Column(Unicode(250))
+
     viz_data = Column(JSONB)
     stats = Column(JSONB)
     manual = Column(JSONB)
