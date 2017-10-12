@@ -149,8 +149,6 @@ def compute_single_field_property_nontype(field_name, field_values, field_type, 
         'normality': normality,
         'is_unique': is_unique,
         'unique_values': unique_values,
-        'child': None,
-        'is_child': False,
         'manual': {}
     }
 
@@ -257,7 +255,7 @@ def compute_single_field_property_type(field_name, field_values, field_position=
     }
 
 
-def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_relationships=False, track_started=True):
+def compute_all_field_properties(dataset_id, project_id, should_detect_hierarchical_relationships=True, track_started=True):
     '''
     Compute field properties of a specific dataset
     Currently only getting properties by column
@@ -308,42 +306,48 @@ def compute_all_field_properties(dataset_id, project_id, compute_hierarchical_re
         )
         field_properties[i].update({
             'color': palette[i],
-            'child': None,
-            'is_child': False,
+            'children': [],
+            'parents': [],
+            'one_to_ones': [],
             'manual': {}
         })
         field_properties[i].update(d)
 
-    # logger.debug("Detecting hierarchical relationships")
-    # Detect hierarchical relationships
-    # Hierarchical relationships
-    # Given the unique values of current field, are the corresponding values
-    # in another field a complete set of t?
-    # if compute_hierarchical_relationships:
-    #     MAX_UNIQUE_VALUES_THRESHOLD = 100
-    #     for field_a, field_b in permutations(field_properties, 2):
-    #         logger.debug('%s - %s', field_a['name'], field_b['name'])
-    #         if field_a['is_unique'] or (field_a['general_type'] is 'q') or (field_b['general_type'] is 'q'):
-    #             continue
-    #
-    #         field_b_unique_corresponding_values = []
-    #         for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
-    #             if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
-    #                 continue
-    #             sub_df = df.loc[df[field_a['name']] == unique_value_a]
-    #             field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
-    #
-    #         if detect_unique_list(field_b_unique_corresponding_values):
-    #             field_properties[field_properties.index(field_a)]['child'] = field_b['name']
-    #             field_properties[field_properties.index(field_b)]['is_child'] = True
-    #
-    # logger.debug("Done computing field properties")
+    if should_detect_hierarchical_relationships:
+        hierarchical_relationships = detect_hierarchical_relationships(coerced_df, field_properties)
+        MAX_UNIQUE_VALUES_THRESHOLD = 100   
+        for field_a, field_b in hierarchical_relationships:
+
+            if [ field_b, field_a ] in hierarchical_relationships:
+                field_properties[field_properties.index(field_a)]['one_to_ones'].append(field_b['name'])
+            else:
+                field_properties[field_properties.index(field_a)]['children'].append(field_b['name'])
+                field_properties[field_properties.index(field_b)]['parents'].append(field_a['name'])
 
     return {
         'desc': 'Done computing field properties for %s fields' % len(field_properties),
         'result': field_properties
     }
 
+
+def detect_hierarchical_relationships(df, field_properties, MAX_UNIQUE_VALUES_THRESHOLD = 100):
+    hierarchical_relationships = []
+    for field_a, field_b in permutations(field_properties, 2):
+        if field_a['is_unique'] or (field_a['general_type'] != GDT.C.value) or (field_b['general_type'] != GDT.C.value):
+            continue
+
+        field_b_unique_corresponding_values = []
+        for unique_value_index, unique_value_a in enumerate(field_a['unique_values']):
+            if unique_value_index > MAX_UNIQUE_VALUES_THRESHOLD:
+                continue
+            sub_df = df.loc[df[field_a['name']] == unique_value_a]
+            field_b_unique_corresponding_values.extend(set(sub_df[field_b['name']]))
+            # print unique_value_a, set(sub_df[field_b['name']])
+
+        if detect_unique_list(field_b_unique_corresponding_values, THRESHOLD=0.5):
+            hierarchical_relationships.append([ field_a, field_b ])
+
+    return hierarchical_relationships
 
 # Retrieve entities given datasets
 def get_entities(project_id, datasets):
