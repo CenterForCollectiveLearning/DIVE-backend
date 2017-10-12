@@ -306,9 +306,9 @@ def compute_all_field_properties(dataset_id, project_id, should_detect_hierarchi
         )
         field_properties[i].update({
             'color': palette[i],
-            'child': None,
-            'parent': None,
-            'one_to_one': None,
+            'children': [],
+            'parents': [],
+            'one_to_ones': [],
             'manual': {}
         })
         field_properties[i].update(d)
@@ -317,11 +317,12 @@ def compute_all_field_properties(dataset_id, project_id, should_detect_hierarchi
         hierarchical_relationships = detect_hierarchical_relationships(coerced_df, field_properties)
         MAX_UNIQUE_VALUES_THRESHOLD = 100   
         for field_a, field_b in hierarchical_relationships:
-            if ( field_b, field_a ) in hierarchical_relationships:
-                field_properties[field_properties.index(field_a)]['one_to_one'] = field_b['name']
+
+            if [ field_b, field_a ] in hierarchical_relationships:
+                field_properties[field_properties.index(field_a)]['one_to_ones'].append(field_b['name'])
             else:
-                field_properties[field_properties.index(field_a)]['child'] = field_b['name']
-                field_properties[field_properties.index(field_b)]['parent'] = field_a['name']
+                field_properties[field_properties.index(field_a)]['children'].append(field_b['name'])
+                field_properties[field_properties.index(field_b)]['parents'].append(field_a['name'])
 
     return {
         'desc': 'Done computing field properties for %s fields' % len(field_properties),
