@@ -17,7 +17,7 @@ Development setup involves the following steps:
 Install System Dependencies (Linux / apt)
 ---------
 ```bash
-$ sudo apt-get update && sudo apt-get install -y postgresql git python2.7 python-pip build-essential python-dev libpq-dev libssl-dev libffi-dev liblapack-dev gfortran rabbitmq-server
+$ sudo apt-get update && sudo apt-get install -y postgresql git python2.7 python-pip build-essential python-dev libpq-dev libssl-dev libffi-dev liblapack-dev gfortran libxml2-dev libxslt1-dev rabbitmq-server
 ```
 
 Install System Dependencies (Mac / brew)
@@ -72,7 +72,7 @@ Install Python Dependencies
 ---------
 Within a virtual environment, install dependencies in `requirements.txt`. But due to a dependency issue in numexpr, we need to install numpy first.
 ```bash
-$ pip install numpy && pip install -r requirements.txt
+$ pip install -U numpy && pip install -r requirements.txt
 ```
 
 Start Celery Worker
