@@ -17,7 +17,7 @@ Development setup involves the following steps:
 Install System Dependencies (Linux / apt)
 ---------
 ```bash
-$ sudo apt-get install -y postgres git python2.7 python-pip build-essential python-dev libffi-dev liblapack-dev gfortran rabbitmq-server
+$ sudo apt-get update && sudo apt-get install -y postgresql git python2.7 python-pip build-essential python-dev libpq-dev libssl-dev libffi-dev liblapack-dev gfortran rabbitmq-server
 ```
 
 Install System Dependencies (Mac / brew)
@@ -35,7 +35,14 @@ Download and open the app to start postgres.
 
 Setup postgres
 ---------
-Make sure that you have a postgres server instance running. Create the dive database by running:
+Make sure that you have a postgres server instance running:
+
+```bash
+postgres -D /usr/local/pgsql/data >logfile 2>&1 &
+sudo -u postgres -i
+```
+
+Create the dive database by running:
 ```bash
 $ createuser admin -P
 $ createdb dive -O admin
@@ -65,8 +72,7 @@ Install Python Dependencies
 ---------
 Within a virtual environment, install dependencies in `requirements.txt`. But due to a dependency issue in numexpr, we need to install numpy first.
 ```bash
-$ pip install numpy
-$ pip install -r requirements.txt
+$ pip install numpy && pip install -r requirements.txt
 ```
 
 Start Celery Worker
