@@ -3,6 +3,7 @@ export SITE_TITLE=""
 export SECRET_KEY=""
 export DIVE_COOKIE_DOMAIN=""
 export DIVE_PREFERRED_URL_SCHEME=""
+export DIVE_PORT=""
 
 export DIVE_AMQP_URL=""
 

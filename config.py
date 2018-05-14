@@ -109,6 +109,7 @@ class ProductionConfig(BaseConfig):
     SITE_TITLE = env('DIVE_SITE_TITLE', 'dive')
     SECRET_KEY = env('DIVE_SECRET', 'dive_secret')
     PREFERRED_URL_SCHEME = env('DIVE_PREFERRED_URL_SCHEME', 'https')
+    PORT = env('DIVE_PORT', 8081)    
 
     # Flask
     DEBUG = False
