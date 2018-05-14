@@ -1,8 +1,8 @@
-export MODE="PRODUCTION"
-export SITE_TITLE="dive"
-export SECRET_KEY="dive"
-export DIVE_COOKIE_DOMAIN="usedive.com"
-export DIVE_PREFERRED_URL_SCHEME="https"
+export MODE=""
+export SITE_TITLE=""
+export SECRET_KEY=""
+export DIVE_COOKIE_DOMAIN=""
+export DIVE_PREFERRED_URL_SCHEME=""
 
 export DIVE_AMQP_URL=""
 
@@ -13,7 +13,7 @@ export SQLALCHEMY_DATABASE_USER=""
 export SQLALCHEMY_DATABASE_PASSWORD=""
 export SQLALCHEMY_DATABASE_ENDPOINT=""
 
-export DIVE_STORAGE_TYPE="s3"
+export DIVE_STORAGE_TYPE=""
 export DIVE_AWS_ACCESS_KEY_ID=""
 export DIVE_AWS_SECRET_ACCESS_KEY=""
 export DIVE_AWS_DATA_BUCKET=""
