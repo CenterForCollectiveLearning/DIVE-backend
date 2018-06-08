@@ -1,6 +1,7 @@
 export MODE="PRODUCTION"
 export SITE_TITLE="dive"
 export SECRET_KEY="dive"
+
 export DIVE_COOKIE_DOMAIN=""
 export DIVE_PREFERRED_URL_SCHEME=""
 export DIVE_PORT=""
