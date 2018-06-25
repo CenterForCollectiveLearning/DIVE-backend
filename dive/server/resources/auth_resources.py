@@ -58,7 +58,7 @@ class Confirm_Token(Resource):
             'email': user.email,
             'user_id': user.id,
             'confirmed': user.confirmed
-        }, expires=datetime.utcnow() + COOKIE_DURATION, secure=True)
+        }, expires=datetime.utcnow() + COOKIE_DURATION)
         return response
 
 
@@ -226,7 +226,7 @@ class Register(Resource):
                 'user_id': user.id,
                 'confirmed': user.confirmed,
                 'anonymous': user.anonymous
-            }, expires=datetime.utcnow() + COOKIE_DURATION, secure=True)
+            }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
 
         else:
@@ -270,7 +270,7 @@ class AnonymousUser(Resource):
             'user_id': user.id,
             'confirmed': False,
             'anonymous': True
-        }, secure=True)
+        })
         return response
 
 
@@ -285,7 +285,7 @@ class DeleteAnonymousData(Resource):
             'email': '',
             'user_id': '',
             'confirmed': str(False)
-        }, expires=0, secure=True)
+        }, expires=0)
 
 
 loginPostParser = reqparse.RequestParser()
@@ -325,7 +325,7 @@ class Login(Resource):
                 'user_id': user.id,
                 'confirmed': user.confirmed,
                 'anonymous': user.anonymous
-            }, expires=datetime.utcnow() + COOKIE_DURATION, secure=True)
+            }, expires=datetime.utcnow() + COOKIE_DURATION)
             return response
         else:
             return jsonify({
@@ -351,5 +351,5 @@ class Logout(Resource):
             'user_id': '',
             'confirmed': False,
             'anonymous': True
-        }, expires=0, secure=True)
+        }, expires=0)
         return
