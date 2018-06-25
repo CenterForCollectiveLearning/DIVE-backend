@@ -19,7 +19,7 @@ COOKIE_DURATION = timedelta(days=365)
 
 def set_cookies(response, cookie_dict, expires=None, domain=current_app.config['COOKIE_DOMAIN']):
     for (k, v) in cookie_dict.iteritems():
-        response.set_cookie(k, str(v), expires=expires, domain=domain)
+        response.set_cookie(k, str(v), expires=expires, domain=domain, secure=True)
     return response
 
 
@@ -58,7 +58,7 @@ class Confirm_Token(Resource):
             'email': user.email,
             'user_id': user.id,
             'confirmed': user.confirmed
-        }, expires=datetime.utcnow() + COOKIE_DURATION)
+        }, expires=datetime.utcnow() + COOKIE_DURATION, secure=True)
         return response
 
 
@@ -226,7 +226,7 @@ class Register(Resource):
                 'user_id': user.id,
                 'confirmed': user.confirmed,
                 'anonymous': user.anonymous
-            }, expires=datetime.utcnow() + COOKIE_DURATION)
+            }, expires=datetime.utcnow() + COOKIE_DURATION, secure=True)
             return response
 
         else:
@@ -270,7 +270,7 @@ class AnonymousUser(Resource):
             'user_id': user.id,
             'confirmed': False,
             'anonymous': True
-        })
+        }, secure=True)
         return response
 
 
@@ -285,7 +285,7 @@ class DeleteAnonymousData(Resource):
             'email': '',
             'user_id': '',
             'confirmed': str(False)
-        }, expires=0)
+        }, expires=0, secure=True)
 
 
 loginPostParser = reqparse.RequestParser()
@@ -325,7 +325,7 @@ class Login(Resource):
                 'user_id': user.id,
                 'confirmed': user.confirmed,
                 'anonymous': user.anonymous
-            }, expires=datetime.utcnow() + COOKIE_DURATION)
+            }, expires=datetime.utcnow() + COOKIE_DURATION, secure=True)
             return response
         else:
             return jsonify({
@@ -351,5 +351,5 @@ class Logout(Resource):
             'user_id': '',
             'confirmed': False,
             'anonymous': True
-        }, expires=0)
+        }, expires=0, secure=True)
         return
