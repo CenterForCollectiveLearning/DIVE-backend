@@ -39,7 +39,7 @@ django-sudo==2.1.0
 django-templatetag-sugar==1.0
 djangorestframework==2.3.14
 docutils==0.12
-ecdsa==0.13
+ecdsa==0.13.3
 email-reply-parser==0.2.0
 enum34==1.0.4
 exam==0.10.6
