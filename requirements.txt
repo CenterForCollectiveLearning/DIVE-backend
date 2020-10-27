@@ -21,7 +21,7 @@ click==6.6
 colorama==0.3.7
 colorlog==2.6.0
 contextlib2==0.5.1
-cryptography==1.5.2
+cryptography==3.2
 cssselect==0.9.2
 cssutils==0.9.10
 csvkit==0.9.1
