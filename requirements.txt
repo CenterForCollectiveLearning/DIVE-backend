@@ -37,7 +37,7 @@ django-jsonfield==0.9.13
 django-picklefield==0.3.2
 django-sudo==2.1.0
 django-templatetag-sugar==1.0
-djangorestframework==2.3.14
+djangorestframework==3.11.2
 docutils==0.12
 ecdsa==0.13
 email-reply-parser==0.2.0
