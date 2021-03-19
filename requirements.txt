@@ -73,7 +73,7 @@ ipython==4.0.0
 ipython-genutils==0.1.0
 itsdangerous==0.24
 jdcal==1.2
-Jinja2==2.8
+Jinja2==2.11.3
 jmespath==0.9.0
 json-table-schema==0.2.1
 kombu==4.0.0
