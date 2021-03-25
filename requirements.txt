@@ -119,7 +119,7 @@ python-pptx==0.6.0
 python-u2flib-server==4.0.1
 python-utils==2.0.0
 pytz==2016.7
-PyYAML==3.11
+PyYAML==5.4
 qrcode==5.3
 raven==5.27.1
 rb==1.5
