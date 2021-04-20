@@ -101,7 +101,7 @@ Pillow==3.4.2
 progressbar2==3.10.1
 psycopg2==2.6.2
 ptyprocess==0.5
-py==1.4.31
+py==1.10.0
 pyasn1==0.1.9
 pycparser==2.14
 pycrypto==2.6.1
