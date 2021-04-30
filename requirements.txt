@@ -125,7 +125,7 @@ raven==5.27.1
 rb==1.5
 redis==2.10.5
 requests==2.11.1
-rsa==3.4.2
+rsa==4.7
 s3transfer==0.1.4
 scikit-learn==0.16.1
 scipy==0.16.0
