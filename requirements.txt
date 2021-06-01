@@ -149,7 +149,7 @@ toronado==0.0.10
 traitlets==4.0.0
 ua-parser==0.7.1
 ujson==1.35
-urllib3==1.16
+urllib3==1.26.5
 uuid==1.30
 uWSGI==2.0.13.1
 vine==1.1.3
