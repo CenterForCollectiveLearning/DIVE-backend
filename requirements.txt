@@ -85,7 +85,7 @@ messytables==0.15.0
 mock==1.0.1
 ndg-httpsclient==0.4.2
 numexpr==2.5.2
-numpy==1.11.0
+numpy==1.22.0
 oauth2==1.9.0.post1
 openpyxl==2.2.0b1
 pandas==0.18.0
