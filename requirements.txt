@@ -87,7 +87,7 @@ ndg-httpsclient==0.4.2
 numexpr==2.5.2
 numpy==1.11.0
 oauth2==1.9.0.post1
-openpyxl==2.2.0b1
+openpyxl==2.4.2
 pandas==0.18.0
 paramiko==1.17.2
 passlib==1.6.5
